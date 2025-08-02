@@ -345,114 +345,114 @@ describe('use[HookName]', () => {
 import { test, expect } from '@playwright/test';
 
 test.describe('[Feature Name]', () => {
-	test.beforeEach(async ({ page }) => {
-		// Set up authentication
-		await page.goto('/sign-in');
-		await page.fill('[data-testid="email"]', 'test@threadfolio.com');
-		await page.fill('[data-testid="password"]', 'testpassword');
-		await page.click('[data-testid="sign-in-button"]');
-		await page.waitForURL('/dashboard');
-	});
+  test.beforeEach(async ({ page }) => {
+    // Set up authentication
+    await page.goto('/sign-in');
+    await page.fill('[data-testid="email"]', 'test@threadfolio.com');
+    await page.fill('[data-testid="password"]', 'testpassword');
+    await page.click('[data-testid="sign-in-button"]');
+    await page.waitForURL('/dashboard');
+  });
 
-	test.describe('Happy Path', () => {
-		test('completes main user flow', async ({ page }) => {
-			// Navigate to feature
-			await page.click('[data-testid="nav-[feature]"]');
-			await expect(page).toHaveURL('/[feature]');
+  test.describe('Happy Path', () => {
+    test('completes main user flow', async ({ page }) => {
+      // Navigate to feature
+      await page.click('[data-testid="nav-[feature]"]');
+      await expect(page).toHaveURL('/[feature]');
 
-			// Interact with feature
-			await page.click('[data-testid="primary-action"]');
+      // Interact with feature
+      await page.click('[data-testid="primary-action"]');
 
-			// Fill form if needed
-			await page.fill('[data-testid="input-field"]', 'test value');
+      // Fill form if needed
+      await page.fill('[data-testid="input-field"]', 'test value');
 
-			// Submit
-			await page.click('[data-testid="submit-button"]');
+      // Submit
+      await page.click('[data-testid="submit-button"]');
 
-			// Verify success
-			await expect(
-				page.locator('[data-testid="success-message"]')
-			).toBeVisible();
-			await expect(page.locator('text=[expected result]')).toBeVisible();
-		});
-	});
+      // Verify success
+      await expect(
+        page.locator('[data-testid="success-message"]')
+      ).toBeVisible();
+      await expect(page.locator('text=[expected result]')).toBeVisible();
+    });
+  });
 
-	test.describe('Error Handling', () => {
-		test('displays validation errors', async ({ page }) => {
-			await page.goto('/[feature]');
+  test.describe('Error Handling', () => {
+    test('displays validation errors', async ({ page }) => {
+      await page.goto('/[feature]');
 
-			// Submit without required fields
-			await page.click('[data-testid="submit-button"]');
+      // Submit without required fields
+      await page.click('[data-testid="submit-button"]');
 
-			// Check validation errors
-			await expect(page.locator('text=[validation error]')).toBeVisible();
-			await expect(page.locator('[data-testid="error-alert"]')).toBeVisible();
-		});
+      // Check validation errors
+      await expect(page.locator('text=[validation error]')).toBeVisible();
+      await expect(page.locator('[data-testid="error-alert"]')).toBeVisible();
+    });
 
-		test('handles server errors gracefully', async ({ page }) => {
-			// Mock server error
-			await page.route('**/api/[endpoint]', (route) => {
-				route.fulfill({
-					status: 500,
-					body: JSON.stringify({ error: 'Server error' }),
-				});
-			});
+    test('handles server errors gracefully', async ({ page }) => {
+      // Mock server error
+      await page.route('**/api/[endpoint]', (route) => {
+        route.fulfill({
+          status: 500,
+          body: JSON.stringify({ error: 'Server error' }),
+        });
+      });
 
-			await page.goto('/[feature]');
-			await page.click('[data-testid="submit-button"]');
+      await page.goto('/[feature]');
+      await page.click('[data-testid="submit-button"]');
 
-			await expect(page.locator('text=Something went wrong')).toBeVisible();
-		});
-	});
+      await expect(page.locator('text=Something went wrong')).toBeVisible();
+    });
+  });
 
-	test.describe('Mobile Experience', () => {
-		test('works on mobile viewport', async ({ page }) => {
-			await page.setViewportSize({ width: 375, height: 667 });
+  test.describe('Mobile Experience', () => {
+    test('works on mobile viewport', async ({ page }) => {
+      await page.setViewportSize({ width: 375, height: 667 });
 
-			await page.goto('/[feature]');
+      await page.goto('/[feature]');
 
-			// Test mobile-specific behavior
-			await expect(page.locator('[data-testid="mobile-nav"]')).toBeVisible();
-			await expect(
-				page.locator('[data-testid="desktop-sidebar"]')
-			).not.toBeVisible();
-		});
-	});
+      // Test mobile-specific behavior
+      await expect(page.locator('[data-testid="mobile-nav"]')).toBeVisible();
+      await expect(
+        page.locator('[data-testid="desktop-sidebar"]')
+      ).not.toBeVisible();
+    });
+  });
 
-	test.describe('Accessibility', () => {
-		test('supports keyboard navigation', async ({ page }) => {
-			await page.goto('/[feature]');
+  test.describe('Accessibility', () => {
+    test('supports keyboard navigation', async ({ page }) => {
+      await page.goto('/[feature]');
 
-			// Tab through interactive elements
-			await page.keyboard.press('Tab');
-			await expect(page.locator(':focus')).toHaveAttribute(
-				'data-testid',
-				'first-interactive'
-			);
+      // Tab through interactive elements
+      await page.keyboard.press('Tab');
+      await expect(page.locator(':focus')).toHaveAttribute(
+        'data-testid',
+        'first-interactive'
+      );
 
-			await page.keyboard.press('Tab');
-			await expect(page.locator(':focus')).toHaveAttribute(
-				'data-testid',
-				'second-interactive'
-			);
+      await page.keyboard.press('Tab');
+      await expect(page.locator(':focus')).toHaveAttribute(
+        'data-testid',
+        'second-interactive'
+      );
 
-			// Activate with Enter/Space
-			await page.keyboard.press('Enter');
-			// Assert expected behavior
-		});
-	});
+      // Activate with Enter/Space
+      await page.keyboard.press('Enter');
+      // Assert expected behavior
+    });
+  });
 
-	test.describe('Performance', () => {
-		test('loads within performance budget', async ({ page }) => {
-			const startTime = Date.now();
+  test.describe('Performance', () => {
+    test('loads within performance budget', async ({ page }) => {
+      const startTime = Date.now();
 
-			await page.goto('/[feature]');
-			await page.waitForLoadState('networkidle');
+      await page.goto('/[feature]');
+      await page.waitForLoadState('networkidle');
 
-			const loadTime = Date.now() - startTime;
-			expect(loadTime).toBeLessThan(2000); // <2s requirement
-		});
-	});
+      const loadTime = Date.now() - startTime;
+      expect(loadTime).toBeLessThan(2000); // <2s requirement
+    });
+  });
 });
 ```
 
@@ -465,22 +465,22 @@ test.describe('[Feature Name]', () => {
 ```typescript
 // src/lib/__mocks__/supabase.ts
 export const createMockSupabaseClient = () => ({
-	from: jest.fn(() => ({
-		select: jest.fn().mockReturnThis(),
-		insert: jest.fn().mockReturnThis(),
-		update: jest.fn().mockReturnThis(),
-		delete: jest.fn().mockReturnThis(),
-		eq: jest.fn().mockReturnThis(),
-		in: jest.fn().mockReturnThis(),
-		order: jest.fn().mockReturnThis(),
-		limit: jest.fn().mockReturnThis(),
-		single: jest.fn(),
-	})),
-	auth: {
-		getUser: jest.fn(),
-		signInWithPassword: jest.fn(),
-		signOut: jest.fn(),
-	},
+  from: jest.fn(() => ({
+    select: jest.fn().mockReturnThis(),
+    insert: jest.fn().mockReturnThis(),
+    update: jest.fn().mockReturnThis(),
+    delete: jest.fn().mockReturnThis(),
+    eq: jest.fn().mockReturnThis(),
+    in: jest.fn().mockReturnThis(),
+    order: jest.fn().mockReturnThis(),
+    limit: jest.fn().mockReturnThis(),
+    single: jest.fn(),
+  })),
+  auth: {
+    getUser: jest.fn(),
+    signInWithPassword: jest.fn(),
+    signOut: jest.fn(),
+  },
 });
 ```
 
@@ -489,12 +489,12 @@ export const createMockSupabaseClient = () => ({
 ```typescript
 // src/__mocks__/next/navigation.ts
 export const useRouter = () => ({
-	push: jest.fn(),
-	replace: jest.fn(),
-	back: jest.fn(),
-	forward: jest.fn(),
-	refresh: jest.fn(),
-	prefetch: jest.fn(),
+  push: jest.fn(),
+  replace: jest.fn(),
+  back: jest.fn(),
+  forward: jest.fn(),
+  refresh: jest.fn(),
+  prefetch: jest.fn(),
 });
 
 export const useSearchParams = () => new URLSearchParams();

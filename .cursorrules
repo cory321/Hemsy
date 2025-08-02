@@ -155,6 +155,60 @@ Check the latest progress against the roadmap in `PRD.md` Section 12.
 - Check database: Use Supabase MCP server
 - Check GitHub: Use GitHub MCP server
 
+### 📚 **Context7 Documentation Tools (ALWAYS USE WHEN APPROPRIATE):**
+
+#### **🎯 When to Use Context7:**
+
+**MANDATORY** - Use Context7 tools whenever you need current, accurate documentation for:
+
+1. **Tech Stack Libraries:**
+   - Next.js 15+ (App Router patterns, Server Actions, middleware)
+   - TypeScript (latest features, strict mode patterns)
+   - Material UI (theming, components, customization)
+   - Supabase (RLS, realtime, auth integration)
+   - Clerk Auth (latest API, hooks, middleware)
+   - Stripe (payment intents, webhooks, TypeScript types)
+
+2. **Testing & Development:**
+   - Jest (latest config, testing patterns)
+   - React Testing Library (queries, assertions)
+   - Playwright (selectors, mobile testing)
+   - ESLint/Prettier (rule configurations)
+
+3. **Before Making Recommendations:**
+   - **ALWAYS** check Context7 first before suggesting implementation patterns
+   - Verify current API signatures and best practices
+   - Get up-to-date examples and code snippets
+
+#### **🔧 Context7 Usage Pattern:**
+
+```typescript
+// 1. ALWAYS resolve library ID first
+mcp_context7_resolve-library-id(libraryName: "next.js")
+
+// 2. THEN get targeted documentation
+mcp_context7_get-library-docs(
+  context7CompatibleLibraryID: "/vercel/next.js",
+  topic: "server actions", // Focus on specific topic
+  tokens: 5000 // Adjust based on need
+)
+```
+
+#### **📋 Context7 Best Practices:**
+
+- **Use specific topics** to get focused documentation (e.g., "hooks", "routing", "authentication")
+- **Verify versions** match our tech stack requirements
+- **Cross-reference** Context7 docs with our architecture decisions
+- **Update patterns** in our codebase when Context7 shows newer best practices
+
+#### **⚡ Example Context7 Queries:**
+
+- "Get latest Next.js 15 App Router Server Actions patterns"
+- "Show current Material UI v6 theming API"
+- "Find Supabase RLS policy examples for multi-tenant apps"
+- "Get Stripe webhook handling with TypeScript"
+- "Show Jest + React Testing Library patterns for Server Actions"
+
 ### ⚠️ **Important Notes:**
 
 - Trial countdown feature is behind `trial_countdown_enabled` flag (default OFF)
