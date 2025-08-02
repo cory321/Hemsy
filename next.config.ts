@@ -3,6 +3,12 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   // App Router is enabled by default in Next.js 15+
   experimental: {
+    // Enable Turbopack for faster development builds
+    turbo: {
+      resolveAlias: {
+        // Add any custom aliases if needed
+      },
+    },
     // Enable Server Actions (stable in Next.js 15+)
     serverActions: {
       allowedOrigins: ['localhost:3000'],
