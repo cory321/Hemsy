@@ -32,22 +32,16 @@ export default function RootLayout({
   // Optional ClerkProvider for development - will need env vars in production
   const hasClerkKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
-  if (hasClerkKey) {
-    return (
-      <ClerkProvider>
-        <html lang="en">
-          <body className={inter.className}>
-            <ThemeProvider>{children}</ThemeProvider>
-          </body>
-        </html>
-      </ClerkProvider>
-    );
-  }
-
   return (
     <html lang="en">
       <body className={inter.className}>
-        <ThemeProvider>{children}</ThemeProvider>
+        {hasClerkKey ? (
+          <ClerkProvider>
+            <ThemeProvider>{children}</ThemeProvider>
+          </ClerkProvider>
+        ) : (
+          <ThemeProvider>{children}</ThemeProvider>
+        )}
       </body>
     </html>
   );

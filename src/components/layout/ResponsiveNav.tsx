@@ -21,6 +21,7 @@ import {
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useResponsive } from '@/hooks/useResponsive';
+import { UserButton, useUser } from '@clerk/nextjs';
 
 // Icons
 import HomeIcon from '@mui/icons-material/Home';
@@ -76,6 +77,62 @@ const DRAWER_WIDTH = 240; // Used for tablet drawer
 
 interface ResponsiveNavProps {
   children: ReactNode;
+}
+
+function MobileHeader() {
+  const pathname = usePathname();
+  const { user } = useUser();
+
+  // Find the current page title based on the pathname
+  const currentPageTitle = (() => {
+    const allItems = [...navItems, ...desktopOnlyItems];
+    const currentItem = allItems.find((item) => pathname.startsWith(item.href));
+    return currentItem?.label || 'Threadfolio';
+  })();
+
+  return (
+    <AppBar
+      position="fixed"
+      sx={{
+        backgroundColor: 'background.paper',
+        color: 'text.primary',
+        boxShadow: 1,
+      }}
+    >
+      <Toolbar sx={{ minHeight: '56px !important' }}>
+        <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+          {currentPageTitle}
+        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {user && (
+            <Typography
+              variant="body2"
+              sx={{ mr: 1, display: { xs: 'none', sm: 'block' } }}
+            >
+              {user.firstName || user.emailAddresses[0]?.emailAddress}
+            </Typography>
+          )}
+          <UserButton
+            appearance={{
+              elements: {
+                rootBox: {
+                  marginLeft: '8px',
+                },
+                userButtonAvatarBox: {
+                  width: '32px',
+                  height: '32px',
+                },
+              },
+            }}
+            userProfileMode="navigation"
+            userProfileUrl="/settings"
+            afterSignOutUrl="/"
+            showName={false}
+          />
+        </Box>
+      </Toolbar>
+    </AppBar>
+  );
 }
 
 function MobileBottomNav() {
@@ -152,6 +209,24 @@ function DesktopTopNav() {
             );
           })}
         </Box>
+        <Box sx={{ ml: 2 }}>
+          <UserButton
+            appearance={{
+              elements: {
+                rootBox: {
+                  marginLeft: '8px',
+                },
+                userButtonAvatarBox: {
+                  width: '36px',
+                  height: '36px',
+                },
+              },
+            }}
+            userProfileMode="navigation"
+            userProfileUrl="/settings"
+            afterSignOutUrl="/"
+          />
+        </Box>
       </Toolbar>
     </AppBar>
   );
@@ -187,9 +262,27 @@ function TabletNav() {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div">
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             Threadfolio
           </Typography>
+          <Box>
+            <UserButton
+              appearance={{
+                elements: {
+                  rootBox: {
+                    marginLeft: '8px',
+                  },
+                  userButtonAvatarBox: {
+                    width: '36px',
+                    height: '36px',
+                  },
+                },
+              }}
+              userProfileMode="navigation"
+              userProfileUrl="/settings"
+              afterSignOutUrl="/"
+            />
+          </Box>
         </Toolbar>
       </AppBar>
       <Drawer
@@ -234,10 +327,11 @@ export function ResponsiveNav({ children }: ResponsiveNavProps) {
   const { isMobile, isTablet } = useResponsive();
 
   if (isMobile) {
-    // Mobile: Bottom navigation only
+    // Mobile: Top header with user button + bottom navigation
     return (
-      <Box sx={{ pb: 7 }}>
-        {children}
+      <Box>
+        <MobileHeader />
+        <Box sx={{ pt: 7, pb: 7 }}>{children}</Box>
         <MobileBottomNav />
       </Box>
     );

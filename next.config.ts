@@ -2,17 +2,24 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   // App Router is enabled by default in Next.js 15+
-  experimental: {
-    // Enable Turbopack for faster development builds
-    turbo: {
-      resolveAlias: {
-        // Add any custom aliases if needed
-      },
+
+  // Turbopack configuration (now stable)
+  turbopack: {
+    resolveAlias: {
+      // Add any custom aliases if needed
     },
+  },
+
+  experimental: {
     // Enable Server Actions (stable in Next.js 15+)
     serverActions: {
       allowedOrigins: ['localhost:3000'],
     },
+  },
+
+  // Compiler configuration for emotion (Material UI's CSS-in-JS)
+  compiler: {
+    emotion: true,
   },
 
   // PWA and performance optimizations
