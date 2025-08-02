@@ -1,0 +1,167 @@
+# Threadfolio V2 - Cursor Project Rules
+
+## Project Context
+
+You are working on **Threadfolio V2**, a mobile-first PWA for seamstresses and tailoring businesses.
+
+### 📋 **ALWAYS READ THESE FIRST:**
+
+- `PRD.md` - Complete Product Requirements Document with features, user flows, and implementation roadmap
+- `architecture.md` - System architecture, tech stack, and design decisions
+
+### 🎯 **Core Project Info:**
+
+- **Tech Stack**: Next.js 15+ (App Router), TypeScript, Material UI, Supabase, Clerk Auth, Stripe
+- **Target Users**: Solo seamstresses, small-to-medium tailoring shops, alteration businesses
+- **Key Features**: Clients, Orders, Garments, Appointments, Services, Invoices, Settings
+- **Runtime**: Node.js 22.17.1 (LTS)
+
+### 🏗️ **Architecture Principles:**
+
+- Mobile-first responsive design
+- Offline-resilient with slow-network awareness
+- Server Actions for backend logic
+- Supabase RLS for data security
+- Optimistic UI patterns
+
+### 📁 **Key File References:**
+
+- Database schema and tables defined in `architecture.md` Section 6
+- Implementation roadmap in `PRD.md` Section 12 (Phases 0-7)
+- Feature flags: `trial_countdown_enabled`
+- Environment variables listed in `architecture.md` Section 12
+
+### 🔧 **Development Guidelines:**
+
+1. **ALWAYS** reference the PRD and architecture docs before making suggestions
+2. Follow the mobile-first design principles
+3. Use Server Actions for data operations
+4. Implement proper error handling and loading states
+5. Ensure accessibility (WCAG 2.1 AA compliance)
+6. Use TypeScript strictly
+7. Follow the implementation phases in order
+8. **MANDATORY**: Write tests alongside all feature implementations
+
+### 🧪 **Testing Requirements (MANDATORY):**
+
+#### **🎯 Test-First Development:**
+
+- **NEVER** implement a feature without corresponding tests
+- Write tests **BEFORE** or **ALONGSIDE** implementation, not after
+- Every PR must include test coverage for new functionality
+- All tests must pass before code review
+
+#### **📊 Coverage Standards:**
+
+- **Unit Tests**: Minimum 80% coverage for all business logic
+- **Integration Tests**: Cover all Server Actions and API routes
+- **E2E Tests**: Cover critical user journeys from PRD.md
+- **Accessibility Tests**: WCAG 2.1 AA compliance using axe-core
+
+#### **🔧 Testing Stack & Patterns:**
+
+```typescript
+// Unit Tests (Jest + React Testing Library)
+- Components: Test rendering, props, user interactions
+- Server Actions: Test business logic, error handling, data validation
+- Utilities: Test pure functions, data transformations
+- Hooks: Test custom React hooks
+
+// Integration Tests (Jest)
+- Database operations with Supabase
+- Authentication flows with Clerk
+- Payment flows with Stripe
+- Email/SMS integrations
+
+// E2E Tests (Playwright)
+- Complete user workflows from PRD.md Section 4
+- Mobile-first testing (responsive breakpoints)
+- Offline functionality testing
+- Performance testing (<2s load times)
+
+// Accessibility Tests (axe-core + Playwright)
+- Automated a11y scanning on all pages
+- Keyboard navigation testing
+- Screen reader compatibility
+```
+
+#### **📁 Test File Organization:**
+
+```
+src/
+├── components/
+│   ├── Button/
+│   │   ├── Button.tsx
+│   │   ├── Button.test.tsx        # Unit tests
+│   │   └── Button.stories.tsx     # Storybook (future)
+├── lib/
+│   ├── actions/
+│   │   ├── orders.ts
+│   │   └── orders.test.ts         # Server Action tests
+├── __tests__/
+│   ├── integration/               # Integration tests
+│   └── e2e/                      # Playwright E2E tests
+```
+
+#### **✅ Testing Checklist (Every Feature):**
+
+- [ ] **Unit tests** for all components and functions
+- [ ] **Integration tests** for Server Actions
+- [ ] **E2E test** for main user flow
+- [ ] **Accessibility test** with axe-core
+- [ ] **Mobile responsive** testing
+- [ ] **Error boundary** testing
+- [ ] **Loading state** testing
+- [ ] **TypeScript** type safety validation
+
+#### **🚫 Definition of Done:**
+
+A feature is **NOT COMPLETE** without:
+
+1. ✅ Implementation code
+2. ✅ Comprehensive test suite
+3. ✅ All tests passing in CI
+4. ✅ Coverage thresholds met
+5. ✅ Accessibility compliance verified
+6. ✅ Mobile testing completed
+
+#### **🔬 Test Commands:**
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode during development
+npm run test:watch
+
+# Run E2E tests
+npm run test:e2e
+
+# Check test coverage
+npm run test:coverage
+
+# Run accessibility tests
+npm run test:a11y
+```
+
+### 🚀 **Current Phase:**
+
+Check the latest progress against the roadmap in `PRD.md` Section 12.
+
+### 💡 **Quick Commands:**
+
+- Read PRD: `@PRD.md`
+- Read Architecture: `@architecture.md`
+- Check database: Use Supabase MCP server
+- Check GitHub: Use GitHub MCP server
+
+### ⚠️ **Important Notes:**
+
+- Trial countdown feature is behind `trial_countdown_enabled` flag (default OFF)
+- All user data must respect Supabase RLS policies
+- Payment processing uses Stripe (PCI compliant)
+- Email via Resend, SMS via Twilio (future)
+
+---
+
+**Remember**: This is a real production application for seamstresses. Every decision should prioritize user experience, performance, and reliability.
