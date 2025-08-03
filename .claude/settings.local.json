@@ -4,12 +4,18 @@
       "WebFetch(domain:docs.anthropic.com)",
       "Bash(claude mcp add:*)",
       "Bash(find:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "mcp__supabase__list_tables",
+      "mcp__supabase__execute_sql",
+      "Bash(node:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run lint)",
+      "Bash(npm test:*)",
+      "Bash(npm run lint:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": [
-    "supabase",
-    "github"
-  ]
+  "enabledMcpjsonServers": ["supabase", "github"]
 }

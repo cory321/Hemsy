@@ -1,51 +1,12 @@
-import {
-  Container,
-  Typography,
-  Box,
-  TextField,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemAvatar,
-  Avatar,
-  IconButton,
-  InputAdornment,
-  Fab,
-} from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
-import PersonIcon from '@mui/icons-material/Person';
+import { Container, Typography, Box, Fab } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import Link from 'next/link';
+import ClientsList from '@/components/clients/ClientsList';
+import { getClients } from '@/lib/actions/clients';
 
-export default function ClientsPage() {
-  // Mock data for demonstration
-  const clients = [
-    {
-      id: 1,
-      name: 'Jane Smith',
-      phone: '(555) 123-4567',
-      lastOrder: '2 days ago',
-    },
-    {
-      id: 2,
-      name: 'John Doe',
-      phone: '(555) 234-5678',
-      lastOrder: '1 week ago',
-    },
-    {
-      id: 3,
-      name: 'Sarah Johnson',
-      phone: '(555) 345-6789',
-      lastOrder: '2 weeks ago',
-    },
-    {
-      id: 4,
-      name: 'Mike Wilson',
-      phone: '(555) 456-7890',
-      lastOrder: '1 month ago',
-    },
-  ];
+export default async function ClientsPage() {
+  // Fetch initial data server-side
+  const initialData = await getClients(1, 10);
 
   return (
     <Container maxWidth="lg">
@@ -54,54 +15,8 @@ export default function ClientsPage() {
           Clients
         </Typography>
 
-        {/* Search Bar */}
-        <TextField
-          fullWidth
-          variant="outlined"
-          placeholder="Search clients..."
-          sx={{ mb: 3 }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-          }}
-        />
-
-        {/* Clients List */}
-        <List>
-          {clients.map((client) => (
-            <ListItem
-              key={client.id}
-              component={Link}
-              href={`/clients/${client.id}`}
-              sx={{
-                bgcolor: 'background.paper',
-                mb: 1,
-                borderRadius: 1,
-                '&:hover': {
-                  bgcolor: 'action.hover',
-                },
-              }}
-              secondaryAction={
-                <IconButton edge="end">
-                  <ChevronRightIcon />
-                </IconButton>
-              }
-            >
-              <ListItemAvatar>
-                <Avatar>
-                  <PersonIcon />
-                </Avatar>
-              </ListItemAvatar>
-              <ListItemText
-                primary={client.name}
-                secondary={`${client.phone} • Last order: ${client.lastOrder}`}
-              />
-            </ListItem>
-          ))}
-        </List>
+        {/* Clients List with pagination */}
+        <ClientsList initialData={initialData} getClientsAction={getClients} />
 
         {/* Floating Action Button */}
         <Fab

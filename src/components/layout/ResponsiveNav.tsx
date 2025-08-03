@@ -22,6 +22,7 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useResponsive } from '@/hooks/useResponsive';
 import { UserButton, useUser } from '@clerk/nextjs';
+import { Breadcrumbs } from './Breadcrumbs';
 
 // Icons
 import HomeIcon from '@mui/icons-material/Home';
@@ -331,7 +332,12 @@ export function ResponsiveNav({ children }: ResponsiveNavProps) {
     return (
       <Box>
         <MobileHeader />
-        <Box sx={{ pt: 7, pb: 7 }}>{children}</Box>
+        <Box sx={{ pt: '56px' }}>
+          {' '}
+          {/* Account for mobile header height */}
+          <Breadcrumbs />
+        </Box>
+        <Box sx={{ pb: 7 }}>{children}</Box>
         <MobileBottomNav />
       </Box>
     );
@@ -342,8 +348,9 @@ export function ResponsiveNav({ children }: ResponsiveNavProps) {
     return (
       <Box sx={{ display: 'flex' }}>
         <TabletNav />
-        <Box component="main" sx={{ flexGrow: 1, pt: 8, px: 2 }}>
-          {children}
+        <Box component="main" sx={{ flexGrow: 1, pt: 8 }}>
+          <Breadcrumbs />
+          <Box sx={{ px: 2 }}>{children}</Box>
         </Box>
       </Box>
     );
@@ -353,10 +360,14 @@ export function ResponsiveNav({ children }: ResponsiveNavProps) {
   return (
     <Box>
       <DesktopTopNav />
+      <Box sx={{ pt: 8 }}>
+        {' '}
+        {/* Account for fixed AppBar height */}
+        <Breadcrumbs />
+      </Box>
       <Box
         component="main"
         sx={{
-          pt: 10, // Account for AppBar height
           px: { xs: 2, sm: 3, md: 4, lg: 6 },
           pb: 3,
           maxWidth: '1400px',

@@ -1,180 +1,243 @@
+import { notFound } from 'next/navigation';
 import {
-	Container,
-	Typography,
-	Box,
-	Card,
-	CardContent,
-	List,
-	ListItem,
-	ListItemText,
-	Button,
-	Chip,
-	Avatar,
+  Container,
+  Typography,
+  Box,
+  Card,
+  CardContent,
+  Grid,
+  Chip,
+  IconButton,
+  Divider,
 } from '@mui/material';
-import PersonIcon from '@mui/icons-material/Person';
-import PhoneIcon from '@mui/icons-material/Phone';
-import EmailIcon from '@mui/icons-material/Email';
 import EditIcon from '@mui/icons-material/Edit';
-import AddIcon from '@mui/icons-material/Add';
-import Link from 'next/link';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EmailIcon from '@mui/icons-material/Email';
+import PhoneIcon from '@mui/icons-material/Phone';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import NotesIcon from '@mui/icons-material/Notes';
+import PersonIcon from '@mui/icons-material/Person';
+import { getClient } from '@/lib/actions/clients';
+import ClientEditDialog from '@/components/clients/ClientEditDialog';
+import ClientDeleteDialog from '@/components/clients/ClientDeleteDialog';
 
-export default function ClientDetailPage({
-	params,
-}: {
-	params: { id: string };
-}) {
-	// Mock data for demonstration
-	const client = {
-		id: params.id,
-		name: 'Jane Smith',
-		phone: '(555) 123-4567',
-		email: 'jane.smith@email.com',
-		address: '123 Main St, City, State 12345',
-		notes: 'Prefers organic fabrics, allergic to certain dyes',
-		totalOrders: 15,
-		totalSpent: '$1,250',
-	};
-
-	const recentOrders = [
-		{ id: 1, date: '2024-01-15', items: 3, total: '$125', status: 'Completed' },
-		{
-			id: 2,
-			date: '2024-01-02',
-			items: 1,
-			total: '$45',
-			status: 'In Progress',
-		},
-		{ id: 3, date: '2023-12-20', items: 2, total: '$80', status: 'Completed' },
-	];
-
-	return (
-		<Container maxWidth="lg">
-			<Box sx={{ mt: 4, mb: 4 }}>
-				{/* Header */}
-				<Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-					<Avatar sx={{ width: 64, height: 64, mr: 2 }}>
-						<PersonIcon sx={{ fontSize: 32 }} />
-					</Avatar>
-					<Box sx={{ flexGrow: 1 }}>
-						<Typography variant="h4" component="h1">
-							{client.name}
-						</Typography>
-						<Typography color="text.secondary">Client since 2023</Typography>
-					</Box>
-					<Button variant="outlined" startIcon={<EditIcon />}>
-						Edit
-					</Button>
-				</Box>
-
-				{/* Contact Info */}
-				<Card sx={{ mb: 3 }}>
-					<CardContent>
-						<Typography variant="h6" gutterBottom>
-							Contact Information
-						</Typography>
-						<Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-							<PhoneIcon sx={{ mr: 1, color: 'text.secondary' }} />
-							<Typography>{client.phone}</Typography>
-						</Box>
-						<Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-							<EmailIcon sx={{ mr: 1, color: 'text.secondary' }} />
-							<Typography>{client.email}</Typography>
-						</Box>
-						<Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-							{client.address}
-						</Typography>
-					</CardContent>
-				</Card>
-
-				{/* Stats */}
-				<Grid container spacing={2} sx={{ mb: 3 }}>
-					<Grid item xs={6}>
-						<Card>
-							<CardContent>
-								<Typography color="text.secondary" gutterBottom>
-									Total Orders
-								</Typography>
-								<Typography variant="h5">{client.totalOrders}</Typography>
-							</CardContent>
-						</Card>
-					</Grid>
-					<Grid item xs={6}>
-						<Card>
-							<CardContent>
-								<Typography color="text.secondary" gutterBottom>
-									Total Spent
-								</Typography>
-								<Typography variant="h5">{client.totalSpent}</Typography>
-							</CardContent>
-						</Card>
-					</Grid>
-				</Grid>
-
-				{/* Notes */}
-				{client.notes && (
-					<Card sx={{ mb: 3 }}>
-						<CardContent>
-							<Typography variant="h6" gutterBottom>
-								Notes
-							</Typography>
-							<Typography>{client.notes}</Typography>
-						</CardContent>
-					</Card>
-				)}
-
-				{/* Recent Orders */}
-				<Card>
-					<CardContent>
-						<Box
-							sx={{
-								display: 'flex',
-								justifyContent: 'space-between',
-								alignItems: 'center',
-								mb: 2,
-							}}
-						>
-							<Typography variant="h6">Recent Orders</Typography>
-							<Button
-								size="small"
-								startIcon={<AddIcon />}
-								component={Link}
-								href={`/orders/new?client=${client.id}`}
-							>
-								New Order
-							</Button>
-						</Box>
-						<List>
-							{recentOrders.map((order) => (
-								<ListItem
-									key={order.id}
-									divider
-									component={Link}
-									href={`/orders/${order.id}`}
-									sx={{ px: 0 }}
-								>
-									<ListItemText
-										primary={`Order #${order.id}`}
-										secondary={`${order.date} • ${order.items} items`}
-									/>
-									<Box sx={{ textAlign: 'right' }}>
-										<Typography variant="body2">{order.total}</Typography>
-										<Chip
-											label={order.status}
-											size="small"
-											color={
-												order.status === 'Completed' ? 'success' : 'warning'
-											}
-										/>
-									</Box>
-								</ListItem>
-							))}
-						</List>
-					</CardContent>
-				</Card>
-			</Box>
-		</Container>
-	);
+interface ClientDetailPageProps {
+  params: Promise<{ id: string }>;
 }
 
-// Add missing import
-import { Grid } from '@mui/material';
+export default async function ClientDetailPage({
+  params,
+}: ClientDetailPageProps) {
+  const { id } = await params;
+
+  try {
+    const client = await getClient(id);
+
+    if (!client) {
+      notFound();
+    }
+
+    const formatPhoneNumber = (phone: string) => {
+      return phone.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
+    };
+
+    const formatDate = (dateString: string) => {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+    };
+
+    return (
+      <Container maxWidth="lg">
+        <Box sx={{ mt: 4, mb: 4 }}>
+          {/* Header */}
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              mb: 4,
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <PersonIcon sx={{ fontSize: 32, color: 'primary.main' }} />
+              <Typography variant="h4" component="h1">
+                {client.first_name} {client.last_name}
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <ClientEditDialog client={client}>
+                <IconButton color="primary" size="large">
+                  <EditIcon />
+                </IconButton>
+              </ClientEditDialog>
+              <ClientDeleteDialog
+                clientId={client.id}
+                clientName={`${client.first_name} ${client.last_name}`}
+              >
+                <IconButton color="error" size="large">
+                  <DeleteIcon />
+                </IconButton>
+              </ClientDeleteDialog>
+            </Box>
+          </Box>
+
+          {/* Client Information */}
+          <Grid container spacing={3}>
+            {/* Contact Information */}
+            <Grid item xs={12} md={6}>
+              <Card elevation={2}>
+                <CardContent>
+                  <Typography
+                    variant="h6"
+                    gutterBottom
+                    sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                  >
+                    <EmailIcon color="primary" />
+                    Contact Information
+                  </Typography>
+                  <Divider sx={{ mb: 2 }} />
+
+                  <Box
+                    sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <EmailIcon sx={{ color: 'text.secondary' }} />
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">
+                          Email
+                        </Typography>
+                        <Typography variant="body1">{client.email}</Typography>
+                      </Box>
+                    </Box>
+
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <PhoneIcon sx={{ color: 'text.secondary' }} />
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">
+                          Phone
+                        </Typography>
+                        <Typography variant="body1">
+                          {formatPhoneNumber(client.phone_number)}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Preferences */}
+            <Grid item xs={12} md={6}>
+              <Card elevation={2}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Communication Preferences
+                  </Typography>
+                  <Divider sx={{ mb: 2 }} />
+
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                    <Chip
+                      label="Email"
+                      color={client.accept_email ? 'success' : 'default'}
+                      variant={client.accept_email ? 'filled' : 'outlined'}
+                      icon={<EmailIcon />}
+                    />
+                    <Chip
+                      label="SMS"
+                      color={client.accept_sms ? 'success' : 'default'}
+                      variant={client.accept_sms ? 'filled' : 'outlined'}
+                      icon={<PhoneIcon />}
+                    />
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Mailing Address */}
+            {client.mailing_address && (
+              <Grid item xs={12} md={6}>
+                <Card elevation={2}>
+                  <CardContent>
+                    <Typography
+                      variant="h6"
+                      gutterBottom
+                      sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                    >
+                      <LocationOnIcon color="primary" />
+                      Mailing Address
+                    </Typography>
+                    <Divider sx={{ mb: 2 }} />
+
+                    <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
+                      {client.mailing_address}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            )}
+
+            {/* Notes */}
+            {client.notes && (
+              <Grid item xs={12} md={client.mailing_address ? 6 : 12}>
+                <Card elevation={2}>
+                  <CardContent>
+                    <Typography
+                      variant="h6"
+                      gutterBottom
+                      sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                    >
+                      <NotesIcon color="primary" />
+                      Notes
+                    </Typography>
+                    <Divider sx={{ mb: 2 }} />
+
+                    <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
+                      {client.notes}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            )}
+
+            {/* Timestamps */}
+            <Grid item xs={12}>
+              <Card elevation={1} sx={{ bgcolor: 'grey.50' }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Record Information
+                  </Typography>
+                  <Divider sx={{ mb: 2 }} />
+
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="body2" color="text.secondary">
+                        Created
+                      </Typography>
+                      <Typography variant="body1">
+                        {formatDate(client.created_at)}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="body2" color="text.secondary">
+                        Last Updated
+                      </Typography>
+                      <Typography variant="body1">
+                        {formatDate(client.updated_at)}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+        </Box>
+      </Container>
+    );
+  } catch (error) {
+    console.error('Error fetching client:', error);
+    notFound();
+  }
+}

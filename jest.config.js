@@ -16,7 +16,11 @@ const customJestConfig = {
   ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '@clerk/backend/dist/runtime/browser/crypto':
+      '<rootDir>/src/lib/testing/__mocks__/crypto.js',
+    isows: '<rootDir>/src/lib/testing/__mocks__/isows.js',
   },
+  transformIgnorePatterns: ['node_modules/(?!(@supabase|@clerk|isows)/)'],
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',
     '!src/**/*.d.ts',

@@ -1,5 +1,10 @@
 import '@testing-library/jest-dom';
 
+// Mock Clerk for tests
+jest.mock('@clerk/nextjs/server', () => ({
+  auth: jest.fn(() => Promise.resolve({ userId: 'test-user-id' })),
+}));
+
 // Global test setup
 global.ResizeObserver = jest.fn().mockImplementation(() => ({
   observe: jest.fn(),
