@@ -3,7 +3,6 @@
 import {
   Box,
   Typography,
-  Grid,
   Paper,
   useTheme,
   alpha,
@@ -11,21 +10,19 @@ import {
   Avatar,
   Tooltip,
   Stack,
+  useMediaQuery,
 } from '@mui/material';
-import { format, isToday, addHours, startOfDay } from 'date-fns';
+import { format, isToday } from 'date-fns';
 import {
   generateWeekDays,
   getAppointmentColor,
   formatTime,
   isShopOpen,
-  getDurationMinutes,
   isPastDate,
   canCreateAppointment,
 } from '@/lib/utils/calendar';
 import type { Appointment } from '@/types';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import PersonIcon from '@mui/icons-material/Person';
-import LocationOnIcon from '@mui/icons-material/LocationOn';
+import AddIcon from '@mui/icons-material/Add';
 
 interface WeekViewDesktopProps {
   currentDate: Date;
@@ -36,8 +33,12 @@ interface WeekViewDesktopProps {
     close_time: string | null;
     is_closed: boolean;
   }>;
+  // eslint-disable-next-line no-unused-vars
   onAppointmentClick?: (appointment: Appointment) => void;
+  // eslint-disable-next-line no-unused-vars
   onDateClick?: (date: Date) => void;
+  // eslint-disable-next-line no-unused-vars
+  onTimeSlotClick?: (date: Date, time?: string) => void;
 }
 
 // Helper function to check if appointments overlap
@@ -62,14 +63,14 @@ function arrangeAppointments(
     let placed = false;
     for (let col = 0; col < columns.length; col++) {
       let canPlace = true;
-      for (const existingApt of columns[col]) {
+      for (const existingApt of columns[col] || []) {
         if (checkOverlap(apt, existingApt)) {
           canPlace = false;
           break;
         }
       }
       if (canPlace) {
-        columns[col].push(apt);
+        columns[col]?.push(apt);
         placed = true;
         break;
       }
@@ -99,8 +100,10 @@ export function WeekViewDesktop({
   shopHours,
   onAppointmentClick,
   onDateClick,
+  onTimeSlotClick,
 }: WeekViewDesktopProps) {
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const weekDays = generateWeekDays(currentDate);
 
   // Group appointments by date
@@ -116,9 +119,27 @@ export function WeekViewDesktop({
     {} as Record<string, Appointment[]>
   );
 
-  // Generate time slots with 30-minute intervals
-  const timeSlots = [];
-  for (let hour = 6; hour <= 21; hour++) {
+  // Generate time slots with 30-minute intervals based on shop hours
+  const timeSlots: string[] = [];
+
+  // Find the earliest open time and latest close time across all days
+  const openDays = shopHours.filter((h) => !h.is_closed);
+  const earliestHour = openDays.reduce((earliest, hours) => {
+    if (!hours.open_time) return earliest;
+    const hour = parseInt(hours.open_time.split(':')[0] || '0');
+    return Math.min(earliest, hour);
+  }, 24);
+  const latestHour = openDays.reduce((latest, hours) => {
+    if (!hours.close_time) return latest;
+    const hour = parseInt(hours.close_time.split(':')[0] || '0');
+    return Math.max(latest, hour);
+  }, 0);
+
+  // Default to 8 AM - 6 PM if no shop hours found (matching DayView behavior)
+  const gridStartHour = earliestHour === 24 ? 8 : earliestHour;
+  const gridEndHour = latestHour === 0 ? 18 : latestHour;
+
+  for (let hour = gridStartHour; hour <= gridEndHour; hour++) {
     timeSlots.push(`${hour.toString().padStart(2, '0')}:00`);
     timeSlots.push(`${hour.toString().padStart(2, '0')}:30`);
   }
@@ -126,7 +147,10 @@ export function WeekViewDesktop({
   // Current time indicator
   const now = new Date();
   const currentTimeMinutes = now.getHours() * 60 + now.getMinutes();
-  const currentTimePosition = ((currentTimeMinutes - 6 * 60) / (15 * 60)) * 100; // 6 AM to 9 PM
+  const currentTimePosition =
+    ((currentTimeMinutes - gridStartHour * 60) /
+      ((gridEndHour - gridStartHour) * 60)) *
+    100;
 
   return (
     <Box
@@ -147,7 +171,7 @@ export function WeekViewDesktop({
         {/* Time column header */}
         <Box
           sx={{
-            width: { xs: 60, md: 80 },
+            width: { xs: 80, md: 90 },
             flexShrink: 0,
             p: 2,
             borderRight: `1px solid ${theme.palette.divider}`,
@@ -226,7 +250,7 @@ export function WeekViewDesktop({
           }}
         >
           {/* Time labels */}
-          <Box sx={{ width: { xs: 60, md: 80 }, flexShrink: 0 }}>
+          <Box sx={{ width: { xs: 80, md: 90 }, flexShrink: 0 }}>
             {timeSlots.map((time, index) => (
               <Box
                 key={time}
@@ -242,11 +266,13 @@ export function WeekViewDesktop({
                       : 'none',
                 }}
               >
-                {index % 2 === 0 && (
-                  <Typography variant="caption" color="text.secondary">
-                    {formatTime(time)}
-                  </Typography>
-                )}
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ whiteSpace: 'nowrap' }}
+                >
+                  {formatTime(time)}
+                </Typography>
               </Box>
             ))}
           </Box>
@@ -279,41 +305,125 @@ export function WeekViewDesktop({
                 }}
               >
                 {/* Time slot lines */}
-                {timeSlots.map((time, index) => (
-                  <Box
-                    key={time}
-                    sx={{
-                      position: 'absolute',
-                      top: index * 40,
-                      left: 0,
-                      right: 0,
-                      height: 40,
-                      borderBottom:
-                        index % 2 === 1
-                          ? `1px solid ${theme.palette.divider}`
-                          : 'none',
-                      borderTop:
-                        index % 2 === 0
-                          ? `1px dotted ${alpha(theme.palette.divider, 0.5)}`
-                          : 'none',
-                    }}
-                  />
-                ))}
+                {timeSlots.map((time, index) => {
+                  // Check if this time slot has appointments
+                  const timeHour = parseInt(time.split(':')[0] || '0');
+                  const timeMinute = parseInt(time.split(':')[1] || '0');
+                  const slotAppointments = dayAppointments.filter((apt) => {
+                    const startHour = parseInt(
+                      apt.start_time.split(':')[0] || '0'
+                    );
+                    const startMinute = parseInt(
+                      apt.start_time.split(':')[1] || '0'
+                    );
+                    const endHour = parseInt(apt.end_time.split(':')[0] || '0');
+                    const endMinute = parseInt(
+                      apt.end_time.split(':')[1] || '0'
+                    );
+
+                    // Check if appointment overlaps with this 30-minute slot
+                    const slotStartMinutes = timeHour * 60 + timeMinute;
+                    const slotEndMinutes = slotStartMinutes + 30;
+                    const aptStartMinutes = startHour * 60 + startMinute;
+                    const aptEndMinutes = endHour * 60 + endMinute;
+
+                    return (
+                      aptStartMinutes < slotEndMinutes &&
+                      aptEndMinutes > slotStartMinutes
+                    );
+                  });
+
+                  const canCreate = canCreateAppointment(day, shopHours);
+                  const canClickTimeSlot =
+                    onTimeSlotClick &&
+                    slotAppointments.length === 0 &&
+                    canCreate;
+
+                  return (
+                    <Box
+                      key={time}
+                      sx={{
+                        position: 'absolute',
+                        top: index * 40,
+                        left: 0,
+                        right: 0,
+                        height: 40,
+                        borderBottom:
+                          index % 2 === 1
+                            ? `1px solid ${theme.palette.divider}`
+                            : 'none',
+                        borderTop:
+                          index % 2 === 0
+                            ? `1px dotted ${alpha(theme.palette.divider, 0.5)}`
+                            : 'none',
+                        cursor: canClickTimeSlot ? 'pointer' : 'default',
+                        '&:hover':
+                          canClickTimeSlot && !isMobile
+                            ? {
+                                bgcolor: alpha(
+                                  theme.palette.primary.main,
+                                  0.04
+                                ),
+                                '& .add-appointment-hint': {
+                                  opacity: 1,
+                                },
+                              }
+                            : undefined,
+                      }}
+                      onClick={() => {
+                        if (canClickTimeSlot) {
+                          onTimeSlotClick(day, time);
+                        }
+                      }}
+                    >
+                      {/* Add appointment hint for empty slots */}
+                      {canClickTimeSlot && !isMobile && (
+                        <Box
+                          className="add-appointment-hint"
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            height: '100%',
+                            gap: 0.5,
+                            opacity: 0,
+                            transition: 'opacity 0.2s',
+                            pointerEvents: 'none',
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            zIndex: 1,
+                          }}
+                        >
+                          <AddIcon fontSize="small" color="action" />
+                          <Typography variant="caption" color="text.secondary">
+                            Add appointment
+                          </Typography>
+                        </Box>
+                      )}
+                    </Box>
+                  );
+                })}
 
                 {/* Appointments */}
                 {arrangedAppointments.map((appointment) => {
                   const startHour = parseInt(
-                    appointment.start_time.split(':')[0]
+                    appointment.start_time.split(':')[0] || '0'
                   );
                   const startMinute = parseInt(
-                    appointment.start_time.split(':')[1]
+                    appointment.start_time.split(':')[1] || '0'
                   );
-                  const endHour = parseInt(appointment.end_time.split(':')[0]);
+                  const endHour = parseInt(
+                    appointment.end_time.split(':')[0] || '0'
+                  );
                   const endMinute = parseInt(
-                    appointment.end_time.split(':')[1]
+                    appointment.end_time.split(':')[1] || '0'
                   );
 
-                  const top = ((startHour - 6) * 60 + startMinute) * (40 / 30); // 40px per 30 minutes
+                  const top =
+                    ((startHour - gridStartHour) * 60 + startMinute) *
+                    (40 / 30); // 40px per 30 minutes
                   const height =
                     ((endHour - startHour) * 60 + (endMinute - startMinute)) *
                     (40 / 30);

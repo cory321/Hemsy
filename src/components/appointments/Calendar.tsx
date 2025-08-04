@@ -235,6 +235,7 @@ export function Calendar({
             shopHours={shopHours}
             onAppointmentClick={onAppointmentClick}
             onDateClick={onDateClick}
+            onTimeSlotClick={(date, time) => onDateClick?.(date, time)}
           />
         )}
         {view === 'day' && (

@@ -61,7 +61,7 @@ export function DayView({
   const isPast = isPastDate(currentDate);
   const canCreate = canCreateAppointment(currentDate, shopHours);
 
-  // Generate time slots for the day
+  // Generate time slots for the day with 30-minute increments
   const timeSlots = [];
   const shopStartHour = todayHours?.open_time
     ? parseInt(todayHours.open_time.split(':')[0] || '8')
@@ -72,13 +72,21 @@ export function DayView({
 
   for (let hour = shopStartHour; hour <= shopEndHour; hour++) {
     timeSlots.push(`${hour.toString().padStart(2, '0')}:00`);
+    if (hour < shopEndHour) {
+      // Don't add :30 slot for the last hour
+      timeSlots.push(`${hour.toString().padStart(2, '0')}:30`);
+    }
   }
 
-  // Create a map of appointments by their start time slot
+  // Create a map of appointments by their start time slot (30-minute slots)
   const appointmentsByTimeSlot = new Map<string, Appointment[]>();
   dayAppointments.forEach((appointment) => {
-    const startHour = parseInt(appointment.start_time.split(':')[0] || '0');
-    const timeSlotKey = `${startHour.toString().padStart(2, '0')}:00`;
+    const [startHour, startMinute] = appointment.start_time
+      .split(':')
+      .map(Number);
+    // Round down to nearest 30-minute slot
+    const slotMinute = startMinute < 30 ? '00' : '30';
+    const timeSlotKey = `${startHour.toString().padStart(2, '0')}:${slotMinute}`;
 
     if (!appointmentsByTimeSlot.has(timeSlotKey)) {
       appointmentsByTimeSlot.set(timeSlotKey, []);
@@ -123,7 +131,7 @@ export function DayView({
               sx={{
                 display: 'flex',
                 alignItems: 'flex-start',
-                minHeight: 60,
+                minHeight: 40, // Reduced height for 30-minute slots
                 borderBottom: `1px solid ${theme.palette.divider}`,
                 py: 1,
                 cursor:

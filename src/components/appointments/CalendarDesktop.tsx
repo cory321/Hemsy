@@ -585,6 +585,7 @@ export function CalendarDesktop({
                 shopHours={shopHours}
                 onAppointmentClick={handleAppointmentSelect}
                 onDateClick={handleDateSelect}
+                {...(onDateClick && { onTimeSlotClick: onDateClick })}
               />
             )}
             {view === 'day' && (
