@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -106,6 +107,25 @@ export function WeekViewDesktop({
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const weekDays = generateWeekDays(currentDate);
 
+  // State to track current time for the indicator
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Update current time every 5 minutes
+  useEffect(() => {
+    const interval = setInterval(
+      () => {
+        setCurrentTime(new Date());
+      },
+      5 * 60 * 1000
+    ); // 5 minutes in milliseconds
+
+    return () => {
+      if (typeof clearInterval !== 'undefined') {
+        clearInterval(interval);
+      }
+    };
+  }, []);
+
   // Group appointments by date
   const appointmentsByDate = appointments.reduce(
     (acc, appointment) => {
@@ -145,8 +165,8 @@ export function WeekViewDesktop({
   }
 
   // Current time indicator
-  const now = new Date();
-  const currentTimeMinutes = now.getHours() * 60 + now.getMinutes();
+  const currentTimeMinutes =
+    currentTime.getHours() * 60 + currentTime.getMinutes();
   const currentTimePosition =
     ((currentTimeMinutes - gridStartHour * 60) /
       ((gridEndHour - gridStartHour) * 60)) *
@@ -556,6 +576,7 @@ export function WeekViewDesktop({
                   currentTimePosition >= 0 &&
                   currentTimePosition <= 100 && (
                     <Box
+                      data-testid="current-time-indicator"
                       sx={{
                         position: 'absolute',
                         top: `${currentTimePosition}%`,

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -11,7 +12,7 @@ import {
   alpha,
   useMediaQuery,
 } from '@mui/material';
-import { format } from 'date-fns';
+import { format, isToday } from 'date-fns';
 import {
   getAppointmentColor,
   formatTime,
@@ -47,6 +48,25 @@ export function DayView({
 }: DayViewProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  // State to track current time for the indicator
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Update current time every 5 minutes
+  useEffect(() => {
+    const interval = setInterval(
+      () => {
+        setCurrentTime(new Date());
+      },
+      5 * 60 * 1000
+    ); // 5 minutes in milliseconds
+
+    return () => {
+      if (typeof clearInterval !== 'undefined') {
+        clearInterval(interval);
+      }
+    };
+  }, []);
 
   // Filter appointments for current date
   const dateStr = format(currentDate, 'yyyy-MM-dd');
@@ -94,6 +114,15 @@ export function DayView({
     appointmentsByTimeSlot.get(timeSlotKey)?.push(appointment);
   });
 
+  // Calculate current time indicator position
+  const currentHour = currentTime.getHours();
+  const currentMinute = currentTime.getMinutes();
+  const isCurrentDay = isToday(currentDate);
+
+  // Check if current time is within shop hours
+  const showCurrentTimeIndicator =
+    isCurrentDay && currentHour >= shopStartHour && currentHour <= shopEndHour;
+
   return (
     <Box>
       {/* Shop hours info */}
@@ -121,9 +150,24 @@ export function DayView({
       )}
 
       {/* Time grid with appointments */}
-      <Box>
-        {timeSlots.map((time) => {
+      <Box sx={{ position: 'relative' }}>
+        {timeSlots.map((time, index) => {
           const slotAppointments = appointmentsByTimeSlot.get(time) || [];
+          const [slotHour, slotMinute] = time.split(':').map(Number);
+
+          // Determine if current time indicator should be shown in this slot
+          const slotStartMinutes = slotHour * 60 + slotMinute;
+          const slotEndMinutes = slotStartMinutes + 30; // 30-minute slots
+          const currentTimeMinutes = currentHour * 60 + currentMinute;
+          const isCurrentTimeSlot =
+            showCurrentTimeIndicator &&
+            currentTimeMinutes >= slotStartMinutes &&
+            currentTimeMinutes < slotEndMinutes;
+
+          // Calculate position within the slot (0-100%)
+          const positionInSlot = isCurrentTimeSlot
+            ? ((currentTimeMinutes - slotStartMinutes) / 30) * 100
+            : 0;
 
           return (
             <Box
@@ -275,6 +319,32 @@ export function DayView({
                     </Box>
                   )}
               </Box>
+
+              {/* Current time indicator */}
+              {isCurrentTimeSlot && (
+                <Box
+                  data-testid="current-time-indicator"
+                  sx={{
+                    position: 'absolute',
+                    top: `${positionInSlot}%`,
+                    left: 0,
+                    right: 0,
+                    height: 2,
+                    bgcolor: 'error.main',
+                    zIndex: 5,
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      left: 70, // Position after the time label
+                      top: -4,
+                      width: 10,
+                      height: 10,
+                      borderRadius: '50%',
+                      bgcolor: 'error.main',
+                    },
+                  }}
+                />
+              )}
             </Box>
           );
         })}
