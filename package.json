@@ -1,6 +1,7 @@
 {
   "name": "threadfolio-v2",
   "version": "0.1.0",
+  "type": "module",
   "private": true,
   "description": "Mobile-first PWA for seamstresses and tailoring businesses",
   "engines": {

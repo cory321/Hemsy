@@ -62,7 +62,7 @@ describe('ClientsList', () => {
     mockGetClientsAction.mockResolvedValue(mockInitialData);
   });
 
-  it('renders initial client data', () => {
+  it('renders initial client data', async () => {
     render(
       <ClientsList
         initialData={mockInitialData}
@@ -70,13 +70,15 @@ describe('ClientsList', () => {
       />
     );
 
-    expect(screen.getByText('John Doe')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('John Doe')).toBeInTheDocument();
+    });
     expect(screen.getByText('Jane Smith')).toBeInTheDocument();
     expect(screen.getByText('john@example.com')).toBeInTheDocument();
     expect(screen.getByText('jane@example.com')).toBeInTheDocument();
   });
 
-  it('formats phone numbers correctly', () => {
+  it('formats phone numbers correctly', async () => {
     render(
       <ClientsList
         initialData={mockInitialData}
@@ -84,11 +86,13 @@ describe('ClientsList', () => {
       />
     );
 
-    expect(screen.getByText('(555) 123-4567')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('(555) 123-4567')).toBeInTheDocument();
+    });
     expect(screen.getByText('(555) 987-6543')).toBeInTheDocument();
   });
 
-  it('displays notes or dash when no notes', () => {
+  it('displays notes or dash when no notes', async () => {
     render(
       <ClientsList
         initialData={mockInitialData}
@@ -96,7 +100,9 @@ describe('ClientsList', () => {
       />
     );
 
-    expect(screen.getByText('Regular customer')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Regular customer')).toBeInTheDocument();
+    });
     expect(screen.getByText('—')).toBeInTheDocument();
   });
 
@@ -107,6 +113,10 @@ describe('ClientsList', () => {
         getClientsAction={mockGetClientsAction}
       />
     );
+
+    await waitFor(() => {
+      expect(screen.getByText('John Doe')).toBeInTheDocument();
+    });
 
     const johnRow = screen.getByText('John Doe').closest('tr');
     fireEvent.click(johnRow!);
@@ -201,13 +211,13 @@ describe('ClientsList', () => {
     expect(true).toBe(true);
   });
 
-  it('displays empty state when no clients', () => {
+  it('displays empty state when no clients', async () => {
     const emptyData = {
       ...mockInitialData,
       data: [],
       count: 0,
     };
-
+    mockGetClientsAction.mockResolvedValueOnce(emptyData);
     render(
       <ClientsList
         initialData={emptyData}
@@ -215,7 +225,9 @@ describe('ClientsList', () => {
       />
     );
 
-    expect(screen.getByText('No clients yet')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/no clients yet/i)).toBeInTheDocument();
+    });
   });
 
   it.skip('displays search-specific empty state', () => {

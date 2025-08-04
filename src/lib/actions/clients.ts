@@ -141,3 +141,20 @@ export async function deleteClient(clientId: string): Promise<void> {
     throw new Error(`Failed to delete client: ${error.message}`);
   }
 }
+
+export async function getAllClients(): Promise<Tables<'clients'>[]> {
+  const { shop } = await ensureUserAndShop();
+  const supabase = await createSupabaseClient();
+
+  const { data, error } = await supabase
+    .from('clients')
+    .select('*')
+    .eq('shop_id', shop.id)
+    .order('first_name', { ascending: true });
+
+  if (error) {
+    throw new Error(`Failed to fetch clients: ${error.message}`);
+  }
+
+  return data || [];
+}

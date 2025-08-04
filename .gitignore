@@ -59,4 +59,4 @@ Thumbs.db
 
 # Temporary folders
 tmp/
-temp/
+temp/.mcp.json

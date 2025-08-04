@@ -1,5 +1,29 @@
 import '@testing-library/jest-dom';
 
+// Polyfill TextEncoder/TextDecoder for Node.js environment
+import { TextEncoder, TextDecoder } from 'util';
+global.TextEncoder = TextEncoder;
+global.TextDecoder = TextDecoder;
+
+// Polyfill Request/Response for Node.js environment
+if (typeof global.Request === 'undefined') {
+  global.Request = class Request {
+    constructor(input, init) {
+      this.url = input;
+      this.init = init;
+    }
+  };
+}
+
+if (typeof global.Response === 'undefined') {
+  global.Response = class Response {
+    constructor(body, init) {
+      this.body = body;
+      this.init = init;
+    }
+  };
+}
+
 // Mock Clerk for tests
 jest.mock('@clerk/nextjs/server', () => ({
   auth: jest.fn(() => Promise.resolve({ userId: 'test-user-id' })),

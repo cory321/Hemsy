@@ -27,11 +27,17 @@ export async function ensureUserAndShop(): Promise<UserWithShop> {
   const supabase = await createSupabaseClient();
 
   // First, try to get the user
-  const { data: userData, error: userError } = await supabase
+  let userData: Tables<'users'> | null;
+  let userError: any;
+
+  const userResult = await supabase
     .from('users')
     .select('*')
     .eq('clerk_user_id', userId)
     .maybeSingle();
+
+  userData = userResult.data;
+  userError = userResult.error;
 
   // If user doesn't exist, create them
   if (!userData) {
@@ -67,11 +73,17 @@ export async function ensureUserAndShop(): Promise<UserWithShop> {
   }
 
   // Now check for the shop
-  const { data: shopData, error: shopError } = await supabase
+  let shopData: Tables<'shops'> | null;
+  let shopError: any;
+
+  const shopResult = await supabase
     .from('shops')
     .select('*')
     .eq('owner_user_id', userData!.id)
     .maybeSingle();
+
+  shopData = shopResult.data;
+  shopError = shopResult.error;
 
   // If shop doesn't exist, create it
   if (!shopData) {

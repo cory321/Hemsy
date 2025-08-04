@@ -115,7 +115,7 @@ export interface Payment {
 export interface Appointment {
   id: string;
   shop_id: string;
-  client_id?: string;
+  client_id: string;
   order_id?: string;
   title: string;
   date: string;
@@ -126,6 +126,8 @@ export interface Appointment {
   notes?: string;
   created_at: string;
   updated_at: string;
+  // Joined data
+  client?: Client;
 }
 
 // UI/UX types

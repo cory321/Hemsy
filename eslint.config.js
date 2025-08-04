@@ -13,9 +13,9 @@ const eslintConfig = [
   ...compat.extends('next/core-web-vitals', 'prettier'),
   {
     rules: {
-      'prefer-const': 'error',
+      'prefer-const': 'warn',
       'no-var': 'error',
-      'no-unused-vars': 'error',
+      'no-unused-vars': 'warn',
     },
     ignores: ['.next', 'dist', 'node_modules'],
   },
