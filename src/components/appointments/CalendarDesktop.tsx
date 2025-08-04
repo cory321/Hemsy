@@ -10,14 +10,8 @@ import {
   Typography,
   Button,
   useTheme,
-  List,
-  ListItemButton,
-  ListItemText,
-  Chip,
   Grid,
   Stack,
-  Card,
-  CardContent,
   Tooltip,
   FormControl,
   InputLabel,
@@ -26,7 +20,6 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
-  alpha,
 } from '@mui/material';
 import CalendarViewMonthIcon from '@mui/icons-material/CalendarViewMonth';
 import ViewWeekIcon from '@mui/icons-material/ViewWeek';
@@ -37,12 +30,9 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import TodayIcon from '@mui/icons-material/Today';
 
 import FilterListIcon from '@mui/icons-material/FilterList';
-import EventIcon from '@mui/icons-material/Event';
-import PersonIcon from '@mui/icons-material/Person';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import ViewAgendaIcon from '@mui/icons-material/ViewAgenda';
 import SettingsIcon from '@mui/icons-material/Settings';
+import ViewAgendaIcon from '@mui/icons-material/ViewAgenda';
 import {
   format,
   addMonths,
@@ -51,15 +41,8 @@ import {
   subWeeks,
   addDays,
   subDays,
-  isSameMonth,
-  isToday,
 } from 'date-fns';
-import {
-  generateMonthDays,
-  generateWeekDays,
-  isPastDate,
-  isShopOpen,
-} from '@/lib/utils/calendar';
+import { generateWeekDays } from '@/lib/utils/calendar';
 import { MonthViewDesktop } from './views/MonthViewDesktop';
 import { WeekViewDesktop } from './views/WeekViewDesktop';
 import { DayView } from './views/DayView';
@@ -92,9 +75,6 @@ export function CalendarDesktop({
   const theme = useTheme();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<CalendarView>('month');
-  const [selectedAppointment, setSelectedAppointment] =
-    useState<Appointment | null>(null);
-  const [showSidePanel, setShowSidePanel] = useState(true);
   const [filterType, setFilterType] = useState<string>('all');
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
 
@@ -103,19 +83,6 @@ export function CalendarDesktop({
     if (filterType === 'all') return appointments;
     return appointments.filter((apt) => apt.type === filterType);
   }, [appointments, filterType]);
-
-  // Get upcoming appointments for sidebar
-  const upcomingAppointments = useMemo(() => {
-    const today = new Date();
-    return appointments
-      .filter((apt) => new Date(apt.date) >= today)
-      .sort(
-        (a, b) =>
-          a.date.localeCompare(b.date) ||
-          a.start_time.localeCompare(b.start_time)
-      )
-      .slice(0, 5);
-  }, [appointments]);
 
   // Navigation handlers
   const handlePrevious = useCallback(() => {
@@ -164,7 +131,6 @@ export function CalendarDesktop({
   };
 
   const handleAppointmentSelect = (appointment: Appointment) => {
-    setSelectedAppointment(appointment);
     onAppointmentClick?.(appointment);
   };
 
@@ -194,121 +160,6 @@ export function CalendarDesktop({
         return '';
     }
   }, [currentDate, view]);
-
-  // Mini calendar for navigation
-  const renderMiniCalendar = () => {
-    const days = generateMonthDays(currentDate);
-    const weekDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-
-    return (
-      <Card sx={{ mb: 2, height: 'auto', overflow: 'visible' }}>
-        <CardContent>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              mb: 1,
-            }}
-          >
-            <Typography variant="subtitle2">
-              {format(currentDate, 'MMMM yyyy')}
-            </Typography>
-            <Box>
-              <IconButton
-                size="small"
-                onClick={() => setCurrentDate(subMonths(currentDate, 1))}
-              >
-                <ChevronLeftIcon fontSize="small" />
-              </IconButton>
-              <IconButton
-                size="small"
-                onClick={() => setCurrentDate(addMonths(currentDate, 1))}
-              >
-                <ChevronRightIcon fontSize="small" />
-              </IconButton>
-            </Box>
-          </Box>
-          <Grid container spacing={0.5}>
-            {weekDays.map((day) => (
-              <Grid item xs key={day} sx={{ textAlign: 'center' }}>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  fontWeight="bold"
-                >
-                  {day}
-                </Typography>
-              </Grid>
-            ))}
-            {days.map((day, index) => {
-              const hasAppointments = appointments.some(
-                (apt) => apt.date === format(day, 'yyyy-MM-dd')
-              );
-              const isPast = isPastDate(day);
-              const isOpen = isShopOpen(day, shopHours);
-
-              return (
-                <Grid item xs key={index}>
-                  <Button
-                    size="small"
-                    fullWidth
-                    onClick={() => handleDateSelect(day)}
-                    sx={{
-                      minWidth: 0,
-                      p: 0.5,
-                      fontSize: '0.75rem',
-                      bgcolor: isPast
-                        ? alpha(theme.palette.action.disabled, 0.08)
-                        : !isOpen
-                          ? alpha(theme.palette.action.disabled, 0.02)
-                          : isToday(day)
-                            ? 'primary.main'
-                            : 'transparent',
-                      color: isPast
-                        ? 'text.disabled'
-                        : isToday(day)
-                          ? 'primary.contrastText'
-                          : isSameMonth(day, currentDate)
-                            ? 'text.primary'
-                            : 'text.disabled',
-                      '&:hover': {
-                        bgcolor:
-                          isPast || !isOpen
-                            ? alpha(theme.palette.action.disabled, 0.12)
-                            : isToday(day)
-                              ? 'primary.dark'
-                              : 'action.hover',
-                      },
-                      position: 'relative',
-                    }}
-                  >
-                    {format(day, 'd')}
-                    {hasAppointments && (
-                      <Box
-                        sx={{
-                          position: 'absolute',
-                          bottom: 2,
-                          left: '50%',
-                          transform: 'translateX(-50%)',
-                          width: 4,
-                          height: 4,
-                          borderRadius: '50%',
-                          bgcolor: isToday(day)
-                            ? 'primary.contrastText'
-                            : 'primary.main',
-                        }}
-                      />
-                    )}
-                  </Button>
-                </Grid>
-              );
-            })}
-          </Grid>
-        </CardContent>
-      </Card>
-    );
-  };
 
   return (
     <Box
@@ -410,14 +261,6 @@ export function CalendarDesktop({
               >
                 Today
               </Button>
-              <Tooltip title="Toggle side panel">
-                <IconButton
-                  onClick={() => setShowSidePanel(!showSidePanel)}
-                  color={showSidePanel ? 'primary' : 'default'}
-                >
-                  <ViewAgendaIcon />
-                </IconButton>
-              </Tooltip>
               <Tooltip title="Calendar settings">
                 <IconButton
                   onClick={() => setSettingsDialogOpen(true)}
@@ -550,8 +393,7 @@ export function CalendarDesktop({
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
-            pr: showSidePanel ? 2 : 0,
-            transition: 'padding 0.3s ease-in-out',
+            pr: 0,
             minWidth: 0, // Prevent flex items from overflowing
           }}
         >
@@ -604,123 +446,6 @@ export function CalendarDesktop({
               />
             )}
           </Paper>
-        </Box>
-
-        {/* Side Panel */}
-        <Box
-          sx={{
-            width: showSidePanel ? 320 : 0,
-            transition: 'width 0.3s ease-in-out',
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
-            minHeight: 0,
-          }}
-        >
-          {showSidePanel && (
-            <Paper
-              elevation={0}
-              sx={{
-                width: 320,
-                minHeight: '100%',
-                overflowY: 'auto',
-                p: 2,
-                borderRadius: 2,
-                border: `1px solid ${theme.palette.divider}`,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 2,
-              }}
-            >
-              {/* Mini Calendar */}
-              {renderMiniCalendar()}
-
-              {/* Selected Appointment Details */}
-              {selectedAppointment && (
-                <Card>
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      Appointment Details
-                    </Typography>
-                    <Stack spacing={1}>
-                      <Box
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                      >
-                        <EventIcon fontSize="small" color="action" />
-                        <Typography variant="body2">
-                          {selectedAppointment.title}
-                        </Typography>
-                      </Box>
-                      <Box
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                      >
-                        <AccessTimeIcon fontSize="small" color="action" />
-                        <Typography variant="body2">
-                          {format(
-                            new Date(selectedAppointment.date),
-                            'MMM d, yyyy'
-                          )}{' '}
-                          at {selectedAppointment.start_time}
-                        </Typography>
-                      </Box>
-                      {selectedAppointment.client && (
-                        <Box
-                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                        >
-                          <PersonIcon fontSize="small" color="action" />
-                          <Typography variant="body2">
-                            {selectedAppointment.client.first_name}{' '}
-                            {selectedAppointment.client.last_name}
-                          </Typography>
-                        </Box>
-                      )}
-                      <Chip
-                        label={selectedAppointment.type.replace('_', ' ')}
-                        size="small"
-                        sx={{ alignSelf: 'flex-start' }}
-                      />
-                    </Stack>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Upcoming Appointments */}
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Upcoming Appointments
-                  </Typography>
-                  <List dense disablePadding>
-                    {upcomingAppointments.map((apt) => (
-                      <ListItemButton
-                        key={apt.id}
-                        onClick={() => handleAppointmentSelect(apt)}
-                        selected={selectedAppointment?.id === apt.id}
-                        sx={{ borderRadius: 1, mb: 0.5 }}
-                      >
-                        <ListItemText
-                          primary={apt.title}
-                          secondary={
-                            <>
-                              {format(new Date(apt.date), 'MMM d')} at{' '}
-                              {apt.start_time}
-                              {apt.client &&
-                                ` • ${apt.client.first_name} ${apt.client.last_name}`}
-                            </>
-                          }
-                        />
-                      </ListItemButton>
-                    ))}
-                    {upcomingAppointments.length === 0 && (
-                      <Typography variant="body2" color="text.secondary">
-                        No upcoming appointments
-                      </Typography>
-                    )}
-                  </List>
-                </CardContent>
-              </Card>
-            </Paper>
-          )}
         </Box>
       </Box>
 

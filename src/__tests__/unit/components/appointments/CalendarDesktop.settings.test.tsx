@@ -142,7 +142,7 @@ describe('Calendar Settings Modal', () => {
       });
     });
 
-    it('positions the settings button between toggle panel and refresh buttons', () => {
+    it('displays settings and refresh buttons in the correct order', () => {
       const mockRefresh = jest.fn();
       render(
         <CalendarDesktop
@@ -152,12 +152,12 @@ describe('Calendar Settings Modal', () => {
         />
       );
 
-      const toggleButton = screen.getByLabelText('Toggle side panel');
       const settingsButton = screen.getByLabelText('Calendar settings');
       const refreshButton = screen.getByLabelText('Refresh');
 
       // Get parent container
-      const actionButtonsContainer = toggleButton.parentElement?.parentElement;
+      const actionButtonsContainer =
+        settingsButton.parentElement?.parentElement;
       expect(actionButtonsContainer).toBeInTheDocument();
 
       // Check that all buttons are siblings in the correct order
@@ -166,11 +166,10 @@ describe('Calendar Settings Modal', () => {
         btn.getAttribute('aria-label')
       );
 
-      const toggleIndex = buttonLabels.indexOf('Toggle side panel');
       const settingsIndex = buttonLabels.indexOf('Calendar settings');
       const refreshIndex = buttonLabels.indexOf('Refresh');
 
-      expect(settingsIndex).toBeGreaterThan(toggleIndex);
+      // Settings should be before refresh
       expect(settingsIndex).toBeLessThan(refreshIndex);
     });
   });

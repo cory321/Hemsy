@@ -59,4 +59,7 @@ Thumbs.db
 
 # Temporary folders
 tmp/
-temp/.mcp.json
+temp/
+
+# MCP configuration
+.mcp.json

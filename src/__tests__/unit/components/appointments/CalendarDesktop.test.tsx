@@ -237,34 +237,6 @@ describe('CalendarDesktop', () => {
     );
   });
 
-  it('toggles side panel visibility', async () => {
-    render(
-      <CalendarDesktop
-        appointments={mockAppointments}
-        shopHours={mockShopHours}
-        {...mockHandlers}
-      />
-    );
-
-    // Side panel should be visible by default
-    expect(screen.getByText('Upcoming Appointments')).toBeInTheDocument();
-
-    // Find and click the toggle button (it's in a tooltip)
-    // The toggle button is after the Today button and before the refresh button
-    const actionButtons = screen.getByRole('button', { name: /today/i })
-      .parentElement?.parentElement;
-    if (actionButtons) {
-      const toggleButton = within(actionButtons).getAllByRole('button')[1]; // Second button in the stack
-      fireEvent.click(toggleButton);
-      // Side panel should be hidden
-      await waitFor(() => {
-        expect(
-          screen.queryByText('Upcoming Appointments')
-        ).not.toBeInTheDocument();
-      });
-    }
-  });
-
   it('displays correct appointment counts in quick stats', () => {
     const todayAppointments = [
       ...mockAppointments,
