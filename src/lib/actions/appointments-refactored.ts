@@ -21,7 +21,7 @@ const updateAppointmentSchema = createAppointmentSchema
   .extend({
     id: z.string().uuid(),
     status: z
-      .enum(['scheduled', 'confirmed', 'completed', 'cancelled', 'no_show'])
+      .enum(['pending', 'declined', 'confirmed', 'canceled', 'no_show'])
       .optional(),
     originalDate: z.string().optional(), // For tracking date changes
   })
@@ -86,7 +86,7 @@ export async function getAppointmentsByTimeRange(
     .eq('shop_id', shopId)
     .gte('date', startDate)
     .lte('date', endDate)
-    .not('status', 'in', '(cancelled,no_show)')
+    .not('status', 'in', '(canceled,no_show)')
     .order('date', { ascending: true })
     .order('start_time', { ascending: true });
 
@@ -445,7 +445,7 @@ export async function getClientAppointments(
     .order('start_time', { ascending: false });
 
   if (!includeCompleted) {
-    query = query.in('status', ['scheduled', 'confirmed']);
+    query = query.in('status', ['pending', 'confirmed']);
   }
 
   const { data: appointments, error } = await query;

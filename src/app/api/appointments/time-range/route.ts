@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
       .eq('shop_id', shopId)
       .gte('date', startDate)
       .lte('date', endDate)
-      .not('status', 'in', '(cancelled,no_show)')
+      .not('status', 'in', '(canceled,no_show)')
       .order('date', { ascending: true })
       .order('start_time', { ascending: true });
 
@@ -235,7 +235,7 @@ export async function POST(request: NextRequest) {
             .eq('shop_id', range.shopId)
             .gte('date', range.startDate)
             .lte('date', range.endDate)
-            .not('status', 'in', '(cancelled,no_show)')
+            .not('status', 'in', '(canceled,no_show)')
             .order('date', { ascending: true })
             .order('start_time', { ascending: true });
 

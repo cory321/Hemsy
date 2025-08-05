@@ -24,6 +24,7 @@ import {
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import PersonIcon from '@mui/icons-material/Person';
 import AddIcon from '@mui/icons-material/Add';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import type { Appointment } from '@/types';
 
 interface DayViewProps {
@@ -101,9 +102,9 @@ export function DayView({
   // Create a map of appointments by their start time slot (30-minute slots)
   const appointmentsByTimeSlot = new Map<string, Appointment[]>();
   dayAppointments.forEach((appointment) => {
-    const [startHour, startMinute] = appointment.start_time
-      .split(':')
-      .map(Number);
+    const timeParts = appointment.start_time.split(':');
+    const startHour = parseInt(timeParts[0] || '0', 10);
+    const startMinute = parseInt(timeParts[1] || '0', 10);
     // Round down to nearest 30-minute slot
     const slotMinute = startMinute < 30 ? '00' : '30';
     const timeSlotKey = `${startHour.toString().padStart(2, '0')}:${slotMinute}`;
@@ -153,7 +154,9 @@ export function DayView({
       <Box sx={{ position: 'relative' }}>
         {timeSlots.map((time, index) => {
           const slotAppointments = appointmentsByTimeSlot.get(time) || [];
-          const [slotHour, slotMinute] = time.split(':').map(Number);
+          const slotTimeParts = time.split(':');
+          const slotHour = parseInt(slotTimeParts[0] || '0', 10);
+          const slotMinute = parseInt(slotTimeParts[1] || '0', 10);
 
           // Determine if current time indicator should be shown in this slot
           const slotStartMinutes = slotHour * 60 + slotMinute;
@@ -230,13 +233,13 @@ export function DayView({
                       key={appointment.id}
                       elevation={2}
                       sx={{
-                        bgcolor: getAppointmentColor(appointment.type),
-                        color: 'white',
-                        p: 2,
+                        overflow: 'hidden',
                         mb: 1,
                         cursor: 'pointer',
+                        transition: 'all 0.2s',
                         '&:hover': {
                           boxShadow: theme.shadows[4],
+                          transform: 'translateY(-1px)',
                         },
                       }}
                       onClick={(e) => {
@@ -244,37 +247,78 @@ export function DayView({
                         onAppointmentClick?.(appointment);
                       }}
                     >
-                      <Typography variant="subtitle2" fontWeight="bold">
-                        {appointment.client
-                          ? `${appointment.client.first_name} ${appointment.client.last_name}`
-                          : 'No Client'}
-                      </Typography>
-
+                      {/* Colored header bar */}
                       <Box
                         sx={{
+                          bgcolor: getAppointmentColor(appointment.type),
+                          color: 'white',
+                          px: 2,
+                          py: 1,
                           display: 'flex',
                           alignItems: 'center',
-                          gap: 0.5,
-                          mt: 0.5,
+                          justifyContent: 'space-between',
                         }}
                       >
-                        <AccessTimeIcon sx={{ fontSize: 16 }} />
-                        <Typography variant="caption">
-                          {formatTime(appointment.start_time)} -{' '}
-                          {formatTime(appointment.end_time)} (
-                          {formatDuration(duration)})
+                        <Typography
+                          variant="body2"
+                          fontWeight="bold"
+                          sx={{ textTransform: 'capitalize' }}
+                        >
+                          {appointment.type.replace('_', ' ')}
                         </Typography>
+                        {appointment.status === 'confirmed' && (
+                          <CheckCircleIcon sx={{ fontSize: 18 }} />
+                        )}
                       </Box>
 
-                      <Chip
-                        label={appointment.type.replace('_', ' ')}
-                        size="small"
-                        sx={{
-                          mt: 1,
-                          bgcolor: alpha(theme.palette.common.white, 0.2),
-                          color: 'white',
-                        }}
-                      />
+                      {/* White content area */}
+                      <Box sx={{ p: 2, bgcolor: 'background.paper' }}>
+                        <Typography
+                          variant="subtitle1"
+                          fontWeight="medium"
+                          gutterBottom
+                          sx={{ color: 'text.primary' }}
+                        >
+                          {appointment.client
+                            ? `${appointment.client.first_name} ${appointment.client.last_name}`
+                            : 'No Client'}
+                        </Typography>
+
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.5,
+                            color: 'text.secondary',
+                          }}
+                        >
+                          <AccessTimeIcon sx={{ fontSize: 16 }} />
+                          <Typography variant="body2">
+                            {formatTime(appointment.start_time)} -{' '}
+                            {formatTime(appointment.end_time)}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{ color: 'text.secondary' }}
+                          >
+                            ({formatDuration(duration)})
+                          </Typography>
+                        </Box>
+
+                        {/* Status text if confirmed */}
+                        {appointment.status === 'confirmed' && (
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: 'success.main',
+                              display: 'block',
+                              mt: 0.5,
+                            }}
+                          >
+                            ✓ Client has confirmed this appointment
+                          </Typography>
+                        )}
+                      </Box>
                     </Paper>
                   );
                 })}

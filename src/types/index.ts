@@ -121,7 +121,7 @@ export interface Appointment {
   start_time: string;
   end_time: string;
   type: 'consultation' | 'fitting' | 'pickup' | 'delivery' | 'other';
-  status: 'scheduled' | 'confirmed' | 'completed' | 'cancelled' | 'no_show';
+  status: 'pending' | 'declined' | 'confirmed' | 'canceled' | 'no_show';
   notes?: string;
   created_at: string;
   updated_at: string;

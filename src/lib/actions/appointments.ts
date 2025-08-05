@@ -19,7 +19,14 @@ const appointmentSchema = z.object({
 const updateAppointmentSchema = appointmentSchema.partial().extend({
   id: z.string().uuid(),
   status: z
-    .enum(['scheduled', 'confirmed', 'completed', 'cancelled', 'no_show'])
+    .enum([
+      'pending',
+      'declined',
+      'confirmed',
+      'canceled',
+      'no_show',
+      'completed',
+    ])
     .optional(),
 });
 
@@ -175,13 +182,17 @@ export async function createAppointment(
   if (hoursError) throw new Error('Failed to check working hours');
   if (!hoursCheck) throw new Error('Appointment must be within working hours');
 
-  // Create appointment
+  // Create appointment with pending status
+  const insertData = {
+    shop_id: shopData.id,
+    ...validatedData,
+    status: 'pending' as string, // New appointments start as pending
+    notes: validatedData.notes || null, // Ensure notes is null if undefined
+  };
+
   const { data, error } = await supabase
     .from('appointments')
-    .insert({
-      shop_id: shopData.id,
-      ...validatedData,
-    })
+    .insert(insertData)
     .select()
     .single();
 
@@ -205,6 +216,17 @@ export async function updateAppointment(
   const validatedData = updateAppointmentSchema.parse(values);
   const { id, ...updateData } = validatedData;
 
+  // Remove undefined values from updateData to match Supabase types
+  const cleanUpdateData = Object.entries(updateData).reduce(
+    (acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = value === null ? null : value;
+      }
+      return acc;
+    },
+    {} as Record<string, any>
+  );
+
   const supabase = await createClient();
 
   // Get current appointment to check ownership
@@ -217,11 +239,16 @@ export async function updateAppointment(
   if (fetchError) throw new Error('Failed to fetch appointment');
 
   // If time/date is being updated, check conflicts
-  if (updateData.date || updateData.start_time || updateData.end_time) {
-    const checkDate = updateData.date || currentAppointment.date;
+  if (
+    cleanUpdateData.date ||
+    cleanUpdateData.start_time ||
+    cleanUpdateData.end_time
+  ) {
+    const checkDate = cleanUpdateData.date || currentAppointment.date;
     const checkStartTime =
-      updateData.start_time || currentAppointment.start_time;
-    const checkEndTime = updateData.end_time || currentAppointment.end_time;
+      cleanUpdateData.start_time || currentAppointment.start_time;
+    const checkEndTime =
+      cleanUpdateData.end_time || currentAppointment.end_time;
 
     const { data: conflictCheck, error: conflictError } = await supabase.rpc(
       'check_appointment_conflict',
@@ -257,7 +284,7 @@ export async function updateAppointment(
   // Update appointment
   const { data, error } = await supabase
     .from('appointments')
-    .update(updateData)
+    .update(cleanUpdateData)
     .eq('id', id)
     .select()
     .single();
@@ -273,12 +300,26 @@ export async function updateAppointment(
 
 // Cancel appointment
 export async function cancelAppointment(id: string) {
-  return updateAppointment({ id, status: 'cancelled' });
+  return updateAppointment({ id, status: 'canceled' });
 }
 
-// Complete appointment
-export async function completeAppointment(id: string) {
-  return updateAppointment({ id, status: 'completed' });
+// Complete appointment - REMOVED
+// Appointments no longer have a 'completed' status
+// They are considered complete when their end time has passed
+
+// Confirm appointment
+export async function confirmAppointment(id: string) {
+  return updateAppointment({ id, status: 'confirmed' });
+}
+
+// Decline appointment
+export async function declineAppointment(id: string) {
+  return updateAppointment({ id, status: 'declined' });
+}
+
+// Mark appointment as no-show
+export async function markNoShowAppointment(id: string) {
+  return updateAppointment({ id, status: 'no_show' });
 }
 
 // Get shop hours

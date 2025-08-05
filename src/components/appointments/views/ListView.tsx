@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import {
   format,
   parseISO,
@@ -236,18 +237,29 @@ export function ListView({ appointments, onAppointmentClick }: ListViewProps) {
                       }}
                     />
 
-                    {appointment.status !== 'scheduled' && (
+                    {appointment.status === 'confirmed' ? (
+                      <Chip
+                        icon={<CheckCircleIcon sx={{ fontSize: 16 }} />}
+                        label="Client has confirmed this appointment"
+                        size="small"
+                        sx={{
+                          bgcolor: '#4caf50',
+                          color: 'white',
+                        }}
+                      />
+                    ) : (
                       <Chip
                         label={appointment.status}
                         size="small"
                         variant="outlined"
                         color={
-                          appointment.status === 'completed'
-                            ? 'success'
-                            : appointment.status === 'cancelled'
-                              ? 'error'
-                              : appointment.status === 'confirmed'
-                                ? 'primary'
+                          appointment.status === 'canceled' ||
+                          appointment.status === 'declined'
+                            ? 'error'
+                            : appointment.status === 'pending'
+                              ? 'warning'
+                              : appointment.status === 'no_show'
+                                ? 'warning'
                                 : 'default'
                         }
                       />

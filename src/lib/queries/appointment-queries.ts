@@ -266,7 +266,7 @@ export function useCreateAppointment(
           start_time: newAppointment.startTime,
           end_time: newAppointment.endTime,
           type: newAppointment.type,
-          status: 'scheduled',
+          status: 'confirmed',
           ...(newAppointment.notes && { notes: newAppointment.notes }),
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),

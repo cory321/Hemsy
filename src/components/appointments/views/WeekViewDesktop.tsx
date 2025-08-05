@@ -18,12 +18,15 @@ import {
   generateWeekDays,
   getAppointmentColor,
   formatTime,
+  formatDuration,
+  getDurationMinutes,
   isShopOpen,
   isPastDate,
   canCreateAppointment,
 } from '@/lib/utils/calendar';
 import type { Appointment } from '@/types';
 import AddIcon from '@mui/icons-material/Add';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 interface WeekViewDesktopProps {
   currentDate: Date;
@@ -492,13 +495,12 @@ export function WeekViewDesktop({
                           left: `${left}%`,
                           width: `calc(${width}% - 4px)`,
                           height: `${Math.max(height, 30)}px`,
-                          bgcolor: getAppointmentColor(appointment.type),
-                          color: 'white',
-                          p: 1,
                           cursor: 'pointer',
                           overflow: 'hidden',
                           zIndex: 2,
                           transition: 'all 0.2s',
+                          display: 'flex',
+                          flexDirection: 'column',
                           '&:hover': {
                             zIndex: 3,
                             transform: 'scale(1.02)',
@@ -507,17 +509,53 @@ export function WeekViewDesktop({
                         }}
                         onClick={() => onAppointmentClick?.(appointment)}
                       >
-                        <Stack spacing={0.5}>
-                          <Typography variant="caption" fontWeight="bold">
+                        {/* Colored header strip */}
+                        <Box
+                          sx={{
+                            bgcolor: getAppointmentColor(appointment.type),
+                            color: 'white',
+                            px: 1,
+                            py: 0.5,
+                            minHeight: 24,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            flexShrink: 0,
+                          }}
+                        >
+                          <Typography
+                            variant="caption"
+                            fontWeight="bold"
+                            sx={{
+                              fontSize: '0.7rem',
+                              lineHeight: 1.2,
+                            }}
+                          >
                             {formatTime(appointment.start_time)}
                           </Typography>
+                          {appointment.status === 'confirmed' && (
+                            <CheckCircleIcon sx={{ fontSize: 12, ml: 0.5 }} />
+                          )}
+                        </Box>
+
+                        {/* White content area */}
+                        <Box
+                          sx={{
+                            flex: 1,
+                            bgcolor: 'background.paper',
+                            p: 1,
+                            overflow: 'hidden',
+                          }}
+                        >
                           <Typography
                             variant="body2"
                             fontWeight="medium"
                             sx={{
+                              color: 'text.primary',
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
                               whiteSpace: 'nowrap',
+                              fontSize: height < 60 ? '0.75rem' : '0.875rem',
                             }}
                           >
                             {appointment.client
@@ -525,18 +563,42 @@ export function WeekViewDesktop({
                               : 'No Client'}
                           </Typography>
 
-                          {height > 80 && (
-                            <Chip
-                              label={appointment.type.replace('_', ' ')}
-                              size="small"
+                          {/* Show type badge only if there's enough height */}
+                          {height > 60 && (
+                            <Typography
+                              variant="caption"
                               sx={{
-                                height: 20,
-                                bgcolor: alpha(theme.palette.common.white, 0.2),
-                                color: 'white',
+                                color: 'text.secondary',
+                                fontSize: '0.7rem',
+                                textTransform: 'capitalize',
+                                display: 'block',
+                                mt: 0.5,
                               }}
-                            />
+                            >
+                              {appointment.type.replace('_', ' ')}
+                            </Typography>
                           )}
-                        </Stack>
+
+                          {/* Show duration only if there's enough height */}
+                          {height > 80 && (
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color: 'text.secondary',
+                                fontSize: '0.65rem',
+                                display: 'block',
+                                mt: 0.25,
+                              }}
+                            >
+                              {formatDuration(
+                                getDurationMinutes(
+                                  appointment.start_time,
+                                  appointment.end_time
+                                )
+                              )}
+                            </Typography>
+                          )}
+                        </Box>
                       </Paper>
                     </Tooltip>
                   );
