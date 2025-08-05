@@ -32,8 +32,7 @@ import EventIcon from '@mui/icons-material/Event';
 import EmailIcon from '@mui/icons-material/Email';
 import SmsIcon from '@mui/icons-material/Sms';
 import CloseIcon from '@mui/icons-material/Close';
-import ThumbUpIcon from '@mui/icons-material/ThumbUp';
-import ThumbDownIcon from '@mui/icons-material/ThumbDown';
+
 import PersonOffIcon from '@mui/icons-material/PersonOff';
 import SaveIcon from '@mui/icons-material/Save';
 import NotesIcon from '@mui/icons-material/Notes';
@@ -42,8 +41,6 @@ import { format, parseISO } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import {
   cancelAppointment,
-  confirmAppointment,
-  declineAppointment,
   markNoShowAppointment,
   updateAppointment,
 } from '@/lib/actions/appointments';
@@ -232,40 +229,6 @@ export function AppointmentDetailsDialog({
     setShowEditConfirm(false);
     // Pass reschedule flag to the edit handler
     onEdit(appointment, true);
-  };
-
-  const handleConfirmAppointment = async () => {
-    setError(null);
-    setLoading(true);
-
-    try {
-      await confirmAppointment(appointment.id);
-      router.refresh();
-      onClose();
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Failed to confirm appointment'
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeclineAppointment = async () => {
-    setError(null);
-    setLoading(true);
-
-    try {
-      await declineAppointment(appointment.id);
-      router.refresh();
-      onClose();
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Failed to decline appointment'
-      );
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleMarkNoShow = async () => {
@@ -737,34 +700,9 @@ export function AppointmentDetailsDialog({
           </Button>
 
           <Box sx={{ display: 'flex', gap: 1 }}>
-            {/* Actions for pending appointments */}
-            {appointment.status === 'pending' && (
-              <>
-                <Button
-                  variant="outlined"
-                  color="success"
-                  startIcon={<ThumbUpIcon />}
-                  onClick={handleConfirmAppointment}
-                  disabled={loading || updateMutation.isPending}
-                  sx={{ minWidth: 'auto' }}
-                >
-                  Confirm
-                </Button>
-                <Button
-                  variant="outlined"
-                  color="error"
-                  startIcon={<ThumbDownIcon />}
-                  onClick={handleDeclineAppointment}
-                  disabled={loading || updateMutation.isPending}
-                  sx={{ minWidth: 'auto' }}
-                >
-                  Decline
-                </Button>
-              </>
-            )}
-
-            {/* Actions for confirmed appointments */}
-            {appointment.status === 'confirmed' && (
+            {/* Actions for pending and confirmed appointments */}
+            {(appointment.status === 'pending' ||
+              appointment.status === 'confirmed') && (
               <>
                 <Button
                   variant="outlined"

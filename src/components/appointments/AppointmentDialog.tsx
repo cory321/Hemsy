@@ -16,6 +16,10 @@ import {
   Alert,
   CircularProgress,
   FormHelperText,
+  FormControlLabel,
+  Checkbox,
+  Typography,
+  Divider,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -414,6 +418,76 @@ export function AppointmentDialog({
               }
             />
           )}
+
+          {/* Send appointment reminders section - Always visible */}
+          <Divider sx={{ my: 1.5 }} />
+          <Box>
+            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500 }}>
+              Send appointment reminders
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={selectedClient?.accept_email || false}
+                    disabled={!selectedClient || !selectedClient.accept_email}
+                    size="small"
+                  />
+                }
+                label={
+                  <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                    <Typography variant="body2" sx={{ lineHeight: 1.2 }}>
+                      Email
+                    </Typography>
+                    {selectedClient && !selectedClient.accept_email && (
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ fontSize: '0.7rem', lineHeight: 1 }}
+                      >
+                        Opted out
+                      </Typography>
+                    )}
+                  </Box>
+                }
+                sx={{
+                  alignItems: 'center',
+                  ml: -0.5,
+                  '& .MuiFormControlLabel-label': { mt: 0 },
+                }}
+              />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={selectedClient?.accept_sms || false}
+                    disabled={!selectedClient || !selectedClient.accept_sms}
+                    size="small"
+                  />
+                }
+                label={
+                  <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                    <Typography variant="body2" sx={{ lineHeight: 1.2 }}>
+                      SMS
+                    </Typography>
+                    {selectedClient && !selectedClient.accept_sms && (
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ fontSize: '0.7rem', lineHeight: 1 }}
+                      >
+                        Opted out
+                      </Typography>
+                    )}
+                  </Box>
+                }
+                sx={{
+                  alignItems: 'center',
+                  ml: -0.5,
+                  '& .MuiFormControlLabel-label': { mt: 0 },
+                }}
+              />
+            </Box>
+          </Box>
         </Box>
       </DialogContent>
 
