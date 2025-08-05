@@ -49,6 +49,7 @@ import { DayView } from './views/DayView';
 import { ListView } from './views/ListView';
 import { CalendarSettings } from './CalendarSettings';
 import type { Appointment } from '@/types';
+import { useThrottle } from '../../hooks/useThrottle';
 
 export type CalendarView = 'month' | 'week' | 'day' | 'list';
 
@@ -63,6 +64,10 @@ interface CalendarDesktopProps {
   onAppointmentClick?: (appointment: Appointment) => void;
   onDateClick?: (date: Date, time?: string) => void;
   onRefresh?: (date?: Date) => void;
+  isLoading?: boolean;
+  currentDate?: Date;
+  view?: CalendarView;
+  onViewChange?: (view: CalendarView) => void;
 }
 
 export function CalendarDesktop({
@@ -71,10 +76,17 @@ export function CalendarDesktop({
   onAppointmentClick,
   onDateClick,
   onRefresh,
+  isLoading = false,
+  currentDate: controlledDate,
+  view: controlledView,
+  onViewChange,
 }: CalendarDesktopProps) {
   const theme = useTheme();
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState<CalendarView>('month');
+  // Use controlled values if provided, otherwise manage state internally
+  const [internalDate, setInternalDate] = useState(new Date());
+  const [internalView, setInternalView] = useState<CalendarView>('month');
+  const currentDate = controlledDate ?? internalDate;
+  const view = controlledView ?? internalView;
   const [filterType, setFilterType] = useState<string>('all');
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
 
@@ -85,11 +97,10 @@ export function CalendarDesktop({
   }, [appointments, filterType]);
 
   // Navigation handlers
-  const handlePrevious = useCallback(() => {
+  const throttledHandlePrevious = useThrottle(() => {
     let newDate: Date;
     switch (view) {
       case 'month':
-        // Use date-fns which handles month boundaries correctly
         newDate = subMonths(currentDate, 1);
         break;
       case 'week':
@@ -101,15 +112,17 @@ export function CalendarDesktop({
       default:
         newDate = currentDate;
     }
-    setCurrentDate(newDate);
+    // Only update internal state if not controlled
+    if (!controlledDate) {
+      setInternalDate(newDate);
+    }
     onRefresh?.(newDate);
-  }, [view, currentDate, onRefresh]);
+  }, 400);
 
-  const handleNext = useCallback(() => {
+  const throttledHandleNext = useThrottle(() => {
     let newDate: Date;
     switch (view) {
       case 'month':
-        // Use date-fns which handles month boundaries correctly
         newDate = addMonths(currentDate, 1);
         break;
       case 'week':
@@ -121,22 +134,33 @@ export function CalendarDesktop({
       default:
         newDate = currentDate;
     }
-    setCurrentDate(newDate);
+    // Only update internal state if not controlled
+    if (!controlledDate) {
+      setInternalDate(newDate);
+    }
     onRefresh?.(newDate);
-  }, [view, currentDate, onRefresh]);
+  }, 400);
 
   const handleToday = useCallback(() => {
     const today = new Date();
-    setCurrentDate(today);
+    // Only update internal state if not controlled
+    if (!controlledDate) {
+      setInternalDate(today);
+    }
     onRefresh?.(today);
-  }, [onRefresh]);
+  }, [onRefresh, controlledDate]);
 
   const handleViewChange = (
     _: React.MouseEvent<HTMLElement>,
     newView: CalendarView | null
   ) => {
     if (newView) {
-      setView(newView);
+      // Only update internal state if not controlled
+      if (!controlledView) {
+        setInternalView(newView);
+      }
+      // Notify parent if controlled
+      onViewChange?.(newView);
       onRefresh?.(currentDate);
     }
   };
@@ -146,9 +170,17 @@ export function CalendarDesktop({
   };
 
   const handleDateSelect = (date: Date) => {
-    setCurrentDate(date);
+    // Only update internal state if not controlled
+    if (!controlledDate) {
+      setInternalDate(date);
+    }
     if (view !== 'day') {
-      setView('day');
+      // Only update internal state if not controlled
+      if (!controlledView) {
+        setInternalView('day');
+      }
+      // Notify parent if controlled
+      onViewChange?.('day');
     }
     // Don't call parent onDateClick since we're handling navigation internally
     // The parent onDateClick is intended for creating appointments, not navigation
@@ -210,7 +242,10 @@ export function CalendarDesktop({
             >
               {view !== 'list' && (
                 <>
-                  <IconButton onClick={handlePrevious}>
+                  <IconButton
+                    onClick={throttledHandlePrevious}
+                    disabled={isLoading}
+                  >
                     <ChevronLeftIcon />
                   </IconButton>
                   <Typography
@@ -219,7 +254,10 @@ export function CalendarDesktop({
                   >
                     {headerText}
                   </Typography>
-                  <IconButton onClick={handleNext}>
+                  <IconButton
+                    onClick={throttledHandleNext}
+                    disabled={isLoading}
+                  >
                     <ChevronRightIcon />
                   </IconButton>
                 </>

@@ -9,7 +9,6 @@ import {
   alpha,
   Chip,
   Avatar,
-  Tooltip,
   Stack,
   useMediaQuery,
 } from '@mui/material';
@@ -454,153 +453,90 @@ export function WeekViewDesktop({
                   const left = appointment.column * width;
 
                   return (
-                    <Tooltip
+                    <Paper
                       key={appointment.id}
-                      title={
-                        <Box>
-                          <Typography variant="body2" fontWeight="bold">
-                            {appointment.client
-                              ? `${appointment.client.first_name} ${appointment.client.last_name}`
-                              : 'No Client'}
-                          </Typography>
-                          <Typography variant="caption" display="block">
-                            {formatTime(appointment.start_time)} -{' '}
-                            {formatTime(appointment.end_time)}
-                          </Typography>
-                          {appointment.client && (
-                            <Typography variant="caption" display="block">
-                              {appointment.client.first_name}{' '}
-                              {appointment.client.last_name}
-                            </Typography>
-                          )}
-                          {appointment.notes && (
-                            <Typography
-                              variant="caption"
-                              display="block"
-                              sx={{ mt: 0.5 }}
-                            >
-                              {appointment.notes}
-                            </Typography>
-                          )}
-                        </Box>
-                      }
-                      placement="right"
-                      arrow
+                      elevation={2}
+                      sx={{
+                        position: 'absolute',
+                        top: `${top}px`,
+                        left: `${left}%`,
+                        width: `calc(${width}% - 4px)`,
+                        height: `${Math.max(height, 30)}px`,
+                        cursor: 'pointer',
+                        overflow: 'hidden',
+                        zIndex: 2,
+                        transition: 'all 0.2s',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        '&:hover': {
+                          zIndex: 3,
+                          transform: 'scale(1.02)',
+                          boxShadow: theme.shadows[6],
+                        },
+                      }}
+                      onClick={() => onAppointmentClick?.(appointment)}
                     >
-                      <Paper
-                        elevation={2}
+                      {/* Colored header strip */}
+                      <Box
                         sx={{
-                          position: 'absolute',
-                          top: `${top}px`,
-                          left: `${left}%`,
-                          width: `calc(${width}% - 4px)`,
-                          height: `${Math.max(height, 30)}px`,
-                          cursor: 'pointer',
-                          overflow: 'hidden',
-                          zIndex: 2,
-                          transition: 'all 0.2s',
+                          bgcolor: getAppointmentColor(appointment.type),
+                          color: 'white',
+                          px: 1,
+                          py: 0.5,
+                          minHeight: 24,
                           display: 'flex',
-                          flexDirection: 'column',
-                          '&:hover': {
-                            zIndex: 3,
-                            transform: 'scale(1.02)',
-                            boxShadow: theme.shadows[6],
-                          },
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          flexShrink: 0,
                         }}
-                        onClick={() => onAppointmentClick?.(appointment)}
                       >
-                        {/* Colored header strip */}
-                        <Box
+                        <Typography
+                          variant="caption"
+                          fontWeight="bold"
                           sx={{
-                            bgcolor: getAppointmentColor(appointment.type),
-                            color: 'white',
-                            px: 1,
-                            py: 0.5,
-                            minHeight: 24,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            flexShrink: 0,
+                            fontSize: '0.7rem',
+                            lineHeight: 1.2,
                           }}
                         >
+                          {formatTime(appointment.start_time)}
+                        </Typography>
+                        {appointment.status === 'confirmed' && (
+                          <CheckCircleIcon sx={{ fontSize: 12, ml: 0.5 }} />
+                        )}
+                      </Box>
+                      {/* White content area */}
+                      <Box
+                        sx={{
+                          flex: 1,
+                          bgcolor: 'background.paper',
+                          p: 1,
+                          overflow: 'hidden',
+                        }}
+                      >
+                        <Typography
+                          variant="body2"
+                          fontWeight="medium"
+                          sx={{
+                            color: 'text.primary',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                        >
+                          {appointment.client
+                            ? `${appointment.client.first_name} ${appointment.client.last_name}`
+                            : 'No Client'}
+                        </Typography>
+                        {appointment.notes && (
                           <Typography
                             variant="caption"
-                            fontWeight="bold"
-                            sx={{
-                              fontSize: '0.7rem',
-                              lineHeight: 1.2,
-                            }}
+                            display="block"
+                            sx={{ mt: 0.5 }}
                           >
-                            {formatTime(appointment.start_time)}
+                            {appointment.notes}
                           </Typography>
-                          {appointment.status === 'confirmed' && (
-                            <CheckCircleIcon sx={{ fontSize: 12, ml: 0.5 }} />
-                          )}
-                        </Box>
-
-                        {/* White content area */}
-                        <Box
-                          sx={{
-                            flex: 1,
-                            bgcolor: 'background.paper',
-                            p: 1,
-                            overflow: 'hidden',
-                          }}
-                        >
-                          <Typography
-                            variant="body2"
-                            fontWeight="medium"
-                            sx={{
-                              color: 'text.primary',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                              fontSize: height < 60 ? '0.75rem' : '0.875rem',
-                            }}
-                          >
-                            {appointment.client
-                              ? `${appointment.client.first_name} ${appointment.client.last_name}`
-                              : 'No Client'}
-                          </Typography>
-
-                          {/* Show type badge only if there's enough height */}
-                          {height > 60 && (
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                color: 'text.secondary',
-                                fontSize: '0.7rem',
-                                textTransform: 'capitalize',
-                                display: 'block',
-                                mt: 0.5,
-                              }}
-                            >
-                              {appointment.type.replace('_', ' ')}
-                            </Typography>
-                          )}
-
-                          {/* Show duration only if there's enough height */}
-                          {height > 80 && (
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                color: 'text.secondary',
-                                fontSize: '0.65rem',
-                                display: 'block',
-                                mt: 0.25,
-                              }}
-                            >
-                              {formatDuration(
-                                getDurationMinutes(
-                                  appointment.start_time,
-                                  appointment.end_time
-                                )
-                              )}
-                            </Typography>
-                          )}
-                        </Box>
-                      </Paper>
-                    </Tooltip>
+                        )}
+                      </Box>
+                    </Paper>
                   );
                 })}
 

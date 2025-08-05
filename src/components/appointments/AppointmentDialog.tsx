@@ -180,6 +180,17 @@ export function AppointmentDialog({
     }
   }, [formData.start_time, duration]);
 
+  // Add this useEffect to clear selectedClient when opening for a new appointment
+  useEffect(() => {
+    if (open && !appointment) {
+      setSelectedClient(null);
+      setFormData((prev) => ({
+        ...prev,
+        client_id: null,
+      }));
+    }
+  }, [open, appointment]);
+
   const handleSubmit = async () => {
     setError(null);
     setLoading(true);

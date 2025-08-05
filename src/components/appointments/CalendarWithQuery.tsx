@@ -1,7 +1,14 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
-import { Box, Skeleton, Alert, AlertTitle, Button } from '@mui/material';
+import { useState, useMemo, useCallback, useRef } from 'react';
+import {
+  Box,
+  Skeleton,
+  Alert,
+  AlertTitle,
+  Button,
+  LinearProgress,
+} from '@mui/material';
 import { format } from 'date-fns';
 import {
   useAppointmentsTimeRange,
@@ -66,6 +73,12 @@ export function CalendarWithQuery({
   const [currentDate, setCurrentDate] = useState(initialDate);
   const [view, setView] = useState<CalendarView>(initialView);
 
+  // Track the last requested date to avoid race conditions
+  const lastRequestedDate = useRef(currentDate);
+  const [cachedAppointments, setCachedAppointments] = useState<Appointment[]>(
+    []
+  );
+
   // Calculate date range based on current view
   const { startDate, endDate } = useMemo(() => {
     const range = calculateDateRange(currentDate, view);
@@ -87,10 +100,19 @@ export function CalendarWithQuery({
     isError,
     error,
     refetch,
+    isFetching,
   } = useAppointmentsTimeRange(shopId, startDate, endDate, view);
 
   // Prefetch adjacent windows in the background
   usePrefetchAdjacentWindows(shopId, currentDate, view);
+
+  // Update cached appointments when new data arrives
+  // Only update if this is the data we actually requested (prevents race conditions)
+  useMemo(() => {
+    if (!isLoading && !isError) {
+      setCachedAppointments(appointments);
+    }
+  }, [appointments, isLoading, isError]);
 
   // Navigation handlers
   const handleNavigate = useCallback(
@@ -137,6 +159,9 @@ export function CalendarWithQuery({
         oldYear: currentDate.getFullYear(),
         newYear: newDate.getFullYear(),
       });
+
+      // Update the last requested date to prevent race conditions
+      lastRequestedDate.current = newDate;
       setCurrentDate(newDate);
     },
     [currentDate, view]
@@ -150,6 +175,8 @@ export function CalendarWithQuery({
     (date?: Date) => {
       if (date) {
         console.log('🔄 Refresh with new date:', date.toISOString());
+        // Update the last requested date to prevent race conditions
+        lastRequestedDate.current = date;
         setCurrentDate(date);
       } else {
         refetch();
@@ -168,7 +195,7 @@ export function CalendarWithQuery({
             <Button
               color="inherit"
               size="small"
-              onClick={handleRefresh}
+              onClick={() => handleRefresh()}
               startIcon={<RefreshIcon />}
             >
               Retry
@@ -182,8 +209,18 @@ export function CalendarWithQuery({
     );
   }
 
-  // Loading state - show skeleton
-  if (isLoading) {
+  // Determine which appointments to show
+  // If we're loading but have cached appointments, show them to keep UI responsive
+  // Only show skeleton on initial load or when we have no data at all
+  const appointmentsToShow =
+    (isLoading || isFetching) && cachedAppointments.length > 0
+      ? cachedAppointments
+      : appointments;
+
+  const showSkeleton = isLoading && cachedAppointments.length === 0;
+
+  // Show skeleton only on initial load
+  if (showSkeleton) {
     return <CalendarSkeleton view={view} />;
   }
 
@@ -191,13 +228,31 @@ export function CalendarWithQuery({
   const CalendarComponent = isMobile ? Calendar : CalendarDesktop;
 
   return (
-    <CalendarComponent
-      appointments={appointments}
-      shopHours={shopHours}
-      onAppointmentClick={onAppointmentClick}
-      onDateClick={onDateClick}
-      onRefresh={handleRefresh}
-    />
+    <Box sx={{ position: 'relative' }}>
+      {/* Show loading indicator when fetching new data */}
+      {isFetching && (
+        <LinearProgress
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 1000,
+          }}
+        />
+      )}
+      <CalendarComponent
+        appointments={appointmentsToShow}
+        shopHours={shopHours}
+        {...(onAppointmentClick && { onAppointmentClick })}
+        {...(onDateClick && { onDateClick })}
+        onRefresh={handleRefresh}
+        isLoading={isFetching}
+        currentDate={currentDate}
+        view={view}
+        onViewChange={handleViewChange}
+      />
+    </Box>
   );
 }
 

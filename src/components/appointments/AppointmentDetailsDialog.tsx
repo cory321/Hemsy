@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -17,6 +17,7 @@ import {
   Checkbox,
   FormControlLabel,
   Tooltip,
+  TextField,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import CancelIcon from '@mui/icons-material/Cancel';
@@ -30,6 +31,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import PersonOffIcon from '@mui/icons-material/PersonOff';
+import SaveIcon from '@mui/icons-material/Save';
+import NotesIcon from '@mui/icons-material/Notes';
 import { format, parseISO } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import {
@@ -37,6 +40,7 @@ import {
   confirmAppointment,
   declineAppointment,
   markNoShowAppointment,
+  updateAppointment,
 } from '@/lib/actions/appointments';
 import {
   getAppointmentColor,
@@ -77,6 +81,13 @@ export function AppointmentDetailsDialog({
     sendEmail: appointment.client?.accept_email ?? true,
     sendSms: appointment.client?.accept_sms ?? false,
   });
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [editedNotes, setEditedNotes] = useState(appointment.notes || '');
+  const [currentNotes, setCurrentNotes] = useState<string | null>(
+    appointment.notes
+  );
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [savingNotes, setSavingNotes] = useState(false);
 
   const duration = getDurationMinutes(
     appointment.start_time,
@@ -84,6 +95,12 @@ export function AppointmentDetailsDialog({
   );
   const isPast =
     new Date(`${appointment.date} ${appointment.end_time}`) < new Date();
+
+  // Sync currentNotes with appointment prop whenever it changes
+  useEffect(() => {
+    setCurrentNotes(appointment.notes);
+    setEditedNotes(appointment.notes || '');
+  }, [appointment.notes]);
 
   const handleCancelClick = () => {
     setShowCancelConfirm(true);
@@ -171,6 +188,41 @@ export function AppointmentDetailsDialog({
     }
   };
 
+  const handleSaveNotes = async () => {
+    setError(null);
+    setSuccessMessage(null);
+    setSavingNotes(true);
+
+    try {
+      await updateAppointment({
+        id: appointment.id,
+        notes: editedNotes || null,
+      });
+
+      // Update local state immediately for visual feedback
+      setCurrentNotes(editedNotes || null);
+      setIsEditingNotes(false);
+      setSuccessMessage('Notes updated successfully');
+
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccessMessage(null), 3000);
+
+      // Refresh data in the background
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update notes');
+    } finally {
+      setSavingNotes(false);
+    }
+  };
+
+  const handleCancelEditNotes = () => {
+    setEditedNotes(currentNotes || '');
+    setIsEditingNotes(false);
+    setError(null);
+    setSuccessMessage(null);
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'canceled':
@@ -189,7 +241,17 @@ export function AppointmentDetailsDialog({
 
   return (
     <>
-      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <Dialog
+        open={open}
+        onClose={() => {
+          setIsEditingNotes(false);
+          setError(null);
+          setSuccessMessage(null);
+          onClose();
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle
           sx={{
             display: 'flex',
@@ -200,7 +262,12 @@ export function AppointmentDetailsDialog({
         >
           Appointment Details
           <IconButton
-            onClick={onClose}
+            onClick={() => {
+              setIsEditingNotes(false);
+              setError(null);
+              setSuccessMessage(null);
+              onClose();
+            }}
             size="small"
             sx={{ color: 'text.secondary' }}
           >
@@ -212,6 +279,11 @@ export function AppointmentDetailsDialog({
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {error}
+            </Alert>
+          )}
+          {successMessage && (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              {successMessage}
             </Alert>
           )}
 
@@ -320,38 +392,108 @@ export function AppointmentDetailsDialog({
             )}
 
             {/* Notes */}
-            {appointment.notes && (
-              <>
-                <Divider />
-                <Box>
+            <>
+              <Divider />
+              <Box>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    mb: 1,
+                  }}
+                >
                   <Typography
                     variant="subtitle1"
                     fontWeight="medium"
                     sx={{
-                      mb: 1,
                       display: 'flex',
                       alignItems: 'center',
                       gap: 1,
                     }}
                   >
-                    📝 Notes
+                    <NotesIcon fontSize="small" color="primary" />
+                    Notes
                   </Typography>
+                  {!isEditingNotes && (
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        setEditedNotes(currentNotes || '');
+                        setIsEditingNotes(true);
+                      }}
+                      disabled={loading || savingNotes}
+                      sx={{ color: 'primary.main' }}
+                    >
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                  )}
+                </Box>
+
+                {isEditingNotes ? (
+                  <Box sx={{ ml: 3 }}>
+                    <TextField
+                      multiline
+                      fullWidth
+                      rows={4}
+                      value={editedNotes}
+                      onChange={(e) => setEditedNotes(e.target.value)}
+                      placeholder="Add notes about this appointment..."
+                      variant="outlined"
+                      disabled={savingNotes}
+                      sx={{ mb: 2 }}
+                    />
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        gap: 1,
+                        justifyContent: 'flex-end',
+                      }}
+                    >
+                      <Button
+                        size="small"
+                        onClick={handleCancelEditNotes}
+                        disabled={savingNotes}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        startIcon={
+                          savingNotes ? (
+                            <CircularProgress size={16} />
+                          ) : (
+                            <SaveIcon />
+                          )
+                        }
+                        onClick={handleSaveNotes}
+                        disabled={savingNotes}
+                      >
+                        {savingNotes ? 'Saving...' : 'Save Notes'}
+                      </Button>
+                    </Box>
+                  </Box>
+                ) : (
                   <Typography
                     variant="body2"
                     sx={{
                       ml: 3,
                       p: 2,
-                      bgcolor: 'grey.50',
+                      bgcolor: currentNotes ? 'grey.50' : 'transparent',
                       borderRadius: 1,
                       border: 1,
-                      borderColor: 'grey.200',
+                      borderColor: currentNotes ? 'grey.200' : 'grey.300',
+                      borderStyle: currentNotes ? 'solid' : 'dashed',
+                      color: currentNotes ? 'text.primary' : 'text.secondary',
+                      fontStyle: currentNotes ? 'normal' : 'italic',
                     }}
                   >
-                    {appointment.notes}
+                    {currentNotes || 'No notes added yet'}
                   </Typography>
-                </Box>
-              </>
-            )}
+                )}
+              </Box>
+            </>
           </Box>
         </DialogContent>
 
@@ -363,7 +505,16 @@ export function AppointmentDetailsDialog({
             gap: 1,
           }}
         >
-          <Button onClick={onClose} disabled={loading} color="inherit">
+          <Button
+            onClick={() => {
+              setIsEditingNotes(false);
+              setError(null);
+              setSuccessMessage(null);
+              onClose();
+            }}
+            disabled={loading}
+            color="inherit"
+          >
             Close
           </Button>
 
