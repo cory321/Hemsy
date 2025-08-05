@@ -10,7 +10,7 @@ const mockAppointments = [
     id: '1',
     shop_id: 'shop_1',
     client_id: 'client_1',
-    title: 'Fitting Appointment',
+
     date: '2024-02-15',
     start_time: '10:00',
     end_time: '11:00',
@@ -36,7 +36,7 @@ const mockAppointments = [
     id: '2',
     shop_id: 'shop_1',
     client_id: 'client_2',
-    title: 'Consultation',
+
     date: '2024-02-15',
     start_time: '14:00',
     end_time: '15:00',

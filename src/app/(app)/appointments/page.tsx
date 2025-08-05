@@ -1,27 +1,48 @@
 import { Suspense } from 'react';
-import { startOfMonth, endOfMonth, format } from 'date-fns';
-import {
-  getAppointments,
-  getShopHours,
-  getCalendarSettings,
-} from '@/lib/actions/appointments';
-import { getAllClients } from '@/lib/actions/clients';
-import { AppointmentsClient } from './AppointmentsClient';
+import { auth } from '@clerk/nextjs/server';
 import { CircularProgress, Box } from '@mui/material';
+import { AppointmentsClient } from './AppointmentsClient';
+import { getShopHours, getCalendarSettings } from '@/lib/actions/appointments';
+import { getAllClients } from '@/lib/actions/clients';
+import { createClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
+
+async function getShopId() {
+  const { userId } = await auth();
+  if (!userId) redirect('/sign-in');
+
+  const supabase = await createClient();
+
+  // Get user's shop
+  const { data: userData, error: userError } = await supabase
+    .from('users')
+    .select('id')
+    .eq('clerk_user_id', userId)
+    .single();
+
+  if (userError || !userData) redirect('/onboarding');
+
+  const { data: shopData, error: shopError } = await supabase
+    .from('shops')
+    .select('id')
+    .eq('owner_user_id', userData.id)
+    .single();
+
+  if (shopError || !shopData) redirect('/onboarding');
+
+  return shopData.id;
+}
 
 export default async function AppointmentsPage() {
-  // Fetch initial data
-  const now = new Date();
-  const startDate = format(startOfMonth(now), 'yyyy-MM-dd');
-  const endDate = format(endOfMonth(now), 'yyyy-MM-dd');
+  // Get shop ID first
+  const shopId = await getShopId();
 
-  const [appointments, shopHours, calendarSettings, clients] =
-    await Promise.all([
-      getAppointments(startDate, endDate, 'month'),
-      getShopHours(),
-      getCalendarSettings(),
-      getAllClients(),
-    ]);
+  // Fetch only the necessary initial data (not appointments)
+  const [shopHours, calendarSettings, clients] = await Promise.all([
+    getShopHours(),
+    getCalendarSettings(),
+    getAllClients(),
+  ]);
 
   return (
     <Suspense
@@ -32,7 +53,7 @@ export default async function AppointmentsPage() {
       }
     >
       <AppointmentsClient
-        initialAppointments={appointments}
+        shopId={shopId}
         shopHours={shopHours}
         calendarSettings={calendarSettings}
         clients={clients}

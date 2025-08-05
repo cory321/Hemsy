@@ -34,11 +34,11 @@ interface WeekViewDesktopProps {
     close_time: string | null;
     is_closed: boolean;
   }>;
-  // eslint-disable-next-line no-unused-vars
+
   onAppointmentClick?: (appointment: Appointment) => void;
-  // eslint-disable-next-line no-unused-vars
+
   onDateClick?: (date: Date) => void;
-  // eslint-disable-next-line no-unused-vars
+
   onTimeSlotClick?: (date: Date, time?: string) => void;
 }
 
@@ -456,7 +456,9 @@ export function WeekViewDesktop({
                       title={
                         <Box>
                           <Typography variant="body2" fontWeight="bold">
-                            {appointment.title}
+                            {appointment.client
+                              ? `${appointment.client.first_name} ${appointment.client.last_name}`
+                              : 'No Client'}
                           </Typography>
                           <Typography variant="caption" display="block">
                             {formatTime(appointment.start_time)} -{' '}
@@ -518,42 +520,11 @@ export function WeekViewDesktop({
                               whiteSpace: 'nowrap',
                             }}
                           >
-                            {appointment.title}
+                            {appointment.client
+                              ? `${appointment.client.first_name} ${appointment.client.last_name}`
+                              : 'No Client'}
                           </Typography>
-                          {height > 60 && appointment.client && (
-                            <Box
-                              sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 0.5,
-                              }}
-                            >
-                              <Avatar
-                                sx={{
-                                  width: 20,
-                                  height: 20,
-                                  fontSize: '0.75rem',
-                                  bgcolor: alpha(
-                                    theme.palette.common.white,
-                                    0.3
-                                  ),
-                                }}
-                              >
-                                {appointment.client.first_name[0]}
-                              </Avatar>
-                              <Typography
-                                variant="caption"
-                                sx={{
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  whiteSpace: 'nowrap',
-                                }}
-                              >
-                                {appointment.client.first_name}{' '}
-                                {appointment.client.last_name}
-                              </Typography>
-                            </Box>
-                          )}
+
                           {height > 80 && (
                             <Chip
                               label={appointment.type.replace('_', ' ')}

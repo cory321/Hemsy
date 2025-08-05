@@ -10,7 +10,6 @@ import type { Appointment } from '@/types';
 const createAppointmentSchema = z.object({
   shopId: z.string().uuid(),
   clientId: z.string().uuid().optional(),
-  title: z.string().min(1, 'Title is required'),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format'),
   startTime: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format'),
   endTime: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format'),
@@ -41,6 +40,12 @@ export async function getAppointmentsByTimeRange(
   startDate: string,
   endDate: string
 ): Promise<Appointment[]> {
+  console.log('🚀 getAppointmentsByTimeRange called:', {
+    shopId,
+    startDate,
+    endDate,
+  });
+
   const { userId } = await auth();
   if (!userId) throw new Error('Unauthorized');
 
@@ -64,16 +69,26 @@ export async function getAppointmentsByTimeRange(
 
   if (shopError || !shopData) throw new Error('Unauthorized access to shop');
 
-  // Use the optimized function for time-range queries
-  const { data: appointments, error } = await supabase.rpc(
-    'get_appointments_time_range',
-    {
-      p_shop_id: shopId,
-      p_start_date: startDate,
-      p_end_date: endDate,
-      p_include_cancelled: false,
-    }
-  );
+  // Fetch appointments with client data directly
+  const { data: appointments, error } = await supabase
+    .from('appointments')
+    .select(
+      `
+			*,
+			client:clients(
+				first_name,
+				last_name,
+				email,
+				phone_number
+			)
+		`
+    )
+    .eq('shop_id', shopId)
+    .gte('date', startDate)
+    .lte('date', endDate)
+    .not('status', 'in', '(cancelled,no_show)')
+    .order('date', { ascending: true })
+    .order('start_time', { ascending: true });
 
   if (error) {
     console.error('Failed to fetch appointments:', error);
@@ -86,7 +101,6 @@ export async function getAppointmentsByTimeRange(
     shop_id: apt.shop_id,
     client_id: apt.client_id,
     order_id: apt.order_id,
-    title: apt.title,
     date: apt.date,
     start_time: apt.start_time,
     end_time: apt.end_time,
@@ -96,17 +110,7 @@ export async function getAppointmentsByTimeRange(
     reminder_sent: apt.reminder_sent,
     created_at: apt.created_at,
     updated_at: apt.updated_at,
-    client: apt.client_id
-      ? {
-          id: apt.client_id,
-          first_name: apt.client_first_name || '',
-          last_name: apt.client_last_name || '',
-          email: apt.client_email,
-          phone_number: apt.client_phone_number,
-          accept_email: true,
-          accept_sms: true,
-        }
-      : null,
+    client: apt.client || null,
   }));
 }
 
@@ -195,18 +199,19 @@ export async function createAppointment(
 
   if (shopError || !shopData) throw new Error('Unauthorized access to shop');
 
-  // Use atomic function for conflict detection
+  // Insert appointment
   const { data: appointment, error } = await supabase
-    .rpc('create_appointment_atomic', {
-      p_shop_id: validated.shopId,
-      p_client_id: validated.clientId || null,
-      p_title: validated.title,
-      p_date: validated.date,
-      p_start_time: validated.startTime,
-      p_end_time: validated.endTime,
-      p_type: validated.type,
-      p_notes: validated.notes || null,
+    .from('appointments')
+    .insert({
+      shop_id: validated.shopId,
+      client_id: validated.clientId || null,
+      date: validated.date,
+      start_time: validated.startTime,
+      end_time: validated.endTime,
+      type: validated.type,
+      notes: validated.notes || null,
     })
+    .select('*, client:clients(*)')
     .single();
 
   if (error) {

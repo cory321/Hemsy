@@ -42,7 +42,6 @@ describe('Appointments Integration Tests', () => {
     it('should create a new appointment successfully', async () => {
       const appointmentData = {
         client_id: '550e8400-e29b-41d4-a716-446655440000',
-        title: 'Fitting Appointment',
         date: '2024-02-01',
         start_time: '10:00',
         end_time: '11:00',
@@ -110,7 +109,6 @@ describe('Appointments Integration Tests', () => {
     it('should throw error when appointment conflicts', async () => {
       const appointmentData = {
         client_id: '550e8400-e29b-41d4-a716-446655440000',
-        title: 'Fitting',
         date: '2024-02-01',
         start_time: '10:00',
         end_time: '11:00',
@@ -153,7 +151,6 @@ describe('Appointments Integration Tests', () => {
     it('should throw error when outside working hours', async () => {
       const appointmentData = {
         client_id: '550e8400-e29b-41d4-a716-446655440000',
-        title: 'Late Appointment',
         date: '2024-02-01',
         start_time: '20:00',
         end_time: '21:00',
@@ -203,7 +200,6 @@ describe('Appointments Integration Tests', () => {
           id: 'apt_1',
           shop_id: mockShopId,
           client_id: 'client_1',
-          title: 'Fitting',
           date: '2024-02-01',
           start_time: '10:00',
           end_time: '11:00',

@@ -9,7 +9,6 @@ import type { Appointment } from '@/types';
 // Validation schemas
 const appointmentSchema = z.object({
   client_id: z.string().uuid(),
-  title: z.string().min(1, 'Title is required'),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format'),
   start_time: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format'),
   end_time: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format'),

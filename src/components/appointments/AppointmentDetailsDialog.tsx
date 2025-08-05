@@ -147,9 +147,13 @@ export function AppointmentDetailsDialog({
         )}
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {/* Title and Status */}
+          {/* Client Name and Status */}
           <Box>
-            <Typography variant="h6">{appointment.title}</Typography>
+            <Typography variant="h6">
+              {appointment.client
+                ? `${appointment.client.first_name} ${appointment.client.last_name}`
+                : 'No Client Selected'}
+            </Typography>
             <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
               <Chip
                 label={appointment.type.replace('_', ' ')}

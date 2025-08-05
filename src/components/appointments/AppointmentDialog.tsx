@@ -22,11 +22,6 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { addMinutes, format, parse, isValid } from 'date-fns';
 import dayjs from 'dayjs';
-import { useRouter } from 'next/navigation';
-import {
-  createAppointment,
-  updateAppointment,
-} from '@/lib/actions/appointments';
 import { getAvailableTimeSlots, to12HourFormat } from '@/lib/utils/calendar';
 import { ClientSearchField } from './ClientSearchField';
 import type { Appointment, Client } from '@/types';
@@ -86,6 +81,23 @@ interface AppointmentDialogProps {
     buffer_time_minutes: number;
     default_appointment_duration: number;
   };
+  onCreate?: (data: {
+    clientId: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    type: 'consultation' | 'fitting' | 'pickup' | 'delivery' | 'other';
+    notes?: string;
+  }) => Promise<void>;
+  onUpdate?: (data: {
+    clientId: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    type: 'consultation' | 'fitting' | 'pickup' | 'delivery' | 'other';
+    notes?: string;
+    status?: string;
+  }) => Promise<void>;
 }
 
 export function AppointmentDialog({
@@ -100,8 +112,9 @@ export function AppointmentDialog({
     buffer_time_minutes: 0,
     default_appointment_duration: 30,
   },
+  onCreate,
+  onUpdate,
 }: AppointmentDialogProps) {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -109,7 +122,6 @@ export function AppointmentDialog({
   // Form state
   const [formData, setFormData] = useState({
     client_id: appointment?.client_id || null,
-    title: appointment?.title || '',
     date: appointment
       ? dayjs(appointment.date)
       : dayjs(selectedDate || new Date()),
@@ -187,13 +199,12 @@ export function AppointmentDialog({
       }
 
       const data = {
-        client_id: formData.client_id,
-        title: formData.title || 'Appointment',
+        clientId: formData.client_id,
         date: dayjs.isDayjs(formData.date)
           ? formData.date.format('YYYY-MM-DD')
           : dayjs(formData.date).format('YYYY-MM-DD'),
-        start_time: formatTimeString(formData.start_time),
-        end_time: formatTimeString(formData.end_time),
+        startTime: formatTimeString(formData.start_time),
+        endTime: formatTimeString(formData.end_time),
         type: formData.type as
           | 'consultation'
           | 'fitting'
@@ -203,13 +214,14 @@ export function AppointmentDialog({
         notes: formData.notes || undefined,
       };
 
-      if (appointment) {
-        await updateAppointment({ id: appointment.id, ...data });
+      if (appointment && onUpdate) {
+        await onUpdate(data);
+      } else if (!appointment && onCreate) {
+        await onCreate(data);
       } else {
-        await createAppointment(data);
+        throw new Error('No handler provided for this action');
       }
 
-      router.refresh();
       onClose();
     } catch (err) {
       setError(
@@ -260,16 +272,6 @@ export function AppointmentDialog({
                 client_id: newClient?.id || null,
               }));
             }}
-          />
-
-          {/* Title */}
-          <TextField
-            label="Title"
-            value={formData.title}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, title: e.target.value }))
-            }
-            placeholder={`${formData.type.replace('_', ' ')} appointment`}
           />
 
           {/* Date and Time */}

@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
+import { QueryProvider } from '@/providers/QueryProvider';
 import { ClerkProvider } from '@clerk/nextjs';
+import { Toaster } from 'react-hot-toast';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -37,10 +39,50 @@ export default function RootLayout({
       <body className={inter.className}>
         {hasClerkKey ? (
           <ClerkProvider>
-            <ThemeProvider>{children}</ThemeProvider>
+            <QueryProvider>
+              <ThemeProvider>
+                {children}
+                <Toaster
+                  position="bottom-center"
+                  toastOptions={{
+                    duration: 4000,
+                    style: {
+                      background: '#333',
+                      color: '#fff',
+                    },
+                    success: {
+                      iconTheme: {
+                        primary: '#4caf50',
+                        secondary: '#fff',
+                      },
+                    },
+                    error: {
+                      iconTheme: {
+                        primary: '#f44336',
+                        secondary: '#fff',
+                      },
+                    },
+                  }}
+                />
+              </ThemeProvider>
+            </QueryProvider>
           </ClerkProvider>
         ) : (
-          <ThemeProvider>{children}</ThemeProvider>
+          <QueryProvider>
+            <ThemeProvider>
+              {children}
+              <Toaster
+                position="bottom-center"
+                toastOptions={{
+                  duration: 4000,
+                  style: {
+                    background: '#333',
+                    color: '#fff',
+                  },
+                }}
+              />
+            </ThemeProvider>
+          </QueryProvider>
         )}
       </body>
     </html>

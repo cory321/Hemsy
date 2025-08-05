@@ -15,7 +15,6 @@ export interface ExtendedDatabase extends Database {
           shop_id: string;
           client_id: string;
           order_id: string | null;
-          title: string;
           date: string;
           start_time: string;
           end_time: string;
@@ -46,7 +45,6 @@ export interface ExtendedDatabase extends Database {
           shop_id: string;
           client_id: string;
           order_id?: string | null;
-          title: string;
           date: string;
           start_time: string;
           end_time: string;
@@ -67,7 +65,6 @@ export interface ExtendedDatabase extends Database {
           shop_id?: string;
           client_id?: string | null;
           order_id?: string | null;
-          title?: string;
           date?: string;
           start_time?: string;
           end_time?: string;

@@ -101,7 +101,7 @@ describe('WeekView - Time Slot Click', () => {
       user_id: 'user1',
       shop_id: 'shop1',
       client_id: 'client1',
-      title: 'Existing Appointment',
+
       date: format(weekDays[1], 'yyyy-MM-dd'), // Monday
       start_time: '10:00',
       end_time: '11:00',
@@ -155,7 +155,7 @@ describe('WeekView - Time Slot Click', () => {
     );
 
     // Try to click on the 10:00 AM slot on Monday (which has an appointment)
-    const existingAppointment = screen.getByText('Existing Appointment');
+    const existingAppointment = screen.getByText('John Doe');
     fireEvent.click(existingAppointment);
 
     // Should not call onTimeSlotClick since the slot has an appointment

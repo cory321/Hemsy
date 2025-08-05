@@ -117,7 +117,6 @@ export interface Appointment {
   shop_id: string;
   client_id: string;
   order_id?: string;
-  title: string;
   date: string;
   start_time: string;
   end_time: string;

@@ -3,6 +3,17 @@ import '@testing-library/jest-dom';
 import { Button } from '@mui/material';
 import { ThemeProvider } from '../providers/ThemeProvider';
 
+// Mock Next.js navigation hooks for Material UI App Router integration
+jest.mock('next/navigation', () => ({
+  useServerInsertedHTML: jest.fn((callback) => callback()),
+  usePathname: jest.fn(() => '/'),
+  useRouter: jest.fn(() => ({
+    push: jest.fn(),
+    replace: jest.fn(),
+    back: jest.fn(),
+  })),
+}));
+
 // Example test component
 const TestButton = ({
   onClick,

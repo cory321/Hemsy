@@ -67,10 +67,18 @@ export function CalendarWithQuery({
   const [view, setView] = useState<CalendarView>(initialView);
 
   // Calculate date range based on current view
-  const { startDate, endDate } = useMemo(
-    () => calculateDateRange(currentDate, view),
-    [currentDate, view]
-  );
+  const { startDate, endDate } = useMemo(() => {
+    const range = calculateDateRange(currentDate, view);
+    console.log('📆 Date Range Calculation:', {
+      currentDate: currentDate.toISOString(),
+      currentMonth: currentDate.getMonth(),
+      currentYear: currentDate.getFullYear(),
+      startDate: range.startDate,
+      endDate: range.endDate,
+      view,
+    });
+    return range;
+  }, [currentDate, view]);
 
   // Fetch appointments for current window
   const {
@@ -96,6 +104,8 @@ export function CalendarWithQuery({
         case 'prev':
           newDate = new Date(currentDate);
           if (view === 'month') {
+            // Fix: Set to first day of month before changing month to avoid date overflow
+            newDate.setDate(1);
             newDate.setMonth(newDate.getMonth() - 1);
           } else if (view === 'week') {
             newDate.setDate(newDate.getDate() - 7);
@@ -106,6 +116,8 @@ export function CalendarWithQuery({
         case 'next':
           newDate = new Date(currentDate);
           if (view === 'month') {
+            // Fix: Set to first day of month before changing month to avoid date overflow
+            newDate.setDate(1);
             newDate.setMonth(newDate.getMonth() + 1);
           } else if (view === 'week') {
             newDate.setDate(newDate.getDate() + 7);
@@ -115,6 +127,16 @@ export function CalendarWithQuery({
           break;
       }
 
+      console.log('📅 Navigation:', {
+        direction,
+        oldDate: currentDate.toISOString(),
+        newDate: newDate.toISOString(),
+        view,
+        oldMonth: currentDate.getMonth(),
+        newMonth: newDate.getMonth(),
+        oldYear: currentDate.getFullYear(),
+        newYear: newDate.getFullYear(),
+      });
       setCurrentDate(newDate);
     },
     [currentDate, view]
@@ -124,9 +146,17 @@ export function CalendarWithQuery({
     setView(newView);
   }, []);
 
-  const handleRefresh = useCallback(() => {
-    refetch();
-  }, [refetch]);
+  const handleRefresh = useCallback(
+    (date?: Date) => {
+      if (date) {
+        console.log('🔄 Refresh with new date:', date.toISOString());
+        setCurrentDate(date);
+      } else {
+        refetch();
+      }
+    },
+    [refetch]
+  );
 
   // Error state
   if (isError) {

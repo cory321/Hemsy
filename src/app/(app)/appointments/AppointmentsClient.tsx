@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import {
   Container,
   Typography,
@@ -11,22 +11,23 @@ import {
   useMediaQuery,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import {
-  startOfMonth,
-  endOfMonth,
-  startOfWeek,
-  endOfWeek,
-  format,
-} from 'date-fns';
-import { Calendar } from '@/components/appointments/Calendar';
-import { CalendarDesktop } from '@/components/appointments/CalendarDesktop';
+import { CalendarWithQuery } from '@/components/appointments/CalendarWithQuery';
 import { AppointmentDialog } from '@/components/appointments/AppointmentDialog';
 import { AppointmentDetailsDialog } from '@/components/appointments/AppointmentDetailsDialog';
-import { getAppointments } from '@/lib/actions/appointments';
-import type { Appointment } from '@/types';
+import {
+  useCreateAppointment,
+  useUpdateAppointment,
+  useDeleteAppointment,
+} from '@/lib/queries/appointment-queries';
+import { useQueryClient } from '@tanstack/react-query';
+import { appointmentKeys } from '@/lib/queries/appointment-keys';
+import type { Appointment, Client } from '@/types';
+import { useRouter } from 'next/navigation';
+import { toast } from 'react-hot-toast';
+import { CalendarDebug } from '@/components/appointments/CalendarDebug';
 
 interface AppointmentsClientProps {
-  initialAppointments: Appointment[];
+  shopId: string;
   shopHours: Array<{
     day_of_week: number;
     open_time: string | null;
@@ -37,94 +38,131 @@ interface AppointmentsClientProps {
     buffer_time_minutes: number;
     default_appointment_duration: number;
   };
+  clients: Client[];
 }
 
 export function AppointmentsClient({
-  initialAppointments,
+  shopId,
   shopHours,
   calendarSettings,
+  clients,
 }: AppointmentsClientProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const router = useRouter();
+  const queryClient = useQueryClient();
 
-  const [appointments, setAppointments] = useState(initialAppointments);
   const [selectedAppointment, setSelectedAppointment] =
     useState<Appointment | null>(null);
   const [appointmentDialogOpen, setAppointmentDialogOpen] = useState(false);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [currentView] = useState<'month' | 'week' | 'day' | 'list'>('month');
-  const [viewingDate, setViewingDate] = useState<Date>(new Date());
-  const viewingDateRef = useRef(viewingDate);
 
-  // Keep ref in sync with state
-  useEffect(() => {
-    viewingDateRef.current = viewingDate;
-  }, [viewingDate]);
+  // Mutations
+  const createMutation = useCreateAppointment({
+    onSuccess: () => {
+      toast.success('Appointment created successfully');
+      setAppointmentDialogOpen(false);
+      setSelectedDate(null);
+      setSelectedTime(null);
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to create appointment');
+    },
+  });
 
-  const handleAppointmentClick = (appointment: Appointment) => {
+  const updateMutation = useUpdateAppointment({
+    onSuccess: () => {
+      toast.success('Appointment updated successfully');
+      setAppointmentDialogOpen(false);
+      setDetailsDialogOpen(false);
+      setSelectedAppointment(null);
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to update appointment');
+    },
+  });
+
+  const deleteMutation = useDeleteAppointment({
+    onSuccess: () => {
+      toast.success('Appointment deleted successfully');
+      setDetailsDialogOpen(false);
+      setSelectedAppointment(null);
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to delete appointment');
+    },
+  });
+
+  const handleAppointmentClick = useCallback((appointment: Appointment) => {
     setSelectedAppointment(appointment);
     setDetailsDialogOpen(true);
-  };
+  }, []);
 
-  const handleDateClick = (date: Date, time?: string) => {
+  const handleDateClick = useCallback((date: Date, time?: string) => {
     setSelectedDate(date);
     setSelectedTime(time || null);
+    setSelectedAppointment(null);
     setAppointmentDialogOpen(true);
-  };
+  }, []);
 
-  const handleEditAppointment = () => {
+  const handleEditAppointment = useCallback(() => {
     setDetailsDialogOpen(false);
     setAppointmentDialogOpen(true);
-  };
+  }, []);
 
-  const refreshAppointments = useCallback(
-    async (dateToView?: Date) => {
-      try {
-        let startDate: string;
-        let endDate: string;
-        // Always use the provided date, or fall back to current viewing date from ref
-        const targetDate = dateToView || viewingDateRef.current;
-
-        // Update the viewing date immediately if a new date was provided
-        if (dateToView) {
-          setViewingDate(dateToView);
-        }
-
-        switch (currentView) {
-          case 'month':
-            startDate = format(startOfMonth(targetDate), 'yyyy-MM-dd');
-            endDate = format(endOfMonth(targetDate), 'yyyy-MM-dd');
-            break;
-          case 'week':
-            startDate = format(startOfWeek(targetDate), 'yyyy-MM-dd');
-            endDate = format(endOfWeek(targetDate), 'yyyy-MM-dd');
-            break;
-          case 'day':
-            startDate = format(targetDate, 'yyyy-MM-dd');
-            endDate = format(targetDate, 'yyyy-MM-dd');
-            break;
-          case 'list':
-            // For list view, get a wider range
-            startDate = format(startOfMonth(targetDate), 'yyyy-MM-dd');
-            endDate = format(
-              endOfMonth(
-                new Date(targetDate.getFullYear(), targetDate.getMonth() + 3)
-              ),
-              'yyyy-MM-dd'
-            );
-            break;
-        }
-
-        const data = await getAppointments(startDate, endDate, currentView);
-        setAppointments(data);
-      } catch (error) {
-        console.error('Failed to refresh appointments:', error);
-      }
+  const handleCreateAppointment = useCallback(
+    async (data: any) => {
+      await createMutation.mutateAsync({
+        shopId,
+        clientId: data.clientId,
+        date: data.date,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        type: data.type,
+        notes: data.notes,
+      });
     },
-    [currentView]
+    [createMutation, shopId]
   );
+
+  const handleUpdateAppointment = useCallback(
+    async (data: any) => {
+      if (!selectedAppointment) return;
+
+      await updateMutation.mutateAsync({
+        id: selectedAppointment.id,
+        shopId,
+        clientId: data.clientId,
+        date: data.date,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        type: data.type,
+        status: data.status,
+        notes: data.notes,
+        originalDate: selectedAppointment.date,
+      });
+    },
+    [updateMutation, selectedAppointment, shopId]
+  );
+
+  const handleDeleteAppointment = useCallback(async () => {
+    if (!selectedAppointment) return;
+
+    await deleteMutation.mutateAsync({
+      id: selectedAppointment.id,
+      shopId,
+      date: selectedAppointment.date,
+    });
+  }, [deleteMutation, selectedAppointment, shopId]);
+
+  const handleRefresh = useCallback(() => {
+    // Invalidate all appointment queries for this shop
+    queryClient.invalidateQueries({
+      queryKey: appointmentKeys.all,
+    });
+  }, [queryClient]);
 
   return (
     <Container maxWidth="lg">
@@ -152,43 +190,31 @@ export function AppointmentsClient({
                 setSelectedTime(null);
                 setAppointmentDialogOpen(true);
               }}
-              variant="contained"
-              color="primary"
-              size="large"
             >
               New Appointment
             </Button>
           )}
         </Box>
 
-        {/* Calendar */}
-        {isMobile ? (
-          <Calendar
-            appointments={appointments}
-            shopHours={shopHours}
-            onAppointmentClick={handleAppointmentClick}
-            onDateClick={handleDateClick}
-            onRefresh={refreshAppointments}
-          />
-        ) : (
-          <CalendarDesktop
-            appointments={appointments}
-            shopHours={shopHours}
-            onAppointmentClick={handleAppointmentClick}
-            onDateClick={handleDateClick}
-            onRefresh={refreshAppointments}
-          />
-        )}
+        {/* Calendar with React Query */}
+        <CalendarDebug shopId={shopId} />
+        <CalendarWithQuery
+          shopId={shopId}
+          shopHours={shopHours}
+          onAppointmentClick={handleAppointmentClick}
+          onDateClick={handleDateClick}
+        />
 
-        {/* Mobile FAB only */}
+        {/* Mobile Floating Action Button */}
         {isMobile && (
           <Fab
             color="primary"
             aria-label="add appointment"
             sx={{
               position: 'fixed',
-              bottom: 80,
+              bottom: 16,
               right: 16,
+              zIndex: 1000,
             }}
             onClick={() => {
               setSelectedAppointment(null);
@@ -201,31 +227,31 @@ export function AppointmentsClient({
           </Fab>
         )}
 
-        {/* Dialogs */}
+        {/* Appointment Dialog */}
         <AppointmentDialog
           open={appointmentDialogOpen}
           onClose={() => {
             setAppointmentDialogOpen(false);
-            setSelectedAppointment(null);
             setSelectedDate(null);
             setSelectedTime(null);
-            refreshAppointments();
           }}
           appointment={selectedAppointment}
-          {...(selectedDate && { selectedDate })}
+          selectedDate={selectedDate || undefined}
           selectedTime={selectedTime}
           shopHours={shopHours}
-          existingAppointments={appointments}
+          existingAppointments={[]} // TODO: Pass appointments for selected date
           calendarSettings={calendarSettings}
+          onCreate={handleCreateAppointment}
+          onUpdate={handleUpdateAppointment}
         />
 
+        {/* Appointment Details Dialog */}
         {selectedAppointment && (
           <AppointmentDetailsDialog
             open={detailsDialogOpen}
             onClose={() => {
               setDetailsDialogOpen(false);
               setSelectedAppointment(null);
-              refreshAppointments();
             }}
             appointment={selectedAppointment}
             onEdit={handleEditAppointment}

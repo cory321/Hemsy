@@ -89,6 +89,7 @@ export function CalendarDesktop({
     let newDate: Date;
     switch (view) {
       case 'month':
+        // Use date-fns which handles month boundaries correctly
         newDate = subMonths(currentDate, 1);
         break;
       case 'week':
@@ -108,6 +109,7 @@ export function CalendarDesktop({
     let newDate: Date;
     switch (view) {
       case 'month':
+        // Use date-fns which handles month boundaries correctly
         newDate = addMonths(currentDate, 1);
         break;
       case 'week':

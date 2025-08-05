@@ -75,16 +75,26 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Use the optimized RPC function for better performance
-    const { data: appointments, error } = await supabase.rpc(
-      'get_appointments_time_range',
-      {
-        p_shop_id: shopId,
-        p_start_date: startDate,
-        p_end_date: endDate,
-        p_include_cancelled: false,
-      }
-    );
+    // Fetch appointments with client data directly
+    const { data: appointments, error } = await supabase
+      .from('appointments')
+      .select(
+        `
+				*,
+				client:clients(
+					first_name,
+					last_name,
+					email,
+					phone_number
+				)
+			`
+      )
+      .eq('shop_id', shopId)
+      .gte('date', startDate)
+      .lte('date', endDate)
+      .not('status', 'in', '(cancelled,no_show)')
+      .order('date', { ascending: true })
+      .order('start_time', { ascending: true });
 
     if (error) {
       console.error('Database error:', error);
@@ -101,7 +111,6 @@ export async function GET(request: NextRequest) {
         shop_id: apt.shop_id,
         client_id: apt.client_id,
         order_id: apt.order_id,
-        title: apt.title,
         date: apt.date,
         start_time: apt.start_time,
         end_time: apt.end_time,
@@ -210,15 +219,25 @@ export async function POST(request: NextRequest) {
           }
 
           // Prefetch the data
-          const { data, error } = await supabase.rpc(
-            'get_appointments_time_range',
-            {
-              p_shop_id: range.shopId,
-              p_start_date: range.startDate,
-              p_end_date: range.endDate,
-              p_include_cancelled: false,
-            }
-          );
+          const { data, error } = await supabase
+            .from('appointments')
+            .select(
+              `
+							*,
+							client:clients(
+								first_name,
+								last_name,
+								email,
+								phone_number
+							)
+						`
+            )
+            .eq('shop_id', range.shopId)
+            .gte('date', range.startDate)
+            .lte('date', range.endDate)
+            .not('status', 'in', '(cancelled,no_show)')
+            .order('date', { ascending: true })
+            .order('start_time', { ascending: true });
 
           if (error) {
             return {

@@ -195,7 +195,9 @@ export function ListView({ appointments, onAppointmentClick }: ListViewProps) {
                   {/* Details */}
                   <Box sx={{ flex: 1 }}>
                     <Typography variant="body1" fontWeight="medium">
-                      {appointment.title}
+                      {appointment.client
+                        ? `${appointment.client.first_name} ${appointment.client.last_name}`
+                        : 'No Client'}
                     </Typography>
 
                     {appointment.client && (

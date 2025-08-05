@@ -245,7 +245,9 @@ export function DayView({
                       }}
                     >
                       <Typography variant="subtitle2" fontWeight="bold">
-                        {appointment.title}
+                        {appointment.client
+                          ? `${appointment.client.first_name} ${appointment.client.last_name}`
+                          : 'No Client'}
                       </Typography>
 
                       <Box
@@ -263,23 +265,6 @@ export function DayView({
                           {formatDuration(duration)})
                         </Typography>
                       </Box>
-
-                      {appointment.client_id && (
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 0.5,
-                            mt: 0.5,
-                          }}
-                        >
-                          <PersonIcon sx={{ fontSize: 16 }} />
-                          <Typography variant="caption">
-                            {appointment.client?.first_name}{' '}
-                            {appointment.client?.last_name}
-                          </Typography>
-                        </Box>
-                      )}
 
                       <Chip
                         label={appointment.type.replace('_', ' ')}

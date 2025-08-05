@@ -321,7 +321,9 @@ export function WeekView({
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        {appointment.title}
+                        {appointment.client
+                          ? `${appointment.client.first_name} ${appointment.client.last_name}`
+                          : 'No Client'}
                       </Typography>
                     </Paper>
                   );

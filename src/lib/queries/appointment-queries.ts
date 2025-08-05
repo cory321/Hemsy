@@ -34,26 +34,26 @@ import {
   deleteAppointment,
   type CreateAppointmentData,
   type UpdateAppointmentData,
-} from '@/lib/actions/appointments';
+} from '@/lib/actions/appointments-refactored';
 import type { Appointment } from '@/types';
 
 // Configuration for different view types
 const VIEW_CONFIG = {
   month: {
     staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 30 * 60 * 1000, // 30 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
   },
   week: {
     staleTime: 3 * 60 * 1000, // 3 minutes
-    cacheTime: 15 * 60 * 1000, // 15 minutes
+    gcTime: 15 * 60 * 1000, // 15 minutes
   },
   day: {
     staleTime: 1 * 60 * 1000, // 1 minute
-    cacheTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 5 * 60 * 1000, // 5 minutes
   },
   list: {
     staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 30 * 60 * 1000, // 30 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
   },
 };
 
@@ -132,11 +132,18 @@ export function useAppointmentsTimeRange(
 ) {
   const config = VIEW_CONFIG[view];
 
+  console.log('🔄 useAppointmentsTimeRange called:', {
+    shopId,
+    startDate,
+    endDate,
+    view,
+  });
+
   return useQuery<Appointment[]>({
     queryKey: appointmentKeys.timeRange({ shopId, startDate, endDate }),
     queryFn: () => getAppointmentsByTimeRange(shopId, startDate, endDate),
     staleTime: config.staleTime,
-    cacheTime: config.cacheTime,
+    gcTime: config.gcTime,
     ...options,
   });
 }
@@ -170,7 +177,7 @@ export function usePrefetchAdjacentWindows(
           queryFn: () =>
             getAppointmentsByTimeRange(shopId, prev.startDate, prev.endDate),
           staleTime: config.staleTime,
-          cacheTime: config.cacheTime,
+          gcTime: config.gcTime,
         });
       }
 
@@ -185,7 +192,7 @@ export function usePrefetchAdjacentWindows(
           queryFn: () =>
             getAppointmentsByTimeRange(shopId, next.startDate, next.endDate),
           staleTime: config.staleTime,
-          cacheTime: config.cacheTime,
+          gcTime: config.gcTime,
         });
       }
     }, 100); // Small delay to prioritize current view
@@ -213,7 +220,7 @@ export function useAppointmentCounts(
     queryKey: appointmentKeys.monthCounts({ shopId, year, month }),
     queryFn: () => getAppointmentCounts(shopId, startDate, endDate),
     staleTime: VIEW_CONFIG.month.staleTime,
-    cacheTime: VIEW_CONFIG.month.cacheTime,
+    gcTime: VIEW_CONFIG.month.gcTime,
     ...options,
   });
 }
@@ -254,29 +261,29 @@ export function useCreateAppointment(
         const optimisticAppointment: Appointment = {
           id: `temp-${Date.now()}`,
           shop_id: newAppointment.shopId,
-          client_id: newAppointment.clientId,
-          order_id: null,
-          title: newAppointment.title,
+          client_id: newAppointment.clientId || '',
           date: newAppointment.date,
           start_time: newAppointment.startTime,
           end_time: newAppointment.endTime,
           type: newAppointment.type,
           status: 'scheduled',
-          notes: newAppointment.notes || null,
-          reminder_sent: false,
+          ...(newAppointment.notes && { notes: newAppointment.notes }),
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          client: newAppointment.clientId
-            ? {
-                id: newAppointment.clientId,
-                first_name: '',
-                last_name: '',
-                email: null,
-                phone_number: null,
-                accept_email: false,
-                accept_sms: false,
-              }
-            : null,
+          ...(newAppointment.clientId && {
+            client: {
+              id: newAppointment.clientId,
+              shop_id: newAppointment.shopId,
+              first_name: '',
+              last_name: '',
+              email: '',
+              phone_number: '',
+              accept_email: false,
+              accept_sms: false,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+          }),
         };
 
         queryClient.setQueryData<Appointment[]>(queryKey, (old = []) => {
@@ -349,9 +356,10 @@ export function useUpdateAppointment(
         dates.push(variables.originalDate);
       }
 
-      for (const date of dates) {
+      for (const dateStr of dates) {
+        if (!dateStr) continue;
         const { startDate, endDate } = calculateDateRange(
-          new Date(date),
+          new Date(dateStr),
           'month'
         );
 
@@ -363,7 +371,7 @@ export function useUpdateAppointment(
           }),
         });
 
-        const d = new Date(date);
+        const d = new Date(dateStr);
         await queryClient.invalidateQueries({
           queryKey: appointmentKeys.monthCounts({
             shopId: data.shop_id,
@@ -430,4 +438,45 @@ export function useDeleteAppointment(
 
     ...options,
   });
+}
+
+/**
+ * Hook to get appointments for a specific month
+ */
+export function useAppointmentsForMonth(
+  shopId: string,
+  year: number,
+  month: number,
+  options?: Omit<UseQueryOptions<Appointment[]>, 'queryKey' | 'queryFn'>
+) {
+  const date = new Date(year, month - 1, 1);
+  const { startDate, endDate } = calculateDateRange(date, 'month');
+
+  return useAppointmentsTimeRange(shopId, startDate, endDate, 'month', options);
+}
+
+/**
+ * Hook to get appointments for a specific week
+ */
+export function useAppointmentsForWeek(
+  shopId: string,
+  date: Date,
+  options?: Omit<UseQueryOptions<Appointment[]>, 'queryKey' | 'queryFn'>
+) {
+  const { startDate, endDate } = calculateDateRange(date, 'week');
+
+  return useAppointmentsTimeRange(shopId, startDate, endDate, 'week', options);
+}
+
+/**
+ * Hook to get appointments for a specific day
+ */
+export function useAppointmentsForDay(
+  shopId: string,
+  date: Date,
+  options?: Omit<UseQueryOptions<Appointment[]>, 'queryKey' | 'queryFn'>
+) {
+  const { startDate, endDate } = calculateDateRange(date, 'day');
+
+  return useAppointmentsTimeRange(shopId, startDate, endDate, 'day', options);
 }
