@@ -60,6 +60,3 @@ Thumbs.db
 # Temporary folders
 tmp/
 temp/
-
-# MCP configuration
-.mcp.json

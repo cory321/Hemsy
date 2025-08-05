@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   Container,
   Typography,
@@ -55,6 +55,13 @@ export function AppointmentsClient({
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [currentView] = useState<'month' | 'week' | 'day' | 'list'>('month');
+  const [viewingDate, setViewingDate] = useState<Date>(new Date());
+  const viewingDateRef = useRef(viewingDate);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    viewingDateRef.current = viewingDate;
+  }, [viewingDate]);
 
   const handleAppointmentClick = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
@@ -72,41 +79,52 @@ export function AppointmentsClient({
     setAppointmentDialogOpen(true);
   };
 
-  const refreshAppointments = useCallback(async () => {
-    try {
-      let startDate: string;
-      let endDate: string;
-      const now = new Date();
+  const refreshAppointments = useCallback(
+    async (dateToView?: Date) => {
+      try {
+        let startDate: string;
+        let endDate: string;
+        // Always use the provided date, or fall back to current viewing date from ref
+        const targetDate = dateToView || viewingDateRef.current;
 
-      switch (currentView) {
-        case 'month':
-          startDate = format(startOfMonth(now), 'yyyy-MM-dd');
-          endDate = format(endOfMonth(now), 'yyyy-MM-dd');
-          break;
-        case 'week':
-          startDate = format(startOfWeek(now), 'yyyy-MM-dd');
-          endDate = format(endOfWeek(now), 'yyyy-MM-dd');
-          break;
-        case 'day':
-          startDate = format(now, 'yyyy-MM-dd');
-          endDate = format(now, 'yyyy-MM-dd');
-          break;
-        case 'list':
-          // For list view, get a wider range
-          startDate = format(startOfMonth(now), 'yyyy-MM-dd');
-          endDate = format(
-            endOfMonth(new Date(now.getFullYear(), now.getMonth() + 3)),
-            'yyyy-MM-dd'
-          );
-          break;
+        // Update the viewing date immediately if a new date was provided
+        if (dateToView) {
+          setViewingDate(dateToView);
+        }
+
+        switch (currentView) {
+          case 'month':
+            startDate = format(startOfMonth(targetDate), 'yyyy-MM-dd');
+            endDate = format(endOfMonth(targetDate), 'yyyy-MM-dd');
+            break;
+          case 'week':
+            startDate = format(startOfWeek(targetDate), 'yyyy-MM-dd');
+            endDate = format(endOfWeek(targetDate), 'yyyy-MM-dd');
+            break;
+          case 'day':
+            startDate = format(targetDate, 'yyyy-MM-dd');
+            endDate = format(targetDate, 'yyyy-MM-dd');
+            break;
+          case 'list':
+            // For list view, get a wider range
+            startDate = format(startOfMonth(targetDate), 'yyyy-MM-dd');
+            endDate = format(
+              endOfMonth(
+                new Date(targetDate.getFullYear(), targetDate.getMonth() + 3)
+              ),
+              'yyyy-MM-dd'
+            );
+            break;
+        }
+
+        const data = await getAppointments(startDate, endDate, currentView);
+        setAppointments(data);
+      } catch (error) {
+        console.error('Failed to refresh appointments:', error);
       }
-
-      const data = await getAppointments(startDate, endDate, currentView);
-      setAppointments(data);
-    } catch (error) {
-      console.error('Failed to refresh appointments:', error);
-    }
-  }, [currentView]);
+    },
+    [currentView]
+  );
 
   return (
     <Container maxWidth="lg">

@@ -62,7 +62,7 @@ interface CalendarDesktopProps {
   }>;
   onAppointmentClick?: (appointment: Appointment) => void;
   onDateClick?: (date: Date, time?: string) => void;
-  onRefresh?: () => void;
+  onRefresh?: (date?: Date) => void;
 }
 
 export function CalendarDesktop({
@@ -86,38 +86,47 @@ export function CalendarDesktop({
 
   // Navigation handlers
   const handlePrevious = useCallback(() => {
+    let newDate: Date;
     switch (view) {
       case 'month':
-        setCurrentDate((date) => subMonths(date, 1));
+        newDate = subMonths(currentDate, 1);
         break;
       case 'week':
-        setCurrentDate((date) => subWeeks(date, 1));
+        newDate = subWeeks(currentDate, 1);
         break;
       case 'day':
-        setCurrentDate((date) => subDays(date, 1));
+        newDate = subDays(currentDate, 1);
         break;
+      default:
+        newDate = currentDate;
     }
-    onRefresh?.();
-  }, [view, onRefresh]);
+    setCurrentDate(newDate);
+    onRefresh?.(newDate);
+  }, [view, currentDate, onRefresh]);
 
   const handleNext = useCallback(() => {
+    let newDate: Date;
     switch (view) {
       case 'month':
-        setCurrentDate((date) => addMonths(date, 1));
+        newDate = addMonths(currentDate, 1);
         break;
       case 'week':
-        setCurrentDate((date) => addWeeks(date, 1));
+        newDate = addWeeks(currentDate, 1);
         break;
       case 'day':
-        setCurrentDate((date) => addDays(date, 1));
+        newDate = addDays(currentDate, 1);
         break;
+      default:
+        newDate = currentDate;
     }
-    onRefresh?.();
-  }, [view, onRefresh]);
+    setCurrentDate(newDate);
+    onRefresh?.(newDate);
+  }, [view, currentDate, onRefresh]);
 
   const handleToday = useCallback(() => {
-    setCurrentDate(new Date());
-    onRefresh?.();
+    const today = new Date();
+    setCurrentDate(today);
+    onRefresh?.(today);
   }, [onRefresh]);
 
   const handleViewChange = (
@@ -126,7 +135,7 @@ export function CalendarDesktop({
   ) => {
     if (newView) {
       setView(newView);
-      onRefresh?.();
+      onRefresh?.(currentDate);
     }
   };
 
