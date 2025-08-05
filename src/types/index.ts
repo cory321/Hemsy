@@ -135,3 +135,11 @@ export type OrderStatus = Order['status'];
 export type InvoiceStatus = Invoice['status'];
 export type AppointmentType = Appointment['type'];
 export type AppointmentStatus = Appointment['status'];
+
+// Shop Hours type
+export interface ShopHours {
+  day_of_week: number;
+  open_time: string | null;
+  close_time: string | null;
+  is_closed: boolean;
+}

@@ -18,6 +18,10 @@ import {
   FormControlLabel,
   Tooltip,
   TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import CancelIcon from '@mui/icons-material/Cancel';
@@ -33,6 +37,7 @@ import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import PersonOffIcon from '@mui/icons-material/PersonOff';
 import SaveIcon from '@mui/icons-material/Save';
 import NotesIcon from '@mui/icons-material/Notes';
+import CategoryIcon from '@mui/icons-material/Category';
 import { format, parseISO } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import {
@@ -49,12 +54,18 @@ import {
   getDurationMinutes,
 } from '@/lib/utils/calendar';
 import type { Appointment } from '@/types';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { appointmentKeys } from '@/lib/queries/appointment-keys';
+import { updateAppointment as updateAppointmentRefactored } from '@/lib/actions/appointments-refactored';
+import { useAppointments } from '@/providers/AppointmentProvider';
+import { AppointmentActionType } from '@/lib/reducers/appointments-reducer';
+import { toast } from 'react-hot-toast';
 
 interface AppointmentDetailsDialogProps {
   open: boolean;
   onClose: () => void;
   appointment: Appointment;
-  onEdit: () => void;
+  onEdit: (appointment: Appointment, isReschedule?: boolean) => void;
 }
 
 interface CommunicationPreferences {
@@ -84,10 +95,17 @@ export function AppointmentDetailsDialog({
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [editedNotes, setEditedNotes] = useState(appointment.notes || '');
   const [currentNotes, setCurrentNotes] = useState<string | null>(
-    appointment.notes
+    appointment.notes || null
   );
+  const [isEditingType, setIsEditingType] = useState(false);
+  const [editedType, setEditedType] = useState(appointment.type);
+  const [currentType, setCurrentType] = useState(appointment.type);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [savingNotes, setSavingNotes] = useState(false);
+  const [savingType, setSavingType] = useState(false);
+
+  const queryClient = useQueryClient();
+  const { dispatch, state } = useAppointments();
 
   const duration = getDurationMinutes(
     appointment.start_time,
@@ -96,11 +114,13 @@ export function AppointmentDetailsDialog({
   const isPast =
     new Date(`${appointment.date} ${appointment.end_time}`) < new Date();
 
-  // Sync currentNotes with appointment prop whenever it changes
+  // Sync state with appointment prop whenever it changes
   useEffect(() => {
-    setCurrentNotes(appointment.notes);
+    setCurrentNotes(appointment.notes || null);
     setEditedNotes(appointment.notes || '');
-  }, [appointment.notes]);
+    setCurrentType(appointment.type);
+    setEditedType(appointment.type);
+  }, [appointment.notes, appointment.type]);
 
   const handleCancelClick = () => {
     setShowCancelConfirm(true);
@@ -110,31 +130,108 @@ export function AppointmentDetailsDialog({
     setShowEditConfirm(true);
   };
 
-  const handleConfirmCancel = async () => {
-    setError(null);
-    setLoading(true);
+  // Mutation for updating appointment
+  const updateMutation = useMutation({
+    mutationFn: updateAppointmentRefactored,
+    onMutate: async (data) => {
+      // Optimistic update using reducer
+      const updates: Partial<Appointment> = {
+        id: appointment.id,
+        shop_id: appointment.shop_id,
+        client_id: appointment.client_id,
+        date: data.date || appointment.date,
+        start_time: data.startTime || appointment.start_time,
+        end_time: data.endTime || appointment.end_time,
+        type: data.type || appointment.type,
+        status: data.status || appointment.status,
+      };
 
-    try {
-      // TODO: Pass communication preferences to server action
-      // await cancelAppointment(appointment.id, cancelComms);
-      await cancelAppointment(appointment.id);
-      router.refresh();
+      // Only include notes if it's explicitly being updated
+      if (data.notes !== undefined) {
+        updates.notes = data.notes;
+      }
+
+      dispatch({
+        type: AppointmentActionType.UPDATE_APPOINTMENT_OPTIMISTIC,
+        payload: {
+          id: appointment.id,
+          updates,
+          previousData: appointment,
+        },
+      });
+    },
+    onSuccess: (updatedAppointment) => {
+      dispatch({
+        type: AppointmentActionType.UPDATE_APPOINTMENT_SUCCESS,
+        payload: {
+          appointment: updatedAppointment,
+        },
+      });
+      toast.success('Appointment updated successfully');
+    },
+    onError: (error, variables) => {
+      dispatch({
+        type: AppointmentActionType.UPDATE_APPOINTMENT_ERROR,
+        payload: {
+          id: appointment.id,
+          previousData: appointment,
+          error: error.message,
+        },
+      });
+      toast.error(error.message || 'Failed to update appointment');
+    },
+  });
+
+  // Mutation for canceling appointment
+  const cancelMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return updateAppointmentRefactored({
+        id,
+        status: 'canceled',
+      });
+    },
+    onMutate: async () => {
+      // Optimistic update
+      dispatch({
+        type: AppointmentActionType.CANCEL_APPOINTMENT_OPTIMISTIC,
+        payload: {
+          id: appointment.id,
+          previousData: appointment,
+        },
+      });
+    },
+    onSuccess: (updatedAppointment) => {
+      dispatch({
+        type: AppointmentActionType.CANCEL_APPOINTMENT_SUCCESS,
+        payload: {
+          appointment: updatedAppointment,
+        },
+      });
+      toast.success('Appointment canceled');
       setShowCancelConfirm(false);
       onClose();
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Failed to cancel appointment'
-      );
-    } finally {
-      setLoading(false);
-    }
+    },
+    onError: (error) => {
+      dispatch({
+        type: AppointmentActionType.CANCEL_APPOINTMENT_ERROR,
+        payload: {
+          id: appointment.id,
+          previousData: appointment,
+          error: error.message,
+        },
+      });
+      toast.error(error.message || 'Failed to cancel appointment');
+    },
+  });
+
+  const handleConfirmCancel = async () => {
+    cancelMutation.mutate(appointment.id);
   };
 
   const handleConfirmEdit = () => {
-    // TODO: Pass communication preferences to onEdit callback
-    // onEdit(editComms);
     setShowEditConfirm(false);
-    onEdit();
+    // Pass reschedule flag to the edit handler
+    onEdit(appointment, true);
   };
 
   const handleConfirmAppointment = async () => {
@@ -189,36 +286,57 @@ export function AppointmentDetailsDialog({
   };
 
   const handleSaveNotes = async () => {
-    setError(null);
-    setSuccessMessage(null);
     setSavingNotes(true);
 
-    try {
-      await updateAppointment({
+    updateMutation.mutate(
+      {
         id: appointment.id,
-        notes: editedNotes || null,
-      });
+        notes: editedNotes || undefined,
+      },
+      {
+        onSuccess: () => {
+          setCurrentNotes(editedNotes || null);
+          setIsEditingNotes(false);
+          setSavingNotes(false);
+        },
+        onError: () => {
+          setSavingNotes(false);
+        },
+      }
+    );
+  };
 
-      // Update local state immediately for visual feedback
-      setCurrentNotes(editedNotes || null);
-      setIsEditingNotes(false);
-      setSuccessMessage('Notes updated successfully');
+  const handleSaveType = async () => {
+    setSavingType(true);
 
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccessMessage(null), 3000);
-
-      // Refresh data in the background
-      router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update notes');
-    } finally {
-      setSavingNotes(false);
-    }
+    updateMutation.mutate(
+      {
+        id: appointment.id,
+        type: editedType,
+      },
+      {
+        onSuccess: () => {
+          setCurrentType(editedType);
+          setIsEditingType(false);
+          setSavingType(false);
+        },
+        onError: () => {
+          setSavingType(false);
+        },
+      }
+    );
   };
 
   const handleCancelEditNotes = () => {
     setEditedNotes(currentNotes || '');
     setIsEditingNotes(false);
+    setError(null);
+    setSuccessMessage(null);
+  };
+
+  const handleCancelEditType = () => {
+    setEditedType(currentType);
+    setIsEditingType(false);
     setError(null);
     setSuccessMessage(null);
   };
@@ -297,10 +415,10 @@ export function AppointmentDetailsDialog({
               </Typography>
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                 <Chip
-                  label={appointment.type.replace('_', ' ').toUpperCase()}
+                  label={currentType.replace('_', ' ').toUpperCase()}
                   size="small"
                   sx={{
-                    bgcolor: getAppointmentColor(appointment.type),
+                    bgcolor: getAppointmentColor(currentType),
                     color: 'white',
                     fontWeight: 'bold',
                   }}
@@ -325,6 +443,105 @@ export function AppointmentDetailsDialog({
                   />
                 )}
               </Box>
+            </Box>
+
+            <Divider />
+
+            {/* Appointment Type */}
+            <Box>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  mb: 1,
+                }}
+              >
+                <Typography
+                  variant="subtitle1"
+                  fontWeight="medium"
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                  }}
+                >
+                  <CategoryIcon fontSize="small" color="primary" />
+                  Appointment Type
+                </Typography>
+                {!isEditingType && (
+                  <IconButton
+                    size="small"
+                    onClick={() => {
+                      setEditedType(currentType);
+                      setIsEditingType(true);
+                    }}
+                    disabled={loading || updateMutation.isPending}
+                    sx={{ color: 'primary.main' }}
+                  >
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                )}
+              </Box>
+
+              {isEditingType ? (
+                <Box sx={{ ml: 3 }}>
+                  <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+                    <Select
+                      value={editedType}
+                      onChange={(e) => setEditedType(e.target.value as any)}
+                      disabled={savingType}
+                    >
+                      <MenuItem value="consultation">Consultation</MenuItem>
+                      <MenuItem value="fitting">Fitting</MenuItem>
+                      <MenuItem value="pickup">Pickup</MenuItem>
+                      <MenuItem value="delivery">Delivery</MenuItem>
+                      <MenuItem value="other">Other</MenuItem>
+                    </Select>
+                  </FormControl>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      gap: 1,
+                      justifyContent: 'flex-end',
+                    }}
+                  >
+                    <Button
+                      size="small"
+                      onClick={handleCancelEditType}
+                      disabled={savingType}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="contained"
+                      startIcon={
+                        savingType ? (
+                          <CircularProgress size={16} />
+                        ) : (
+                          <SaveIcon />
+                        )
+                      }
+                      onClick={handleSaveType}
+                      disabled={savingType}
+                    >
+                      {savingType ? 'Saving...' : 'Save Type'}
+                    </Button>
+                  </Box>
+                </Box>
+              ) : (
+                <Box sx={{ ml: 3 }}>
+                  <Chip
+                    label={currentType.replace('_', ' ').toUpperCase()}
+                    sx={{
+                      bgcolor: getAppointmentColor(currentType),
+                      color: 'white',
+                      fontWeight: 'bold',
+                    }}
+                  />
+                </Box>
+              )}
             </Box>
 
             <Divider />
@@ -508,11 +725,12 @@ export function AppointmentDetailsDialog({
           <Button
             onClick={() => {
               setIsEditingNotes(false);
+              setIsEditingType(false);
               setError(null);
               setSuccessMessage(null);
               onClose();
             }}
-            disabled={loading}
+            disabled={updateMutation.isPending || cancelMutation.isPending}
             color="inherit"
           >
             Close
@@ -527,7 +745,7 @@ export function AppointmentDetailsDialog({
                   color="success"
                   startIcon={<ThumbUpIcon />}
                   onClick={handleConfirmAppointment}
-                  disabled={loading}
+                  disabled={loading || updateMutation.isPending}
                   sx={{ minWidth: 'auto' }}
                 >
                   Confirm
@@ -537,7 +755,7 @@ export function AppointmentDetailsDialog({
                   color="error"
                   startIcon={<ThumbDownIcon />}
                   onClick={handleDeclineAppointment}
-                  disabled={loading}
+                  disabled={loading || updateMutation.isPending}
                   sx={{ minWidth: 'auto' }}
                 >
                   Decline
@@ -550,9 +768,17 @@ export function AppointmentDetailsDialog({
               <>
                 <Button
                   variant="outlined"
-                  startIcon={<EditIcon />}
+                  startIcon={
+                    updateMutation.isPending ? (
+                      <CircularProgress size={16} />
+                    ) : (
+                      <EditIcon />
+                    )
+                  }
                   onClick={handleEditClick}
-                  disabled={loading}
+                  disabled={
+                    updateMutation.isPending || cancelMutation.isPending
+                  }
                   sx={{ minWidth: 'auto' }}
                 >
                   Reschedule
@@ -560,9 +786,17 @@ export function AppointmentDetailsDialog({
                 <Button
                   variant="outlined"
                   color="error"
-                  startIcon={<CancelIcon />}
+                  startIcon={
+                    cancelMutation.isPending ? (
+                      <CircularProgress size={16} />
+                    ) : (
+                      <CancelIcon />
+                    )
+                  }
                   onClick={handleCancelClick}
-                  disabled={loading}
+                  disabled={
+                    updateMutation.isPending || cancelMutation.isPending
+                  }
                   sx={{ minWidth: 'auto' }}
                 >
                   Cancel
@@ -573,7 +807,7 @@ export function AppointmentDetailsDialog({
                     color="warning"
                     startIcon={<PersonOffIcon />}
                     onClick={handleMarkNoShow}
-                    disabled={loading}
+                    disabled={loading || updateMutation.isPending}
                     sx={{ minWidth: 'auto' }}
                   >
                     No Show
@@ -660,7 +894,7 @@ export function AppointmentDetailsDialog({
         <DialogActions>
           <Button
             onClick={() => setShowCancelConfirm(false)}
-            disabled={loading}
+            disabled={cancelMutation.isPending}
           >
             Back
           </Button>
@@ -668,9 +902,12 @@ export function AppointmentDetailsDialog({
             variant="contained"
             color="error"
             onClick={handleConfirmCancel}
-            disabled={loading}
+            disabled={cancelMutation.isPending}
+            startIcon={
+              cancelMutation.isPending ? <CircularProgress size={16} /> : null
+            }
           >
-            {loading ? <CircularProgress size={24} /> : 'Cancel Appointment'}
+            {cancelMutation.isPending ? 'Canceling...' : 'Cancel Appointment'}
           </Button>
         </DialogActions>
       </Dialog>

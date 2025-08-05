@@ -3,7 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 import { CircularProgress, Box } from '@mui/material';
 import { AppointmentsClient } from './AppointmentsClient';
 import { getShopHours, getCalendarSettings } from '@/lib/actions/appointments';
-import { getAllClients } from '@/lib/actions/clients';
+
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -38,10 +38,9 @@ export default async function AppointmentsPage() {
   const shopId = await getShopId();
 
   // Fetch only the necessary initial data (not appointments)
-  const [shopHours, calendarSettings, clients] = await Promise.all([
+  const [shopHours, calendarSettings] = await Promise.all([
     getShopHours(),
     getCalendarSettings(),
-    getAllClients(),
   ]);
 
   return (
@@ -56,7 +55,6 @@ export default async function AppointmentsPage() {
         shopId={shopId}
         shopHours={shopHours}
         calendarSettings={calendarSettings}
-        clients={clients}
       />
     </Suspense>
   );

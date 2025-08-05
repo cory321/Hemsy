@@ -68,6 +68,7 @@ interface AppointmentDialogProps {
   open: boolean;
   onClose: () => void;
   appointment?: Appointment | null;
+  isReschedule?: boolean;
   selectedDate?: Date;
   selectedTime?: string | null;
   shopHours?: Array<{
@@ -104,6 +105,7 @@ export function AppointmentDialog({
   open,
   onClose,
   appointment,
+  isReschedule = false,
   selectedDate,
   selectedTime,
   shopHours = [],
@@ -120,19 +122,25 @@ export function AppointmentDialog({
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 
   // Form state
-  const [formData, setFormData] = useState({
-    client_id: appointment?.client_id || null,
-    date: appointment
+  const [formData, setFormData] = useState(() => {
+    const initialDate = appointment
       ? dayjs(appointment.date)
-      : dayjs(selectedDate || new Date()),
-    start_time: appointment
-      ? parseTimeString(appointment.start_time)
-      : selectedTime
-        ? parseTimeString(selectedTime)
-        : null,
-    end_time: appointment ? parseTimeString(appointment.end_time) : null,
-    type: appointment?.type || 'consultation',
-    notes: appointment?.notes || '',
+      : selectedDate
+        ? dayjs(selectedDate)
+        : dayjs(new Date());
+
+    return {
+      client_id: appointment?.client_id || null,
+      date: initialDate,
+      start_time: appointment
+        ? parseTimeString(appointment.start_time)
+        : selectedTime
+          ? parseTimeString(selectedTime)
+          : null,
+      end_time: appointment ? parseTimeString(appointment.end_time) : null,
+      type: appointment?.type || 'consultation',
+      notes: appointment?.notes || '',
+    };
   });
 
   // Duration state
@@ -262,7 +270,11 @@ export function AppointmentDialog({
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>
-        {appointment ? 'Edit Appointment' : 'New Appointment'}
+        {isReschedule
+          ? 'Reschedule Appointment'
+          : appointment
+            ? 'Edit Appointment'
+            : 'New Appointment'}
       </DialogTitle>
 
       <DialogContent>
@@ -283,6 +295,7 @@ export function AppointmentDialog({
                 client_id: newClient?.id || null,
               }));
             }}
+            disabled={isReschedule} // Disable client selection when rescheduling
           />
 
           {/* Date and Time */}
@@ -361,42 +374,46 @@ export function AppointmentDialog({
             </Box>
           </LocalizationProvider>
 
-          {/* Type */}
-          <FormControl fullWidth>
-            <InputLabel>Type</InputLabel>
-            <Select
-              value={formData.type}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  type: e.target.value as
-                    | 'consultation'
-                    | 'fitting'
-                    | 'pickup'
-                    | 'delivery'
-                    | 'other',
-                }))
-              }
-              required
-            >
-              <MenuItem value="consultation">Consultation</MenuItem>
-              <MenuItem value="fitting">Fitting</MenuItem>
-              <MenuItem value="pickup">Pick up</MenuItem>
-              <MenuItem value="delivery">Delivery</MenuItem>
-              <MenuItem value="other">Other</MenuItem>
-            </Select>
-          </FormControl>
+          {/* Type - Only show when not rescheduling */}
+          {!isReschedule && (
+            <FormControl fullWidth>
+              <InputLabel>Type</InputLabel>
+              <Select
+                value={formData.type}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    type: e.target.value as
+                      | 'consultation'
+                      | 'fitting'
+                      | 'pickup'
+                      | 'delivery'
+                      | 'other',
+                  }))
+                }
+                required
+              >
+                <MenuItem value="consultation">Consultation</MenuItem>
+                <MenuItem value="fitting">Fitting</MenuItem>
+                <MenuItem value="pickup">Pick up</MenuItem>
+                <MenuItem value="delivery">Delivery</MenuItem>
+                <MenuItem value="other">Other</MenuItem>
+              </Select>
+            </FormControl>
+          )}
 
-          {/* Notes */}
-          <TextField
-            label="Notes"
-            multiline
-            rows={3}
-            value={formData.notes}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, notes: e.target.value }))
-            }
-          />
+          {/* Notes - Only show when not rescheduling */}
+          {!isReschedule && (
+            <TextField
+              label="Notes"
+              multiline
+              rows={3}
+              value={formData.notes}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, notes: e.target.value }))
+              }
+            />
+          )}
         </Box>
       </DialogContent>
 
@@ -413,6 +430,8 @@ export function AppointmentDialog({
         >
           {loading ? (
             <CircularProgress size={24} />
+          ) : isReschedule ? (
+            'Reschedule'
           ) : appointment ? (
             'Update'
           ) : (

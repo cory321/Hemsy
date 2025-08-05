@@ -182,8 +182,11 @@ export function CalendarDesktop({
       // Notify parent if controlled
       onViewChange?.('day');
     }
-    // Don't call parent onDateClick since we're handling navigation internally
-    // The parent onDateClick is intended for creating appointments, not navigation
+    // If controlled, notify parent about the date click
+    // This allows the parent to handle navigation and other logic
+    if (controlledDate || controlledView) {
+      onDateClick?.(date);
+    }
   };
 
   // Get formatted header based on view
@@ -192,9 +195,12 @@ export function CalendarDesktop({
       case 'month':
         return format(currentDate, 'MMMM yyyy');
       case 'week':
-        const weekStart = generateWeekDays(currentDate)[0];
-        const weekEnd = generateWeekDays(currentDate)[6];
-        return `${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d, yyyy')}`;
+        const weekDays = generateWeekDays(currentDate);
+        const weekStart = weekDays[0];
+        const weekEnd = weekDays[6];
+        return weekStart && weekEnd
+          ? `${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d, yyyy')}`
+          : '';
       case 'day':
         return format(currentDate, 'EEEE, MMMM d, yyyy');
       case 'list':
@@ -320,7 +326,10 @@ export function CalendarDesktop({
                 </IconButton>
               </Tooltip>
               {onRefresh && (
-                <IconButton onClick={onRefresh} aria-label="Refresh">
+                <IconButton
+                  onClick={() => onRefresh(currentDate)}
+                  aria-label="Refresh"
+                >
                   <RefreshIcon />
                 </IconButton>
               )}
@@ -413,9 +422,15 @@ export function CalendarDesktop({
                   {
                     appointments.filter((apt) => {
                       const aptDate = new Date(apt.date);
-                      const weekStart = generateWeekDays(new Date())[0];
-                      const weekEnd = generateWeekDays(new Date())[6];
-                      return aptDate >= weekStart && aptDate <= weekEnd;
+                      const weekDays = generateWeekDays(new Date());
+                      const weekStart = weekDays[0];
+                      const weekEnd = weekDays[6];
+                      return (
+                        weekStart &&
+                        weekEnd &&
+                        aptDate >= weekStart &&
+                        aptDate <= weekEnd
+                      );
                     }).length
                   }
                 </Typography>
