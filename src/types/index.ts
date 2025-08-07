@@ -143,3 +143,6 @@ export interface ShopHours {
   close_time: string | null;
   is_closed: boolean;
 }
+
+// Email system types
+export * from './email';

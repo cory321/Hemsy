@@ -18,10 +18,26 @@ import {
   Grid,
   Tabs,
   Tab,
+  Paper,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
-import { useState } from 'react';
+import {
+  Person as PersonIcon,
+  Schedule as ScheduleIcon,
+  Email as EmailIcon,
+  Payment as PaymentIcon,
+  Save as SaveIcon,
+} from '@mui/icons-material';
+import { useState, useEffect, useTransition } from 'react';
 import { WorkingHoursSettings } from '@/components/appointments/WorkingHoursSettings';
 import { CalendarSettings } from '@/components/appointments/CalendarSettings';
+import { EmailSettingsSection } from './components/emails/EmailSettingsSection';
+import {
+  getShopBusinessInfo,
+  updateShopBusinessInfo,
+} from '@/lib/actions/shops';
+import { useToast } from '@/hooks/useToast';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -49,145 +65,292 @@ export function SettingsClient() {
   const [tabValue, setTabValue] = useState(0);
   const [emailReminders, setEmailReminders] = useState(true);
   const [smsReminders, setSmsReminders] = useState(false);
-  const [paymentPreference, setPaymentPreference] = useState('after');
+  const [paymentPreference, setPaymentPreference] = useState('after_service');
+  const [loading, setLoading] = useState(true);
+  const [businessInfo, setBusinessInfo] = useState({
+    business_name: '',
+    email: '',
+    phone_number: '',
+    mailing_address: '',
+    location_type: 'shop_location' as
+      | 'home_based'
+      | 'shop_location'
+      | 'mobile_service',
+    payment_preference: 'after_service' as 'upfront' | 'after_service',
+  });
+  const [isPending, startTransition] = useTransition();
+  const { showToast } = useToast();
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadBusinessInfo();
+  }, []);
+
+  const loadBusinessInfo = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await getShopBusinessInfo();
+
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+
+      if (result.data) {
+        setBusinessInfo({
+          business_name: result.data.business_name || '',
+          email: result.data.email || '',
+          phone_number: result.data.phone_number || '',
+          mailing_address: result.data.mailing_address || '',
+          location_type: result.data.location_type || 'shop_location',
+          payment_preference: result.data.payment_preference || 'after_service',
+        });
+        setPaymentPreference(result.data.payment_preference || 'after_service');
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to load business information'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
 
-  const handleSave = () => {
-    // TODO: Handle save
-    console.log('Settings saved');
+  const handleSaveBusinessInfo = () => {
+    startTransition(async () => {
+      try {
+        const result = await updateShopBusinessInfo({
+          ...businessInfo,
+          payment_preference: paymentPreference as 'upfront' | 'after_service',
+        });
+
+        if (!result.success) {
+          throw new Error(result.error);
+        }
+
+        showToast('Business information saved successfully', 'success');
+      } catch (err) {
+        showToast(
+          err instanceof Error
+            ? err.message
+            : 'Failed to save business information',
+          'error'
+        );
+      }
+    });
   };
 
   return (
-    <Container maxWidth="md">
-      <Box sx={{ mt: 4, mb: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Settings
-        </Typography>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Typography variant="h4" gutterBottom>
+        Settings
+      </Typography>
 
+      <Paper sx={{ width: '100%', mb: 4 }}>
         <Tabs
           value={tabValue}
           onChange={handleTabChange}
+          variant="scrollable"
+          scrollButtons="auto"
+          aria-label="settings tabs"
           sx={{ borderBottom: 1, borderColor: 'divider' }}
         >
-          <Tab label="General" />
-          <Tab label="Calendar" />
-          <Tab label="Billing" />
+          <Tab icon={<PersonIcon />} label="General" />
+          <Tab icon={<ScheduleIcon />} label="Calendar" />
+          <Tab icon={<EmailIcon />} label="Emails" />
+          <Tab icon={<PaymentIcon />} label="Billing" />
         </Tabs>
 
         <TabPanel value={tabValue} index={0}>
-          {/* Business Information */}
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Business Information
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Business Name"
-                    defaultValue="Sarah's Alterations"
-                    variant="outlined"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Phone Number"
-                    defaultValue="(555) 111-2222"
-                    variant="outlined"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Email Address"
-                    defaultValue="sarah@alterations.com"
-                    variant="outlined"
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Address"
-                    defaultValue="123 Main St, City, State 12345"
-                    variant="outlined"
-                    multiline
-                    rows={2}
-                  />
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
+          {loading ? (
+            <Box display="flex" justifyContent="center" p={4}>
+              <CircularProgress />
+            </Box>
+          ) : error ? (
+            <Alert
+              severity="error"
+              action={
+                <Button color="inherit" size="small" onClick={loadBusinessInfo}>
+                  Retry
+                </Button>
+              }
+              sx={{ mb: 3 }}
+            >
+              {error}
+            </Alert>
+          ) : (
+            <>
+              {/* Business Information */}
+              <Card sx={{ mb: 3 }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Business Information
+                  </Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        label="Business Name"
+                        value={businessInfo.business_name}
+                        onChange={(e) =>
+                          setBusinessInfo({
+                            ...businessInfo,
+                            business_name: e.target.value,
+                          })
+                        }
+                        variant="outlined"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        label="Phone Number"
+                        value={businessInfo.phone_number}
+                        onChange={(e) =>
+                          setBusinessInfo({
+                            ...businessInfo,
+                            phone_number: e.target.value,
+                          })
+                        }
+                        variant="outlined"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        label="Email Address"
+                        value={businessInfo.email}
+                        onChange={(e) =>
+                          setBusinessInfo({
+                            ...businessInfo,
+                            email: e.target.value,
+                          })
+                        }
+                        variant="outlined"
+                        type="email"
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        label="Address"
+                        value={businessInfo.mailing_address}
+                        onChange={(e) =>
+                          setBusinessInfo({
+                            ...businessInfo,
+                            mailing_address: e.target.value,
+                          })
+                        }
+                        variant="outlined"
+                        multiline
+                        rows={2}
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <FormControl fullWidth>
+                        <InputLabel>Location Type</InputLabel>
+                        <Select
+                          value={businessInfo.location_type}
+                          label="Location Type"
+                          onChange={(e) =>
+                            setBusinessInfo({
+                              ...businessInfo,
+                              location_type: e.target.value as any,
+                            })
+                          }
+                        >
+                          <MenuItem value="shop_location">
+                            Shop Location
+                          </MenuItem>
+                          <MenuItem value="home_based">Home Based</MenuItem>
+                          <MenuItem value="mobile_service">
+                            Mobile Service
+                          </MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </Card>
 
-          {/* Payment Preferences */}
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Payment Preferences
-              </Typography>
-              <FormControl fullWidth sx={{ mb: 2 }}>
-                <InputLabel>Default Payment Timing</InputLabel>
-                <Select
-                  value={paymentPreference}
-                  label="Default Payment Timing"
-                  onChange={(e) => setPaymentPreference(e.target.value)}
+              {/* Payment Preferences */}
+              <Card sx={{ mb: 3 }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Payment Preferences
+                  </Typography>
+                  <FormControl fullWidth sx={{ mb: 2 }}>
+                    <InputLabel>Default Payment Timing</InputLabel>
+                    <Select
+                      value={paymentPreference}
+                      label="Default Payment Timing"
+                      onChange={(e) => setPaymentPreference(e.target.value)}
+                    >
+                      <MenuItem value="upfront">
+                        Payment required before service
+                      </MenuItem>
+                      <MenuItem value="after_service">
+                        Payment after service completion
+                      </MenuItem>
+                    </Select>
+                  </FormControl>
+                  <Typography variant="body2" color="text.secondary">
+                    This sets the default payment preference for new orders. You
+                    can override this for individual orders.
+                  </Typography>
+                </CardContent>
+              </Card>
+
+              {/* Notifications */}
+              <Card sx={{ mb: 3 }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Notifications
+                  </Typography>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={emailReminders}
+                        onChange={(e) => setEmailReminders(e.target.checked)}
+                      />
+                    }
+                    label="Email reminders for appointments"
+                    sx={{ display: 'block', mb: 2 }}
+                  />
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={smsReminders}
+                        onChange={(e) => setSmsReminders(e.target.checked)}
+                      />
+                    }
+                    label="SMS reminders for appointments (coming soon)"
+                    sx={{ display: 'block' }}
+                    disabled
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Save Button */}
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <Button
+                  variant="contained"
+                  size="large"
+                  onClick={handleSaveBusinessInfo}
+                  disabled={isPending}
+                  startIcon={<SaveIcon />}
                 >
-                  <MenuItem value="before">
-                    Payment required before service
-                  </MenuItem>
-                  <MenuItem value="after">
-                    Payment after service completion
-                  </MenuItem>
-                  <MenuItem value="mixed">Decide per order</MenuItem>
-                </Select>
-              </FormControl>
-              <Typography variant="body2" color="text.secondary">
-                This sets the default payment preference for new orders. You can
-                override this for individual orders.
-              </Typography>
-            </CardContent>
-          </Card>
-
-          {/* Notifications */}
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Notifications
-              </Typography>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={emailReminders}
-                    onChange={(e) => setEmailReminders(e.target.checked)}
-                  />
-                }
-                label="Email reminders for appointments"
-                sx={{ display: 'block', mb: 2 }}
-              />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={smsReminders}
-                    onChange={(e) => setSmsReminders(e.target.checked)}
-                  />
-                }
-                label="SMS reminders for appointments (coming soon)"
-                sx={{ display: 'block' }}
-                disabled
-              />
-            </CardContent>
-          </Card>
-
-          {/* Save Button */}
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <Button variant="contained" size="large" onClick={handleSave}>
-              Save Settings
-            </Button>
-          </Box>
+                  {isPending ? 'Saving...' : 'Save Settings'}
+                </Button>
+              </Box>
+            </>
+          )}
         </TabPanel>
 
         <TabPanel value={tabValue} index={1}>
@@ -201,6 +364,10 @@ export function SettingsClient() {
         </TabPanel>
 
         <TabPanel value={tabValue} index={2}>
+          <EmailSettingsSection />
+        </TabPanel>
+
+        <TabPanel value={tabValue} index={3}>
           {/* Subscription */}
           <Card>
             <CardContent>
@@ -230,7 +397,7 @@ export function SettingsClient() {
             </CardContent>
           </Card>
         </TabPanel>
-      </Box>
+      </Paper>
     </Container>
   );
 }

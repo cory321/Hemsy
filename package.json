@@ -22,7 +22,12 @@
     "test:a11y": "playwright test --config config/playwright.config.ts --grep=\"@accessibility\"",
     "test:supabase": "tsx src/scripts/test-supabase-connection.ts",
     "test:supabase:write": "tsx src/scripts/test-supabase-write.ts",
+    "test:email": "tsx scripts/test-email-config.ts",
+    "test:email:api": "tsx scripts/test-email-api.ts",
+    "test:email:service": "tsx scripts/test-email-service.ts",
     "setup:database": "tsx src/scripts/setup-database.ts",
+    "migrate": "tsx src/scripts/run-migration.ts",
+    "migrate:specific": "tsx src/scripts/run-migration.ts",
     "prepare": "husky install"
   },
   "dependencies": {
