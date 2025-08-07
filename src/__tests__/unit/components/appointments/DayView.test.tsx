@@ -48,7 +48,7 @@ describe('DayView', () => {
       user_id: 'user1',
       shop_id: 'shop1',
       client_id: 'client1',
-      title: 'Morning Appointment',
+
       date: dateStr,
       start_time: '09:00',
       end_time: '10:00',
@@ -67,7 +67,7 @@ describe('DayView', () => {
       user_id: 'user1',
       shop_id: 'shop1',
       client_id: 'client2',
-      title: 'Afternoon Appointment',
+
       date: dateStr,
       start_time: '14:30',
       end_time: '15:30',
@@ -92,17 +92,15 @@ describe('DayView', () => {
       />
     );
 
-    // Check that appointments are rendered
-    expect(screen.getByText('Morning Appointment')).toBeInTheDocument();
-    expect(screen.getByText('Afternoon Appointment')).toBeInTheDocument();
+    // Check that client names are rendered (appointments show client names, not titles)
+    expect(screen.getByText('John Doe')).toBeInTheDocument();
+    expect(screen.getByText('Jane Smith')).toBeInTheDocument();
 
     // Check appointment details
     expect(screen.getByText(/9:00 AM - 10:00 AM/)).toBeInTheDocument();
     expect(screen.getByText(/2:30 PM - 3:30 PM/)).toBeInTheDocument();
 
-    // Check client names
-    expect(screen.getByText('John Doe')).toBeInTheDocument();
-    expect(screen.getByText('Jane Smith')).toBeInTheDocument();
+    // Client names already checked above
 
     // Check appointment types
     expect(screen.getByText('fitting')).toBeInTheDocument();
@@ -165,14 +163,12 @@ describe('DayView', () => {
         id: '3',
         start_time: '10:00',
         end_time: '10:30', // 30 minute appointment
-        title: 'Short Appointment',
       },
       {
         ...mockAppointments[0],
         id: '4',
         start_time: '11:00',
         end_time: '13:00', // 2 hour appointment
-        title: 'Long Appointment',
       },
     ];
 
@@ -184,9 +180,9 @@ describe('DayView', () => {
       />
     );
 
-    // Check that both appointments are rendered
-    expect(screen.getByText('Short Appointment')).toBeInTheDocument();
-    expect(screen.getByText('Long Appointment')).toBeInTheDocument();
+    // Check that both appointments are rendered (using client names)
+    // Since both appointments use the same client, there will be multiple "John Doe" elements
+    expect(screen.getAllByText('John Doe')).toHaveLength(2);
 
     // Check duration displays - the actual format uses spaces
     expect(

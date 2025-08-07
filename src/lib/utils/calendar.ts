@@ -14,7 +14,7 @@ export function generateMonthDays(date: Date) {
 
   let current = start;
   while (current <= end) {
-    days.push(current);
+    days.push(new Date(current));
     current = addDays(current, 1);
   }
 
@@ -27,7 +27,7 @@ export function generateWeekDays(date: Date) {
   const days = [];
 
   for (let i = 0; i < 7; i++) {
-    days.push(addDays(start, i));
+    days.push(new Date(addDays(start, i)));
   }
 
   return days;

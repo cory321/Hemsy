@@ -16,17 +16,16 @@ import {
   Alert,
   CircularProgress,
   FormHelperText,
+  FormControlLabel,
+  Checkbox,
+  Typography,
+  Divider,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { addMinutes, format, parse, isValid } from 'date-fns';
 import dayjs from 'dayjs';
-import { useRouter } from 'next/navigation';
-import {
-  createAppointment,
-  updateAppointment,
-} from '@/lib/actions/appointments';
 import { getAvailableTimeSlots, to12HourFormat } from '@/lib/utils/calendar';
 import { ClientSearchField } from './ClientSearchField';
 import type { Appointment, Client } from '@/types';
@@ -73,6 +72,7 @@ interface AppointmentDialogProps {
   open: boolean;
   onClose: () => void;
   appointment?: Appointment | null;
+  isReschedule?: boolean;
   selectedDate?: Date;
   selectedTime?: string | null;
   shopHours?: Array<{
@@ -86,12 +86,30 @@ interface AppointmentDialogProps {
     buffer_time_minutes: number;
     default_appointment_duration: number;
   };
+  onCreate?: (data: {
+    clientId: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    type: 'consultation' | 'fitting' | 'pickup' | 'delivery' | 'other';
+    notes?: string;
+  }) => Promise<void>;
+  onUpdate?: (data: {
+    clientId: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    type: 'consultation' | 'fitting' | 'pickup' | 'delivery' | 'other';
+    notes?: string;
+    status?: string;
+  }) => Promise<void>;
 }
 
 export function AppointmentDialog({
   open,
   onClose,
   appointment,
+  isReschedule = false,
   selectedDate,
   selectedTime,
   shopHours = [],
@@ -100,27 +118,33 @@ export function AppointmentDialog({
     buffer_time_minutes: 0,
     default_appointment_duration: 30,
   },
+  onCreate,
+  onUpdate,
 }: AppointmentDialogProps) {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 
   // Form state
-  const [formData, setFormData] = useState({
-    client_id: appointment?.client_id || null,
-    title: appointment?.title || '',
-    date: appointment
+  const [formData, setFormData] = useState(() => {
+    const initialDate = appointment
       ? dayjs(appointment.date)
-      : dayjs(selectedDate || new Date()),
-    start_time: appointment
-      ? parseTimeString(appointment.start_time)
-      : selectedTime
-        ? parseTimeString(selectedTime)
-        : null,
-    end_time: appointment ? parseTimeString(appointment.end_time) : null,
-    type: appointment?.type || 'consultation',
-    notes: appointment?.notes || '',
+      : selectedDate
+        ? dayjs(selectedDate)
+        : dayjs(new Date());
+
+    return {
+      client_id: appointment?.client_id || null,
+      date: initialDate,
+      start_time: appointment
+        ? parseTimeString(appointment.start_time)
+        : selectedTime
+          ? parseTimeString(selectedTime)
+          : null,
+      end_time: appointment ? parseTimeString(appointment.end_time) : null,
+      type: appointment?.type || 'consultation',
+      notes: appointment?.notes || '',
+    };
   });
 
   // Duration state
@@ -168,6 +192,17 @@ export function AppointmentDialog({
     }
   }, [formData.start_time, duration]);
 
+  // Add this useEffect to clear selectedClient when opening for a new appointment
+  useEffect(() => {
+    if (open && !appointment) {
+      setSelectedClient(null);
+      setFormData((prev) => ({
+        ...prev,
+        client_id: null,
+      }));
+    }
+  }, [open, appointment]);
+
   const handleSubmit = async () => {
     setError(null);
     setLoading(true);
@@ -187,13 +222,12 @@ export function AppointmentDialog({
       }
 
       const data = {
-        client_id: formData.client_id,
-        title: formData.title || 'Appointment',
+        clientId: formData.client_id,
         date: dayjs.isDayjs(formData.date)
           ? formData.date.format('YYYY-MM-DD')
           : dayjs(formData.date).format('YYYY-MM-DD'),
-        start_time: formatTimeString(formData.start_time),
-        end_time: formatTimeString(formData.end_time),
+        startTime: formatTimeString(formData.start_time),
+        endTime: formatTimeString(formData.end_time),
         type: formData.type as
           | 'consultation'
           | 'fitting'
@@ -203,13 +237,14 @@ export function AppointmentDialog({
         notes: formData.notes || undefined,
       };
 
-      if (appointment) {
-        await updateAppointment({ id: appointment.id, ...data });
+      if (appointment && onUpdate) {
+        await onUpdate(data);
+      } else if (!appointment && onCreate) {
+        await onCreate(data);
       } else {
-        await createAppointment(data);
+        throw new Error('No handler provided for this action');
       }
 
-      router.refresh();
       onClose();
     } catch (err) {
       setError(
@@ -239,7 +274,11 @@ export function AppointmentDialog({
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>
-        {appointment ? 'Edit Appointment' : 'New Appointment'}
+        {isReschedule
+          ? 'Reschedule Appointment'
+          : appointment
+            ? 'Edit Appointment'
+            : 'New Appointment'}
       </DialogTitle>
 
       <DialogContent>
@@ -260,16 +299,7 @@ export function AppointmentDialog({
                 client_id: newClient?.id || null,
               }));
             }}
-          />
-
-          {/* Title */}
-          <TextField
-            label="Title"
-            value={formData.title}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, title: e.target.value }))
-            }
-            placeholder={`${formData.type.replace('_', ' ')} appointment`}
+            disabled={isReschedule} // Disable client selection when rescheduling
           />
 
           {/* Date and Time */}
@@ -348,42 +378,116 @@ export function AppointmentDialog({
             </Box>
           </LocalizationProvider>
 
-          {/* Type */}
-          <FormControl fullWidth>
-            <InputLabel>Type</InputLabel>
-            <Select
-              value={formData.type}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  type: e.target.value as
-                    | 'consultation'
-                    | 'fitting'
-                    | 'pickup'
-                    | 'delivery'
-                    | 'other',
-                }))
-              }
-              required
-            >
-              <MenuItem value="consultation">Consultation</MenuItem>
-              <MenuItem value="fitting">Fitting</MenuItem>
-              <MenuItem value="pickup">Pick up</MenuItem>
-              <MenuItem value="delivery">Delivery</MenuItem>
-              <MenuItem value="other">Other</MenuItem>
-            </Select>
-          </FormControl>
+          {/* Type - Only show when not rescheduling */}
+          {!isReschedule && (
+            <FormControl fullWidth>
+              <InputLabel>Type</InputLabel>
+              <Select
+                value={formData.type}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    type: e.target.value as
+                      | 'consultation'
+                      | 'fitting'
+                      | 'pickup'
+                      | 'delivery'
+                      | 'other',
+                  }))
+                }
+                required
+              >
+                <MenuItem value="consultation">Consultation</MenuItem>
+                <MenuItem value="fitting">Fitting</MenuItem>
+                <MenuItem value="pickup">Pick up</MenuItem>
+                <MenuItem value="delivery">Delivery</MenuItem>
+                <MenuItem value="other">Other</MenuItem>
+              </Select>
+            </FormControl>
+          )}
 
-          {/* Notes */}
-          <TextField
-            label="Notes"
-            multiline
-            rows={3}
-            value={formData.notes}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, notes: e.target.value }))
-            }
-          />
+          {/* Notes - Only show when not rescheduling */}
+          {!isReschedule && (
+            <TextField
+              label="Notes"
+              multiline
+              rows={3}
+              value={formData.notes}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, notes: e.target.value }))
+              }
+            />
+          )}
+
+          {/* Send appointment reminders section - Always visible */}
+          <Divider sx={{ my: 1.5 }} />
+          <Box>
+            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500 }}>
+              Send appointment reminders
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={selectedClient?.accept_email || false}
+                    disabled={!selectedClient || !selectedClient.accept_email}
+                    size="small"
+                  />
+                }
+                label={
+                  <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                    <Typography variant="body2" sx={{ lineHeight: 1.2 }}>
+                      Email
+                    </Typography>
+                    {selectedClient && !selectedClient.accept_email && (
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ fontSize: '0.7rem', lineHeight: 1 }}
+                      >
+                        Opted out
+                      </Typography>
+                    )}
+                  </Box>
+                }
+                sx={{
+                  alignItems: 'center',
+                  ml: -0.5,
+                  '& .MuiFormControlLabel-label': { mt: 0 },
+                }}
+              />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={selectedClient?.accept_sms || false}
+                    disabled={!selectedClient || !selectedClient.accept_sms}
+                    size="small"
+                  />
+                }
+                label={
+                  <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                    <Typography variant="body2" sx={{ lineHeight: 1.2 }}>
+                      SMS
+                    </Typography>
+                    {selectedClient && !selectedClient.accept_sms && (
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ fontSize: '0.7rem', lineHeight: 1 }}
+                      >
+                        Opted out
+                      </Typography>
+                    )}
+                  </Box>
+                }
+                sx={{
+                  alignItems: 'center',
+                  ml: -0.5,
+                  '& .MuiFormControlLabel-label': { mt: 0 },
+                }}
+              />
+            </Box>
+          </Box>
         </Box>
       </DialogContent>
 
@@ -400,6 +504,8 @@ export function AppointmentDialog({
         >
           {loading ? (
             <CircularProgress size={24} />
+          ) : isReschedule ? (
+            'Reschedule'
           ) : appointment ? (
             'Update'
           ) : (

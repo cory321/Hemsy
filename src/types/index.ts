@@ -117,12 +117,11 @@ export interface Appointment {
   shop_id: string;
   client_id: string;
   order_id?: string;
-  title: string;
   date: string;
   start_time: string;
   end_time: string;
   type: 'consultation' | 'fitting' | 'pickup' | 'delivery' | 'other';
-  status: 'scheduled' | 'confirmed' | 'completed' | 'cancelled' | 'no_show';
+  status: 'pending' | 'declined' | 'confirmed' | 'canceled' | 'no_show';
   notes?: string;
   created_at: string;
   updated_at: string;
@@ -136,3 +135,14 @@ export type OrderStatus = Order['status'];
 export type InvoiceStatus = Invoice['status'];
 export type AppointmentType = Appointment['type'];
 export type AppointmentStatus = Appointment['status'];
+
+// Shop Hours type
+export interface ShopHours {
+  day_of_week: number;
+  open_time: string | null;
+  close_time: string | null;
+  is_closed: boolean;
+}
+
+// Email system types
+export * from './email';

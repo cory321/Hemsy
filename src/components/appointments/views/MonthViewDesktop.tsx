@@ -19,6 +19,7 @@ import {
   canCreateAppointment,
 } from '@/lib/utils/calendar';
 import type { Appointment } from '@/types';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 interface MonthViewDesktopProps {
   currentDate: Date;
@@ -169,22 +170,6 @@ export function MonthViewDesktop({
               }}
               onClick={() => onDateClick?.(day)}
             >
-              {/* Week number indicator (first day of week) */}
-              {weekNumber && (
-                <Typography
-                  variant="caption"
-                  sx={{
-                    position: 'absolute',
-                    top: 4,
-                    left: 4,
-                    color: 'text.disabled',
-                    fontSize: '0.625rem',
-                  }}
-                >
-                  W{weekNumber}
-                </Typography>
-              )}
-
               {/* Date header */}
               <Box
                 sx={{
@@ -271,7 +256,9 @@ export function MonthViewDesktop({
                       title={
                         <Box>
                           <Typography variant="body2" fontWeight="bold">
-                            {apt.title}
+                            {apt.client
+                              ? `${apt.client.first_name} ${apt.client.last_name}`
+                              : 'No Client'}
                           </Typography>
                           <Typography variant="caption" display="block">
                             {formatTime(apt.start_time)} -{' '}
@@ -325,6 +312,11 @@ export function MonthViewDesktop({
                         >
                           {formatTime(apt.start_time)}
                         </Typography>
+                        {apt.status === 'confirmed' && (
+                          <CheckCircleIcon
+                            sx={{ fontSize: 10, color: 'white' }}
+                          />
+                        )}
                       </Box>
                     </Tooltip>
                   ))}

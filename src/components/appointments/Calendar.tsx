@@ -39,6 +39,7 @@ import { DayView } from './views/DayView';
 import { ListView } from './views/ListView';
 import { CalendarSettings } from './CalendarSettings';
 import type { Appointment } from '@/types';
+import { useThrottle } from '../../hooks/useThrottle';
 
 export type CalendarView = 'month' | 'week' | 'day' | 'list';
 
@@ -53,6 +54,10 @@ interface CalendarProps {
   onAppointmentClick?: (appointment: Appointment) => void;
   onDateClick?: (date: Date, time?: string) => void;
   onRefresh?: (date?: Date) => void;
+  isLoading?: boolean;
+  currentDate?: Date;
+  view?: CalendarView;
+  onViewChange?: (view: CalendarView) => void;
 }
 
 export function Calendar({
@@ -61,18 +66,28 @@ export function Calendar({
   onAppointmentClick,
   onDateClick,
   onRefresh,
+  isLoading = false,
+  currentDate: controlledDate,
+  view: controlledView,
+  onViewChange,
 }: CalendarProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState<CalendarView>(isMobile ? 'day' : 'month');
+  // Use controlled values if provided, otherwise manage state internally
+  const [internalDate, setInternalDate] = useState(new Date());
+  const [internalView, setInternalView] = useState<CalendarView>(
+    isMobile ? 'day' : 'month'
+  );
+  const currentDate = controlledDate ?? internalDate;
+  const view = controlledView ?? internalView;
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
 
   // Navigation handlers
-  const handlePrevious = useCallback(() => {
+  const throttledHandlePrevious = useThrottle(() => {
     let newDate: Date;
     switch (view) {
       case 'month':
+        // Use date-fns which handles month boundaries correctly
         newDate = subMonths(currentDate, 1);
         break;
       case 'week':
@@ -84,14 +99,18 @@ export function Calendar({
       default:
         newDate = currentDate;
     }
-    setCurrentDate(newDate);
+    // Only update internal state if not controlled
+    if (!controlledDate) {
+      setInternalDate(newDate);
+    }
     onRefresh?.(newDate);
-  }, [view, currentDate, onRefresh]);
+  }, 400);
 
-  const handleNext = useCallback(() => {
+  const throttledHandleNext = useThrottle(() => {
     let newDate: Date;
     switch (view) {
       case 'month':
+        // Use date-fns which handles month boundaries correctly
         newDate = addMonths(currentDate, 1);
         break;
       case 'week':
@@ -103,22 +122,33 @@ export function Calendar({
       default:
         newDate = currentDate;
     }
-    setCurrentDate(newDate);
+    // Only update internal state if not controlled
+    if (!controlledDate) {
+      setInternalDate(newDate);
+    }
     onRefresh?.(newDate);
-  }, [view, currentDate, onRefresh]);
+  }, 400);
 
   const handleToday = useCallback(() => {
     const today = new Date();
-    setCurrentDate(today);
+    // Only update internal state if not controlled
+    if (!controlledDate) {
+      setInternalDate(today);
+    }
     onRefresh?.(today);
-  }, [onRefresh]);
+  }, [onRefresh, controlledDate]);
 
   const handleViewChange = (
     _: React.MouseEvent<HTMLElement>,
     newView: CalendarView | null
   ) => {
     if (newView) {
-      setView(newView);
+      // Only update internal state if not controlled
+      if (!controlledView) {
+        setInternalView(newView);
+      }
+      // Notify parent if controlled
+      onViewChange?.(newView);
       onRefresh?.(currentDate);
     }
   };
@@ -159,7 +189,11 @@ export function Calendar({
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {view !== 'list' && (
             <>
-              <IconButton onClick={handlePrevious} size="small">
+              <IconButton
+                onClick={throttledHandlePrevious}
+                size="small"
+                disabled={isLoading}
+              >
                 <ChevronLeftIcon />
               </IconButton>
               <Typography
@@ -168,7 +202,11 @@ export function Calendar({
               >
                 {headerText}
               </Typography>
-              <IconButton onClick={handleNext} size="small">
+              <IconButton
+                onClick={throttledHandleNext}
+                size="small"
+                disabled={isLoading}
+              >
                 <ChevronRightIcon />
               </IconButton>
               <Button

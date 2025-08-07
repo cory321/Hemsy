@@ -1,7 +1,10 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
+import { QueryProvider } from '@/providers/QueryProvider';
+import { DateLocalizationProvider } from '@/providers/DateLocalizationProvider';
 import { ClerkProvider } from '@clerk/nextjs';
+import { Toaster } from 'react-hot-toast';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -35,13 +38,55 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        {hasClerkKey ? (
-          <ClerkProvider>
-            <ThemeProvider>{children}</ThemeProvider>
-          </ClerkProvider>
-        ) : (
-          <ThemeProvider>{children}</ThemeProvider>
-        )}
+        <DateLocalizationProvider>
+          {hasClerkKey ? (
+            <ClerkProvider>
+              <QueryProvider>
+                <ThemeProvider>
+                  {children}
+                  <Toaster
+                    position="bottom-center"
+                    toastOptions={{
+                      duration: 4000,
+                      style: {
+                        background: '#333',
+                        color: '#fff',
+                      },
+                      success: {
+                        iconTheme: {
+                          primary: '#4caf50',
+                          secondary: '#fff',
+                        },
+                      },
+                      error: {
+                        iconTheme: {
+                          primary: '#f44336',
+                          secondary: '#fff',
+                        },
+                      },
+                    }}
+                  />
+                </ThemeProvider>
+              </QueryProvider>
+            </ClerkProvider>
+          ) : (
+            <QueryProvider>
+              <ThemeProvider>
+                {children}
+                <Toaster
+                  position="bottom-center"
+                  toastOptions={{
+                    duration: 4000,
+                    style: {
+                      background: '#333',
+                      color: '#fff',
+                    },
+                  }}
+                />
+              </ThemeProvider>
+            </QueryProvider>
+          )}
+        </DateLocalizationProvider>
       </body>
     </html>
   );

@@ -75,7 +75,7 @@ const mockShopHours = [
 const mockAppointments: Appointment[] = [
   {
     id: '1',
-    title: 'Dress Fitting',
+
     date: format(new Date(), 'yyyy-MM-dd'),
     start_time: '10:00',
     end_time: '11:00',
@@ -98,7 +98,7 @@ const mockAppointments: Appointment[] = [
   },
   {
     id: '2',
-    title: 'Consultation',
+
     date: format(addDays(new Date(), 2), 'yyyy-MM-dd'),
     start_time: '14:00',
     end_time: '15:00',
@@ -170,7 +170,7 @@ describe('MonthViewDesktop', () => {
         ...mockAppointments[0],
         id: '1',
         date: today,
-        title: 'First Appointment',
+
         start_time: '09:00',
         end_time: '10:00',
       },
@@ -178,7 +178,7 @@ describe('MonthViewDesktop', () => {
         ...mockAppointments[0],
         id: '2',
         date: today,
-        title: 'Second Appointment',
+
         start_time: '10:30',
         end_time: '11:30',
       },
@@ -186,7 +186,7 @@ describe('MonthViewDesktop', () => {
         ...mockAppointments[0],
         id: '3',
         date: today,
-        title: 'Third Appointment',
+
         start_time: '12:00',
         end_time: '13:00',
       },
@@ -194,7 +194,7 @@ describe('MonthViewDesktop', () => {
         ...mockAppointments[0],
         id: '4',
         date: today,
-        title: 'Fourth Appointment',
+
         start_time: '14:00',
         end_time: '15:00',
       },
@@ -202,7 +202,7 @@ describe('MonthViewDesktop', () => {
         ...mockAppointments[0],
         id: '5',
         date: today,
-        title: 'Fifth Appointment',
+
         start_time: '15:30',
         end_time: '16:30',
       },
@@ -246,7 +246,6 @@ describe('MonthViewDesktop', () => {
     expect(onAppointmentClick).toHaveBeenCalledWith(
       expect.objectContaining({
         id: '1',
-        title: 'Dress Fitting',
       })
     );
   });
@@ -308,7 +307,7 @@ describe('MonthViewDesktop', () => {
     const manyAppointments = Array.from({ length: 6 }, (_, i) => ({
       ...mockAppointments[0],
       id: `apt-${i}`,
-      title: `Appointment ${i + 1}`,
+
       start_time: `${10 + i}:00`,
       end_time: `${11 + i}:00`,
     }));

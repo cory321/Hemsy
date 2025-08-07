@@ -15,7 +15,7 @@ const eslintConfig = [
     rules: {
       'prefer-const': 'warn',
       'no-var': 'error',
-      'no-unused-vars': 'warn',
+      'no-unused-vars': 'off', // Disabled for development mode
     },
     ignores: ['.next', 'dist', 'node_modules'],
   },

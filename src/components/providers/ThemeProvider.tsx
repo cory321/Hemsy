@@ -5,6 +5,7 @@ import {
   ThemeProvider as MUIThemeProvider,
 } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import { AppRouterCacheProvider } from '@mui/material-nextjs/v14-appRouter';
 import { ReactNode } from 'react';
 
 // Mobile-first theme configuration
@@ -106,9 +107,11 @@ interface ThemeProviderProps {
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
   return (
-    <MUIThemeProvider theme={theme}>
-      <CssBaseline />
-      {children}
-    </MUIThemeProvider>
+    <AppRouterCacheProvider>
+      <MUIThemeProvider theme={theme}>
+        <CssBaseline />
+        {children}
+      </MUIThemeProvider>
+    </AppRouterCacheProvider>
   );
 }

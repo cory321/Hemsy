@@ -106,7 +106,7 @@ describe('WeekViewDesktop - Time Slot Click', () => {
       user_id: 'user1',
       shop_id: 'shop1',
       client_id: 'client1',
-      title: 'Existing Appointment',
+
       date: format(weekDays[1], 'yyyy-MM-dd'), // Monday
       start_time: '10:00',
       end_time: '11:00',
@@ -125,7 +125,7 @@ describe('WeekViewDesktop - Time Slot Click', () => {
       user_id: 'user1',
       shop_id: 'shop1',
       client_id: 'client2',
-      title: 'Long Appointment',
+
       date: format(weekDays[2], 'yyyy-MM-dd'), // Tuesday
       start_time: '14:00',
       end_time: '16:30', // 2.5 hour appointment
@@ -165,8 +165,8 @@ describe('WeekViewDesktop - Time Slot Click', () => {
     expect(screen.getByText('9:00 AM')).toBeInTheDocument(); // Shop opening time
     expect(screen.getByText('5:00 PM')).toBeInTheDocument(); // Shop closing time
 
-    // Appointments should be displayed
-    expect(screen.getByText('Existing Appointment')).toBeInTheDocument();
+    // Appointments should be displayed with client names
+    expect(screen.getByText('John Doe')).toBeInTheDocument();
   });
 
   it('does not call onTimeSlotClick for slots with overlapping appointments', () => {
@@ -182,7 +182,7 @@ describe('WeekViewDesktop - Time Slot Click', () => {
     );
 
     // Try to find and click on the existing appointment (should not trigger onTimeSlotClick)
-    const appointmentElement = screen.getByText('Existing Appointment');
+    const appointmentElement = screen.getByText('John Doe');
     fireEvent.click(appointmentElement);
 
     // Should not call onTimeSlotClick when clicking on an appointment
@@ -205,12 +205,12 @@ describe('WeekViewDesktop - Time Slot Click', () => {
     // 14:00-14:30, 14:30-15:00, 15:00-15:30, 15:30-16:00, 16:00-16:30
 
     // These time slot areas should not be clickable due to the overlapping appointment
-    const longAppointment = screen.getByText('Long Appointment');
+    const longAppointment = screen.getByText('Jane Smith');
     expect(longAppointment).toBeInTheDocument();
 
     // Since we can't easily test the overlap logic without accessing internals,
     // we'll verify that the component renders without errors
-    expect(screen.getByText('Long Appointment')).toBeInTheDocument();
+    expect(screen.getByText('Jane Smith')).toBeInTheDocument();
   });
 
   it('does not call onTimeSlotClick when canCreateAppointment returns false', () => {
@@ -314,14 +314,20 @@ describe('WeekViewDesktop - Time Slot Click', () => {
         id: '3',
         start_time: '09:00',
         end_time: '10:00',
-        title: 'First Overlap',
+        client: {
+          first_name: 'Alice',
+          last_name: 'Johnson',
+        },
       },
       {
         ...mockAppointments[0],
         id: '4',
         start_time: '09:30',
         end_time: '10:30',
-        title: 'Second Overlap',
+        client: {
+          first_name: 'Bob',
+          last_name: 'Wilson',
+        },
       },
     ];
 
@@ -337,8 +343,8 @@ describe('WeekViewDesktop - Time Slot Click', () => {
     );
 
     // Both overlapping appointments should be rendered
-    expect(screen.getByText('First Overlap')).toBeInTheDocument();
-    expect(screen.getByText('Second Overlap')).toBeInTheDocument();
+    expect(screen.getByText('Alice Johnson')).toBeInTheDocument();
+    expect(screen.getByText('Bob Wilson')).toBeInTheDocument();
 
     // Time slots that overlap with these appointments should not be clickable
     // This tests the more sophisticated overlap detection in the desktop view

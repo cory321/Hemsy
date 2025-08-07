@@ -9,6 +9,7 @@ import {
   alpha,
   useMediaQuery,
 } from '@mui/material';
+import { useState, useEffect } from 'react';
 import { format, isSameDay, isToday } from 'date-fns';
 import {
   generateWeekDays,
@@ -19,6 +20,7 @@ import {
   canCreateAppointment,
 } from '@/lib/utils/calendar';
 import AddIcon from '@mui/icons-material/Add';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import type { Appointment } from '@/types';
 
 interface WeekViewProps {
@@ -87,6 +89,23 @@ export function WeekView({
       timeSlots.push(`${hour.toString().padStart(2, '0')}:30`);
     }
   }
+
+  // Current time indicator state and position
+  const [currentTime, setCurrentTime] = useState(new Date());
+  useEffect(() => {
+    const interval = setInterval(
+      () => setCurrentTime(new Date()),
+      5 * 60 * 1000
+    );
+    return () => clearInterval(interval);
+  }, []);
+
+  const currentTimeMinutes =
+    currentTime.getHours() * 60 + currentTime.getMinutes();
+  const currentTimePosition =
+    ((currentTimeMinutes - gridStartHour * 60) /
+      ((gridEndHour - gridStartHour) * 60)) *
+    100;
 
   return (
     <Box sx={{ overflowX: 'auto' }}>
@@ -178,13 +197,20 @@ export function WeekView({
                 {timeSlots.map((time) => {
                   // Check if this time slot has appointments (30-minute slot checking)
                   const slotAppointments = dayAppointments.filter((apt) => {
-                    const [aptStartHour, aptStartMinute] = apt.start_time
-                      .split(':')
-                      .map(Number);
-                    const [aptEndHour, aptEndMinute] = apt.end_time
-                      .split(':')
-                      .map(Number);
-                    const [slotHour, slotMinute] = time.split(':').map(Number);
+                    const aptStartParts = apt.start_time.split(':');
+                    const aptStartHour = parseInt(aptStartParts[0] || '0', 10);
+                    const aptStartMinute = parseInt(
+                      aptStartParts[1] || '0',
+                      10
+                    );
+
+                    const aptEndParts = apt.end_time.split(':');
+                    const aptEndHour = parseInt(aptEndParts[0] || '0', 10);
+                    const aptEndMinute = parseInt(aptEndParts[1] || '0', 10);
+
+                    const slotParts = time.split(':');
+                    const slotHour = parseInt(slotParts[0] || '0', 10);
+                    const slotMinute = parseInt(slotParts[1] || '0', 10);
 
                     // Convert times to minutes for easier comparison
                     const aptStartMinutes = aptStartHour * 60 + aptStartMinute;
@@ -268,16 +294,13 @@ export function WeekView({
 
                 {/* Appointments */}
                 {dayAppointments.map((appointment) => {
-                  const startHour = parseInt(
-                    appointment.start_time.split(':')[0]
-                  );
-                  const startMinute = parseInt(
-                    appointment.start_time.split(':')[1]
-                  );
-                  const endHour = parseInt(appointment.end_time.split(':')[0]);
-                  const endMinute = parseInt(
-                    appointment.end_time.split(':')[1]
-                  );
+                  const startParts = appointment.start_time.split(':');
+                  const startHour = parseInt(startParts[0] || '0', 10);
+                  const startMinute = parseInt(startParts[1] || '0', 10);
+
+                  const endParts = appointment.end_time.split(':');
+                  const endHour = parseInt(endParts[0] || '0', 10);
+                  const endMinute = parseInt(endParts[1] || '0', 10);
 
                   const top =
                     ((startHour - gridStartHour) * 60 + startMinute) *
@@ -296,12 +319,11 @@ export function WeekView({
                         left: 4,
                         right: 4,
                         height: `${height}px`,
-                        bgcolor: getAppointmentColor(appointment.type),
-                        color: 'white',
-                        p: 0.5,
                         cursor: 'pointer',
                         overflow: 'hidden',
                         zIndex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
                         '&:hover': {
                           zIndex: 2,
                           boxShadow: theme.shadows[4],
@@ -309,20 +331,72 @@ export function WeekView({
                       }}
                       onClick={() => onAppointmentClick?.(appointment)}
                     >
-                      <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
-                        {formatTime(appointment.start_time)}
-                      </Typography>
-                      <Typography
-                        variant="caption"
+                      {/* Colored header strip */}
+                      <Box
                         sx={{
-                          display: 'block',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
+                          bgcolor: getAppointmentColor(appointment.type),
+                          color: 'white',
+                          px: 0.5,
+                          py: 0.25,
+                          minHeight: 20,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 0.5,
+                          flexShrink: 0,
                         }}
                       >
-                        {appointment.title}
-                      </Typography>
+                        <Typography
+                          variant="caption"
+                          sx={{ fontWeight: 'bold', fontSize: '0.65rem' }}
+                        >
+                          {formatTime(appointment.start_time)}
+                        </Typography>
+                        {appointment.status === 'confirmed' && (
+                          <CheckCircleIcon sx={{ fontSize: 10 }} />
+                        )}
+                      </Box>
+
+                      {/* White content area */}
+                      <Box
+                        sx={{
+                          flex: 1,
+                          bgcolor: 'background.paper',
+                          px: 0.5,
+                          py: 0.25,
+                          overflow: 'hidden',
+                        }}
+                      >
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: 'text.primary',
+                            fontWeight: 'medium',
+                            display: 'block',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            fontSize: height < 50 ? '0.65rem' : '0.75rem',
+                          }}
+                        >
+                          {appointment.client
+                            ? `${appointment.client.first_name} ${appointment.client.last_name}`
+                            : 'No Client'}
+                        </Typography>
+                        {/* Show type only if height allows */}
+                        {height > 50 && (
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: 'text.secondary',
+                              fontSize: '0.6rem',
+                              textTransform: 'capitalize',
+                              display: 'block',
+                            }}
+                          >
+                            {appointment.type.replace('_', ' ')}
+                          </Typography>
+                        )}
+                      </Box>
                     </Paper>
                   );
                 })}

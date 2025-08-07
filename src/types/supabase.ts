@@ -27,7 +27,6 @@ export type Database = {
           shop_id: string;
           start_time: string;
           status: string;
-          title: string;
           type: string;
           updated_at: string | null;
         };
@@ -43,7 +42,6 @@ export type Database = {
           shop_id: string;
           start_time: string;
           status?: string;
-          title: string;
           type: string;
           updated_at?: string | null;
         };
@@ -59,7 +57,6 @@ export type Database = {
           shop_id?: string;
           start_time?: string;
           status?: string;
-          title?: string;
           type?: string;
           updated_at?: string | null;
         };

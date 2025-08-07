@@ -15,17 +15,17 @@ export interface ExtendedDatabase extends Database {
           shop_id: string;
           client_id: string;
           order_id: string | null;
-          title: string;
           date: string;
           start_time: string;
           end_time: string;
           type: 'consultation' | 'fitting' | 'pickup' | 'delivery' | 'other';
           status:
-            | 'scheduled'
+            | 'pending'
+            | 'declined'
             | 'confirmed'
-            | 'completed'
-            | 'cancelled'
-            | 'no_show';
+            | 'canceled'
+            | 'no_show'
+            | 'completed';
           notes: string | null;
           reminder_sent: boolean;
           created_at: string;
@@ -46,17 +46,17 @@ export interface ExtendedDatabase extends Database {
           shop_id: string;
           client_id: string;
           order_id?: string | null;
-          title: string;
           date: string;
           start_time: string;
           end_time: string;
           type: 'consultation' | 'fitting' | 'pickup' | 'delivery' | 'other';
           status?:
-            | 'scheduled'
+            | 'pending'
+            | 'declined'
             | 'confirmed'
-            | 'completed'
-            | 'cancelled'
-            | 'no_show';
+            | 'canceled'
+            | 'no_show'
+            | 'completed';
           notes?: string | null;
           reminder_sent?: boolean;
           created_at?: string;
@@ -67,17 +67,17 @@ export interface ExtendedDatabase extends Database {
           shop_id?: string;
           client_id?: string | null;
           order_id?: string | null;
-          title?: string;
           date?: string;
           start_time?: string;
           end_time?: string;
           type?: 'consultation' | 'fitting' | 'pickup' | 'delivery' | 'other';
           status?:
-            | 'scheduled'
+            | 'pending'
+            | 'declined'
             | 'confirmed'
-            | 'completed'
-            | 'cancelled'
-            | 'no_show';
+            | 'canceled'
+            | 'no_show'
+            | 'completed';
           notes?: string | null;
           reminder_sent?: boolean;
           created_at?: string;

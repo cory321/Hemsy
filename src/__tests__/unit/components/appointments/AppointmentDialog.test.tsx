@@ -328,4 +328,44 @@ describe('AppointmentDialog', () => {
 
     consoleError.mockRestore();
   });
+
+  it('clears the client field when opening for a new appointment', async () => {
+    const user = userEvent.setup();
+    // Render dialog with a pre-selected client (simulate editing)
+    const appointment = {
+      id: 'apt1',
+      client_id: mockClients[0].id,
+      client: mockClients[0],
+      date: '2024-06-01',
+      start_time: '10:00',
+      end_time: '10:30',
+      type: 'consultation',
+      notes: '',
+      shop_id: 'shop1',
+      status: 'pending',
+      created_at: '2024-06-01T00:00:00Z',
+      updated_at: '2024-06-01T00:00:00Z',
+    };
+    const { rerender } = renderWithLocalization(
+      <AppointmentDialog
+        {...defaultProps}
+        open={true}
+        appointment={appointment}
+      />
+    );
+    // Client field should be pre-filled
+    const clientInput = screen.getByPlaceholderText(
+      'Search by name, email, or phone...'
+    );
+    expect(clientInput).toHaveValue('John Doe');
+
+    // Now rerender as if opening for a new appointment
+    rerender(
+      <AppointmentDialog {...defaultProps} open={true} appointment={null} />
+    );
+    // Wait for the effect to clear the client
+    await waitFor(() => {
+      expect(clientInput).toHaveValue('');
+    });
+  });
 });

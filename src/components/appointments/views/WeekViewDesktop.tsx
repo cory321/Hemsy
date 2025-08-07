@@ -9,7 +9,6 @@ import {
   alpha,
   Chip,
   Avatar,
-  Tooltip,
   Stack,
   useMediaQuery,
 } from '@mui/material';
@@ -18,12 +17,15 @@ import {
   generateWeekDays,
   getAppointmentColor,
   formatTime,
+  formatDuration,
+  getDurationMinutes,
   isShopOpen,
   isPastDate,
   canCreateAppointment,
 } from '@/lib/utils/calendar';
 import type { Appointment } from '@/types';
 import AddIcon from '@mui/icons-material/Add';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 interface WeekViewDesktopProps {
   currentDate: Date;
@@ -34,11 +36,11 @@ interface WeekViewDesktopProps {
     close_time: string | null;
     is_closed: boolean;
   }>;
-  // eslint-disable-next-line no-unused-vars
+
   onAppointmentClick?: (appointment: Appointment) => void;
-  // eslint-disable-next-line no-unused-vars
+
   onDateClick?: (date: Date) => void;
-  // eslint-disable-next-line no-unused-vars
+
   onTimeSlotClick?: (date: Date, time?: string) => void;
 }
 
@@ -451,123 +453,90 @@ export function WeekViewDesktop({
                   const left = appointment.column * width;
 
                   return (
-                    <Tooltip
+                    <Paper
                       key={appointment.id}
-                      title={
-                        <Box>
-                          <Typography variant="body2" fontWeight="bold">
-                            {appointment.title}
-                          </Typography>
-                          <Typography variant="caption" display="block">
-                            {formatTime(appointment.start_time)} -{' '}
-                            {formatTime(appointment.end_time)}
-                          </Typography>
-                          {appointment.client && (
-                            <Typography variant="caption" display="block">
-                              {appointment.client.first_name}{' '}
-                              {appointment.client.last_name}
-                            </Typography>
-                          )}
-                          {appointment.notes && (
-                            <Typography
-                              variant="caption"
-                              display="block"
-                              sx={{ mt: 0.5 }}
-                            >
-                              {appointment.notes}
-                            </Typography>
-                          )}
-                        </Box>
-                      }
-                      placement="right"
-                      arrow
+                      elevation={2}
+                      sx={{
+                        position: 'absolute',
+                        top: `${top}px`,
+                        left: `${left}%`,
+                        width: `calc(${width}% - 4px)`,
+                        height: `${Math.max(height, 30)}px`,
+                        cursor: 'pointer',
+                        overflow: 'hidden',
+                        zIndex: 2,
+                        transition: 'all 0.2s',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        '&:hover': {
+                          zIndex: 3,
+                          transform: 'scale(1.02)',
+                          boxShadow: theme.shadows[6],
+                        },
+                      }}
+                      onClick={() => onAppointmentClick?.(appointment)}
                     >
-                      <Paper
-                        elevation={2}
+                      {/* Colored header strip */}
+                      <Box
                         sx={{
-                          position: 'absolute',
-                          top: `${top}px`,
-                          left: `${left}%`,
-                          width: `calc(${width}% - 4px)`,
-                          height: `${Math.max(height, 30)}px`,
                           bgcolor: getAppointmentColor(appointment.type),
                           color: 'white',
-                          p: 1,
-                          cursor: 'pointer',
-                          overflow: 'hidden',
-                          zIndex: 2,
-                          transition: 'all 0.2s',
-                          '&:hover': {
-                            zIndex: 3,
-                            transform: 'scale(1.02)',
-                            boxShadow: theme.shadows[6],
-                          },
+                          px: 1,
+                          py: 0.5,
+                          minHeight: 24,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          flexShrink: 0,
                         }}
-                        onClick={() => onAppointmentClick?.(appointment)}
                       >
-                        <Stack spacing={0.5}>
-                          <Typography variant="caption" fontWeight="bold">
-                            {formatTime(appointment.start_time)}
-                          </Typography>
+                        <Typography
+                          variant="caption"
+                          fontWeight="bold"
+                          sx={{
+                            fontSize: '0.7rem',
+                            lineHeight: 1.2,
+                          }}
+                        >
+                          {formatTime(appointment.start_time)}
+                        </Typography>
+                        {appointment.status === 'confirmed' && (
+                          <CheckCircleIcon sx={{ fontSize: 12, ml: 0.5 }} />
+                        )}
+                      </Box>
+                      {/* White content area */}
+                      <Box
+                        sx={{
+                          flex: 1,
+                          bgcolor: 'background.paper',
+                          p: 1,
+                          overflow: 'hidden',
+                        }}
+                      >
+                        <Typography
+                          variant="body2"
+                          fontWeight="medium"
+                          sx={{
+                            color: 'text.primary',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                        >
+                          {appointment.client
+                            ? `${appointment.client.first_name} ${appointment.client.last_name}`
+                            : 'No Client'}
+                        </Typography>
+                        {appointment.notes && (
                           <Typography
-                            variant="body2"
-                            fontWeight="medium"
-                            sx={{
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                            }}
+                            variant="caption"
+                            display="block"
+                            sx={{ mt: 0.5 }}
                           >
-                            {appointment.title}
+                            {appointment.notes}
                           </Typography>
-                          {height > 60 && appointment.client && (
-                            <Box
-                              sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 0.5,
-                              }}
-                            >
-                              <Avatar
-                                sx={{
-                                  width: 20,
-                                  height: 20,
-                                  fontSize: '0.75rem',
-                                  bgcolor: alpha(
-                                    theme.palette.common.white,
-                                    0.3
-                                  ),
-                                }}
-                              >
-                                {appointment.client.first_name[0]}
-                              </Avatar>
-                              <Typography
-                                variant="caption"
-                                sx={{
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  whiteSpace: 'nowrap',
-                                }}
-                              >
-                                {appointment.client.first_name}{' '}
-                                {appointment.client.last_name}
-                              </Typography>
-                            </Box>
-                          )}
-                          {height > 80 && (
-                            <Chip
-                              label={appointment.type.replace('_', ' ')}
-                              size="small"
-                              sx={{
-                                height: 20,
-                                bgcolor: alpha(theme.palette.common.white, 0.2),
-                                color: 'white',
-                              }}
-                            />
-                          )}
-                        </Stack>
-                      </Paper>
-                    </Tooltip>
+                        )}
+                      </Box>
+                    </Paper>
                   );
                 })}
 
