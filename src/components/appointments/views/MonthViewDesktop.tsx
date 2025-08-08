@@ -179,6 +179,21 @@ export function MonthViewDesktop({
                   mb: 1,
                 }}
               >
+                {/* Week number on first day of each week */}
+                {weekNumber !== null && (
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{
+                      position: 'absolute',
+                      top: 8,
+                      left: 8,
+                      fontWeight: 500,
+                    }}
+                  >
+                    {`W${weekNumber}`}
+                  </Typography>
+                )}
                 <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
                   <Typography
                     variant="h6"

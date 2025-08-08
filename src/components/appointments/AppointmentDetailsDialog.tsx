@@ -262,8 +262,9 @@ export function AppointmentDetailsDialog({
           setIsEditingNotes(false);
           setSavingNotes(false);
         },
-        onError: () => {
+        onError: (err) => {
           setSavingNotes(false);
+          setError(err.message || 'Failed to update');
         },
       }
     );
@@ -434,6 +435,8 @@ export function AppointmentDetailsDialog({
                 </Typography>
                 {!isEditingType && (
                   <IconButton
+                    aria-label="Edit"
+                    data-testid="edit-type-button"
                     size="small"
                     onClick={() => {
                       setEditedType(currentType);
@@ -597,6 +600,8 @@ export function AppointmentDetailsDialog({
                   </Typography>
                   {!isEditingNotes && (
                     <IconButton
+                      aria-label="Edit"
+                      data-testid="edit-notes-button"
                       size="small"
                       onClick={() => {
                         setEditedNotes(currentNotes || '');

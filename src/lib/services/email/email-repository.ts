@@ -242,15 +242,18 @@ export class EmailRepository {
       return { valid: false, reason: 'not_found' };
     }
 
+    // Always include appointmentId when token exists
+    const appointmentId: string = data.appointment_id;
+
     if (data.used_at) {
-      return { valid: false, reason: 'used' };
+      return { valid: false, reason: 'used', appointmentId };
     }
 
     if (new Date(data.expires_at) < new Date()) {
-      return { valid: false, reason: 'expired' };
+      return { valid: false, reason: 'expired', appointmentId };
     }
 
-    return { valid: true, appointmentId: data.appointment_id };
+    return { valid: true, appointmentId };
   }
 
   async useToken(token: string): Promise<void> {

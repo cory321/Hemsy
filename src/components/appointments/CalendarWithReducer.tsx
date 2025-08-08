@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { Box, Paper, Typography } from '@mui/material';
+import { Box, Paper, Typography, Button, Container } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import { Calendar } from './Calendar';
 import { CalendarDesktop } from './CalendarDesktop';
 import { useCalendarAppointments } from '@/hooks/useCalendarAppointments';
@@ -182,6 +183,12 @@ export function CalendarWithReducer({
     [navigateToDate, refetch]
   );
 
+  // Handle Add Appointment button click
+  const handleAddAppointmentClick = useCallback(() => {
+    setDialogState({ selectedDate: new Date() });
+    setAppointmentDialogOpen(true);
+  }, []);
+
   // Error display
   if (error && !isLoading) {
     return (
@@ -197,7 +204,37 @@ export function CalendarWithReducer({
   }
 
   return (
-    <>
+    <Container maxWidth="lg">
+      {/* Page Header */}
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          py: 3,
+          mb: 2,
+        }}
+      >
+        <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
+          Appointments
+        </Typography>
+        <Button
+          startIcon={<AddIcon />}
+          onClick={handleAddAppointmentClick}
+          variant="contained"
+          color="primary"
+          size="large"
+          sx={{
+            borderRadius: 2,
+            textTransform: 'none',
+            fontWeight: 600,
+          }}
+        >
+          Add Appointment
+        </Button>
+      </Box>
+
+      {/* Calendar */}
       {isMobile ? (
         <Calendar
           appointments={appointments}
@@ -240,6 +277,9 @@ export function CalendarWithReducer({
         calendarSettings={calendarSettings}
         onCreate={handleCreateAppointment}
         onUpdate={handleUpdateAppointment}
+        {...(appointmentDialogOpen
+          ? ({ ['data-testid']: 'appointment-dialog' } as any)
+          : {})}
       />
 
       {/* Details Dialog */}
@@ -254,6 +294,6 @@ export function CalendarWithReducer({
           onEdit={() => handleEditAppointment(dialogState.appointment!)}
         />
       )}
-    </>
+    </Container>
   );
 }

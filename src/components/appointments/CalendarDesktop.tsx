@@ -88,13 +88,25 @@ export function CalendarDesktop({
   const currentDate = controlledDate ?? internalDate;
   const view = controlledView ?? internalView;
   const [filterType, setFilterType] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
 
-  // Filter appointments based on selected type
+  // Filter appointments based on selected type and status
   const filteredAppointments = useMemo(() => {
-    if (filterType === 'all') return appointments;
-    return appointments.filter((apt) => apt.type === filterType);
-  }, [appointments, filterType]);
+    let filtered = appointments;
+
+    // Filter by type
+    if (filterType !== 'all') {
+      filtered = filtered.filter((apt) => apt.type === filterType);
+    }
+
+    // Filter by status
+    if (filterStatus !== 'all') {
+      filtered = filtered.filter((apt) => apt.status === filterStatus);
+    }
+
+    return filtered;
+  }, [appointments, filterType, filterStatus]);
 
   // Navigation handlers
   const throttledHandlePrevious = useThrottle(() => {
@@ -151,18 +163,18 @@ export function CalendarDesktop({
   }, [onRefresh, controlledDate]);
 
   const handleViewChange = (
-    _: React.MouseEvent<HTMLElement>,
+    _event: React.MouseEvent<HTMLElement>,
     newView: CalendarView | null
   ) => {
-    if (newView) {
-      // Only update internal state if not controlled
-      if (!controlledView) {
-        setInternalView(newView);
-      }
-      // Notify parent if controlled
-      onViewChange?.(newView);
-      onRefresh?.(currentDate);
+    // When clicking an already-selected view, MUI passes null. We still want to trigger a refresh
+    const nextView = newView ?? view;
+    // Only update internal state if not controlled and the view actually changed
+    if (!controlledView && newView && newView !== view) {
+      setInternalView(nextView);
     }
+    // Notify parent of the chosen view (use current if null)
+    onViewChange?.(nextView);
+    onRefresh?.(currentDate);
   };
 
   const handleAppointmentSelect = (appointment: Appointment) => {
@@ -281,20 +293,37 @@ export function CalendarDesktop({
               exclusive
               onChange={handleViewChange}
               size="medium"
+              disabled={isLoading}
             >
-              <ToggleButton value="month" aria-label="month view">
+              <ToggleButton
+                value="month"
+                aria-label="month view"
+                disabled={isLoading}
+              >
                 <CalendarViewMonthIcon sx={{ mr: 1 }} />
                 Month
               </ToggleButton>
-              <ToggleButton value="week" aria-label="week view">
+              <ToggleButton
+                value="week"
+                aria-label="week view"
+                disabled={isLoading}
+              >
                 <ViewWeekIcon sx={{ mr: 1 }} />
                 Week
               </ToggleButton>
-              <ToggleButton value="day" aria-label="day view">
+              <ToggleButton
+                value="day"
+                aria-label="day view"
+                disabled={isLoading}
+              >
                 <ViewDayIcon sx={{ mr: 1 }} />
                 Day
               </ToggleButton>
-              <ToggleButton value="list" aria-label="list view">
+              <ToggleButton
+                value="list"
+                aria-label="list view"
+                disabled={isLoading}
+              >
                 <ViewAgendaIcon sx={{ mr: 1 }} />
                 Agenda
               </ToggleButton>
@@ -361,7 +390,7 @@ export function CalendarDesktop({
               }}
             >
               <FilterListIcon color="action" />
-              <FormControl size="small" sx={{ minWidth: 200, maxWidth: 400 }}>
+              <FormControl size="small" sx={{ minWidth: 200, maxWidth: 300 }}>
                 <InputLabel id="filter-by-type-label">
                   Filter by type
                 </InputLabel>
@@ -379,6 +408,25 @@ export function CalendarDesktop({
                   <MenuItem value="delivery">Delivery</MenuItem>
                   <MenuItem value="alteration">Alteration</MenuItem>
                   <MenuItem value="other">Other</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl size="small" sx={{ minWidth: 200, maxWidth: 300 }}>
+                <InputLabel id="filter-by-status-label">
+                  Filter by status
+                </InputLabel>
+                <Select
+                  labelId="filter-by-status-label"
+                  value={filterStatus}
+                  label="Filter by status"
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  inputProps={{ 'aria-label': 'Filter by status' }}
+                >
+                  <MenuItem value="all">All Statuses</MenuItem>
+                  <MenuItem value="pending">Pending</MenuItem>
+                  <MenuItem value="confirmed">Confirmed</MenuItem>
+                  <MenuItem value="declined">Declined</MenuItem>
+                  <MenuItem value="canceled">Canceled</MenuItem>
+                  <MenuItem value="no_show">No Show</MenuItem>
                 </Select>
               </FormControl>
               <Typography variant="body2" color="text.secondary">

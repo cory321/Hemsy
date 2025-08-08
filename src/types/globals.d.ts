@@ -27,6 +27,7 @@ declare global {
       EMAIL_LOG_LEVEL?: string;
       ENABLE_EMAIL_SENDING?: string;
       EMAIL_RATE_LIMIT_PER_HOUR?: string;
+      EMAIL_DEV_OVERRIDE?: string;
 
       // URLs
       NEXT_PUBLIC_APP_URL: string;

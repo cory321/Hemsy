@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback, useRef } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import {
   Box,
   Skeleton,
@@ -78,6 +78,7 @@ export function CalendarWithQuery({
   const [cachedAppointments, setCachedAppointments] = useState<Appointment[]>(
     []
   );
+  const [isNavigating, setIsNavigating] = useState(false);
 
   // Calculate date range based on current view
   const { startDate, endDate } = useMemo(() => {
@@ -108,11 +109,15 @@ export function CalendarWithQuery({
 
   // Update cached appointments when new data arrives
   // Only update if this is the data we actually requested (prevents race conditions)
-  useMemo(() => {
+  useEffect(() => {
     if (!isLoading && !isError) {
       setCachedAppointments(appointments);
+      // Data finished loading
+      if (!isFetching) {
+        setIsNavigating(false);
+      }
     }
-  }, [appointments, isLoading, isError]);
+  }, [appointments, isLoading, isError, isFetching]);
 
   // Navigation handlers
   const handleNavigate = useCallback(
@@ -178,7 +183,9 @@ export function CalendarWithQuery({
         // Update the last requested date to prevent race conditions
         lastRequestedDate.current = date;
         setCurrentDate(date);
+        setIsNavigating(true);
       } else {
+        setIsNavigating(true);
         refetch();
       }
     },
@@ -247,7 +254,8 @@ export function CalendarWithQuery({
         {...(onAppointmentClick && { onAppointmentClick })}
         {...(onDateClick && { onDateClick })}
         onRefresh={handleRefresh}
-        isLoading={isFetching}
+        // Disable navigation and view controls while fetching to prevent rapid clicks
+        isLoading={isFetching || isNavigating}
         currentDate={currentDate}
         view={view}
         onViewChange={handleViewChange}

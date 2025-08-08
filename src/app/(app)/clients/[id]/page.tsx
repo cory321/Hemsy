@@ -20,6 +20,9 @@ import PersonIcon from '@mui/icons-material/Person';
 import { getClient } from '@/lib/actions/clients';
 import ClientEditDialog from '@/components/clients/ClientEditDialog';
 import ClientDeleteDialog from '@/components/clients/ClientDeleteDialog';
+import ClientAppointmentsSection from '@/components/clients/ClientAppointmentsSection';
+import { createClient } from '@/lib/supabase/server';
+import { auth } from '@clerk/nextjs/server';
 
 interface ClientDetailPageProps {
   params: Promise<{ id: string }>;
@@ -36,6 +39,20 @@ export default async function ClientDetailPage({
     if (!client) {
       notFound();
     }
+
+    // Resolve current user's shopId for appointments queries
+    const { userId } = await auth();
+    const supabase = await createClient();
+    const { data: userData } = await supabase
+      .from('users')
+      .select('id')
+      .eq('clerk_user_id', userId)
+      .single();
+    const { data: shopData } = await supabase
+      .from('shops')
+      .select('id')
+      .eq('owner_user_id', userData?.id)
+      .single();
 
     const formatPhoneNumber = (phone: string) => {
       return phone.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
@@ -199,6 +216,17 @@ export default async function ClientDetailPage({
                     </Typography>
                   </CardContent>
                 </Card>
+              </Grid>
+            )}
+
+            {/* Appointments Section */}
+            {shopData?.id && (
+              <Grid item xs={12}>
+                <ClientAppointmentsSection
+                  clientId={client.id}
+                  clientName={`${client.first_name} ${client.last_name}`}
+                  shopId={shopData.id}
+                />
               </Grid>
             )}
 

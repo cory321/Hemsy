@@ -93,6 +93,7 @@ interface AppointmentDialogProps {
     endTime: string;
     type: 'consultation' | 'fitting' | 'pickup' | 'delivery' | 'other';
     notes?: string;
+    sendEmail?: boolean;
   }) => Promise<void>;
   onUpdate?: (data: {
     clientId: string;
@@ -124,6 +125,7 @@ export function AppointmentDialog({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [sendEmail, setSendEmail] = useState<boolean>(false);
 
   // Form state
   const [formData, setFormData] = useState(() => {
@@ -164,8 +166,20 @@ export function AppointmentDialog({
   useEffect(() => {
     if (appointment?.client_id && appointment.client) {
       setSelectedClient(appointment.client as Client);
+    } else if (!appointment) {
+      // Ensure we clear client when not editing
+      setSelectedClient(null);
     }
-  }, [appointment]);
+  }, [appointment?.id]);
+
+  // Keep sendEmail in sync with selected client preferences
+  useEffect(() => {
+    if (selectedClient?.accept_email) {
+      setSendEmail(true);
+    } else {
+      setSendEmail(false);
+    }
+  }, [selectedClient?.id, selectedClient?.accept_email]);
 
   // Update form state when selectedDate or selectedTime props change
   useEffect(() => {
@@ -182,7 +196,14 @@ export function AppointmentDialog({
             : null,
       }));
     }
-  }, [open, selectedDate, selectedTime, appointment]);
+  }, [
+    open,
+    selectedDate,
+    selectedTime,
+    appointment?.id,
+    appointment?.start_time,
+    appointment?.date,
+  ]);
 
   // Update end time when start time or duration changes
   useEffect(() => {
@@ -192,16 +213,17 @@ export function AppointmentDialog({
     }
   }, [formData.start_time, duration]);
 
-  // Add this useEffect to clear selectedClient when opening for a new appointment
+  // Clear selected client when switching from editing to new appointment
   useEffect(() => {
-    if (open && !appointment) {
-      setSelectedClient(null);
-      setFormData((prev) => ({
-        ...prev,
-        client_id: null,
-      }));
+    if (open) {
+      if (appointment?.client_id && appointment.client) {
+        setSelectedClient(appointment.client as Client);
+      } else {
+        setSelectedClient(null);
+        setFormData((prev) => ({ ...prev, client_id: null }));
+      }
     }
-  }, [open, appointment]);
+  }, [open, appointment?.id]);
 
   const handleSubmit = async () => {
     setError(null);
@@ -221,7 +243,15 @@ export function AppointmentDialog({
         return;
       }
 
-      const data = {
+      const data: {
+        clientId: string;
+        date: string;
+        startTime: string;
+        endTime: string;
+        type: 'consultation' | 'fitting' | 'pickup' | 'delivery' | 'other';
+        notes?: string;
+        sendEmail?: boolean;
+      } = {
         clientId: formData.client_id,
         date: dayjs.isDayjs(formData.date)
           ? formData.date.format('YYYY-MM-DD')
@@ -234,7 +264,8 @@ export function AppointmentDialog({
           | 'pickup'
           | 'delivery'
           | 'other',
-        notes: formData.notes || undefined,
+        ...(formData.notes ? { notes: formData.notes } : {}),
+        sendEmail,
       };
 
       if (appointment && onUpdate) {
@@ -291,7 +322,7 @@ export function AppointmentDialog({
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
           {/* Client Selection */}
           <ClientSearchField
-            value={selectedClient as any}
+            value={(appointment ? selectedClient : null) as any}
             onChange={(newClient) => {
               setSelectedClient(newClient as Client | null);
               setFormData((prev) => ({
@@ -326,6 +357,7 @@ export function AppointmentDialog({
                 textField: {
                   fullWidth: true,
                   required: true,
+                  inputProps: { 'aria-label': 'Date' },
                 },
               }}
             />
@@ -362,8 +394,10 @@ export function AppointmentDialog({
               </FormControl>
 
               <FormControl sx={{ minWidth: 120 }}>
-                <InputLabel>Duration</InputLabel>
+                <InputLabel id="duration-label">Duration</InputLabel>
                 <Select
+                  labelId="duration-label"
+                  label="Duration"
                   value={duration}
                   onChange={(e) => setDuration(Number(e.target.value))}
                 >
@@ -381,8 +415,10 @@ export function AppointmentDialog({
           {/* Type - Only show when not rescheduling */}
           {!isReschedule && (
             <FormControl fullWidth>
-              <InputLabel>Type</InputLabel>
+              <InputLabel id="type-label">Type</InputLabel>
               <Select
+                labelId="type-label"
+                label="Type"
                 value={formData.type}
                 onChange={(e) =>
                   setFormData((prev) => ({
@@ -419,75 +455,82 @@ export function AppointmentDialog({
             />
           )}
 
-          {/* Send appointment reminders section - Always visible */}
-          <Divider sx={{ my: 1.5 }} />
-          <Box>
-            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500 }}>
-              Send appointment reminders
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={selectedClient?.accept_email || false}
-                    disabled={!selectedClient || !selectedClient.accept_email}
-                    size="small"
+          {/* Send appointment reminders section - Hidden when rescheduling */}
+          {!isReschedule && (
+            <>
+              <Divider sx={{ my: 1.5 }} />
+              <Box>
+                <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500 }}>
+                  Send appointment reminders
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={sendEmail}
+                        onChange={(e) => setSendEmail(e.target.checked)}
+                        disabled={
+                          !selectedClient || !selectedClient.accept_email
+                        }
+                        size="small"
+                      />
+                    }
+                    label={
+                      <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                        <Typography variant="body2" sx={{ lineHeight: 1.2 }}>
+                          Email
+                        </Typography>
+                        {selectedClient && !selectedClient.accept_email && (
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ fontSize: '0.7rem', lineHeight: 1 }}
+                          >
+                            Opted out
+                          </Typography>
+                        )}
+                      </Box>
+                    }
+                    sx={{
+                      alignItems: 'center',
+                      ml: -0.5,
+                      '& .MuiFormControlLabel-label': { mt: 0 },
+                    }}
                   />
-                }
-                label={
-                  <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                    <Typography variant="body2" sx={{ lineHeight: 1.2 }}>
-                      Email
-                    </Typography>
-                    {selectedClient && !selectedClient.accept_email && (
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ fontSize: '0.7rem', lineHeight: 1 }}
-                      >
-                        Opted out
-                      </Typography>
-                    )}
-                  </Box>
-                }
-                sx={{
-                  alignItems: 'center',
-                  ml: -0.5,
-                  '& .MuiFormControlLabel-label': { mt: 0 },
-                }}
-              />
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={selectedClient?.accept_sms || false}
-                    disabled={!selectedClient || !selectedClient.accept_sms}
-                    size="small"
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={selectedClient?.accept_sms || false}
+                        disabled={!selectedClient || !selectedClient.accept_sms}
+                        size="small"
+                      />
+                    }
+                    label={
+                      <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                        <Typography variant="body2" sx={{ lineHeight: 1.2 }}>
+                          SMS
+                        </Typography>
+                        {selectedClient && !selectedClient.accept_sms && (
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ fontSize: '0.7rem', lineHeight: 1 }}
+                          >
+                            Opted out
+                          </Typography>
+                        )}
+                      </Box>
+                    }
+                    sx={{
+                      alignItems: 'center',
+                      ml: -0.5,
+                      '& .MuiFormControlLabel-label': { mt: 0 },
+                    }}
                   />
-                }
-                label={
-                  <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                    <Typography variant="body2" sx={{ lineHeight: 1.2 }}>
-                      SMS
-                    </Typography>
-                    {selectedClient && !selectedClient.accept_sms && (
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ fontSize: '0.7rem', lineHeight: 1 }}
-                      >
-                        Opted out
-                      </Typography>
-                    )}
-                  </Box>
-                }
-                sx={{
-                  alignItems: 'center',
-                  ml: -0.5,
-                  '& .MuiFormControlLabel-label': { mt: 0 },
-                }}
-              />
-            </Box>
-          </Box>
+                </Box>
+              </Box>
+            </>
+          )}
         </Box>
       </DialogContent>
 

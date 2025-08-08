@@ -19,15 +19,21 @@ export interface SendEmailResult {
 export class ResendClient {
   private client: Resend;
   private isPreviewMode: boolean;
+  private devOverrideRecipient: string | null;
 
   constructor() {
     this.client = new Resend(process.env.RESEND_API_KEY);
     this.isPreviewMode = emailConfig.features.previewMode;
+    // In non-production, allow optional override to a single inbox when explicitly set
+    this.devOverrideRecipient =
+      process.env.NODE_ENV !== 'production'
+        ? process.env.EMAIL_DEV_OVERRIDE || null
+        : null;
   }
 
   async send(payload: SendEmailPayload): Promise<SendEmailResult> {
-    // In preview mode, log instead of sending
-    if (this.isPreviewMode) {
+    // In preview mode, log instead of sending, unless we have a dev override to actually send to test inbox
+    if (this.isPreviewMode && !this.devOverrideRecipient) {
       console.log('📧 Email Preview:', {
         to: payload.to,
         subject: payload.subject,
@@ -40,11 +46,18 @@ export class ResendClient {
     }
 
     try {
+      // In non-production with override set, redirect emails to test inbox
+      const finalTo = this.devOverrideRecipient
+        ? [this.devOverrideRecipient]
+        : Array.isArray(payload.to)
+          ? payload.to
+          : [payload.to];
+
       const { data, error } = await this.client.emails.send({
         from:
           payload.from ||
           `${emailConfig.sender.name} <${emailConfig.sender.address}>`,
-        to: Array.isArray(payload.to) ? payload.to : [payload.to],
+        to: finalTo,
         subject: payload.subject,
         text: payload.text + EMAIL_FOOTER,
         reply_to: payload.replyTo || emailConfig.sender.replyTo,

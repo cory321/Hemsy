@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@clerk/nextjs/server';
 import { z } from 'zod';
 import type { Appointment } from '@/types';
+import { EmailService } from '@/lib/services/email/email-service';
 
 // Validation schemas
 const appointmentSchema = z.object({
@@ -198,8 +199,30 @@ export async function createAppointment(
 
   if (error) throw new Error('Failed to create appointment');
 
-  // TODO: Send notifications if enabled
-  // await sendAppointmentNotification(data, 'created');
+  // Send appointment scheduled email (includes confirmation link when pending)
+  try {
+    console.log(
+      '🚀 Attempting to send appointment scheduled email for appointment:',
+      data.id
+    );
+    const emailService = new EmailService(supabase, userData.id);
+    console.log('📧 EmailService created, sending email...');
+    const result = await emailService.sendAppointmentEmail(
+      data.id,
+      'appointment_scheduled'
+    );
+    console.log('✅ Email sent successfully:', result);
+  } catch (e) {
+    console.error('❌ Failed to send scheduled email:', e);
+    // Log the full error details
+    if (e instanceof Error) {
+      console.error('Error details:', {
+        message: e.message,
+        stack: e.stack,
+        name: e.name,
+      });
+    }
+  }
 
   revalidatePath('/appointments');
   return data;
@@ -291,8 +314,33 @@ export async function updateAppointment(
 
   if (error) throw new Error('Failed to update appointment');
 
-  // TODO: Send notifications if enabled
-  // await sendAppointmentNotification(data, 'updated');
+  // Send rescheduled or canceled emails when appropriate
+  try {
+    const { data: currentUserRow } = await supabase
+      .from('users')
+      .select('id')
+      .eq('clerk_user_id', userId)
+      .single();
+    const ownerUserId = currentUserRow?.id || userId;
+    const emailService = new EmailService(supabase, ownerUserId);
+
+    if (cleanUpdateData.status === 'canceled') {
+      // include previous_time when available
+      await emailService.sendAppointmentEmail(id, 'appointment_canceled', {
+        previous_time: `${currentAppointment.date} ${currentAppointment.start_time}`,
+      });
+    } else if (
+      cleanUpdateData.date ||
+      cleanUpdateData.start_time ||
+      cleanUpdateData.end_time
+    ) {
+      await emailService.sendAppointmentEmail(id, 'appointment_rescheduled', {
+        previous_time: `${currentAppointment.date} ${currentAppointment.start_time}`,
+      });
+    }
+  } catch (e) {
+    console.warn('Failed to send update email:', e);
+  }
 
   revalidatePath('/appointments');
   return data;

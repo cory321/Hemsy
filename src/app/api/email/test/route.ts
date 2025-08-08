@@ -17,7 +17,10 @@ export async function POST(request: NextRequest) {
     // Prepare email data
     const emailData = {
       from: emailConfig.sender.formatted,
-      to: [email],
+      to:
+        process.env.NODE_ENV !== 'production'
+          ? [process.env.EMAIL_DEV_OVERRIDE || 'cory321@gmail.com']
+          : [email],
       subject: 'Threadfolio Email System Test',
       react: EmailTemplate({
         title: '🎉 Threadfolio Email System Test',

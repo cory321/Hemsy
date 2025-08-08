@@ -79,6 +79,7 @@ export function ClientSearchField({
       }
     };
 
+    // Only trigger when debounced value settles
     searchClients();
 
     return () => {

@@ -203,29 +203,9 @@ export async function testEmailTemplate(
       template = defaultTemplate;
     }
 
-    // If still no template, use the hardcoded default
+    // If still no template, return an error (do not fallback to hardcoded defaults for tests)
     if (!template) {
-      // Use the default template from the default-templates.ts file
-      const { get_default_email_templates } = await import(
-        '@/lib/services/email/default-templates'
-      );
-      const defaults = get_default_email_templates();
-      const defaultTemplate = defaults[emailType as EmailType];
-
-      if (!defaultTemplate) {
-        return { success: false, error: 'Template not found' };
-      }
-
-      template = {
-        id: 'default',
-        email_type: emailType,
-        subject: defaultTemplate.subject,
-        body: defaultTemplate.body,
-        is_default: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        created_by: user.id,
-      };
+      return { success: false, error: 'Template not found' };
     }
 
     // Create sample data for the template

@@ -193,7 +193,8 @@ describe('ClientSearchField', () => {
     await user.type(input, 'h');
     await user.type(input, 'n');
 
-    // Should not have called yet
+    // Should not have called yet (debounce in progress) - allow a tiny tick
+    await new Promise((r) => setTimeout(r, 10));
     expect(mockGetClients).not.toHaveBeenCalled();
 
     // Wait for debounce

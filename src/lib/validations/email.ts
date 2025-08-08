@@ -30,16 +30,16 @@ export const UpdateEmailTemplateSchema = z.object({
 // User email settings validation
 export const UserEmailSettingsSchema = z.object({
   receive_appointment_notifications: z.boolean(),
-  email_signature: z
-    .string()
-    .max(EMAIL_CONSTRAINTS.signatureMaxLength)
-    .optional()
-    .nullable(),
-  reply_to_email: z
-    .string()
-    .email('Invalid email format')
-    .optional()
-    .nullable(),
+  // Treat blank string as undefined so the field is truly optional
+  email_signature: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+    z.string().max(EMAIL_CONSTRAINTS.signatureMaxLength).optional().nullable()
+  ),
+  // Treat blank string as undefined so empty input does not trigger email validation
+  reply_to_email: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+    z.string().email('Invalid email format').optional().nullable()
+  ),
 });
 
 // Email send validation
