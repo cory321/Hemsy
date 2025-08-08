@@ -27,6 +27,8 @@ const updateAppointmentSchema = createAppointmentSchema
       .enum(['pending', 'declined', 'confirmed', 'canceled', 'no_show'])
       .optional(),
     originalDate: z.string().optional(), // For tracking date changes
+    // Per-operation flag to control whether to send notification emails
+    sendEmail: z.boolean().optional(),
   })
   .partial()
   .required({ id: true });
@@ -77,14 +79,17 @@ export async function getAppointmentsByTimeRange(
     .from('appointments')
     .select(
       `
-			*,
-			client:clients(
-				first_name,
-				last_name,
-				email,
-				phone_number
-			)
-		`
+      *,
+      client:clients(
+        id,
+        first_name,
+        last_name,
+        email,
+        phone_number,
+        accept_email,
+        accept_sms
+      )
+    `
     )
     .eq('shop_id', shopId)
     .gte('date', startDate)
@@ -183,6 +188,12 @@ export async function createAppointment(
 
   const validated = createAppointmentSchema.parse(data);
   const supabase = await createClient();
+
+  // Prevent creating appointments in the past (date + startTime before now)
+  const startDateTime = new Date(`${validated.date} ${validated.startTime}`);
+  if (startDateTime.getTime() < Date.now()) {
+    throw new Error('Cannot create appointments in the past');
+  }
 
   // Verify shop ownership
   const { data: userData, error: userError } = await supabase
@@ -311,6 +322,18 @@ export async function updateAppointment(
     .eq('id', validated.id)
     .eq('shops.users.clerk_user_id', userId)
     .single();
+  // Prevent reschedule/cancel for past appointments
+  const currentAptEnd = new Date(`${currentApt.date} ${currentApt.end_time}`);
+  const isPast = currentAptEnd < new Date();
+  if (
+    isPast &&
+    (validated.status === 'canceled' ||
+      validated.date ||
+      validated.startTime ||
+      validated.endTime)
+  ) {
+    throw new Error('Cannot modify past appointments');
+  }
 
   if (fetchError || !currentApt) {
     throw new Error('Appointment not found or unauthorized');
@@ -321,6 +344,12 @@ export async function updateAppointment(
     const date = validated.date || currentApt.date;
     const startTime = validated.startTime || currentApt.start_time;
     const endTime = validated.endTime || currentApt.end_time;
+
+    // Prevent moving appointment to a past time
+    const newStartDateTime = new Date(`${date} ${startTime}`);
+    if (newStartDateTime.getTime() < Date.now()) {
+      throw new Error('Cannot schedule appointments in the past');
+    }
 
     const { data: hasConflict, error: conflictError } = await supabase.rpc(
       'check_appointment_conflict',
@@ -343,6 +372,9 @@ export async function updateAppointment(
       );
     }
   }
+
+  // Capture previous time before update for email context
+  const previousDateTime = `${currentApt.date} ${currentApt.start_time}`;
 
   // Update the appointment
   const updateData: any = {};
@@ -379,6 +411,80 @@ export async function updateAppointment(
 
   if (updateError || !updatedApt) {
     throw new Error('Failed to update appointment');
+  }
+
+  // Conditionally send notification emails for reschedule/cancel
+  try {
+    console.log(
+      '[appointments-refactored.updateAppointment] evaluating notification send...',
+      {
+        id: validated.id,
+        status: validated.status,
+        dateChanged: validated.date !== undefined,
+        startChanged: validated.startTime !== undefined,
+        endChanged: validated.endTime !== undefined,
+        previousDateTime,
+      }
+    );
+    const { data: currentUserRow } = await supabase
+      .from('users')
+      .select('id')
+      .eq('clerk_user_id', userId)
+      .single();
+    const ownerUserId = currentUserRow?.id || userId;
+    const emailService = new EmailService(supabase, ownerUserId);
+
+    const sendEmailFlag = validated.sendEmail !== false; // default to true
+
+    if (sendEmailFlag) {
+      if (validated.status === 'canceled') {
+        console.log(
+          '[appointments-refactored] sending appointment_canceled email',
+          {
+            appointmentId: validated.id,
+            previousDateTime,
+          }
+        );
+        await emailService.sendAppointmentEmail(
+          validated.id,
+          'appointment_canceled',
+          { previous_time: previousDateTime }
+        );
+      } else if (validated.status === 'no_show') {
+        console.log(
+          '[appointments-refactored] sending appointment_no_show email',
+          {
+            appointmentId: validated.id,
+          }
+        );
+        await emailService.sendAppointmentEmail(
+          validated.id,
+          'appointment_no_show'
+        );
+      } else {
+        const timeChanged =
+          validated.date !== undefined ||
+          validated.startTime !== undefined ||
+          validated.endTime !== undefined;
+
+        if (timeChanged) {
+          console.log(
+            '[appointments-refactored] sending appointment_rescheduled email',
+            {
+              appointmentId: validated.id,
+              previousDateTime,
+            }
+          );
+          await emailService.sendAppointmentEmail(
+            validated.id,
+            'appointment_rescheduled',
+            { previous_time: previousDateTime }
+          );
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[updateAppointment] Failed to send notification email:', e);
   }
 
   // Revalidate the appointments page

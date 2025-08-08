@@ -36,6 +36,7 @@ interface DialogState {
   selectedDate?: Date;
   selectedTime?: string | undefined;
   isReschedule?: boolean;
+  rescheduleSendEmailDefault?: boolean;
 }
 
 export function CalendarWithReducer({
@@ -103,9 +104,19 @@ export function CalendarWithReducer({
 
   // Handle edit from details dialog
   const handleEditAppointment = useCallback(
-    (appointment: Appointment, isReschedule?: boolean) => {
+    (
+      appointment: Appointment,
+      isReschedule?: boolean,
+      sendEmailDefault?: boolean
+    ) => {
       setDetailsDialogOpen(false);
-      setDialogState({ appointment, isReschedule: isReschedule || false });
+      setDialogState({
+        appointment,
+        isReschedule: isReschedule || false,
+        ...(sendEmailDefault !== undefined
+          ? { rescheduleSendEmailDefault: sendEmailDefault }
+          : {}),
+      });
       setAppointmentDialogOpen(true);
     },
     []
@@ -136,6 +147,7 @@ export function CalendarWithReducer({
       type: 'consultation' | 'fitting' | 'pickup' | 'delivery' | 'other';
       notes?: string;
       status?: string;
+      sendEmail?: boolean;
     }) => {
       if (!dialogState.appointment) return;
 
@@ -154,6 +166,7 @@ export function CalendarWithReducer({
             | 'canceled'
             | 'no_show'
             | undefined,
+          sendEmail: data.sendEmail,
         });
         setAppointmentDialogOpen(false);
         setDialogState({});
@@ -270,6 +283,7 @@ export function CalendarWithReducer({
         }}
         appointment={dialogState.appointment || null}
         isReschedule={dialogState.isReschedule || false}
+        rescheduleSendEmailDefault={dialogState.rescheduleSendEmailDefault}
         selectedDate={dialogState.selectedDate || new Date()}
         selectedTime={dialogState.selectedTime || null}
         shopHours={shopHours}
@@ -291,7 +305,9 @@ export function CalendarWithReducer({
             setDialogState({});
           }}
           appointment={dialogState.appointment}
-          onEdit={() => handleEditAppointment(dialogState.appointment!)}
+          onEdit={(apt, isRes, sendDefault) =>
+            handleEditAppointment(apt, isRes, sendDefault)
+          }
         />
       )}
     </Container>

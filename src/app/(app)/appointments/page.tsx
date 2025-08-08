@@ -1,5 +1,8 @@
 // Placeholder to keep file unchanged; functional edits were in server actions only
 import { Suspense } from 'react';
+
+// Always fetch fresh data for calendar settings and hours to ensure buffer changes apply immediately
+export const revalidate = 0;
 import { auth } from '@clerk/nextjs/server';
 import { CircularProgress, Box } from '@mui/material';
 import { AppointmentsClient } from './AppointmentsClient';

@@ -5,6 +5,9 @@ export const EMAIL_TYPE_LABELS: Record<EmailType, string> = {
   appointment_scheduled: 'Appointment Scheduled',
   appointment_rescheduled: 'Appointment Rescheduled',
   appointment_canceled: 'Appointment Canceled',
+  appointment_no_show: 'Appointment No-show',
+  appointment_rescheduled_seamstress: 'Appointment Rescheduled (Seamstress)',
+  appointment_canceled_seamstress: 'Appointment Canceled (Seamstress)',
   payment_link: 'Payment Link',
   appointment_confirmation_request: 'Confirmation Request',
   appointment_confirmed: 'Appointment Confirmed',
@@ -106,12 +109,74 @@ export const EMAIL_VARIABLES: EmailVariableConfig[] = [
     },
   },
   {
+    email_type: 'appointment_rescheduled_seamstress',
+    variables: [
+      {
+        key: 'client_name',
+        description: 'Client full name',
+        example: 'Jane Smith',
+      },
+      {
+        key: 'appointment_time',
+        description: 'New appointment time',
+        example: 'Tuesday, Jan 16 at 3:00 PM',
+      },
+      {
+        key: 'previous_time',
+        description: 'Previous appointment time',
+        example: 'Monday, Jan 15 at 2:00 PM',
+      },
+      {
+        key: 'seamstress_name',
+        description: 'Seamstress name',
+        example: 'Sarah',
+      },
+    ],
+    sample_data: {
+      client_name: 'Jane Smith',
+      appointment_time: 'Tuesday, Jan 16 at 3:00 PM',
+      previous_time: 'Monday, Jan 15 at 2:00 PM',
+      seamstress_name: 'Sarah',
+    },
+  },
+  {
     email_type: 'appointment_canceled',
     variables: [
       {
         key: 'client_name',
         description: 'Client full name',
         example: 'Jane Smith',
+      },
+      {
+        email_type: 'appointment_no_show',
+        variables: [
+          {
+            key: 'client_name',
+            description: 'Client full name',
+            example: 'Jane Smith',
+          },
+          {
+            key: 'appointment_time',
+            description: 'Missed appointment time',
+            example: 'Monday, Jan 15 at 2:00 PM',
+          },
+          {
+            key: 'shop_name',
+            description: 'Business name',
+            example: "Sarah's Alterations",
+          },
+          {
+            key: 'seamstress_name',
+            description: 'Seamstress name',
+            example: 'Sarah',
+          },
+        ],
+        sample_data: {
+          client_name: 'Jane Smith',
+          appointment_time: 'Monday, Jan 15 at 2:00 PM',
+          shop_name: "Sarah's Alterations",
+          seamstress_name: 'Sarah',
+        },
       },
       {
         key: 'previous_time',
@@ -133,6 +198,31 @@ export const EMAIL_VARIABLES: EmailVariableConfig[] = [
       client_name: 'Jane Smith',
       previous_time: 'Monday, Jan 15 at 2:00 PM',
       shop_name: "Sarah's Alterations",
+      seamstress_name: 'Sarah',
+    },
+  },
+  {
+    email_type: 'appointment_canceled_seamstress',
+    variables: [
+      {
+        key: 'client_name',
+        description: 'Client full name',
+        example: 'Jane Smith',
+      },
+      {
+        key: 'previous_time',
+        description: 'Canceled appointment time',
+        example: 'Monday, Jan 15 at 2:00 PM',
+      },
+      {
+        key: 'seamstress_name',
+        description: 'Seamstress name',
+        example: 'Sarah',
+      },
+    ],
+    sample_data: {
+      client_name: 'Jane Smith',
+      previous_time: 'Monday, Jan 15 at 2:00 PM',
       seamstress_name: 'Sarah',
     },
   },

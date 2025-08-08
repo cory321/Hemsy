@@ -39,11 +39,7 @@ import NotesIcon from '@mui/icons-material/Notes';
 import CategoryIcon from '@mui/icons-material/Category';
 import { format, parseISO } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import {
-  cancelAppointment,
-  markNoShowAppointment,
-  updateAppointment,
-} from '@/lib/actions/appointments';
+// Legacy actions not used in refactored flows
 import {
   getAppointmentColor,
   formatTime,
@@ -62,7 +58,11 @@ interface AppointmentDetailsDialogProps {
   open: boolean;
   onClose: () => void;
   appointment: Appointment;
-  onEdit: (appointment: Appointment, isReschedule?: boolean) => void;
+  onEdit: (
+    appointment: Appointment,
+    isReschedule?: boolean,
+    sendEmailDefault?: boolean
+  ) => void;
 }
 
 interface CommunicationPreferences {
@@ -80,12 +80,7 @@ export function AppointmentDetailsDialog({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-  const [showEditConfirm, setShowEditConfirm] = useState(false);
   const [cancelComms, setCancelComms] = useState<CommunicationPreferences>({
-    sendEmail: appointment.client?.accept_email ?? true,
-    sendSms: appointment.client?.accept_sms ?? false,
-  });
-  const [editComms, setEditComms] = useState<CommunicationPreferences>({
     sendEmail: appointment.client?.accept_email ?? true,
     sendSms: appointment.client?.accept_sms ?? false,
   });
@@ -124,7 +119,8 @@ export function AppointmentDetailsDialog({
   };
 
   const handleEditClick = () => {
-    setShowEditConfirm(true);
+    // Directly open reschedule dialog without intermediary confirmation
+    onEdit(appointment, true, true);
   };
 
   // Mutation for updating appointment
@@ -185,6 +181,7 @@ export function AppointmentDetailsDialog({
       return updateAppointmentRefactored({
         id,
         status: 'canceled',
+        sendEmail: cancelComms.sendEmail,
       });
     },
     onMutate: async () => {
@@ -225,19 +222,20 @@ export function AppointmentDetailsDialog({
     cancelMutation.mutate(appointment.id);
   };
 
-  const handleConfirmEdit = () => {
-    setShowEditConfirm(false);
-    // Pass reschedule flag to the edit handler
-    onEdit(appointment, true);
-  };
+  // Removed intermediary reschedule confirmation step
 
   const handleMarkNoShow = async () => {
     setError(null);
     setLoading(true);
 
     try {
-      await markNoShowAppointment(appointment.id);
-      router.refresh();
+      // Use refactored flow: update status and trigger email/logging via server action
+      await updateMutation.mutateAsync({
+        id: appointment.id,
+        status: 'no_show',
+        sendEmail: true,
+      });
+      toast.success('Marked as no-show');
       onClose();
     } catch (err) {
       setError(
@@ -720,7 +718,9 @@ export function AppointmentDetailsDialog({
                   }
                   onClick={handleEditClick}
                   disabled={
-                    updateMutation.isPending || cancelMutation.isPending
+                    updateMutation.isPending ||
+                    cancelMutation.isPending ||
+                    isPast
                   }
                   sx={{ minWidth: 'auto' }}
                 >
@@ -738,7 +738,9 @@ export function AppointmentDetailsDialog({
                   }
                   onClick={handleCancelClick}
                   disabled={
-                    updateMutation.isPending || cancelMutation.isPending
+                    updateMutation.isPending ||
+                    cancelMutation.isPending ||
+                    isPast
                   }
                   sx={{ minWidth: 'auto' }}
                 >
@@ -855,86 +857,7 @@ export function AppointmentDetailsDialog({
         </DialogActions>
       </Dialog>
 
-      {/* Reschedule Confirmation Dialog */}
-      <Dialog
-        open={showEditConfirm}
-        onClose={() => setShowEditConfirm(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Reschedule Appointment</DialogTitle>
-        <DialogContent>
-          <Typography sx={{ mb: 3 }}>
-            You&apos;re about to reschedule this appointment. How would you like
-            to notify the client of any changes?
-          </Typography>
-
-          <Box sx={{ mb: 2 }}>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={editComms.sendEmail}
-                  onChange={(e) =>
-                    setEditComms((prev) => ({
-                      ...prev,
-                      sendEmail: e.target.checked,
-                    }))
-                  }
-                  disabled={!appointment.client?.accept_email}
-                />
-              }
-              label={
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <EmailIcon fontSize="small" />
-                  Send email notification
-                </Box>
-              }
-            />
-          </Box>
-
-          <Box sx={{ mb: 2 }}>
-            <Tooltip title="SMS notifications coming soon">
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={editComms.sendSms}
-                    onChange={(e) =>
-                      setEditComms((prev) => ({
-                        ...prev,
-                        sendSms: e.target.checked,
-                      }))
-                    }
-                    disabled={true} // SMS not implemented yet
-                  />
-                }
-                label={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <SmsIcon fontSize="small" />
-                    Send SMS notification (coming soon)
-                  </Box>
-                }
-              />
-            </Tooltip>
-          </Box>
-
-          <Typography variant="body2" color="text.secondary">
-            Changes will be sent to the client after you reschedule the
-            appointment.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowEditConfirm(false)} disabled={loading}>
-            Back
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleConfirmEdit}
-            disabled={loading}
-          >
-            Continue to Reschedule
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Reschedule confirmation dialog removed per new flow */}
     </>
   );
 }

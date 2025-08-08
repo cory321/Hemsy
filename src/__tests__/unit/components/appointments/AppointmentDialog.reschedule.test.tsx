@@ -97,7 +97,7 @@ describe('AppointmentDialog - Reschedule Mode', () => {
     expect(screen.getByText('Edit Appointment')).toBeInTheDocument();
   });
 
-  it('should disable client selection when rescheduling', () => {
+  it('should not show client search and display read-only client when rescheduling', () => {
     render(
       <AppointmentDialog
         {...defaultProps}
@@ -107,8 +107,11 @@ describe('AppointmentDialog - Reschedule Mode', () => {
       { wrapper }
     );
 
-    const clientSearch = screen.getByTestId('client-search');
-    expect(clientSearch).toBeDisabled();
+    // Client search should not be present
+    expect(screen.queryByTestId('client-search')).not.toBeInTheDocument();
+    // Read-only client display should be present
+    expect(screen.getByText('Client')).toBeInTheDocument();
+    expect(screen.getByText('John Doe')).toBeInTheDocument();
   });
 
   it('should not show type field when rescheduling', () => {
@@ -179,8 +182,8 @@ describe('AppointmentDialog - Reschedule Mode', () => {
       { wrapper }
     );
 
-    const clientSearch = screen.getByTestId('client-search');
-    expect(clientSearch).toHaveValue('client123');
+    // Client name is displayed read-only
+    expect(screen.getByText('John Doe')).toBeInTheDocument();
   });
 
   it('should call onUpdate with correct data when rescheduling', async () => {

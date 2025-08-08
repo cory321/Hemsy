@@ -173,11 +173,17 @@ describe('AppointmentDetailsDialog - Type Editing', () => {
 
   it('should handle cancel appointment with status update', async () => {
     const onClose = jest.fn();
+    const futureAppointment: Appointment = {
+      ...mockAppointment,
+      date: '2099-01-15',
+      start_time: '09:00',
+      end_time: '10:00',
+    };
     render(
       <AppointmentDetailsDialog
         open={true}
         onClose={onClose}
-        appointment={mockAppointment}
+        appointment={futureAppointment}
         onEdit={jest.fn()}
       />,
       { wrapper: createWrapper }
@@ -192,22 +198,30 @@ describe('AppointmentDetailsDialog - Type Editing', () => {
     );
 
     await waitFor(() => {
-      expect(updateAppointmentRefactored).toHaveBeenCalledWith({
-        id: '123',
-        status: 'canceled',
-      });
+      expect(updateAppointmentRefactored).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: '123',
+          status: 'canceled',
+        })
+      );
       expect(toast.success).toHaveBeenCalledWith('Appointment canceled');
       expect(onClose).toHaveBeenCalled();
     });
   });
 
-  it('should call onEdit with reschedule flag when reschedule is clicked', () => {
+  it('should call onEdit immediately with reschedule flag when reschedule is clicked', () => {
     const onEdit = jest.fn();
+    const futureAppointment: Appointment = {
+      ...mockAppointment,
+      date: '2099-01-15',
+      start_time: '09:00',
+      end_time: '10:00',
+    };
     render(
       <AppointmentDetailsDialog
         open={true}
         onClose={jest.fn()}
-        appointment={mockAppointment}
+        appointment={futureAppointment}
         onEdit={onEdit}
       />,
       { wrapper: createWrapper }
@@ -216,12 +230,35 @@ describe('AppointmentDetailsDialog - Type Editing', () => {
     // Click reschedule button
     fireEvent.click(screen.getByRole('button', { name: /reschedule/i }));
 
-    // Confirm reschedule
-    fireEvent.click(
-      screen.getByRole('button', { name: /continue to reschedule/i })
+    expect(onEdit).toHaveBeenCalledWith(
+      expect.objectContaining({ id: '123', date: '2099-01-15' }),
+      true,
+      true
+    );
+  });
+
+  it('should disable reschedule and cancel for past appointments', () => {
+    const pastAppointment: Appointment = {
+      ...mockAppointment,
+      date: '2020-01-01',
+      start_time: '09:00',
+      end_time: '10:00',
+    };
+
+    render(
+      <AppointmentDetailsDialog
+        open={true}
+        onClose={jest.fn()}
+        appointment={pastAppointment}
+        onEdit={jest.fn()}
+      />,
+      { wrapper: createWrapper }
     );
 
-    expect(onEdit).toHaveBeenCalledWith(mockAppointment, true);
+    const rescheduleBtn = screen.getByRole('button', { name: /reschedule/i });
+    const cancelBtn = screen.getByRole('button', { name: /^cancel$/i });
+    expect(rescheduleBtn).toBeDisabled();
+    expect(cancelBtn).toBeDisabled();
   });
 
   it('should update notes independently from type', async () => {

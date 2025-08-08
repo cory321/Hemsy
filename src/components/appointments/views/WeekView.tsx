@@ -18,6 +18,8 @@ import {
   isShopOpen,
   isPastDate,
   canCreateAppointment,
+  isPastDateTime,
+  canCreateAppointmentAt,
 } from '@/lib/utils/calendar';
 import AddIcon from '@mui/icons-material/Add';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -48,6 +50,7 @@ export function WeekView({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const weekDays = generateWeekDays(currentDate);
+  const SLOT_HEIGHT_PX = 80; // 30-minute slot height (ensures 15-min blocks are readable)
 
   // Group appointments by date
   const appointmentsByDate = appointments.reduce(
@@ -118,7 +121,7 @@ export function WeekView({
         >
           <Box
             sx={{
-              height: 40, // Reduced height for 30-minute slots
+              height: SLOT_HEIGHT_PX,
               borderBottom: `1px solid ${theme.palette.divider}`,
             }}
           />
@@ -126,7 +129,7 @@ export function WeekView({
             <Box
               key={time}
               sx={{
-                height: 40, // Reduced height for 30-minute slots
+                height: SLOT_HEIGHT_PX,
                 p: 1,
                 borderBottom: `1px solid ${theme.palette.divider}`,
                 display: 'flex',
@@ -227,16 +230,18 @@ export function WeekView({
 
                   const isPast = isPastDate(day);
                   const canCreate = canCreateAppointment(day, shopHours);
+                  const isPastSlot = isPastDateTime(day, time);
                   const canClickTimeSlot =
                     onTimeSlotClick &&
                     slotAppointments.length === 0 &&
-                    canCreate;
+                    canCreate &&
+                    !isPastSlot;
 
                   return (
                     <Box
                       key={time}
                       sx={{
-                        height: 40, // Reduced height for 30-minute slots
+                        height: SLOT_HEIGHT_PX,
                         borderBottom: `1px solid ${theme.palette.divider}`,
                         cursor: canClickTimeSlot ? 'pointer' : 'default',
                         bgcolor: isPast
@@ -304,10 +309,14 @@ export function WeekView({
 
                   const top =
                     ((startHour - gridStartHour) * 60 + startMinute) *
-                    (40 / 30); // Adjust for 30-minute slots and new height
+                    (SLOT_HEIGHT_PX / 30);
                   const height =
                     ((endHour - startHour) * 60 + (endMinute - startMinute)) *
-                    (40 / 30); // Adjust for 30-minute slots
+                    (SLOT_HEIGHT_PX / 30);
+                  const pxPerMinute = SLOT_HEIGHT_PX / 30;
+                  const density =
+                    height < 48 ? 'compact' : height < 96 ? 'cozy' : 'regular';
+                  const color = getAppointmentColor(appointment.type);
 
                   return (
                     <Paper
@@ -324,48 +333,39 @@ export function WeekView({
                         zIndex: 1,
                         display: 'flex',
                         flexDirection: 'column',
+                        borderLeft: `4px solid ${color}`,
+                        bgcolor: alpha(color, 0.06),
                         '&:hover': {
+                          bgcolor: alpha(color, 0.1),
                           zIndex: 2,
                           boxShadow: theme.shadows[4],
                         },
                       }}
                       onClick={() => onAppointmentClick?.(appointment)}
                     >
-                      {/* Colored header strip */}
+                      {/* Content area with progressive disclosure */}
                       <Box
                         sx={{
-                          bgcolor: getAppointmentColor(appointment.type),
-                          color: 'white',
-                          px: 0.5,
-                          py: 0.25,
-                          minHeight: 20,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 0.5,
-                          flexShrink: 0,
-                        }}
-                      >
-                        <Typography
-                          variant="caption"
-                          sx={{ fontWeight: 'bold', fontSize: '0.65rem' }}
-                        >
-                          {formatTime(appointment.start_time)}
-                        </Typography>
-                        {appointment.status === 'confirmed' && (
-                          <CheckCircleIcon sx={{ fontSize: 10 }} />
-                        )}
-                      </Box>
-
-                      {/* White content area */}
-                      <Box
-                        sx={{
+                          position: 'relative',
                           flex: 1,
-                          bgcolor: 'background.paper',
-                          px: 0.5,
-                          py: 0.25,
-                          overflow: 'hidden',
+                          px: 0.75,
+                          py: 0.5,
                         }}
                       >
+                        {/* Status badge */}
+                        {appointment.status === 'confirmed' && (
+                          <CheckCircleIcon
+                            sx={{
+                              position: 'absolute',
+                              top: 4,
+                              right: 4,
+                              fontSize: 12,
+                              color: color,
+                            }}
+                          />
+                        )}
+
+                        {/* Client name */}
                         <Typography
                           variant="caption"
                           sx={{
@@ -375,20 +375,37 @@ export function WeekView({
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
-                            fontSize: height < 50 ? '0.65rem' : '0.75rem',
+                            fontSize:
+                              density === 'regular' ? '0.8rem' : '0.7rem',
+                            lineHeight: 1.2,
+                            pr: 2.5,
                           }}
                         >
                           {appointment.client
                             ? `${appointment.client.first_name} ${appointment.client.last_name}`
                             : 'No Client'}
                         </Typography>
-                        {/* Show type only if height allows */}
-                        {height > 50 && (
+
+                        {/* Time caption always visible */}
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: 'text.secondary',
+                            fontSize: '0.65rem',
+                            display: 'block',
+                          }}
+                        >
+                          {formatTime(appointment.start_time)} -{' '}
+                          {formatTime(appointment.end_time)}
+                        </Typography>
+
+                        {/* Type only for larger heights */}
+                        {density === 'regular' && (
                           <Typography
                             variant="caption"
                             sx={{
                               color: 'text.secondary',
-                              fontSize: '0.6rem',
+                              fontSize: '0.65rem',
                               textTransform: 'capitalize',
                               display: 'block',
                             }}

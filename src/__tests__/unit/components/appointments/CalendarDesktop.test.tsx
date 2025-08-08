@@ -237,47 +237,26 @@ describe('CalendarDesktop', () => {
     );
   });
 
-  it('displays correct appointment counts in quick stats', () => {
-    const todayAppointments = [
-      ...mockAppointments,
-      {
-        id: '3',
-        title: 'Pickup',
-        date: format(today, 'yyyy-MM-dd'), // Use today for this one
-        start_time: '16:00',
-        end_time: '16:30',
-        type: 'pickup' as const,
-        status: 'scheduled' as const,
-        user_id: 'user1',
-        shop_id: 'shop1',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-    ];
-
+  it('shows filtered count in the filter bar and no quick stats', () => {
     render(
       <CalendarDesktop
-        appointments={todayAppointments}
+        appointments={mockAppointments}
         shopHours={mockShopHours}
         {...mockHandlers}
       />
     );
 
-    // Should show correct count for today (1 appointment)
-    // The Quick Stats are now in the filter bar - find all Today text elements
-    const todayElements = screen.getAllByText('Today');
-    // Get the one that's a caption (not the button)
-    const todayLabel = todayElements.find((el) => el.tagName === 'SPAN');
-    expect(todayLabel).toBeInTheDocument();
-    const todayCount = todayLabel?.parentElement?.querySelector('h5');
-    expect(todayCount).toHaveTextContent('1');
+    // Filter should reflect the number of filtered appointments
+    expect(
+      screen.getByText(`${mockAppointments.length} filtered`)
+    ).toBeInTheDocument();
 
-    // Check for Total appointments count
-    const totalLabel = screen.getByText('Total');
-    const totalCount = totalLabel.parentElement?.querySelector('h5');
-    expect(totalCount).toHaveTextContent('3'); // Total appointments in todayAppointments (2 mock + 1 today)
-
-    expect(screen.getByText('This Week')).toBeInTheDocument();
+    // Ensure quick stats labels are not present
+    expect(screen.queryByText('Total')).not.toBeInTheDocument();
+    expect(screen.queryByText('This Week')).not.toBeInTheDocument();
+    // There is still a Today button, but no caption label "Today"
+    const todayButton = screen.getByRole('button', { name: /today/i });
+    expect(todayButton).toBeInTheDocument();
   });
 
   it('switches to day view when clicking on a day in month view', async () => {

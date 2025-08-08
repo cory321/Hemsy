@@ -40,6 +40,10 @@ export class EmailService {
       if (existingLogs && existingLogs.length > 0) {
         const existing = existingLogs[0] as { id: string } | undefined;
         if (existing?.id) {
+          console.log(
+            'ℹ️ EmailService: Skipping send due to existing email_log (idempotency):',
+            { appointmentId, emailType, existingLogId: existing.id }
+          );
           return { success: true, logId: existing.id };
         }
       }
@@ -77,6 +81,12 @@ export class EmailService {
       if (!template) {
         throw new Error(`Template not found for ${emailType}`);
       }
+      console.log('🧩 Email template resolved:', {
+        emailType,
+        templateId: template.id,
+        isDefault: template.is_default,
+        subjectPreview: template.subject.substring(0, 80),
+      });
 
       // 4. Prepare email data
       let emailData = this.prepareEmailData(
@@ -99,6 +109,11 @@ export class EmailService {
 
       // 5. Render template
       const rendered = this.renderer.render(template, emailData);
+      console.log('🖨️ Rendered email:', {
+        emailType,
+        subject: rendered.subject,
+        bodyPreview: rendered.body.substring(0, 160) + '...',
+      });
 
       // 6. Create log entry
       const logId = await this.repository.createEmailLog({
@@ -117,13 +132,20 @@ export class EmailService {
         resend_id: null,
         sent_at: null,
       });
+      console.log('📝 Created email_log entry:', {
+        logId,
+        emailType,
+        appointmentId,
+      });
 
       // 7. Send email(s)
       const results = await this.sendEmails(
         emailType,
         appointmentData,
-        rendered
+        rendered,
+        additionalData
       );
+      console.log('📬 Send results:', results);
 
       // 8. Update log with results
       const overallSuccess = results.every((r) => r.success);
@@ -142,7 +164,7 @@ export class EmailService {
         logId,
       };
     } catch (error) {
-      console.error('Email service error:', error);
+      console.error('❌ EmailService error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to send email',
@@ -307,17 +329,23 @@ export class EmailService {
   private async sendEmails(
     emailType: EmailType,
     appointmentData: any,
-    rendered: { subject: string; body: string }
+    rendered: { subject: string; body: string },
+    additionalData?: Record<string, any>
   ): Promise<Array<{ success: boolean; error?: string; messageId?: string }>> {
     const results = [];
 
     // Send to client (most email types)
     if (emailType !== 'appointment_confirmed') {
+      console.log('➡️ Sending email to client...', {
+        to: appointmentData.client.email,
+        emailType,
+      });
       const clientResult = await this.resendClient.send({
         to: appointmentData.client.email,
         subject: rendered.subject,
         text: rendered.body,
       });
+      console.log('⬅️ Client send result:', clientResult);
       results.push(clientResult);
     }
 
@@ -334,18 +362,41 @@ export class EmailService {
 
       if (!settings || settings.receive_appointment_notifications) {
         // Render seamstress version
-        const seamstressTemplate = await this.repository.getTemplate(emailType);
+        const seamstressTemplateType = ((): EmailType => {
+          if (emailType === 'appointment_rescheduled') {
+            return 'appointment_rescheduled_seamstress';
+          }
+          if (emailType === 'appointment_canceled') {
+            return 'appointment_canceled_seamstress';
+          }
+          return 'appointment_confirmed';
+        })();
+
+        const seamstressTemplate = await this.repository.getTemplate(
+          seamstressTemplateType
+        );
         if (seamstressTemplate) {
           const seamstressRendered = this.renderer.render(
             seamstressTemplate,
-            this.prepareEmailData(appointmentData, emailType)
+            this.prepareEmailData(
+              appointmentData,
+              seamstressTemplateType,
+              additionalData
+            )
           );
 
+          const seamstressTo =
+            appointmentData.shop?.email || emailConfig.sender.address;
+          console.log('➡️ Sending email to seamstress...', {
+            to: seamstressTo,
+            emailType,
+          });
           const seamstressResult = await this.resendClient.send({
-            to: appointmentData.shop?.email || emailConfig.sender.address,
+            to: seamstressTo,
             subject: seamstressRendered.subject,
             text: seamstressRendered.body,
           });
+          console.log('⬅️ Seamstress send result:', seamstressResult);
           results.push(seamstressResult);
         }
       }

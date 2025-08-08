@@ -22,6 +22,8 @@ import {
   isShopOpen,
   isPastDate,
   canCreateAppointment,
+  isPastDateTime,
+  canCreateAppointmentAt,
 } from '@/lib/utils/calendar';
 import type { Appointment } from '@/types';
 import AddIcon from '@mui/icons-material/Add';
@@ -354,10 +356,12 @@ export function WeekViewDesktop({
                   });
 
                   const canCreate = canCreateAppointment(day, shopHours);
+                  const isPastSlot = isPastDateTime(day, time);
                   const canClickTimeSlot =
                     onTimeSlotClick &&
                     slotAppointments.length === 0 &&
-                    canCreate;
+                    canCreate &&
+                    !isPastSlot;
 
                   return (
                     <Box
@@ -545,30 +549,84 @@ export function WeekViewDesktop({
                 })}
 
                 {/* Current time indicator */}
-                {isToday(day) && currentTimePosition >= 0 && (
-                  <Box
-                    data-testid="current-time-indicator"
-                    sx={{
-                      position: 'absolute',
-                      top: `${currentTimePosition}px`,
-                      left: 0,
-                      right: 0,
-                      height: 2,
-                      bgcolor: 'error.main',
-                      zIndex: 4,
-                      '&::before': {
-                        content: '""',
-                        position: 'absolute',
-                        left: -6,
-                        top: -4,
-                        width: 10,
-                        height: 10,
-                        borderRadius: '50%',
-                        bgcolor: 'error.main',
-                      },
-                    }}
-                  />
-                )}
+                {(() => {
+                  // Determine today's shop hours
+                  const dayOfWeek = day.getDay();
+                  const hoursForDay = shopHours.find(
+                    (h) => h.day_of_week === dayOfWeek
+                  );
+                  const isCurrentDay = isToday(day);
+                  const displayedStartMinutes = gridStartHour * 60;
+                  // The generated grid includes a :30 slot for the last hour
+                  const displayedEndMinutesExclusive = gridEndHour * 60 + 30;
+
+                  // Require: today, hours defined and not closed, within both displayed grid and that day's hours
+                  const withinDisplayedGrid =
+                    currentTimeMinutes >= displayedStartMinutes &&
+                    currentTimeMinutes < displayedEndMinutesExclusive;
+                  const withinDayHours =
+                    hoursForDay && !hoursForDay.is_closed
+                      ? (() => {
+                          const openHour = hoursForDay.open_time
+                            ? parseInt(
+                                hoursForDay.open_time.split(':')[0] || '0'
+                              )
+                            : gridStartHour;
+                          const openMinute = hoursForDay.open_time
+                            ? parseInt(
+                                hoursForDay.open_time.split(':')[1] || '0'
+                              )
+                            : 0;
+                          const closeHour = hoursForDay.close_time
+                            ? parseInt(
+                                hoursForDay.close_time.split(':')[0] || '0'
+                              )
+                            : gridEndHour;
+                          const closeMinute = hoursForDay.close_time
+                            ? parseInt(
+                                hoursForDay.close_time.split(':')[1] || '0'
+                              )
+                            : 0;
+                          const start = openHour * 60 + openMinute;
+                          const endExclusive =
+                            closeHour * 60 + closeMinute + 30; // include last slot span
+                          return (
+                            currentTimeMinutes >= start &&
+                            currentTimeMinutes < endExclusive
+                          );
+                        })()
+                      : false;
+
+                  const showIndicator =
+                    isCurrentDay && withinDisplayedGrid && withinDayHours;
+
+                  return (
+                    showIndicator && (
+                      <Box
+                        data-testid="current-time-indicator"
+                        sx={{
+                          position: 'absolute',
+                          top: `${currentTimePosition}px`,
+                          left: 0,
+                          right: 0,
+                          height: 2,
+                          bgcolor: 'error.main',
+                          zIndex: 4,
+                          '&::before': {
+                            content: '""',
+                            position: 'absolute',
+                            left: -6,
+                            top: -4,
+                            width: 10,
+                            height: 10,
+                            borderRadius: '50%',
+                            bgcolor: 'error.main',
+                          },
+                        }}
+                      />
+                    )
+                  );
+                })()}
               </Box>
             );
           })}

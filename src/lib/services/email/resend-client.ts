@@ -46,6 +46,10 @@ export class ResendClient {
     }
 
     try {
+      console.log('📨 ResendClient.send called', {
+        to: Array.isArray(payload.to) ? payload.to : [payload.to],
+        subject: payload.subject,
+      });
       // In non-production with override set, redirect emails to test inbox
       const finalTo = this.devOverrideRecipient
         ? [this.devOverrideRecipient]
@@ -64,18 +68,20 @@ export class ResendClient {
       });
 
       if (error) {
+        console.error('❌ Resend API error:', error);
         return {
           success: false,
           error: error.message,
         };
       }
 
+      console.log('✅ Resend API success:', { id: data?.id });
       return {
         success: true,
         messageId: data?.id,
       };
     } catch (error) {
-      console.error('Resend client error:', error);
+      console.error('❌ Resend client exception:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',

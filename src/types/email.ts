@@ -3,6 +3,9 @@ export type EmailType =
   | 'appointment_scheduled'
   | 'appointment_rescheduled'
   | 'appointment_canceled'
+  | 'appointment_no_show'
+  | 'appointment_rescheduled_seamstress'
+  | 'appointment_canceled_seamstress'
   | 'payment_link'
   | 'appointment_confirmation_request'
   | 'appointment_confirmed';
@@ -144,6 +147,7 @@ export function isEmailType(value: string): value is EmailType {
     'appointment_scheduled',
     'appointment_rescheduled',
     'appointment_canceled',
+    'appointment_no_show',
     'payment_link',
     'appointment_confirmation_request',
     'appointment_confirmed',

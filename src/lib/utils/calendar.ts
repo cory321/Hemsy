@@ -195,6 +195,17 @@ export function isPastDate(date: Date): boolean {
   return checkDate < today;
 }
 
+// Check if a specific date/time (local) is in the past relative to now
+export function isPastDateTime(date: Date, time: string): boolean {
+  // time is expected to be HH:mm
+  const [hourStr, minuteStr] = time.split(':');
+  const hours = parseInt(hourStr || '0', 10);
+  const minutes = parseInt(minuteStr || '0', 10);
+  const candidate = new Date(date);
+  candidate.setHours(hours, minutes, 0, 0);
+  return candidate.getTime() < Date.now();
+}
+
 // Check if appointment can be created on a date
 export function canCreateAppointment(
   date: Date,
@@ -215,6 +226,22 @@ export function canCreateAppointment(
     return false;
   }
 
+  return true;
+}
+
+// Check if appointment can be created at a specific time on a date
+export function canCreateAppointmentAt(
+  date: Date,
+  time: string,
+  shopHours: Array<{
+    day_of_week: number;
+    open_time: string | null;
+    close_time: string | null;
+    is_closed: boolean;
+  }>
+): boolean {
+  if (!canCreateAppointment(date, shopHours)) return false;
+  if (isPastDateTime(date, time)) return false;
   return true;
 }
 
@@ -257,6 +284,16 @@ export function getAvailableTimeSlots(
       endHour > closeHour ||
       (endHour === closeHour && endMin > closeMinute)
     ) {
+      return false;
+    }
+
+    // Filter out slots in the past for the current day
+    const now = new Date();
+    const isSameDay =
+      now.getFullYear() === date.getFullYear() &&
+      now.getMonth() === date.getMonth() &&
+      now.getDate() === date.getDate();
+    if (isSameDay && isPastDateTime(date, slot)) {
       return false;
     }
 

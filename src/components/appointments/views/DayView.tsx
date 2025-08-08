@@ -20,6 +20,8 @@ import {
   getDurationMinutes,
   isPastDate,
   canCreateAppointment,
+  isPastDateTime,
+  canCreateAppointmentAt,
 } from '@/lib/utils/calendar';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import PersonIcon from '@mui/icons-material/Person';
@@ -49,6 +51,7 @@ export function DayView({
 }: DayViewProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const SLOT_HEIGHT_PX = 80; // 30-minute slot height (ensures 15-min blocks are readable)
 
   // State to track current time for the indicator
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -99,30 +102,41 @@ export function DayView({
     }
   }
 
-  // Create a map of appointments by their start time slot (30-minute slots)
-  const appointmentsByTimeSlot = new Map<string, Appointment[]>();
-  dayAppointments.forEach((appointment) => {
-    const timeParts = appointment.start_time.split(':');
-    const startHour = parseInt(timeParts[0] || '0', 10);
-    const startMinute = parseInt(timeParts[1] || '0', 10);
-    // Round down to nearest 30-minute slot
-    const slotMinute = startMinute < 30 ? '00' : '30';
-    const timeSlotKey = `${startHour.toString().padStart(2, '0')}:${slotMinute}`;
+  // Helper: check if an appointment overlaps a 30-minute slot starting at `time`
+  const getOverlappingAppointmentsForSlot = (time: string): Appointment[] => {
+    const [slotHourStr, slotMinuteStr] = time.split(':');
+    const slotHour = parseInt(slotHourStr || '0', 10);
+    const slotMinute = parseInt(slotMinuteStr || '0', 10);
+    const slotStartMinutes = slotHour * 60 + slotMinute;
+    const slotEndMinutes = slotStartMinutes + 30;
 
-    if (!appointmentsByTimeSlot.has(timeSlotKey)) {
-      appointmentsByTimeSlot.set(timeSlotKey, []);
-    }
-    appointmentsByTimeSlot.get(timeSlotKey)?.push(appointment);
-  });
+    return dayAppointments.filter((apt) => {
+      const [sH, sM] = apt.start_time.split(':');
+      const [eH, eM] = apt.end_time.split(':');
+      const aptStart = parseInt(sH || '0', 10) * 60 + parseInt(sM || '0', 10);
+      const aptEnd = parseInt(eH || '0', 10) * 60 + parseInt(eM || '0', 10);
+      return aptStart < slotEndMinutes && aptEnd > slotStartMinutes;
+    });
+  };
 
   // Calculate current time indicator position
   const currentHour = currentTime.getHours();
   const currentMinute = currentTime.getMinutes();
+  const currentTimeMinutes = currentHour * 60 + currentMinute;
   const isCurrentDay = isToday(currentDate);
 
-  // Check if current time is within shop hours
+  // Determine displayed range in minutes based on generated time slots
+  const displayedStartMinutes = shopStartHour * 60;
+  // Last slot starts at `${shopEndHour}:00` and spans 30 minutes
+  const displayedEndMinutesExclusive = shopEndHour * 60 + 30;
+
+  // Show indicator only on current day when shop is not closed and within displayed minutes
   const showCurrentTimeIndicator =
-    isCurrentDay && currentHour >= shopStartHour && currentHour <= shopEndHour;
+    isCurrentDay &&
+    !!todayHours &&
+    !todayHours.is_closed &&
+    currentTimeMinutes >= displayedStartMinutes &&
+    currentTimeMinutes < displayedEndMinutesExclusive;
 
   return (
     <Box>
@@ -152,8 +166,8 @@ export function DayView({
 
       {/* Time grid with appointments */}
       <Box sx={{ position: 'relative' }}>
-        {timeSlots.map((time, index) => {
-          const slotAppointments = appointmentsByTimeSlot.get(time) || [];
+        {timeSlots.map((time) => {
+          const slotAppointments = getOverlappingAppointmentsForSlot(time);
           const slotTimeParts = time.split(':');
           const slotHour = parseInt(slotTimeParts[0] || '0', 10);
           const slotMinute = parseInt(slotTimeParts[1] || '0', 10);
@@ -178,11 +192,13 @@ export function DayView({
               sx={{
                 display: 'flex',
                 alignItems: 'flex-start',
-                minHeight: 40, // Reduced height for 30-minute slots
+                height: SLOT_HEIGHT_PX,
                 borderBottom: `1px solid ${theme.palette.divider}`,
-                py: 1,
                 cursor:
-                  onTimeSlotClick && slotAppointments.length === 0 && canCreate
+                  onTimeSlotClick &&
+                  slotAppointments.length === 0 &&
+                  canCreate &&
+                  !isPastDateTime(currentDate, time)
                     ? 'pointer'
                     : 'default',
                 position: 'relative',
@@ -193,7 +209,8 @@ export function DayView({
                   onTimeSlotClick &&
                   !isMobile &&
                   slotAppointments.length === 0 &&
-                  canCreate
+                  canCreate &&
+                  !isPastDateTime(currentDate, time)
                     ? {
                         bgcolor: alpha(theme.palette.primary.main, 0.04),
                         '& .add-appointment-hint': {
@@ -207,7 +224,8 @@ export function DayView({
                 if (
                   onTimeSlotClick &&
                   canCreate &&
-                  slotAppointments.length === 0
+                  slotAppointments.length === 0 &&
+                  !isPastDateTime(currentDate, time)
                 ) {
                   onTimeSlotClick(currentDate, time);
                 }
@@ -216,138 +234,49 @@ export function DayView({
               <Typography
                 variant="caption"
                 color="text.secondary"
-                sx={{ width: 80, flexShrink: 0, px: 2, pt: 1 }}
+                sx={{
+                  width: 80,
+                  flexShrink: 0,
+                  px: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
               >
                 {formatTime(time)}
               </Typography>
-              <Box sx={{ flex: 1, position: 'relative', pr: 2 }}>
-                {/* Appointments in this time slot */}
-                {slotAppointments.map((appointment) => {
-                  const duration = getDurationMinutes(
-                    appointment.start_time,
-                    appointment.end_time
-                  );
+              <Box sx={{ flex: 1, position: 'relative', pr: 2 }} />
 
-                  return (
-                    <Paper
-                      key={appointment.id}
-                      elevation={2}
-                      sx={{
-                        overflow: 'hidden',
-                        mb: 1,
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        '&:hover': {
-                          boxShadow: theme.shadows[4],
-                          transform: 'translateY(-1px)',
-                        },
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onAppointmentClick?.(appointment);
-                      }}
-                    >
-                      {/* Colored header bar */}
-                      <Box
-                        sx={{
-                          bgcolor: getAppointmentColor(appointment.type),
-                          color: 'white',
-                          px: 2,
-                          py: 1,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                        }}
-                      >
-                        <Typography
-                          variant="body2"
-                          fontWeight="bold"
-                          sx={{ textTransform: 'capitalize' }}
-                        >
-                          {appointment.type.replace('_', ' ')}
-                        </Typography>
-                        {appointment.status === 'confirmed' && (
-                          <CheckCircleIcon sx={{ fontSize: 18 }} />
-                        )}
-                      </Box>
-
-                      {/* White content area */}
-                      <Box sx={{ p: 2, bgcolor: 'background.paper' }}>
-                        <Typography
-                          variant="subtitle1"
-                          fontWeight="medium"
-                          gutterBottom
-                          sx={{ color: 'text.primary' }}
-                        >
-                          {appointment.client
-                            ? `${appointment.client.first_name} ${appointment.client.last_name}`
-                            : 'No Client'}
-                        </Typography>
-
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 0.5,
-                            color: 'text.secondary',
-                          }}
-                        >
-                          <AccessTimeIcon sx={{ fontSize: 16 }} />
-                          <Typography variant="body2">
-                            {formatTime(appointment.start_time)} -{' '}
-                            {formatTime(appointment.end_time)}
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            sx={{ color: 'text.secondary' }}
-                          >
-                            ({formatDuration(duration)})
-                          </Typography>
-                        </Box>
-
-                        {/* Status text if confirmed */}
-                        {appointment.status === 'confirmed' && (
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              color: 'success.main',
-                              display: 'block',
-                              mt: 0.5,
-                            }}
-                          >
-                            ✓ Client has confirmed this appointment
-                          </Typography>
-                        )}
-                      </Box>
-                    </Paper>
-                  );
-                })}
-
-                {/* Add appointment hint for empty slots */}
-                {onTimeSlotClick &&
-                  !isMobile &&
-                  canCreate &&
-                  slotAppointments.length === 0 && (
-                    <Box
-                      className="add-appointment-hint"
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 1,
-                        opacity: 0,
-                        transition: 'opacity 0.2s',
-                        pointerEvents: 'none',
-                        py: 2,
-                      }}
-                    >
-                      <AddIcon fontSize="small" color="action" />
-                      <Typography variant="body2" color="text.secondary">
-                        Add appointment
-                      </Typography>
-                    </Box>
-                  )}
-              </Box>
+              {/* Add appointment hint for empty slots (cover the full block area) */}
+              {onTimeSlotClick &&
+                !isMobile &&
+                canCreate &&
+                slotAppointments.length === 0 &&
+                !isPastDateTime(currentDate, time) && (
+                  <Box
+                    className="add-appointment-hint"
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 0.5,
+                      opacity: 0,
+                      transition: 'opacity 0.2s',
+                      pointerEvents: 'none',
+                      position: 'absolute',
+                      top: 0,
+                      left: '96px', // 80px label + 16px padding
+                      right: '16px',
+                      bottom: 0,
+                      height: '100%',
+                      zIndex: 0,
+                    }}
+                  >
+                    <AddIcon fontSize="small" color="action" />
+                    <Typography variant="caption" color="text.secondary">
+                      Add
+                    </Typography>
+                  </Box>
+                )}
 
               {/* Current time indicator */}
               {isCurrentTimeSlot && (
@@ -375,6 +304,133 @@ export function DayView({
                 />
               )}
             </Box>
+          );
+        })}
+
+        {/* Overlay absolute-positioned appointments spanning across slots */}
+        {dayAppointments.map((appointment) => {
+          const startParts = appointment.start_time.split(':');
+          const startHour = parseInt(startParts[0] || '0', 10);
+          const startMinute = parseInt(startParts[1] || '0', 10);
+          const endParts = appointment.end_time.split(':');
+          const endHour = parseInt(endParts[0] || '0', 10);
+          const endMinute = parseInt(endParts[1] || '0', 10);
+          const topPx =
+            ((startHour - shopStartHour) * 60 + startMinute) *
+            (SLOT_HEIGHT_PX / 30);
+          const heightPx =
+            ((endHour - startHour) * 60 + (endMinute - startMinute)) *
+            (SLOT_HEIGHT_PX / 30);
+          const duration = getDurationMinutes(
+            appointment.start_time,
+            appointment.end_time
+          );
+          const density =
+            heightPx < 48 ? 'compact' : heightPx < 96 ? 'cozy' : 'regular';
+          const color = getAppointmentColor(appointment.type);
+
+          return (
+            <Paper
+              key={appointment.id}
+              data-testid={`dayview-appointment-${appointment.id}`}
+              data-top={topPx}
+              data-height={heightPx}
+              data-density={density}
+              elevation={2}
+              sx={{
+                position: 'absolute',
+                top: `${topPx}px`,
+                left: '96px', // 80px time label + 16px padding
+                right: '16px',
+                height: `${heightPx}px`,
+                cursor: 'pointer',
+                overflow: 'hidden',
+                zIndex: 2,
+                display: 'flex',
+                flexDirection: 'column',
+                borderLeft: `4px solid ${color}`,
+                bgcolor: alpha(color, 0.06),
+                '&:hover': {
+                  zIndex: 3,
+                  boxShadow: theme.shadows[4],
+                  bgcolor: alpha(color, 0.1),
+                },
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onAppointmentClick?.(appointment);
+              }}
+            >
+              {/* Content area with progressive disclosure */}
+              <Box
+                sx={{ position: 'relative', p: 1, flex: 1, overflow: 'hidden' }}
+              >
+                {/* Status badge */}
+                {appointment.status === 'confirmed' && (
+                  <CheckCircleIcon
+                    sx={{
+                      position: 'absolute',
+                      top: 6,
+                      right: 6,
+                      fontSize: 14,
+                      color,
+                    }}
+                  />
+                )}
+
+                {/* Client name */}
+                <Typography
+                  variant="subtitle2"
+                  fontWeight="medium"
+                  gutterBottom
+                  sx={{
+                    color: 'text.primary',
+                    mb: 0.25,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {appointment.client
+                    ? `${appointment.client.first_name} ${appointment.client.last_name}`
+                    : 'No Client'}
+                </Typography>
+
+                {/* Time caption always visible */}
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                    color: 'text.secondary',
+                  }}
+                >
+                  <AccessTimeIcon sx={{ fontSize: 16 }} />
+                  <Typography variant="body2">
+                    {formatTime(appointment.start_time)} -{' '}
+                    {formatTime(appointment.end_time)}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                    ({formatDuration(duration)})
+                  </Typography>
+                </Box>
+
+                {/* Type only for larger heights */}
+                {density === 'regular' && (
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: 'text.secondary',
+                      textTransform: 'capitalize',
+                      display: 'block',
+                      mt: 0.25,
+                    }}
+                  >
+                    {appointment.type.replace('_', ' ')}
+                  </Typography>
+                )}
+              </Box>
+            </Paper>
           );
         })}
       </Box>

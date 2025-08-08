@@ -192,8 +192,8 @@ describe('DayView - Current Time Indicator', () => {
     jest.useRealTimers();
   });
 
-  it('should show current time indicator on closed days if within regular hours', () => {
-    // Mock current date/time to be a Saturday at 11:00 AM (shop is closed but within regular hours)
+  it('should not show current time indicator on closed days even if within displayed grid', () => {
+    // Mock current date/time to be a Saturday at 11:00 AM (shop is closed)
     const mockDate = new Date('2024-01-13T11:00:00'); // Saturday
     jest.useFakeTimers();
     jest.setSystemTime(mockDate);
@@ -202,7 +202,6 @@ describe('DayView - Current Time Indicator', () => {
     const { isToday } = require('date-fns');
     isToday.mockReturnValue(true);
 
-    // Saturday is closed, but we use default hours (8 AM - 6 PM) for the grid
     render(
       <DayView
         currentDate={mockDate}
@@ -211,9 +210,9 @@ describe('DayView - Current Time Indicator', () => {
       />
     );
 
-    // The current time indicator should be visible even on closed days
-    const currentTimeIndicator = screen.getByTestId('current-time-indicator');
-    expect(currentTimeIndicator).toBeInTheDocument();
+    // The current time indicator should not be visible on closed days
+    const currentTimeIndicator = screen.queryByTestId('current-time-indicator');
+    expect(currentTimeIndicator).not.toBeInTheDocument();
 
     jest.useRealTimers();
   });

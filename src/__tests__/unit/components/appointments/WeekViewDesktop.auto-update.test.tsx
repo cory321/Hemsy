@@ -122,7 +122,7 @@ describe('WeekViewDesktop - Auto Update Current Time Indicator', () => {
       />
     );
 
-    // Verify initial indicator exists
+    // Verify initial indicator exists (shop open at 10:00 AM)
     const initialIndicator = screen.getByTestId('current-time-indicator');
     expect(initialIndicator).toBeInTheDocument();
 
@@ -139,5 +139,23 @@ describe('WeekViewDesktop - Auto Update Current Time Indicator', () => {
       const updatedIndicator = screen.getByTestId('current-time-indicator');
       expect(updatedIndicator).toBeInTheDocument();
     });
+  });
+
+  it('should hide current time indicator when outside displayed hours', () => {
+    // Set time to very early when outside shop hours (e.g., 6:00 AM)
+    const earlyTime = new Date('2024-01-08T06:00:00');
+    jest.setSystemTime(earlyTime);
+
+    render(
+      <WeekViewDesktop
+        currentDate={earlyTime}
+        appointments={[]}
+        shopHours={mockShopHours}
+      />
+    );
+
+    // Indicator should not render since outside shop/day grid hours
+    const indicator = screen.queryByTestId('current-time-indicator');
+    expect(indicator).not.toBeInTheDocument();
   });
 });

@@ -367,7 +367,7 @@ export function CalendarDesktop({
         </Grid>
       </Paper>
 
-      {/* Filter Bar with Quick Stats */}
+      {/* Filter Bar */}
       <Paper
         elevation={0}
         sx={{
@@ -380,7 +380,7 @@ export function CalendarDesktop({
       >
         <Grid container spacing={2} alignItems="center">
           {/* Filter Section */}
-          <Grid item xs={12} lg={6}>
+          <Grid item xs={12}>
             <Box
               sx={{
                 display: 'flex',
@@ -432,60 +432,6 @@ export function CalendarDesktop({
               <Typography variant="body2" color="text.secondary">
                 {filteredAppointments.length} filtered
               </Typography>
-            </Box>
-          </Grid>
-
-          {/* Quick Stats Section */}
-          <Grid item xs={12} lg={6}>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: { xs: 'flex-start', lg: 'flex-end' },
-                gap: 3,
-                flexWrap: 'wrap',
-              }}
-            >
-              <Box sx={{ textAlign: 'center', minWidth: 60 }}>
-                <Typography variant="h5" color="primary" fontWeight="bold">
-                  {appointments.length}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Total
-                </Typography>
-              </Box>
-              <Box sx={{ textAlign: 'center', minWidth: 60 }}>
-                <Typography variant="h5" color="primary" fontWeight="bold">
-                  {
-                    appointments.filter(
-                      (apt) => apt.date === format(new Date(), 'yyyy-MM-dd')
-                    ).length
-                  }
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Today
-                </Typography>
-              </Box>
-              <Box sx={{ textAlign: 'center', minWidth: 60 }}>
-                <Typography variant="h5" color="primary" fontWeight="bold">
-                  {
-                    appointments.filter((apt) => {
-                      const aptDate = new Date(apt.date);
-                      const weekDays = generateWeekDays(new Date());
-                      const weekStart = weekDays[0];
-                      const weekEnd = weekDays[6];
-                      return (
-                        weekStart &&
-                        weekEnd &&
-                        aptDate >= weekStart &&
-                        aptDate <= weekEnd
-                      );
-                    }).length
-                  }
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  This Week
-                </Typography>
-              </Box>
             </Box>
           </Grid>
         </Grid>

@@ -50,6 +50,42 @@ If you have any questions, please contact us.
 Thank you,
 {shop_name}`,
     },
+    appointment_no_show: {
+      subject: 'We missed you at {shop_name}',
+      body: `Hi {client_name},
+
+We’re sorry we missed you for your appointment with {shop_name} on {appointment_time}.
+
+If you still need help, reply to this email and we’ll get you the next available time.
+
+Thank you,
+{shop_name}`,
+    },
+    appointment_rescheduled_seamstress: {
+      subject: 'Appointment rescheduled: {client_name}',
+      body: `Hi {seamstress_name},
+
+{client_name}'s appointment has been rescheduled.
+
+Previous time: {previous_time}
+New time: {appointment_time}
+
+You can view details in Threadfolio.
+
+Thank you,
+Threadfolio`,
+    },
+    appointment_canceled_seamstress: {
+      subject: 'Appointment canceled: {client_name}',
+      body: `Hi {seamstress_name},
+
+{client_name}'s appointment scheduled for {previous_time} has been canceled.
+
+You can view details in Threadfolio.
+
+Thank you,
+Threadfolio`,
+    },
     payment_link: {
       subject: 'Your payment link from {shop_name}',
       body: `Hi {client_name},

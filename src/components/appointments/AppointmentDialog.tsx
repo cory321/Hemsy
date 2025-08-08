@@ -73,6 +73,7 @@ interface AppointmentDialogProps {
   onClose: () => void;
   appointment?: Appointment | null;
   isReschedule?: boolean;
+  rescheduleSendEmailDefault?: boolean;
   selectedDate?: Date;
   selectedTime?: string | null;
   shopHours?: Array<{
@@ -103,6 +104,7 @@ interface AppointmentDialogProps {
     type: 'consultation' | 'fitting' | 'pickup' | 'delivery' | 'other';
     notes?: string;
     status?: string;
+    sendEmail?: boolean;
   }) => Promise<void>;
 }
 
@@ -111,6 +113,7 @@ export function AppointmentDialog({
   onClose,
   appointment,
   isReschedule = false,
+  rescheduleSendEmailDefault,
   selectedDate,
   selectedTime,
   shopHours = [],
@@ -162,24 +165,41 @@ export function AppointmentDialog({
     return calendarSettings.default_appointment_duration;
   });
 
+  // Ensure default duration applies when opening dialog for new appointments
+  useEffect(() => {
+    if (open && !appointment) {
+      setDuration(calendarSettings.default_appointment_duration);
+    }
+  }, [open, appointment?.id, calendarSettings.default_appointment_duration]);
+
   // Load selected client for editing
   useEffect(() => {
     if (appointment?.client_id && appointment.client) {
       setSelectedClient(appointment.client as Client);
+      setFormData((prev) => ({ ...prev, client_id: appointment.client_id }));
     } else if (!appointment) {
       // Ensure we clear client when not editing
       setSelectedClient(null);
+      setFormData((prev) => ({ ...prev, client_id: null }));
     }
   }, [appointment?.id]);
 
   // Keep sendEmail in sync with selected client preferences
   useEffect(() => {
-    if (selectedClient?.accept_email) {
-      setSendEmail(true);
+    if (isReschedule) {
+      // In reschedule mode, default to true if client accepts email; allow user to toggle
+      setSendEmail(
+        (rescheduleSendEmailDefault ?? true) && !!selectedClient?.accept_email
+      );
     } else {
-      setSendEmail(false);
+      setSendEmail(!!selectedClient?.accept_email);
     }
-  }, [selectedClient?.id, selectedClient?.accept_email]);
+  }, [
+    isReschedule,
+    rescheduleSendEmailDefault,
+    selectedClient?.id,
+    selectedClient?.accept_email,
+  ]);
 
   // Update form state when selectedDate or selectedTime props change
   useEffect(() => {
@@ -269,7 +289,7 @@ export function AppointmentDialog({
       };
 
       if (appointment && onUpdate) {
-        await onUpdate(data);
+        await onUpdate({ ...data, sendEmail });
       } else if (!appointment && onCreate) {
         await onCreate(data);
       } else {
@@ -320,18 +340,31 @@ export function AppointmentDialog({
         )}
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-          {/* Client Selection */}
-          <ClientSearchField
-            value={(appointment ? selectedClient : null) as any}
-            onChange={(newClient) => {
-              setSelectedClient(newClient as Client | null);
-              setFormData((prev) => ({
-                ...prev,
-                client_id: newClient?.id || null,
-              }));
-            }}
-            disabled={isReschedule} // Disable client selection when rescheduling
-          />
+          {/* Client display/selection */}
+          {isReschedule ? (
+            // Read-only client display when rescheduling
+            <Box>
+              <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
+                Client
+              </Typography>
+              <Typography variant="body1">
+                {appointment?.client
+                  ? `${appointment.client.first_name} ${appointment.client.last_name}`
+                  : 'No Client'}
+              </Typography>
+            </Box>
+          ) : (
+            <ClientSearchField
+              value={(appointment ? selectedClient : null) as any}
+              onChange={(newClient) => {
+                setSelectedClient(newClient as Client | null);
+                setFormData((prev) => ({
+                  ...prev,
+                  client_id: newClient?.id || null,
+                }));
+              }}
+            />
+          )}
 
           {/* Date and Time */}
           <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -530,6 +563,44 @@ export function AppointmentDialog({
                 </Box>
               </Box>
             </>
+          )}
+
+          {/* Send email notification when rescheduling */}
+          {isReschedule && (
+            <Box>
+              <Divider sx={{ my: 1.5 }} />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={sendEmail}
+                    onChange={(e) => setSendEmail(e.target.checked)}
+                    disabled={!selectedClient || !selectedClient?.accept_email}
+                    size="small"
+                  />
+                }
+                label={
+                  <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                    <Typography variant="body2" sx={{ lineHeight: 1.2 }}>
+                      Send email notification
+                    </Typography>
+                    {selectedClient && !selectedClient.accept_email && (
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ fontSize: '0.7rem', lineHeight: 1 }}
+                      >
+                        Client opted out
+                      </Typography>
+                    )}
+                  </Box>
+                }
+                sx={{
+                  alignItems: 'center',
+                  ml: -0.5,
+                  '& .MuiFormControlLabel-label': { mt: 0 },
+                }}
+              />
+            </Box>
           )}
         </Box>
       </DialogContent>

@@ -316,6 +316,10 @@ export async function updateAppointment(
 
   // Send rescheduled or canceled emails when appropriate
   try {
+    console.log('🔔 updateAppointment: evaluating notification send...', {
+      id,
+      cleanUpdateData,
+    });
     const { data: currentUserRow } = await supabase
       .from('users')
       .select('id')
@@ -326,6 +330,10 @@ export async function updateAppointment(
 
     if (cleanUpdateData.status === 'canceled') {
       // include previous_time when available
+      console.log('📧 Sending appointment_canceled email...', {
+        id,
+        previous_time: `${currentAppointment.date} ${currentAppointment.start_time}`,
+      });
       await emailService.sendAppointmentEmail(id, 'appointment_canceled', {
         previous_time: `${currentAppointment.date} ${currentAppointment.start_time}`,
       });
@@ -334,12 +342,16 @@ export async function updateAppointment(
       cleanUpdateData.start_time ||
       cleanUpdateData.end_time
     ) {
+      console.log('📧 Sending appointment_rescheduled email...', {
+        id,
+        previous_time: `${currentAppointment.date} ${currentAppointment.start_time}`,
+      });
       await emailService.sendAppointmentEmail(id, 'appointment_rescheduled', {
         previous_time: `${currentAppointment.date} ${currentAppointment.start_time}`,
       });
     }
   } catch (e) {
-    console.warn('Failed to send update email:', e);
+    console.warn('⚠️ Failed to send update email:', e);
   }
 
   revalidatePath('/appointments');

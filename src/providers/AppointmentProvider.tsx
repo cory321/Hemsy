@@ -315,7 +315,12 @@ export function AppointmentProvider({
       const appointments: Appointment[] = [];
 
       for (const appointment of state.appointments.values()) {
-        if (appointment.date >= startDate && appointment.date <= endDate) {
+        if (
+          appointment.date >= startDate &&
+          appointment.date <= endDate &&
+          appointment.status !== 'canceled' &&
+          appointment.status !== 'no_show'
+        ) {
           appointments.push(appointment);
         }
       }
