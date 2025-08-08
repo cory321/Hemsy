@@ -39,6 +39,7 @@ import NotesIcon from '@mui/icons-material/Notes';
 import CategoryIcon from '@mui/icons-material/Category';
 import { format, parseISO } from 'date-fns';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 // Legacy actions not used in refactored flows
 import {
   getAppointmentColor,
@@ -370,11 +371,26 @@ export function AppointmentDetailsDialog({
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             {/* Client Name and Status */}
             <Box>
-              <Typography variant="h5" sx={{ mb: 1, fontWeight: 600 }}>
-                {appointment.client
-                  ? `${appointment.client.first_name} ${appointment.client.last_name}`
-                  : 'No Client Selected'}
-              </Typography>
+              {appointment.client ? (
+                <Typography
+                  variant="h5"
+                  component={Link}
+                  href={`/clients/${appointment.client.id}`}
+                  sx={{
+                    mb: 1,
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                    color: 'primary.main',
+                    '&:hover': { textDecoration: 'underline' },
+                  }}
+                >
+                  {`${appointment.client.first_name} ${appointment.client.last_name}`}
+                </Typography>
+              ) : (
+                <Typography variant="h5" sx={{ mb: 1, fontWeight: 600 }}>
+                  No Client Selected
+                </Typography>
+              )}
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                 <Chip
                   label={currentType.replace('_', ' ').toUpperCase()}
