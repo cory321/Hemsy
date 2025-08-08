@@ -29,6 +29,7 @@ interface CalendarWithReducerProps {
     buffer_time_minutes: number;
     default_appointment_duration: number;
   };
+  focusAppointmentId?: string;
 }
 
 interface DialogState {
@@ -48,6 +49,7 @@ export function CalendarWithReducer({
     buffer_time_minutes: 0,
     default_appointment_duration: 30,
   },
+  focusAppointmentId,
 }: CalendarWithReducerProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -259,6 +261,7 @@ export function CalendarWithReducer({
           currentDate={currentDate}
           view={view}
           onViewChange={handleViewChange}
+          {...(focusAppointmentId && { focusAppointmentId })}
         />
       ) : (
         <CalendarDesktop
@@ -271,6 +274,7 @@ export function CalendarWithReducer({
           currentDate={currentDate}
           view={view}
           onViewChange={handleViewChange}
+          {...(focusAppointmentId && { focusAppointmentId })}
         />
       )}
 

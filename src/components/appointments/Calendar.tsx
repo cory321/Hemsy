@@ -63,6 +63,7 @@ interface CalendarProps {
   currentDate?: Date;
   view?: CalendarView;
   onViewChange?: (view: CalendarView) => void;
+  focusAppointmentId?: string;
 }
 
 export function Calendar({
@@ -75,6 +76,7 @@ export function Calendar({
   currentDate: controlledDate,
   view: controlledView,
   onViewChange,
+  focusAppointmentId,
 }: CalendarProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -371,6 +373,7 @@ export function Calendar({
             shopHours={shopHours}
             onAppointmentClick={onAppointmentClick}
             onTimeSlotClick={(date, time) => onDateClick?.(date, time)}
+            focusAppointmentId={focusAppointmentId}
           />
         )}
         {view === 'list' && onAppointmentClick && (

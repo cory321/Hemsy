@@ -96,7 +96,12 @@ export default async function ClientAppointmentsPaginatedPage({
               {pageResult.appointments.map((apt) => (
                 <Card key={apt.id} variant="outlined">
                   <CardContent sx={{ py: 1.5 }}>
-                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    <Typography
+                      variant="body2"
+                      sx={{ fontWeight: 500, display: 'inline' }}
+                      component={Link}
+                      href={`/appointments?view=day&date=${apt.date}&focus=${apt.id}`}
+                    >
                       {apt.date} • {apt.start_time} - {apt.end_time}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">

@@ -27,24 +27,26 @@ export class EmailService {
     additionalData?: Record<string, any>
   ): Promise<EmailSendResult> {
     try {
-      // Idempotency guard: if a log already exists for this appointment and emailType, skip
-      const { data: existingLogs } = await this.supabase
-        .from('email_logs')
-        .select('id, created_at')
-        .eq('email_type', emailType)
-        .eq('created_by', this.userId)
-        .contains('metadata', { appointment_id: appointmentId })
-        .order('created_at', { ascending: false })
-        .limit(1);
+      // Generic idempotency guard (applies to all types EXCEPT reschedules)
+      if (emailType !== 'appointment_rescheduled') {
+        const { data: existingLogs } = await this.supabase
+          .from('email_logs')
+          .select('id, created_at')
+          .eq('email_type', emailType)
+          .eq('created_by', this.userId)
+          .contains('metadata', { appointment_id: appointmentId })
+          .order('created_at', { ascending: false })
+          .limit(1);
 
-      if (existingLogs && existingLogs.length > 0) {
-        const existing = existingLogs[0] as { id: string } | undefined;
-        if (existing?.id) {
-          console.log(
-            'ℹ️ EmailService: Skipping send due to existing email_log (idempotency):',
-            { appointmentId, emailType, existingLogId: existing.id }
-          );
-          return { success: true, logId: existing.id };
+        if (existingLogs && existingLogs.length > 0) {
+          const existing = existingLogs[0] as { id: string } | undefined;
+          if (existing?.id) {
+            console.log(
+              'ℹ️ EmailService: Skipping send due to existing email_log (idempotency):',
+              { appointmentId, emailType, existingLogId: existing.id }
+            );
+            return { success: true, logId: existing.id };
+          }
         }
       }
 
@@ -63,6 +65,52 @@ export class EmailService {
         clientEmail: appointmentData.client?.email,
         clientAcceptEmail: appointmentData.client?.accept_email,
       });
+
+      // Reschedule-specific dedupe: only suppress identical reschedule within short window
+      if (emailType === 'appointment_rescheduled') {
+        const previousTimeRaw: string | undefined =
+          additionalData?.previous_time;
+        const newTimeRaw: string = `${appointmentData.date} ${appointmentData.start_time}`;
+        const rescheduleKey = `${previousTimeRaw || 'unknown'}->${newTimeRaw}`;
+
+        const { data: existingReschedules } = await this.supabase
+          .from('email_logs')
+          .select('id, created_at')
+          .eq('email_type', 'appointment_rescheduled')
+          .eq('created_by', this.userId)
+          .contains('metadata', {
+            appointment_id: appointmentId,
+            reschedule_key: rescheduleKey,
+          })
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (existingReschedules && existingReschedules.length > 0) {
+          const existing = existingReschedules[0] as {
+            id: string;
+            created_at?: string;
+          };
+          const createdAt = existing?.created_at
+            ? new Date(existing.created_at).getTime()
+            : 0;
+          const windowMs = (EMAIL_CONSTRAINTS as any).rescheduleDedupeMinutes
+            ? (EMAIL_CONSTRAINTS as any).rescheduleDedupeMinutes * 60 * 1000
+            : 5 * 60 * 1000; // default 5 minutes
+          const cutoff = Date.now() - windowMs;
+          if (createdAt > cutoff) {
+            console.log(
+              'ℹ️ EmailService: Skipping send due to recent duplicate reschedule (idempotency window):',
+              {
+                appointmentId,
+                emailType,
+                existingLogId: existing.id,
+                rescheduleKey,
+              }
+            );
+            return { success: true, logId: existing.id };
+          }
+        }
+      }
 
       // 2. Check delivery constraints
       console.log(`🔒 Checking delivery constraints...`);
@@ -128,6 +176,13 @@ export class EmailService {
         metadata: {
           appointment_id: appointmentId,
           ...additionalData,
+          ...(emailType === 'appointment_rescheduled'
+            ? {
+                reschedule_key: `${additionalData?.previous_time || 'unknown'}->${appointmentData.date} ${appointmentData.start_time}`,
+                previous_time_raw: additionalData?.previous_time || null,
+                new_time_raw: `${appointmentData.date} ${appointmentData.start_time}`,
+              }
+            : {}),
         },
         resend_id: null,
         sent_at: null,

@@ -68,6 +68,7 @@ interface CalendarDesktopProps {
   currentDate?: Date;
   view?: CalendarView;
   onViewChange?: (view: CalendarView) => void;
+  focusAppointmentId?: string;
 }
 
 export function CalendarDesktop({
@@ -80,6 +81,7 @@ export function CalendarDesktop({
   currentDate: controlledDate,
   view: controlledView,
   onViewChange,
+  focusAppointmentId,
 }: CalendarDesktopProps) {
   const theme = useTheme();
   // Use controlled values if provided, otherwise manage state internally
@@ -495,6 +497,7 @@ export function CalendarDesktop({
                 shopHours={shopHours}
                 onAppointmentClick={handleAppointmentSelect}
                 {...(onDateClick && { onTimeSlotClick: onDateClick })}
+                focusAppointmentId={focusAppointmentId}
               />
             )}
             {view === 'list' && (

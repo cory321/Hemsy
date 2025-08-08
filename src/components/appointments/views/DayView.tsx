@@ -40,6 +40,7 @@ interface DayViewProps {
   }>;
   onAppointmentClick?: (appointment: Appointment) => void;
   onTimeSlotClick?: (date: Date, time?: string) => void;
+  focusAppointmentId?: string;
 }
 
 export function DayView({
@@ -48,6 +49,7 @@ export function DayView({
   shopHours,
   onAppointmentClick,
   onTimeSlotClick,
+  focusAppointmentId,
 }: DayViewProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -77,6 +79,16 @@ export function DayView({
   const dayAppointments = appointments
     .filter((apt) => apt.date === dateStr)
     .sort((a, b) => a.start_time.localeCompare(b.start_time));
+  // Scroll focused appointment into view on mount/update
+  useEffect(() => {
+    if (!focusAppointmentId) return;
+    const el = document.querySelector(
+      `[data-appointment-id="${focusAppointmentId}"]`
+    ) as HTMLElement | null;
+    if (el && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [focusAppointmentId, dateStr]);
 
   // Get shop hours for current day
   const dayOfWeek = currentDate.getDay();
@@ -333,6 +345,10 @@ export function DayView({
             <Paper
               key={appointment.id}
               data-testid={`dayview-appointment-${appointment.id}`}
+              data-appointment-id={appointment.id}
+              data-focused={
+                appointment.id === focusAppointmentId ? 'true' : undefined
+              }
               data-top={topPx}
               data-height={heightPx}
               data-density={density}
@@ -349,11 +365,17 @@ export function DayView({
                 display: 'flex',
                 flexDirection: 'column',
                 borderLeft: `4px solid ${color}`,
-                bgcolor: alpha(color, 0.06),
+                bgcolor:
+                  appointment.id === focusAppointmentId
+                    ? alpha(color, 0.2)
+                    : alpha(color, 0.06),
                 '&:hover': {
                   zIndex: 3,
                   boxShadow: theme.shadows[4],
-                  bgcolor: alpha(color, 0.1),
+                  bgcolor:
+                    appointment.id === focusAppointmentId
+                      ? alpha(color, 0.25)
+                      : alpha(color, 0.1),
                 },
               }}
               onClick={(e) => {

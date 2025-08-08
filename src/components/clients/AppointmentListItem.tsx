@@ -14,6 +14,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import type { Appointment } from '@/types';
+import Link from 'next/link';
 
 export interface AppointmentListItemProps {
   appointment: Appointment;
@@ -37,6 +38,7 @@ export const AppointmentListItem = memo(function AppointmentListItem({
   }, [appointment.date]);
 
   const timeRange = `${appointment.start_time} - ${appointment.end_time}`;
+  const appointmentHref = `/appointments?view=day&date=${appointment.date}&focus=${appointment.id}`;
 
   return (
     <Card variant="outlined" sx={{ mb: 1 }}>
@@ -54,7 +56,17 @@ export const AppointmentListItem = memo(function AppointmentListItem({
           <Box sx={{ flex: 1 }}>
             <Typography
               variant="body2"
-              sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}
+              component={Link}
+              href={appointmentHref}
+              onClick={(e) => e.stopPropagation()}
+              sx={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 0.5,
+                mb: 0.5,
+                textDecoration: 'none',
+                '&:hover': { textDecoration: 'underline' },
+              }}
             >
               <AccessTimeIcon sx={{ fontSize: 16 }} />
               {formattedDate} at {timeRange}
