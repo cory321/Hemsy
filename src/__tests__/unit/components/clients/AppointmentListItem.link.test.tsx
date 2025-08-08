@@ -29,7 +29,9 @@ describe('AppointmentListItem link', () => {
   it('renders a link to day view with date and focus id', async () => {
     render(<AppointmentListItem appointment={baseAppointment as any} />);
 
-    const link = screen.getByText(/at 10:00 - 10:30/i).closest('a');
+    const link = screen
+      .getByText(/Jan 20, 2025 at 10:00 - 10:30/i)
+      .closest('a');
     expect(link).toBeTruthy();
     expect(link?.getAttribute('href')).toBe(
       `/appointments?view=day&date=${baseAppointment.date}&focus=${baseAppointment.id}`

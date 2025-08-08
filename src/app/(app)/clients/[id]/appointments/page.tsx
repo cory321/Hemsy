@@ -102,6 +102,7 @@ export default async function ClientAppointmentsPaginatedPage({
                       component={Link}
                       href={`/appointments?view=day&date=${apt.date}&focus=${apt.id}`}
                     >
+                      {/* Keep display consistent with client section item */}
                       {apt.date} • {apt.start_time} - {apt.end_time}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">

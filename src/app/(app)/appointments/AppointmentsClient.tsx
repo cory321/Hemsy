@@ -4,6 +4,7 @@ import { CalendarWithReducer } from '@/components/appointments/CalendarWithReduc
 import type { ShopHours } from '@/types';
 import { useSearchParams } from 'next/navigation';
 import { parseISO, isValid } from 'date-fns';
+import { parseLocalDateFromYYYYMMDD } from '@/lib/utils/date';
 
 interface AppointmentsClientProps {
   shopId: string;
@@ -28,7 +29,14 @@ export function AppointmentsClient({
   const dateParam = search.get('date');
   const focusParam = search.get('focus') || undefined;
 
-  const parsedDate = dateParam ? parseISO(dateParam) : new Date();
+  // Robustly parse date-only strings as local dates to avoid off-by-one timezone shifts
+  let parsedDate = new Date();
+  if (dateParam) {
+    parsedDate =
+      dateParam.length === 10
+        ? parseLocalDateFromYYYYMMDD(dateParam)
+        : parseISO(dateParam);
+  }
   const initialDate = isValid(parsedDate) ? parsedDate : new Date();
   const initialView = ['month', 'week', 'day', 'list'].includes(viewParam)
     ? (viewParam as any)

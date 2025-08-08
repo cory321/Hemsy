@@ -18,14 +18,8 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import {
-  format,
-  parseISO,
-  isAfter,
-  isBefore,
-  startOfDay,
-  endOfDay,
-} from 'date-fns';
+import { format, parseISO, isAfter, isBefore } from 'date-fns';
+import { parseLocalDateFromYYYYMMDD } from '@/lib/utils/date';
 import {
   getAppointmentColor,
   formatTime,
@@ -154,7 +148,7 @@ export function ListView({ appointments, onAppointmentClick }: ListViewProps) {
       {Object.entries(groupedAppointments).map(([date, dateAppointments]) => (
         <Box key={date} sx={{ mb: 3 }}>
           <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-            {format(parseISO(date), 'EEEE, MMMM d, yyyy')}
+            {format(parseLocalDateFromYYYYMMDD(date), 'EEEE, MMMM d, yyyy')}
           </Typography>
 
           {dateAppointments.map((appointment) => {

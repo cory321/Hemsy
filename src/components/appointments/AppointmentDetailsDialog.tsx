@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -37,7 +37,8 @@ import PersonOffIcon from '@mui/icons-material/PersonOff';
 import SaveIcon from '@mui/icons-material/Save';
 import NotesIcon from '@mui/icons-material/Notes';
 import CategoryIcon from '@mui/icons-material/Category';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
+import { parseLocalDateFromYYYYMMDD } from '@/lib/utils/date';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 // Legacy actions not used in refactored flows
@@ -48,12 +49,14 @@ import {
   getDurationMinutes,
 } from '@/lib/utils/calendar';
 import type { Appointment } from '@/types';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { appointmentKeys } from '@/lib/queries/appointment-keys';
 import { updateAppointment as updateAppointmentRefactored } from '@/lib/actions/appointments-refactored';
 import { useAppointments } from '@/providers/AppointmentProvider';
 import { AppointmentActionType } from '@/lib/reducers/appointments-reducer';
 import { toast } from 'react-hot-toast';
+import { useAppointmentDetailsState } from '@/components/appointments/hooks/useAppointmentDetailsState';
+import CancelConfirmationDialog from '@/components/appointments/dialogs/CancelConfirmationDialog';
 
 interface AppointmentDetailsDialogProps {
   open: boolean;
@@ -78,26 +81,8 @@ export function AppointmentDetailsDialog({
   onEdit,
 }: AppointmentDetailsDialogProps) {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-  const [cancelComms, setCancelComms] = useState<CommunicationPreferences>({
-    sendEmail: appointment.client?.accept_email ?? true,
-    sendSms: appointment.client?.accept_sms ?? false,
-  });
-  const [isEditingNotes, setIsEditingNotes] = useState(false);
-  const [editedNotes, setEditedNotes] = useState(appointment.notes || '');
-  const [currentNotes, setCurrentNotes] = useState<string | null>(
-    appointment.notes || null
-  );
-  const [isEditingType, setIsEditingType] = useState(false);
-  const [editedType, setEditedType] = useState(appointment.type);
-  const [currentType, setCurrentType] = useState(appointment.type);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [savingNotes, setSavingNotes] = useState(false);
-  const [savingType, setSavingType] = useState(false);
-
-  const queryClient = useQueryClient();
+  const { state: ui, dispatch: uiDispatch } =
+    useAppointmentDetailsState(appointment);
   const { dispatch, state } = useAppointments();
 
   const duration = getDurationMinutes(
@@ -109,14 +94,11 @@ export function AppointmentDetailsDialog({
 
   // Sync state with appointment prop whenever it changes
   useEffect(() => {
-    setCurrentNotes(appointment.notes || null);
-    setEditedNotes(appointment.notes || '');
-    setCurrentType(appointment.type);
-    setEditedType(appointment.type);
+    // no-op: handled in hook sync
   }, [appointment.notes, appointment.type]);
 
   const handleCancelClick = () => {
-    setShowCancelConfirm(true);
+    uiDispatch({ type: 'SET_SHOW_CANCEL_CONFIRM', payload: true });
   };
 
   const handleEditClick = () => {
@@ -182,7 +164,7 @@ export function AppointmentDetailsDialog({
       return updateAppointmentRefactored({
         id,
         status: 'canceled',
-        sendEmail: cancelComms.sendEmail,
+        sendEmail: ui.cancelComms.sendEmail,
       });
     },
     onMutate: async () => {
@@ -203,7 +185,7 @@ export function AppointmentDetailsDialog({
         },
       });
       toast.success('Appointment canceled');
-      setShowCancelConfirm(false);
+      uiDispatch({ type: 'SET_SHOW_CANCEL_CONFIRM', payload: false });
       onClose();
     },
     onError: (error) => {
@@ -226,8 +208,8 @@ export function AppointmentDetailsDialog({
   // Removed intermediary reschedule confirmation step
 
   const handleMarkNoShow = async () => {
-    setError(null);
-    setLoading(true);
+    uiDispatch({ type: 'SET_ERROR', payload: null });
+    uiDispatch({ type: 'SET_LOADING', payload: true });
 
     try {
       // Use refactored flow: update status and trigger email/logging via server action
@@ -239,69 +221,75 @@ export function AppointmentDetailsDialog({
       toast.success('Marked as no-show');
       onClose();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Failed to mark as no-show'
-      );
+      uiDispatch({
+        type: 'SET_ERROR',
+        payload:
+          err instanceof Error ? err.message : 'Failed to mark as no-show',
+      });
     } finally {
-      setLoading(false);
+      uiDispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 
   const handleSaveNotes = async () => {
-    setSavingNotes(true);
+    uiDispatch({ type: 'SET_SAVING_NOTES', payload: true });
 
     updateMutation.mutate(
       {
         id: appointment.id,
-        notes: editedNotes || undefined,
+        notes: ui.editedNotes || undefined,
       },
       {
         onSuccess: () => {
-          setCurrentNotes(editedNotes || null);
-          setIsEditingNotes(false);
-          setSavingNotes(false);
+          uiDispatch({
+            type: 'SET_CURRENT_NOTES',
+            payload: ui.editedNotes || null,
+          });
+          uiDispatch({ type: 'SET_EDITING_NOTES', payload: false });
+          uiDispatch({ type: 'SET_SAVING_NOTES', payload: false });
         },
         onError: (err) => {
-          setSavingNotes(false);
-          setError(err.message || 'Failed to update');
+          uiDispatch({ type: 'SET_SAVING_NOTES', payload: false });
+          uiDispatch({
+            type: 'SET_ERROR',
+            payload: err.message || 'Failed to update',
+          });
         },
       }
     );
   };
 
   const handleSaveType = async () => {
-    setSavingType(true);
+    uiDispatch({ type: 'SET_SAVING_TYPE', payload: true });
 
     updateMutation.mutate(
       {
         id: appointment.id,
-        type: editedType,
+        type: ui.editedType,
       },
       {
         onSuccess: () => {
-          setCurrentType(editedType);
-          setIsEditingType(false);
-          setSavingType(false);
+          uiDispatch({ type: 'SET_CURRENT_TYPE', payload: ui.editedType });
+          uiDispatch({ type: 'SET_EDITING_TYPE', payload: false });
+          uiDispatch({ type: 'SET_SAVING_TYPE', payload: false });
         },
         onError: () => {
-          setSavingType(false);
+          uiDispatch({ type: 'SET_SAVING_TYPE', payload: false });
         },
       }
     );
   };
 
   const handleCancelEditNotes = () => {
-    setEditedNotes(currentNotes || '');
-    setIsEditingNotes(false);
-    setError(null);
-    setSuccessMessage(null);
+    uiDispatch({ type: 'SET_EDITED_NOTES', payload: ui.currentNotes || '' });
+    uiDispatch({ type: 'SET_EDITING_NOTES', payload: false });
+    uiDispatch({ type: 'RESET_MESSAGES' });
   };
 
   const handleCancelEditType = () => {
-    setEditedType(currentType);
-    setIsEditingType(false);
-    setError(null);
-    setSuccessMessage(null);
+    uiDispatch({ type: 'SET_EDITED_TYPE', payload: ui.currentType });
+    uiDispatch({ type: 'SET_EDITING_TYPE', payload: false });
+    uiDispatch({ type: 'RESET_MESSAGES' });
   };
 
   const getStatusColor = (status: string) => {
@@ -325,9 +313,8 @@ export function AppointmentDetailsDialog({
       <Dialog
         open={open}
         onClose={() => {
-          setIsEditingNotes(false);
-          setError(null);
-          setSuccessMessage(null);
+          uiDispatch({ type: 'SET_EDITING_NOTES', payload: false });
+          uiDispatch({ type: 'RESET_MESSAGES' });
           onClose();
         }}
         maxWidth="sm"
@@ -344,9 +331,8 @@ export function AppointmentDetailsDialog({
           Appointment Details
           <IconButton
             onClick={() => {
-              setIsEditingNotes(false);
-              setError(null);
-              setSuccessMessage(null);
+              uiDispatch({ type: 'SET_EDITING_NOTES', payload: false });
+              uiDispatch({ type: 'RESET_MESSAGES' });
               onClose();
             }}
             size="small"
@@ -357,14 +343,14 @@ export function AppointmentDetailsDialog({
         </DialogTitle>
 
         <DialogContent>
-          {error && (
+          {ui.error && (
             <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
+              {ui.error}
             </Alert>
           )}
-          {successMessage && (
+          {ui.successMessage && (
             <Alert severity="success" sx={{ mb: 2 }}>
-              {successMessage}
+              {ui.successMessage}
             </Alert>
           )}
 
@@ -393,10 +379,10 @@ export function AppointmentDetailsDialog({
               )}
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                 <Chip
-                  label={currentType.replace('_', ' ').toUpperCase()}
+                  label={ui.currentType.replace('_', ' ').toUpperCase()}
                   size="small"
                   sx={{
-                    bgcolor: getAppointmentColor(currentType),
+                    bgcolor: getAppointmentColor(ui.currentType),
                     color: 'white',
                     fontWeight: 'bold',
                   }}
@@ -447,16 +433,19 @@ export function AppointmentDetailsDialog({
                   <CategoryIcon fontSize="small" color="primary" />
                   Appointment Type
                 </Typography>
-                {!isEditingType && (
+                {!ui.isEditingType && (
                   <IconButton
                     aria-label="Edit"
                     data-testid="edit-type-button"
                     size="small"
                     onClick={() => {
-                      setEditedType(currentType);
-                      setIsEditingType(true);
+                      uiDispatch({
+                        type: 'SET_EDITED_TYPE',
+                        payload: ui.currentType,
+                      });
+                      uiDispatch({ type: 'SET_EDITING_TYPE', payload: true });
                     }}
-                    disabled={loading || updateMutation.isPending}
+                    disabled={ui.loading || updateMutation.isPending}
                     sx={{ color: 'primary.main' }}
                   >
                     <EditIcon fontSize="small" />
@@ -464,13 +453,18 @@ export function AppointmentDetailsDialog({
                 )}
               </Box>
 
-              {isEditingType ? (
+              {ui.isEditingType ? (
                 <Box sx={{ ml: 3 }}>
                   <FormControl fullWidth size="small" sx={{ mb: 2 }}>
                     <Select
-                      value={editedType}
-                      onChange={(e) => setEditedType(e.target.value as any)}
-                      disabled={savingType}
+                      value={ui.editedType}
+                      onChange={(e) =>
+                        uiDispatch({
+                          type: 'SET_EDITED_TYPE',
+                          payload: e.target.value as any,
+                        })
+                      }
+                      disabled={ui.savingType}
                     >
                       <MenuItem value="consultation">Consultation</MenuItem>
                       <MenuItem value="fitting">Fitting</MenuItem>
@@ -489,7 +483,7 @@ export function AppointmentDetailsDialog({
                     <Button
                       size="small"
                       onClick={handleCancelEditType}
-                      disabled={savingType}
+                      disabled={ui.savingType}
                     >
                       Cancel
                     </Button>
@@ -497,25 +491,25 @@ export function AppointmentDetailsDialog({
                       size="small"
                       variant="contained"
                       startIcon={
-                        savingType ? (
+                        ui.savingType ? (
                           <CircularProgress size={16} />
                         ) : (
                           <SaveIcon />
                         )
                       }
                       onClick={handleSaveType}
-                      disabled={savingType}
+                      disabled={ui.savingType}
                     >
-                      {savingType ? 'Saving...' : 'Save Type'}
+                      {ui.savingType ? 'Saving...' : 'Save Type'}
                     </Button>
                   </Box>
                 </Box>
               ) : (
                 <Box sx={{ ml: 3 }}>
                   <Chip
-                    label={currentType.replace('_', ' ').toUpperCase()}
+                    label={ui.currentType.replace('_', ' ').toUpperCase()}
                     sx={{
-                      bgcolor: getAppointmentColor(currentType),
+                      bgcolor: getAppointmentColor(ui.currentType),
                       color: 'white',
                       fontWeight: 'bold',
                     }}
@@ -538,7 +532,10 @@ export function AppointmentDetailsDialog({
               >
                 <EventIcon fontSize="small" color="primary" />
                 <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                  {format(parseISO(appointment.date), 'EEEE, MMMM d, yyyy')}
+                  {format(
+                    parseLocalDateFromYYYYMMDD(appointment.date),
+                    'EEEE, MMMM d, yyyy'
+                  )}
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -612,16 +609,22 @@ export function AppointmentDetailsDialog({
                     <NotesIcon fontSize="small" color="primary" />
                     Notes
                   </Typography>
-                  {!isEditingNotes && (
+                  {!ui.isEditingNotes && (
                     <IconButton
                       aria-label="Edit"
                       data-testid="edit-notes-button"
                       size="small"
                       onClick={() => {
-                        setEditedNotes(currentNotes || '');
-                        setIsEditingNotes(true);
+                        uiDispatch({
+                          type: 'SET_EDITED_NOTES',
+                          payload: ui.currentNotes || '',
+                        });
+                        uiDispatch({
+                          type: 'SET_EDITING_NOTES',
+                          payload: true,
+                        });
                       }}
-                      disabled={loading || savingNotes}
+                      disabled={ui.loading || ui.savingNotes}
                       sx={{ color: 'primary.main' }}
                     >
                       <EditIcon fontSize="small" />
@@ -629,17 +632,22 @@ export function AppointmentDetailsDialog({
                   )}
                 </Box>
 
-                {isEditingNotes ? (
+                {ui.isEditingNotes ? (
                   <Box sx={{ ml: 3 }}>
                     <TextField
                       multiline
                       fullWidth
                       rows={4}
-                      value={editedNotes}
-                      onChange={(e) => setEditedNotes(e.target.value)}
+                      value={ui.editedNotes}
+                      onChange={(e) =>
+                        uiDispatch({
+                          type: 'SET_EDITED_NOTES',
+                          payload: e.target.value,
+                        })
+                      }
                       placeholder="Add notes about this appointment..."
                       variant="outlined"
-                      disabled={savingNotes}
+                      disabled={ui.savingNotes}
                       sx={{ mb: 2 }}
                     />
                     <Box
@@ -652,7 +660,7 @@ export function AppointmentDetailsDialog({
                       <Button
                         size="small"
                         onClick={handleCancelEditNotes}
-                        disabled={savingNotes}
+                        disabled={ui.savingNotes}
                       >
                         Cancel
                       </Button>
@@ -660,16 +668,16 @@ export function AppointmentDetailsDialog({
                         size="small"
                         variant="contained"
                         startIcon={
-                          savingNotes ? (
+                          ui.savingNotes ? (
                             <CircularProgress size={16} />
                           ) : (
                             <SaveIcon />
                           )
                         }
                         onClick={handleSaveNotes}
-                        disabled={savingNotes}
+                        disabled={ui.savingNotes}
                       >
-                        {savingNotes ? 'Saving...' : 'Save Notes'}
+                        {ui.savingNotes ? 'Saving...' : 'Save Notes'}
                       </Button>
                     </Box>
                   </Box>
@@ -679,16 +687,18 @@ export function AppointmentDetailsDialog({
                     sx={{
                       ml: 3,
                       p: 2,
-                      bgcolor: currentNotes ? 'grey.50' : 'transparent',
+                      bgcolor: ui.currentNotes ? 'grey.50' : 'transparent',
                       borderRadius: 1,
                       border: 1,
-                      borderColor: currentNotes ? 'grey.200' : 'grey.300',
-                      borderStyle: currentNotes ? 'solid' : 'dashed',
-                      color: currentNotes ? 'text.primary' : 'text.secondary',
-                      fontStyle: currentNotes ? 'normal' : 'italic',
+                      borderColor: ui.currentNotes ? 'grey.200' : 'grey.300',
+                      borderStyle: ui.currentNotes ? 'solid' : 'dashed',
+                      color: ui.currentNotes
+                        ? 'text.primary'
+                        : 'text.secondary',
+                      fontStyle: ui.currentNotes ? 'normal' : 'italic',
                     }}
                   >
-                    {currentNotes || 'No notes added yet'}
+                    {ui.currentNotes || 'No notes added yet'}
                   </Typography>
                 )}
               </Box>
@@ -706,10 +716,9 @@ export function AppointmentDetailsDialog({
         >
           <Button
             onClick={() => {
-              setIsEditingNotes(false);
-              setIsEditingType(false);
-              setError(null);
-              setSuccessMessage(null);
+              uiDispatch({ type: 'SET_EDITING_NOTES', payload: false });
+              uiDispatch({ type: 'SET_EDITING_TYPE', payload: false });
+              uiDispatch({ type: 'RESET_MESSAGES' });
               onClose();
             }}
             disabled={updateMutation.isPending || cancelMutation.isPending}
@@ -768,7 +777,7 @@ export function AppointmentDetailsDialog({
                     color="warning"
                     startIcon={<PersonOffIcon />}
                     onClick={handleMarkNoShow}
-                    disabled={loading || updateMutation.isPending}
+                    disabled={ui.loading || updateMutation.isPending}
                     sx={{ minWidth: 'auto' }}
                   >
                     No Show
@@ -781,97 +790,19 @@ export function AppointmentDetailsDialog({
       </Dialog>
 
       {/* Cancel Confirmation Dialog */}
-      <Dialog
-        open={showCancelConfirm}
-        onClose={() => setShowCancelConfirm(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Cancel Appointment</DialogTitle>
-        <DialogContent>
-          <Typography sx={{ mb: 3 }}>
-            Are you sure you want to cancel this appointment with{' '}
-            <strong>
-              {appointment.client
-                ? `${appointment.client.first_name} ${appointment.client.last_name}`
-                : 'this client'}
-            </strong>
-            ?
-          </Typography>
-
-          <Box sx={{ mb: 2 }}>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={cancelComms.sendEmail}
-                  onChange={(e) =>
-                    setCancelComms((prev) => ({
-                      ...prev,
-                      sendEmail: e.target.checked,
-                    }))
-                  }
-                  disabled={!appointment.client?.accept_email}
-                />
-              }
-              label={
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <EmailIcon fontSize="small" />
-                  Send email notification
-                </Box>
-              }
-            />
-          </Box>
-
-          <Box sx={{ mb: 2 }}>
-            <Tooltip title="SMS notifications coming soon">
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={cancelComms.sendSms}
-                    onChange={(e) =>
-                      setCancelComms((prev) => ({
-                        ...prev,
-                        sendSms: e.target.checked,
-                      }))
-                    }
-                    disabled={true} // SMS not implemented yet
-                  />
-                }
-                label={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <SmsIcon fontSize="small" />
-                    Send SMS notification (coming soon)
-                  </Box>
-                }
-              />
-            </Tooltip>
-          </Box>
-
-          <Typography variant="body2" color="text.secondary">
-            The client will be automatically notified of the cancellation based
-            on your selections above.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => setShowCancelConfirm(false)}
-            disabled={cancelMutation.isPending}
-          >
-            Back
-          </Button>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={handleConfirmCancel}
-            disabled={cancelMutation.isPending}
-            startIcon={
-              cancelMutation.isPending ? <CircularProgress size={16} /> : null
-            }
-          >
-            {cancelMutation.isPending ? 'Canceling...' : 'Cancel Appointment'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <CancelConfirmationDialog
+        open={ui.showCancelConfirm}
+        onClose={() =>
+          uiDispatch({ type: 'SET_SHOW_CANCEL_CONFIRM', payload: false })
+        }
+        appointment={appointment}
+        cancelComms={ui.cancelComms}
+        setCancelComms={(prefs) =>
+          uiDispatch({ type: 'SET_CANCEL_COMMS', payload: prefs })
+        }
+        onConfirm={handleConfirmCancel}
+        isPending={cancelMutation.isPending}
+      />
 
       {/* Reschedule confirmation dialog removed per new flow */}
     </>

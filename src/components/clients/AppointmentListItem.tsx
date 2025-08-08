@@ -15,6 +15,7 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import type { Appointment } from '@/types';
 import Link from 'next/link';
+import { formatLocalYYYYMMDD } from '@/lib/utils/date';
 
 export interface AppointmentListItemProps {
   appointment: Appointment;
@@ -27,11 +28,7 @@ export const AppointmentListItem = memo(function AppointmentListItem({
 
   const formattedDate = useMemo(() => {
     try {
-      return new Date(appointment.date).toLocaleDateString(undefined, {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      });
+      return formatLocalYYYYMMDD(appointment.date, 'MMM d, yyyy');
     } catch {
       return appointment.date;
     }
