@@ -72,24 +72,17 @@ describe('testEmailTemplate', () => {
     jest.clearAllMocks();
 
     // Setup mock Supabase client
+    const chainable = () => ({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      order: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({ data: mockTemplate, error: null }),
+      insert: jest.fn().mockResolvedValue({ data: null, error: null }),
+    });
+
     mockSupabase = {
-      from: jest.fn((table: string) => {
-        if (table === 'email_templates') {
-          return {
-            select: jest.fn().mockReturnThis(),
-            eq: jest.fn().mockReturnThis(),
-            single: jest
-              .fn()
-              .mockResolvedValue({ data: mockTemplate, error: null }),
-          };
-        }
-        if (table === 'email_logs') {
-          return {
-            insert: jest.fn().mockResolvedValue({ data: null, error: null }),
-          };
-        }
-        return {};
-      }),
+      from: jest.fn(() => chainable()),
     };
 
     // Setup mock Resend client
@@ -166,12 +159,16 @@ describe('testEmailTemplate', () => {
         return {
           select: jest.fn().mockReturnThis(),
           eq: jest.fn().mockReturnThis(),
+          order: jest.fn().mockReturnThis(),
+          limit: jest.fn().mockReturnThis(),
           single: jest
             .fn()
             .mockResolvedValue({ data: null, error: 'Not found' }),
-        };
+        } as any;
       }
-      return {};
+      return {
+        insert: jest.fn().mockResolvedValue({ data: null, error: null }),
+      } as any;
     });
 
     const result = await testEmailTemplate('appointment_scheduled');

@@ -361,11 +361,17 @@ describe('AppointmentDialog', () => {
 
     // Now rerender as if opening for a new appointment
     rerender(
-      <AppointmentDialog {...defaultProps} open={true} appointment={null} />
+      <AppointmentDialog
+        {...defaultProps}
+        open={true}
+        appointment={undefined}
+      />
     );
-    // Wait for the effect to clear the client
+    // Wait for the effect to clear the client (re-query input after rerender)
     await waitFor(() => {
-      expect(clientInput).toHaveValue('');
+      expect(
+        screen.getByPlaceholderText('Search by name, email, or phone...')
+      ).toHaveValue('');
     });
   });
 });

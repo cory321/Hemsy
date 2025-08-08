@@ -14,7 +14,11 @@ export function get_default_email_templates(): Record<
       subject: 'Your appointment is scheduled with {shop_name}',
       body: `Hi {client_name},
 
-Your appointment with {shop_name} is confirmed for {appointment_time}.
+Your appointment with {shop_name} is pending for {appointment_time}.
+
+Please confirm your appointment by clicking the link below:
+
+{confirmation_link}
 
 If you have any questions or need to reschedule, please contact us.
 

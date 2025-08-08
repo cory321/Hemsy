@@ -27,16 +27,48 @@ export class EmailService {
     additionalData?: Record<string, any>
   ): Promise<EmailSendResult> {
     try {
+      // Idempotency guard: if a log already exists for this appointment and emailType, skip
+      const { data: existingLogs } = await this.supabase
+        .from('email_logs')
+        .select('id, created_at')
+        .eq('email_type', emailType)
+        .eq('created_by', this.userId)
+        .contains('metadata', { appointment_id: appointmentId })
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (existingLogs && existingLogs.length > 0) {
+        const existing = existingLogs[0] as { id: string } | undefined;
+        if (existing?.id) {
+          return { success: true, logId: existing.id };
+        }
+      }
+
+      console.log(`📧 EmailService.sendAppointmentEmail called with:`, {
+        appointmentId,
+        emailType,
+        additionalData,
+      });
+
       // 1. Fetch appointment and related data
+      console.log(`🔍 Fetching appointment data for ID: ${appointmentId}`);
       const appointmentData = await this.fetchAppointmentData(appointmentId);
+      console.log(`✅ Appointment data fetched:`, {
+        id: appointmentData.id,
+        status: appointmentData.status,
+        clientEmail: appointmentData.client?.email,
+        clientAcceptEmail: appointmentData.client?.accept_email,
+      });
 
       // 2. Check delivery constraints
+      console.log(`🔒 Checking delivery constraints...`);
       const constraints = await this.checkDeliveryConstraints(
         appointmentData,
         emailType
       );
+      console.log(`🔒 Delivery constraints result:`, constraints);
       if (!constraints.shouldSend) {
-        console.log(`Email not sent: ${constraints.reason}`);
+        console.log(`❌ Email not sent: ${constraints.reason}`);
         return { success: true }; // Silent success
       }
 
@@ -47,11 +79,23 @@ export class EmailService {
       }
 
       // 4. Prepare email data
-      const emailData = this.prepareEmailData(
+      let emailData = this.prepareEmailData(
         appointmentData,
         emailType,
         additionalData
       );
+
+      // If sending scheduled email for a pending appointment, include confirmation link
+      // We generate a token and link similar to sendConfirmationRequest, but inline here
+      if (
+        emailType === 'appointment_scheduled' &&
+        appointmentData.status === 'pending'
+      ) {
+        const token =
+          await this.repository.createConfirmationToken(appointmentId);
+        const confirmationUrl = `${emailConfig.urls.confirmation}/${token.token}`;
+        emailData = { ...emailData, confirmation_link: confirmationUrl };
+      }
 
       // 5. Render template
       const rendered = this.renderer.render(template, emailData);
@@ -65,6 +109,7 @@ export class EmailService {
         body: rendered.body,
         status: 'pending',
         attempts: 0,
+        last_error: null,
         metadata: {
           appointment_id: appointmentId,
           ...additionalData,
@@ -84,15 +129,16 @@ export class EmailService {
       const overallSuccess = results.every((r) => r.success);
       await this.repository.updateEmailLog(logId, {
         status: overallSuccess ? 'sent' : 'failed',
-        resend_id: results.find((r) => r.messageId)?.messageId,
+        resend_id: results.find((r) => r.messageId)?.messageId || null,
         sent_at: overallSuccess ? new Date().toISOString() : null,
         last_error: results.find((r) => !r.success)?.error || null,
         attempts: 1,
       });
 
+      const errorMsg = results.find((r) => !r.success)?.error;
       return {
         success: overallSuccess,
-        error: results.find((r) => !r.success)?.error,
+        ...(errorMsg ? { error: errorMsg } : {}),
         logId,
       };
     } catch (error) {
@@ -147,7 +193,7 @@ export class EmailService {
         `
         *,
         client:clients(*),
-        user:users(*)
+        shop:shops(*)
       `
       )
       .eq('id', appointmentId)
@@ -157,10 +203,13 @@ export class EmailService {
       throw new Error('Appointment not found');
     }
 
-    // Fetch shop info from user metadata or settings
+    // Fetch shop info from shop record
     const shopInfo = {
-      name: appointment.user.business_name || 'Your Seamstress',
-      seamstress_name: appointment.user.name || 'Your Seamstress',
+      name:
+        appointment.shop?.business_name ||
+        appointment.shop?.name ||
+        'Your Seamstress',
+      seamstress_name: appointment.shop?.business_name || 'Your Seamstress',
     };
 
     return {
@@ -236,13 +285,13 @@ export class EmailService {
       emailType === 'appointment_rescheduled' &&
       additionalData?.previous_time
     ) {
-      baseData.previous_time = this.formatAppointmentTime(
+      (baseData as any).previous_time = this.formatAppointmentTime(
         additionalData.previous_time
       );
     }
 
     if (emailType === 'appointment_canceled' && additionalData?.previous_time) {
-      baseData.previous_time = this.formatAppointmentTime(
+      (baseData as any).previous_time = this.formatAppointmentTime(
         additionalData.previous_time
       );
     }
@@ -251,7 +300,8 @@ export class EmailService {
   }
 
   private formatAppointmentTime(dateString: string): string {
-    return format(new Date(dateString), 'EEEE, MMMM d at h:mm a');
+    // Wrap literal text in single quotes per date-fns formatting rules
+    return format(new Date(dateString), "EEEE, MMMM d 'at' h:mm a");
   }
 
   private async sendEmails(
@@ -274,7 +324,7 @@ export class EmailService {
     // Send to seamstress (specific types)
     if (
       [
-        'appointment_scheduled',
+        // Do NOT notify seamstress on initial scheduled (pending) email
         'appointment_rescheduled',
         'appointment_canceled',
         'appointment_confirmed',
@@ -292,7 +342,7 @@ export class EmailService {
           );
 
           const seamstressResult = await this.resendClient.send({
-            to: appointmentData.user.email,
+            to: appointmentData.shop?.email || emailConfig.sender.address,
             subject: seamstressRendered.subject,
             text: seamstressRendered.body,
           });

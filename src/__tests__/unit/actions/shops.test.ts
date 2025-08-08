@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import {
   getShopBusinessInfo,
   updateShopBusinessInfo,
@@ -7,21 +7,23 @@ import { auth } from '@clerk/nextjs/server';
 import { createClient } from '@/lib/supabase/server';
 
 // Mock dependencies
-vi.mock('@clerk/nextjs/server');
-vi.mock('@/lib/supabase/server');
-vi.mock('@/lib/actions/users', () => ({
-  ensureUserAndShop: vi.fn(),
+jest.mock('@clerk/nextjs/server');
+jest.mock('@/lib/supabase/server');
+jest.mock('@/lib/actions/users', () => ({
+  ensureUserAndShop: jest.fn(),
 }));
 
 describe('Shop Actions', () => {
-  const mockAuth = vi.mocked(auth);
-  const mockCreateClient = vi.mocked(createClient);
+  const mockAuth = auth as unknown as jest.MockedFunction<typeof auth>;
+  const mockCreateClient = createClient as unknown as jest.MockedFunction<
+    typeof createClient
+  >;
   const mockSupabase = {
-    from: vi.fn(),
+    from: jest.fn(),
   };
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
     mockCreateClient.mockResolvedValue(mockSupabase as any);
   });
 
@@ -40,7 +42,7 @@ describe('Shop Actions', () => {
       };
 
       const { ensureUserAndShop } = await import('@/lib/actions/users');
-      vi.mocked(ensureUserAndShop).mockResolvedValue({
+      (ensureUserAndShop as jest.Mock).mockResolvedValue({
         user: { id: 'user-123' } as any,
         shop: mockShop as any,
       });
@@ -70,7 +72,7 @@ describe('Shop Actions', () => {
       };
 
       const { ensureUserAndShop } = await import('@/lib/actions/users');
-      vi.mocked(ensureUserAndShop).mockResolvedValue({
+      (ensureUserAndShop as jest.Mock).mockResolvedValue({
         user: { id: 'user-123' } as any,
         shop: mockShop as any,
       });
@@ -91,7 +93,9 @@ describe('Shop Actions', () => {
 
     it('should handle errors gracefully', async () => {
       const { ensureUserAndShop } = await import('@/lib/actions/users');
-      vi.mocked(ensureUserAndShop).mockRejectedValue(new Error('Unauthorized'));
+      (ensureUserAndShop as jest.Mock).mockRejectedValue(
+        new Error('Unauthorized')
+      );
 
       const result = await getShopBusinessInfo();
 
@@ -113,13 +117,13 @@ describe('Shop Actions', () => {
       };
 
       const { ensureUserAndShop } = await import('@/lib/actions/users');
-      vi.mocked(ensureUserAndShop).mockResolvedValue({
+      (ensureUserAndShop as jest.Mock).mockResolvedValue({
         user: { id: 'user-123' } as any,
         shop: mockShop as any,
       });
 
-      const mockUpdate = vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({ error: null }),
+      const mockUpdate = jest.fn().mockReturnValue({
+        eq: jest.fn().mockResolvedValue({ error: null }),
       });
 
       mockSupabase.from.mockReturnValue({
@@ -158,13 +162,13 @@ describe('Shop Actions', () => {
       };
 
       const { ensureUserAndShop } = await import('@/lib/actions/users');
-      vi.mocked(ensureUserAndShop).mockResolvedValue({
+      (ensureUserAndShop as jest.Mock).mockResolvedValue({
         user: { id: 'user-123' } as any,
         shop: mockShop as any,
       });
 
-      const mockUpdate = vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({
+      const mockUpdate = jest.fn().mockReturnValue({
+        eq: jest.fn().mockResolvedValue({
           error: { message: 'Database error' },
         }),
       });

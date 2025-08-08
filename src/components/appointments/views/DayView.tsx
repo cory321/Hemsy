@@ -145,7 +145,7 @@ export function DayView({
       {dayAppointments.length === 0 && (
         <Paper sx={{ p: 4, textAlign: 'center', mb: 2 }}>
           <Typography color="text.secondary">
-            No appointments scheduled for {format(currentDate, 'MMMM d, yyyy')}
+            No appointments scheduled
           </Typography>
         </Paper>
       )}

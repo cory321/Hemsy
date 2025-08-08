@@ -14,6 +14,11 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  SelectChangeEvent,
 } from '@mui/material';
 import CalendarViewMonthIcon from '@mui/icons-material/CalendarViewMonth';
 import ViewWeekIcon from '@mui/icons-material/ViewWeek';
@@ -80,7 +85,26 @@ export function Calendar({
   );
   const currentDate = controlledDate ?? internalDate;
   const view = controlledView ?? internalView;
+  const [filterType, setFilterType] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
+
+  // Filter appointments based on selected type and status
+  const filteredAppointments = useMemo(() => {
+    let filtered = appointments;
+
+    // Filter by type
+    if (filterType !== 'all') {
+      filtered = filtered.filter((apt) => apt.type === filterType);
+    }
+
+    // Filter by status
+    if (filterStatus !== 'all') {
+      filtered = filtered.filter((apt) => apt.status === filterStatus);
+    }
+
+    return filtered;
+  }, [appointments, filterType, filterStatus]);
 
   // Navigation handlers
   const throttledHandlePrevious = useThrottle(() => {
@@ -159,8 +183,10 @@ export function Calendar({
       case 'month':
         return format(currentDate, 'MMMM yyyy');
       case 'week':
-        const weekStart = generateWeekDays(currentDate)[0];
-        const weekEnd = generateWeekDays(currentDate)[6];
+        const weekDays = generateWeekDays(currentDate);
+        const weekStart = weekDays[0];
+        const weekEnd = weekDays[6];
+        if (!weekStart || !weekEnd) return '';
         return `${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d, yyyy')}`;
       case 'day':
         return format(currentDate, 'EEEE, MMMM d, yyyy');
@@ -264,39 +290,92 @@ export function Calendar({
         </Box>
       </Paper>
 
+      {/* Filter Bar */}
+      <Paper
+        sx={{
+          p: 2,
+          mb: 2,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2,
+          flexWrap: 'wrap',
+        }}
+      >
+        <FormControl size="small" sx={{ minWidth: 140, flex: 1 }}>
+          <InputLabel id="filter-type-label">Type</InputLabel>
+          <Select
+            labelId="filter-type-label"
+            value={filterType}
+            label="Type"
+            onChange={(e: SelectChangeEvent) => setFilterType(e.target.value)}
+          >
+            <MenuItem value="all">All Types</MenuItem>
+            <MenuItem value="fitting">Fitting</MenuItem>
+            <MenuItem value="consultation">Consultation</MenuItem>
+            <MenuItem value="pickup">Pickup</MenuItem>
+            <MenuItem value="delivery">Delivery</MenuItem>
+            <MenuItem value="alteration">Alteration</MenuItem>
+            <MenuItem value="other">Other</MenuItem>
+          </Select>
+        </FormControl>
+        <FormControl size="small" sx={{ minWidth: 140, flex: 1 }}>
+          <InputLabel id="filter-status-label">Status</InputLabel>
+          <Select
+            labelId="filter-status-label"
+            value={filterStatus}
+            label="Status"
+            onChange={(e: SelectChangeEvent) => setFilterStatus(e.target.value)}
+          >
+            <MenuItem value="all">All Statuses</MenuItem>
+            <MenuItem value="pending">Pending</MenuItem>
+            <MenuItem value="confirmed">Confirmed</MenuItem>
+            <MenuItem value="declined">Declined</MenuItem>
+            <MenuItem value="canceled">Canceled</MenuItem>
+            <MenuItem value="no_show">No Show</MenuItem>
+          </Select>
+        </FormControl>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ width: '100%', textAlign: 'center' }}
+        >
+          {filteredAppointments.length} appointments
+        </Typography>
+      </Paper>
+
       {/* Calendar Views */}
       <Paper sx={{ overflow: 'hidden' }}>
-        {view === 'month' && (
+        {view === 'month' && onAppointmentClick && onDateClick && (
           <MonthView
             currentDate={currentDate}
-            appointments={appointments}
+            appointments={filteredAppointments}
             shopHours={shopHours}
             onAppointmentClick={onAppointmentClick}
             onDateClick={onDateClick}
           />
         )}
-        {view === 'week' && (
+        {view === 'week' && onAppointmentClick && onDateClick && (
           <WeekView
             currentDate={currentDate}
-            appointments={appointments}
+            appointments={filteredAppointments}
             shopHours={shopHours}
             onAppointmentClick={onAppointmentClick}
             onDateClick={onDateClick}
-            onTimeSlotClick={(date, time) => onDateClick?.(date, time)}
+            onTimeSlotClick={(date, time) => onDateClick(date, time)}
           />
         )}
-        {view === 'day' && (
+        {view === 'day' && onAppointmentClick && (
           <DayView
             currentDate={currentDate}
-            appointments={appointments}
+            appointments={filteredAppointments}
             shopHours={shopHours}
             onAppointmentClick={onAppointmentClick}
             onTimeSlotClick={(date, time) => onDateClick?.(date, time)}
           />
         )}
-        {view === 'list' && (
+        {view === 'list' && onAppointmentClick && (
           <ListView
-            appointments={appointments}
+            appointments={filteredAppointments}
             onAppointmentClick={onAppointmentClick}
           />
         )}

@@ -196,6 +196,7 @@ describe('TemplateRenderer', () => {
         'appointment_time',
         'shop_name',
         'seamstress_name',
+        'confirmation_link',
       ]);
     });
 
@@ -226,6 +227,7 @@ describe('TemplateRenderer', () => {
         appointment_time: 'Monday, Jan 15 at 2:00 PM',
         shop_name: "Sarah's Alterations",
         seamstress_name: 'Sarah',
+        confirmation_link: 'https://example.com/confirm/sample-token',
       });
     });
 
@@ -240,7 +242,7 @@ describe('TemplateRenderer', () => {
     it('returns variable help for appointment_scheduled', () => {
       const help = renderer.getVariableHelp('appointment_scheduled');
 
-      expect(help).toHaveLength(4);
+      expect(help).toHaveLength(5);
       expect(help[0]).toEqual({
         key: 'client_name',
         description: 'Client full name',

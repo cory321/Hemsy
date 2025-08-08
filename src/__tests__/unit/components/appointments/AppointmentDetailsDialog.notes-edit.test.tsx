@@ -1,16 +1,14 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AppointmentProvider } from '@/providers/AppointmentProvider';
 import userEvent from '@testing-library/user-event';
 import { AppointmentDetailsDialog } from '@/components/appointments/AppointmentDetailsDialog';
-import { updateAppointment } from '@/lib/actions/appointments';
+import { updateAppointment as updateAppointmentRefactored } from '@/lib/actions/appointments-refactored';
 import { useRouter } from 'next/navigation';
 import type { Appointment } from '@/types';
 
-// Mock the actions
-jest.mock('@/lib/actions/appointments', () => ({
-  cancelAppointment: jest.fn(),
-  confirmAppointment: jest.fn(),
-  declineAppointment: jest.fn(),
-  markNoShowAppointment: jest.fn(),
+// Mock the new refactored action used by the component
+jest.mock('@/lib/actions/appointments-refactored', () => ({
   updateAppointment: jest.fn(),
 }));
 
@@ -49,6 +47,16 @@ const mockAppointment: Appointment = {
 };
 
 describe('AppointmentDetailsDialog - Notes Editing', () => {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+
+  const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <QueryClientProvider client={queryClient}>
+      <AppointmentProvider shopId="shop123">{children}</AppointmentProvider>
+    </QueryClientProvider>
+  );
+
   beforeEach(() => {
     jest.clearAllMocks();
     (useRouter as jest.Mock).mockReturnValue({
@@ -64,7 +72,8 @@ describe('AppointmentDetailsDialog - Notes Editing', () => {
         onClose={jest.fn()}
         appointment={mockAppointment}
         onEdit={jest.fn()}
-      />
+      />,
+      { wrapper: Wrapper }
     );
 
     // Check notes are displayed
@@ -87,7 +96,8 @@ describe('AppointmentDetailsDialog - Notes Editing', () => {
         onClose={jest.fn()}
         appointment={appointmentWithoutNotes}
         onEdit={jest.fn()}
-      />
+      />,
+      { wrapper: Wrapper }
     );
 
     expect(screen.getByText('No notes added yet')).toBeInTheDocument();
@@ -102,16 +112,13 @@ describe('AppointmentDetailsDialog - Notes Editing', () => {
         onClose={jest.fn()}
         appointment={mockAppointment}
         onEdit={jest.fn()}
-      />
+      />,
+      { wrapper: Wrapper }
     );
 
-    // Find and click the notes edit button
-    const editButtons = screen.getAllByRole('button');
-    const notesEditButton = editButtons.find((button) =>
-      button.querySelector('svg[data-testid="EditIcon"]')
-    );
-
-    await user.click(notesEditButton!);
+    // Find and click the notes edit button via its test id
+    const notesEditButton = screen.getByTestId('edit-notes-button');
+    await user.click(notesEditButton);
 
     // Check that we're in edit mode
     expect(
@@ -136,7 +143,9 @@ describe('AppointmentDetailsDialog - Notes Editing', () => {
 
   it('should update notes when saved', async () => {
     const user = userEvent.setup();
-    (updateAppointment as jest.Mock).mockResolvedValue({ success: true });
+    (updateAppointmentRefactored as jest.Mock).mockResolvedValue({
+      success: true,
+    });
 
     render(
       <AppointmentDetailsDialog
@@ -144,15 +153,13 @@ describe('AppointmentDetailsDialog - Notes Editing', () => {
         onClose={jest.fn()}
         appointment={mockAppointment}
         onEdit={jest.fn()}
-      />
+      />,
+      { wrapper: Wrapper }
     );
 
     // Enter edit mode
-    const editButtons = screen.getAllByRole('button');
-    const notesEditButton = editButtons.find((button) =>
-      button.querySelector('svg[data-testid="EditIcon"]')
-    );
-    await user.click(notesEditButton!);
+    const notesEditButton = screen.getByTestId('edit-notes-button');
+    await user.click(notesEditButton);
 
     // Update the notes
     const textField = screen.getByPlaceholderText(
@@ -166,19 +173,22 @@ describe('AppointmentDetailsDialog - Notes Editing', () => {
 
     // Check that updateAppointment was called
     await waitFor(() => {
-      expect(updateAppointment).toHaveBeenCalledWith({
+      expect(updateAppointmentRefactored).toHaveBeenCalledWith({
         id: '123e4567-e89b-12d3-a456-426614174000',
         notes: 'Updated appointment notes',
       });
     });
 
-    // Check that router.refresh was called
-    expect(mockRefresh).toHaveBeenCalled();
+    // No explicit router refresh in component anymore; success is handled via mutation
+    // Just ensure no error is shown
+    expect(screen.queryByText('Failed to update')).not.toBeInTheDocument();
   });
 
   it('should handle empty notes (clear notes)', async () => {
     const user = userEvent.setup();
-    (updateAppointment as jest.Mock).mockResolvedValue({ success: true });
+    (updateAppointmentRefactored as jest.Mock).mockResolvedValue({
+      success: true,
+    });
 
     render(
       <AppointmentDetailsDialog
@@ -186,15 +196,13 @@ describe('AppointmentDetailsDialog - Notes Editing', () => {
         onClose={jest.fn()}
         appointment={mockAppointment}
         onEdit={jest.fn()}
-      />
+      />,
+      { wrapper: Wrapper }
     );
 
     // Enter edit mode
-    const editButtons = screen.getAllByRole('button');
-    const notesEditButton = editButtons.find((button) =>
-      button.querySelector('svg[data-testid="EditIcon"]')
-    );
-    await user.click(notesEditButton!);
+    const notesEditButton = screen.getByTestId('edit-notes-button');
+    await user.click(notesEditButton);
 
     // Clear the notes
     const textField = screen.getByPlaceholderText(
@@ -205,11 +213,11 @@ describe('AppointmentDetailsDialog - Notes Editing', () => {
     // Save
     await user.click(screen.getByRole('button', { name: /save notes/i }));
 
-    // Check that updateAppointment was called with null for empty notes
+    // Component sends undefined to clear notes (handled server-side as null)
     await waitFor(() => {
-      expect(updateAppointment).toHaveBeenCalledWith({
+      expect(updateAppointmentRefactored).toHaveBeenCalledWith({
         id: '123e4567-e89b-12d3-a456-426614174000',
-        notes: null,
+        notes: undefined,
       });
     });
   });
@@ -223,15 +231,13 @@ describe('AppointmentDetailsDialog - Notes Editing', () => {
         onClose={jest.fn()}
         appointment={mockAppointment}
         onEdit={jest.fn()}
-      />
+      />,
+      { wrapper: Wrapper }
     );
 
     // Enter edit mode
-    const editButtons = screen.getAllByRole('button');
-    const notesEditButton = editButtons.find((button) =>
-      button.querySelector('svg[data-testid="EditIcon"]')
-    );
-    await user.click(notesEditButton!);
+    const notesEditButton = screen.getByTestId('edit-notes-button');
+    await user.click(notesEditButton);
 
     // Update the notes
     const textField = screen.getByPlaceholderText(
@@ -256,7 +262,7 @@ describe('AppointmentDetailsDialog - Notes Editing', () => {
 
   it('should display error message when update fails', async () => {
     const user = userEvent.setup();
-    (updateAppointment as jest.Mock).mockRejectedValue(
+    (updateAppointmentRefactored as jest.Mock).mockRejectedValue(
       new Error('Failed to update')
     );
 
@@ -266,15 +272,13 @@ describe('AppointmentDetailsDialog - Notes Editing', () => {
         onClose={jest.fn()}
         appointment={mockAppointment}
         onEdit={jest.fn()}
-      />
+      />,
+      { wrapper: Wrapper }
     );
 
     // Enter edit mode
-    const editButtons = screen.getAllByRole('button');
-    const notesEditButton = editButtons.find((button) =>
-      button.querySelector('svg[data-testid="EditIcon"]')
-    );
-    await user.click(notesEditButton!);
+    const notesEditButton = screen.getByTestId('edit-notes-button');
+    await user.click(notesEditButton);
 
     // Save
     await user.click(screen.getByRole('button', { name: /save notes/i }));
@@ -294,7 +298,7 @@ describe('AppointmentDetailsDialog - Notes Editing', () => {
     const user = userEvent.setup();
 
     // Mock a delayed response
-    (updateAppointment as jest.Mock).mockImplementation(
+    (updateAppointmentRefactored as jest.Mock).mockImplementation(
       () =>
         new Promise((resolve) =>
           setTimeout(() => resolve({ success: true }), 100)
@@ -307,15 +311,13 @@ describe('AppointmentDetailsDialog - Notes Editing', () => {
         onClose={jest.fn()}
         appointment={mockAppointment}
         onEdit={jest.fn()}
-      />
+      />,
+      { wrapper: Wrapper }
     );
 
     // Enter edit mode
-    const editButtons = screen.getAllByRole('button');
-    const notesEditButton = editButtons.find((button) =>
-      button.querySelector('svg[data-testid="EditIcon"]')
-    );
-    await user.click(notesEditButton!);
+    const notesEditButton = screen.getByTestId('edit-notes-button');
+    await user.click(notesEditButton);
 
     // Save
     const saveButton = screen.getByRole('button', { name: /save notes/i });
@@ -330,7 +332,7 @@ describe('AppointmentDetailsDialog - Notes Editing', () => {
 
     // Wait for save to complete
     await waitFor(() => {
-      expect(mockRefresh).toHaveBeenCalled();
+      expect(screen.queryByText('Failed to update')).not.toBeInTheDocument();
     });
   });
 });

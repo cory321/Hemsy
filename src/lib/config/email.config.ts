@@ -26,6 +26,9 @@ export const emailConfig = {
     app: process.env.NEXT_PUBLIC_APP_URL!,
     confirmation: process.env.NEXT_PUBLIC_CONFIRMATION_URL!,
   },
+  dev: {
+    overrideRecipient: process.env.EMAIL_DEV_OVERRIDE || null,
+  },
 } as const;
 
 // Validation

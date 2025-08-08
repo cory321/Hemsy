@@ -25,14 +25,21 @@ export async function confirmAppointment(token: string): Promise<{
     const validation = await repository.validateToken(validatedData.token);
 
     if (!validation.valid) {
+      // If already used, treat as success (idempotent UX) and perform no further actions
+      if (validation.reason === 'used') {
+        return {
+          success: true,
+          ...(validation.appointmentId
+            ? { appointmentId: validation.appointmentId }
+            : {}),
+        };
+      }
       return {
         success: false,
         error:
           validation.reason === 'expired'
             ? 'This confirmation link has expired'
-            : validation.reason === 'used'
-              ? 'This confirmation link has already been used'
-              : 'Invalid confirmation link',
+            : 'Invalid confirmation link',
       };
     }
 
@@ -50,24 +57,40 @@ export async function confirmAppointment(token: string): Promise<{
     await repository.useToken(validatedData.token);
 
     // Send confirmation email to seamstress
-    // Get appointment details to find the seamstress
-    const { data: appointment } = await supabase
+    // Fetch the shop owner's user_id via the appointment's shop
+    const { data: apptWithShop, error: shopJoinError } = await supabase
       .from('appointments')
-      .select('user_id')
+      .select('shop_id, shops(owner_user_id)')
       .eq('id', validation.appointmentId!)
       .single();
 
-    if (appointment) {
-      const emailService = new EmailService(supabase, appointment.user_id);
-      await emailService.sendAppointmentEmail(
+    if (!shopJoinError && apptWithShop?.shops?.owner_user_id) {
+      const ownerUserId = (apptWithShop as any).shops.owner_user_id as string;
+
+      const emailService = new EmailService(supabase, ownerUserId);
+      const sendResult = await emailService.sendAppointmentEmail(
         validation.appointmentId!,
         'appointment_confirmed'
+      );
+
+      if (!sendResult.success) {
+        console.warn(
+          'Appointment confirmed but failed to send seamstress email:',
+          sendResult.error
+        );
+      }
+    } else {
+      console.warn(
+        'Appointment confirmed but could not resolve shop owner for email notification',
+        shopJoinError?.message
       );
     }
 
     return {
       success: true,
-      appointmentId: validation.appointmentId,
+      ...(validation.appointmentId
+        ? { appointmentId: validation.appointmentId }
+        : {}),
     };
   } catch (error) {
     console.error('Failed to confirm appointment:', error);
@@ -104,7 +127,9 @@ export async function checkConfirmationToken(token: string): Promise<{
 
     return {
       valid: validation.valid,
-      reason: validation.reason,
+      ...(validation.reason
+        ? { reason: validation.reason as 'expired' | 'used' | 'invalid' }
+        : {}),
     };
   } catch (error) {
     return {

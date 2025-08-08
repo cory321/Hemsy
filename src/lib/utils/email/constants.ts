@@ -53,12 +53,19 @@ export const EMAIL_VARIABLES: EmailVariableConfig[] = [
         description: 'Seamstress name',
         example: 'Sarah',
       },
+      {
+        key: 'confirmation_link',
+        description:
+          'Confirmation URL the client can click to confirm the appointment',
+        example: 'http://localhost:3000/confirm/abcd1234',
+      },
     ],
     sample_data: {
       client_name: 'Jane Smith',
       appointment_time: 'Monday, Jan 15 at 2:00 PM',
       shop_name: "Sarah's Alterations",
       seamstress_name: 'Sarah',
+      confirmation_link: 'https://example.com/confirm/sample-token',
     },
   },
   {

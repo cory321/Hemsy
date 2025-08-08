@@ -170,9 +170,7 @@ export function WeekViewDesktop({
   const currentTimeMinutes =
     currentTime.getHours() * 60 + currentTime.getMinutes();
   const currentTimePosition =
-    ((currentTimeMinutes - gridStartHour * 60) /
-      ((gridEndHour - gridStartHour) * 60)) *
-    100;
+    (currentTimeMinutes - gridStartHour * 60) * (40 / 30); // 40px per 30 minutes
 
   return (
     <Box
@@ -392,6 +390,12 @@ export function WeekViewDesktop({
                               }
                             : undefined,
                       }}
+                      data-testid={
+                        format(day, 'yyyy-MM-dd') ===
+                        format(currentDate, 'yyyy-MM-dd')
+                          ? `week-slot-${time}`
+                          : undefined
+                      }
                       onClick={() => {
                         if (canClickTimeSlot) {
                           onTimeSlotClick(day, time);
@@ -541,32 +545,30 @@ export function WeekViewDesktop({
                 })}
 
                 {/* Current time indicator */}
-                {isToday(day) &&
-                  currentTimePosition >= 0 &&
-                  currentTimePosition <= 100 && (
-                    <Box
-                      data-testid="current-time-indicator"
-                      sx={{
+                {isToday(day) && currentTimePosition >= 0 && (
+                  <Box
+                    data-testid="current-time-indicator"
+                    sx={{
+                      position: 'absolute',
+                      top: `${currentTimePosition}px`,
+                      left: 0,
+                      right: 0,
+                      height: 2,
+                      bgcolor: 'error.main',
+                      zIndex: 4,
+                      '&::before': {
+                        content: '""',
                         position: 'absolute',
-                        top: `${currentTimePosition}%`,
-                        left: 0,
-                        right: 0,
-                        height: 2,
+                        left: -6,
+                        top: -4,
+                        width: 10,
+                        height: 10,
+                        borderRadius: '50%',
                         bgcolor: 'error.main',
-                        zIndex: 4,
-                        '&::before': {
-                          content: '""',
-                          position: 'absolute',
-                          left: -6,
-                          top: -4,
-                          width: 10,
-                          height: 10,
-                          borderRadius: '50%',
-                          bgcolor: 'error.main',
-                        },
-                      }}
-                    />
-                  )}
+                      },
+                    }}
+                  />
+                )}
               </Box>
             );
           })}

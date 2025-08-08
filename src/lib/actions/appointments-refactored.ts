@@ -4,7 +4,8 @@ import { auth } from '@clerk/nextjs/server';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
-import type { Appointment } from '@/types';
+import type { Appointment, AppointmentStatus } from '@/types';
+import { EmailService } from '@/lib/services/email/email-service';
 
 // Validation schemas
 const createAppointmentSchema = z.object({
@@ -15,6 +16,8 @@ const createAppointmentSchema = z.object({
   endTime: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format'),
   type: z.enum(['consultation', 'fitting', 'pickup', 'delivery', 'other']),
   notes: z.string().optional(),
+  // Per-appointment email preference (default: true if client accepts email)
+  sendEmail: z.boolean().optional(),
 });
 
 const updateAppointmentSchema = createAppointmentSchema
@@ -251,6 +254,38 @@ export async function createAppointment(
     throw new Error('Failed to fetch created appointment');
   }
 
+  // Conditionally send initial scheduled email to the client only
+  try {
+    const clientAcceptsEmail =
+      completeAppointment.client?.accept_email !== false;
+    const shouldSend = validated.sendEmail !== false; // default to true when undefined
+
+    if (clientAcceptsEmail && shouldSend) {
+      console.log(
+        '🚀 [appointments-refactored] Attempting to send scheduled email for appointment:',
+        appointment.id
+      );
+      const emailService = new EmailService(supabase, userData.id);
+      const result = await emailService.sendAppointmentEmail(
+        appointment.id,
+        'appointment_scheduled'
+      );
+      console.log('✅ [appointments-refactored] Email send result:', result);
+    } else {
+      console.log(
+        'ℹ️ [appointments-refactored] Skipping email send. clientAcceptsEmail:',
+        clientAcceptsEmail,
+        'shouldSend:',
+        shouldSend
+      );
+    }
+  } catch (e) {
+    console.error(
+      '❌ [appointments-refactored] Failed to send scheduled email:',
+      e
+    );
+  }
+
   // Revalidate the appointments page
   revalidatePath('/appointments');
 
@@ -456,4 +491,128 @@ export async function getClientAppointments(
   }
 
   return appointments as Appointment[];
+}
+
+/**
+ * Paginated client appointments with filtering and timeframe support
+ */
+export async function getClientAppointmentsPage(
+  shopId: string,
+  clientId: string,
+  options?: {
+    includeCompleted?: boolean;
+    statuses?: AppointmentStatus[];
+    timeframe?: 'upcoming' | 'past' | 'all';
+    dateRange?: { start: string; end: string };
+    limit?: number;
+    offset?: number;
+  }
+): Promise<{
+  appointments: Appointment[];
+  total: number;
+  hasMore: boolean;
+  nextOffset: number;
+}> {
+  const { userId } = await auth();
+  if (!userId) throw new Error('Unauthorized');
+
+  const supabase = await createClient();
+
+  // Verify shop ownership
+  const { data: userData, error: userError } = await supabase
+    .from('users')
+    .select('id')
+    .eq('clerk_user_id', userId)
+    .single();
+  if (userError || !userData) throw new Error('Failed to fetch user');
+
+  const { data: shopData, error: shopError } = await supabase
+    .from('shops')
+    .select('id')
+    .eq('id', shopId)
+    .eq('owner_user_id', userData.id)
+    .single();
+  if (shopError || !shopData) throw new Error('Unauthorized access to shop');
+
+  const { includeCompleted, statuses, timeframe, dateRange } = options || {};
+
+  // Build base query
+  let query = supabase
+    .from('appointments')
+    .select(
+      `
+      *,
+      client:clients(
+        id,
+        first_name,
+        last_name,
+        email,
+        phone_number,
+        accept_email,
+        accept_sms
+      )
+    `,
+      { count: 'exact' }
+    )
+    .eq('shop_id', shopId)
+    .eq('client_id', clientId);
+
+  // Status filter
+  if (statuses && statuses.length > 0) {
+    query = query.in('status', statuses);
+  } else if (!includeCompleted) {
+    query = query.in('status', ['pending', 'confirmed']);
+  }
+
+  // Timeframe filter
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  const todayStr = `${yyyy}-${mm}-${dd}`;
+
+  if (dateRange) {
+    query = query.gte('date', dateRange.start).lte('date', dateRange.end);
+  } else if (timeframe === 'upcoming') {
+    query = query.gte('date', todayStr);
+  } else if (timeframe === 'past') {
+    query = query.lt('date', todayStr);
+  }
+
+  // Sorting based on timeframe
+  if (timeframe === 'upcoming') {
+    query = query
+      .order('date', { ascending: true })
+      .order('start_time', { ascending: true });
+  } else if (timeframe === 'past') {
+    query = query
+      .order('date', { ascending: false })
+      .order('start_time', { ascending: false });
+  } else {
+    query = query
+      .order('date', { ascending: false })
+      .order('start_time', { ascending: false });
+  }
+
+  // Pagination
+  const limit = options?.limit ?? 10;
+  const offset = options?.offset ?? 0;
+  query = query.range(offset, offset + limit - 1);
+
+  const { data: rows, error, count } = await query;
+  if (error) {
+    console.error('Failed to fetch client appointments (paginated):', error);
+    throw new Error('Failed to fetch client appointments');
+  }
+
+  const total = count || 0;
+  const hasMore = total > offset + limit;
+  const nextOffset = offset + limit;
+
+  return {
+    appointments: (rows || []) as unknown as Appointment[],
+    total,
+    hasMore,
+    nextOffset,
+  };
 }

@@ -34,8 +34,9 @@ export async function getClients(
 
   // Apply search filter
   if (filters?.search) {
+    const searchTerm = `%${filters.search}%`;
     query = query.or(
-      `first_name.ilike.%${filters.search}%,last_name.ilike.%${filters.search}%,email.ilike.%${filters.search}%,phone_number.ilike.%${filters.search}%`
+      `first_name.ilike.${searchTerm},last_name.ilike.${searchTerm},email.ilike.${searchTerm},phone_number.ilike.${searchTerm}`
     );
   }
 
