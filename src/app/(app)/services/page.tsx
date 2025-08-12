@@ -1,162 +1,140 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import {
-	Container,
-	Typography,
-	Box,
-	List,
-	ListItem,
-	ListItemText,
-	IconButton,
-	Button,
-	Dialog,
-	DialogTitle,
-	DialogContent,
-	DialogActions,
-	TextField,
-	InputAdornment,
-	Fab,
+  Container,
+  Typography,
+  Box,
+  CircularProgress,
+  Paper,
+  Alert,
+  Grid,
 } from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import AddIcon from '@mui/icons-material/Add';
-import { useState } from 'react';
+
+import ServiceList from '@/components/services/ServiceList';
+import AddServiceDialog from '@/components/services/AddServiceDialog';
+import { fetchAllServices } from '@/lib/actions/services';
+import { Service } from '@/lib/utils/serviceUtils';
 
 export default function ServicesPage() {
-	const [openDialog, setOpenDialog] = useState(false);
-	const [editingService, setEditingService] = useState<any>(null);
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-	// Mock data for demonstration
-	const services = [
-		{ id: 1, name: 'Hemming - Pants', unit: 'per item', price: 25 },
-		{ id: 2, name: 'Hemming - Dress/Skirt', unit: 'per item', price: 35 },
-		{ id: 3, name: 'Take in sides', unit: 'per item', price: 30 },
-		{ id: 4, name: 'Let out sides', unit: 'per item', price: 30 },
-		{ id: 5, name: 'Shorten sleeves', unit: 'per item', price: 25 },
-		{ id: 6, name: 'Replace zipper', unit: 'per item', price: 40 },
-		{ id: 7, name: 'Add bustle', unit: 'per item', price: 60 },
-		{ id: 8, name: 'Custom fitting', unit: 'per hour', price: 75 },
-	];
+  useEffect(() => {
+    const loadServices = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const fetchedServices = await fetchAllServices();
+        setServices(fetchedServices);
+      } catch (error) {
+        console.error('Error loading services:', error);
+        setError(
+          error instanceof Error ? error.message : 'Failed to load services'
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
 
-	const handleOpenDialog = (service?: any) => {
-		setEditingService(service || null);
-		setOpenDialog(true);
-	};
+    loadServices();
+  }, []);
 
-	const handleCloseDialog = () => {
-		setOpenDialog(false);
-		setEditingService(null);
-	};
+  const frequentlyUsedServices = services
+    .filter((s) => s.frequently_used)
+    .sort((a, b) => {
+      const posA = a.frequently_used_position ?? Number.MAX_VALUE;
+      const posB = b.frequently_used_position ?? Number.MAX_VALUE;
+      return posA - posB;
+    });
 
-	const handleSave = () => {
-		// TODO: Handle save
-		handleCloseDialog();
-	};
+  const otherServices = services.filter((s) => !s.frequently_used);
 
-	return (
-		<Container maxWidth="lg">
-			<Box sx={{ mt: 4, mb: 4 }}>
-				<Typography variant="h4" component="h1" gutterBottom>
-					Services
-				</Typography>
-				<Typography color="text.secondary" gutterBottom>
-					Manage your alteration services and pricing
-				</Typography>
+  if (loading) {
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="50vh"
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
 
-				{/* Services List */}
-				<List sx={{ mt: 3 }}>
-					{services.map((service) => (
-						<ListItem
-							key={service.id}
-							sx={{
-								bgcolor: 'background.paper',
-								mb: 1,
-								borderRadius: 1,
-							}}
-							secondaryAction={
-								<Box>
-									<IconButton onClick={() => handleOpenDialog(service)}>
-										<EditIcon />
-									</IconButton>
-									<IconButton color="error">
-										<DeleteIcon />
-									</IconButton>
-								</Box>
-							}
-						>
-							<ListItemText primary={service.name} secondary={service.unit} />
-							<Typography variant="h6" sx={{ mr: 2 }}>
-								${service.price}
-							</Typography>
-						</ListItem>
-					))}
-				</List>
+  if (error) {
+    return (
+      <Container maxWidth="lg">
+        <Box sx={{ mt: 4 }}>
+          <Alert severity="error">{error}</Alert>
+        </Box>
+      </Container>
+    );
+  }
 
-				{/* Add/Edit Service Dialog */}
-				<Dialog
-					open={openDialog}
-					onClose={handleCloseDialog}
-					maxWidth="sm"
-					fullWidth
-				>
-					<DialogTitle>
-						{editingService ? 'Edit Service' : 'Add New Service'}
-					</DialogTitle>
-					<DialogContent>
-						<TextField
-							autoFocus
-							margin="dense"
-							label="Service Name"
-							fullWidth
-							variant="outlined"
-							defaultValue={editingService?.name || ''}
-							sx={{ mb: 2 }}
-						/>
-						<TextField
-							margin="dense"
-							label="Unit"
-							fullWidth
-							variant="outlined"
-							placeholder="e.g., per item, per hour"
-							defaultValue={editingService?.unit || ''}
-							sx={{ mb: 2 }}
-						/>
-						<TextField
-							margin="dense"
-							label="Price"
-							fullWidth
-							variant="outlined"
-							type="number"
-							defaultValue={editingService?.price || ''}
-							InputProps={{
-								startAdornment: (
-									<InputAdornment position="start">$</InputAdornment>
-								),
-							}}
-						/>
-					</DialogContent>
-					<DialogActions>
-						<Button onClick={handleCloseDialog}>Cancel</Button>
-						<Button onClick={handleSave} variant="contained">
-							{editingService ? 'Save' : 'Add'}
-						</Button>
-					</DialogActions>
-				</Dialog>
+  return (
+    <Container maxWidth="lg">
+      <Box sx={{ mt: 4, mb: 4 }}>
+        <Grid
+          container
+          justifyContent="space-between"
+          alignItems="center"
+          sx={{ mb: 3 }}
+        >
+          <Grid item>
+            <Typography variant="h4" component="h1" gutterBottom>
+              Service Catalog
+            </Typography>
+            <Typography color="text.secondary" gutterBottom>
+              Manage your alteration services and pricing
+            </Typography>
+          </Grid>
+          <Grid item>
+            <AddServiceDialog setServices={setServices} />
+          </Grid>
+        </Grid>
 
-				{/* Floating Action Button */}
-				<Fab
-					color="primary"
-					aria-label="add service"
-					onClick={() => handleOpenDialog()}
-					sx={{
-						position: 'fixed',
-						bottom: 80,
-						right: 16,
-					}}
-				>
-					<AddIcon />
-				</Fab>
-			</Box>
-		</Container>
-	);
+        {services.length === 0 ? (
+          <Paper sx={{ p: 4, textAlign: 'center' }}>
+            <Typography variant="h6" gutterBottom>
+              No services yet
+            </Typography>
+            <Typography color="text.secondary">
+              Add your first service to get started
+            </Typography>
+          </Paper>
+        ) : (
+          <Box>
+            {frequentlyUsedServices.length > 0 && (
+              <Box sx={{ mb: 4 }}>
+                <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
+                  Frequently Used Services
+                </Typography>
+                <ServiceList
+                  services={frequentlyUsedServices}
+                  setServices={setServices}
+                />
+              </Box>
+            )}
+
+            {otherServices.length > 0 && (
+              <Box>
+                <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
+                  {frequentlyUsedServices.length > 0
+                    ? 'Other Services'
+                    : 'All Services'}
+                </Typography>
+                <ServiceList
+                  services={otherServices}
+                  setServices={setServices}
+                />
+              </Box>
+            )}
+          </Box>
+        )}
+      </Box>
+    </Container>
+  );
 }
