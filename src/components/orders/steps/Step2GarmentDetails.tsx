@@ -26,6 +26,7 @@ import { useOrderFlow, GarmentDraft } from '@/contexts/OrderFlowContext';
 import ServiceSelector from '../ServiceSelector';
 import GarmentImageUpload from '../GarmentImageUpload';
 import { formatCurrency } from '@/lib/utils/currency';
+import { assignDefaultGarmentNames } from '@/lib/utils/order-normalization';
 
 export default function Step2GarmentDetails() {
   const {
@@ -41,6 +42,7 @@ export default function Step2GarmentDetails() {
   const handleAddGarment = () => {
     const newGarment: GarmentDraft = {
       id: uuidv4(),
+      // Name is optional; user can leave blank
       name: '',
       notes: '',
       dueDate: undefined,
@@ -57,6 +59,14 @@ export default function Step2GarmentDetails() {
       (sum, service) => sum + service.quantity * service.unitPriceCents,
       0
     );
+  };
+
+  // Show defaulted display name in summary if user leaves it blank
+  const getDisplayName = (index: number, name: string) => {
+    const normalized = assignDefaultGarmentNames(
+      orderDraft.garments.map((g, i) => ({ name: i === index ? name : g.name }))
+    );
+    return normalized[index]?.name ?? `Garment ${index + 1}`;
   };
 
   const handleAccordionChange =
@@ -111,7 +121,9 @@ export default function Step2GarmentDetails() {
                   }}
                 >
                   <Typography variant="h6">
-                    {garment.name || `Garment ${index + 1}`}
+                    {garment.name?.trim()
+                      ? garment.name.trim()
+                      : `Garment ${index + 1}`}
                   </Typography>
                   {garment.services.length > 0 && (
                     <Chip
@@ -134,12 +146,11 @@ export default function Step2GarmentDetails() {
                   <Grid item xs={12}>
                     <TextField
                       fullWidth
-                      label="Garment Name"
+                      label="Garment Name (Optional)"
                       value={garment.name}
                       onChange={(e) =>
                         updateGarment(garment.id, { name: e.target.value })
                       }
-                      required
                       placeholder="e.g., Wedding Dress, Suit Jacket"
                     />
                   </Grid>
@@ -192,6 +203,16 @@ export default function Step2GarmentDetails() {
                     />
                   </Grid>
 
+                  {/* Services Section */}
+                  <Grid item xs={12}>
+                    <Divider sx={{ my: 2 }} />
+                    <Typography variant="h6" gutterBottom>
+                      Services
+                    </Typography>
+                    <ServiceSelector garmentId={garment.id} />
+                  </Grid>
+
+                  {/* Notes moved below Services */}
                   <Grid item xs={12}>
                     <TextField
                       fullWidth
@@ -204,15 +225,6 @@ export default function Step2GarmentDetails() {
                       }
                       placeholder="Any special instructions or notes about this garment"
                     />
-                  </Grid>
-
-                  {/* Services Section */}
-                  <Grid item xs={12}>
-                    <Divider sx={{ my: 2 }} />
-                    <Typography variant="h6" gutterBottom>
-                      Services
-                    </Typography>
-                    <ServiceSelector garmentId={garment.id} />
                   </Grid>
 
                   {/* Delete Garment */}

@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { createClient as createSupabaseClient } from '@/lib/supabase/server';
+import { assignDefaultGarmentNames } from '@/lib/utils/order-normalization';
 
 // Dynamic import to avoid static cycles and ease testing
 async function getUserAndShop() {
@@ -29,7 +30,8 @@ const ServiceLineSchema = z.object({
 const isoDateRegex = /^\d{4}-\d{2}-\d{2}$/;
 
 const GarmentInputSchema = z.object({
-  name: z.string().min(1),
+  // Name is optional; when omitted/blank we will assign a default like "Garment 1"
+  name: z.string().optional(),
   notes: z.string().optional(),
   dueDate: z.string().regex(isoDateRegex).optional(),
   specialEvent: z.boolean().optional(),
@@ -72,6 +74,24 @@ export async function createOrder(
   try {
     const input = CreateOrderInputSchema.parse(rawInput);
 
+    // Normalize garment names to default values when empty
+    const garmentsWithDefaultNames = assignDefaultGarmentNames<{
+      name?: string | null;
+      notes?: string;
+      dueDate?: string;
+      specialEvent?: boolean;
+      eventDate?: string;
+      imageCloudId?: string;
+      imageUrl?: string;
+      services: {
+        quantity: number;
+        unit: 'item' | 'hour' | 'day' | 'week';
+        unitPriceCents: number;
+        serviceId?: string;
+        inline?: { name: string; description?: string };
+      }[];
+    }>(input.garments as any);
+
     const { shop } = await getUserAndShop();
     const supabase = await createSupabaseClient();
 
@@ -95,7 +115,7 @@ export async function createOrder(
     const orderId = orderInsert.id as string;
 
     // Insert garments
-    for (const garment of input.garments) {
+    for (const garment of garmentsWithDefaultNames) {
       const eventDate = garment.specialEvent
         ? (garment.eventDate ?? null)
         : null;
@@ -175,6 +195,10 @@ export async function createOrder(
     return { success: false, errors: toFieldErrors(error) };
   }
 }
+
+// Utility to assign default garment names like "Garment 1", "Garment 2" when
+// names are missing or blank. Exported for unit testing and reuse.
+// Moved to '@/lib/utils/order-normalization' for reuse
 
 export async function getFrequentlyUsedServices(): Promise<
   {

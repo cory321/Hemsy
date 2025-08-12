@@ -22,6 +22,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { ClientSearchField } from '@/components/appointments/ClientSearchField';
 import type { Tables } from '@/types/supabase';
 import ClientCreateDialog from '@/components/clients/ClientCreateDialog';
+import { assignDefaultGarmentNames } from '@/lib/utils/order-normalization';
 
 type ClientLite = { id: string; name: string };
 type ServiceLite = {
@@ -74,9 +75,7 @@ export default function OrdersComposerClient({
   const canSubmit = useMemo(() => {
     if (!selectedClientId) return false;
     if (garments.length === 0) return false;
-    return garments.every(
-      (g) => g.name.trim().length > 0 && g.services.length > 0
-    );
+    return garments.every((g) => g.services.length > 0);
   }, [selectedClientId, garments]);
 
   function addGarment() {
@@ -183,10 +182,11 @@ export default function OrdersComposerClient({
   }
 
   function buildPayload() {
+    const garmentsNormalized = assignDefaultGarmentNames(garments);
     return {
       clientId: selectedClientId,
       discountCents,
-      garments: garments.map((g) => ({
+      garments: garmentsNormalized.map((g) => ({
         name: g.name,
         notes: g.notes || undefined,
         dueDate: g.dueDate || undefined,

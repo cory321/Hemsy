@@ -17,6 +17,8 @@ import {
 } from '@mui/material';
 import { toast } from 'react-hot-toast';
 import { useOrderFlow } from '@/contexts/OrderFlowContext';
+import type { GarmentDraft, ServiceLine } from '@/contexts/OrderFlowContext';
+import { assignDefaultGarmentNames } from '@/lib/utils/order-normalization';
 import Step1ClientSelection from './steps/Step1ClientSelection';
 import Step2GarmentDetails from './steps/Step2GarmentDetails';
 import Step3Summary from './steps/Step3Summary';
@@ -53,11 +55,14 @@ export default function OrderFlowStepper() {
     setIsSubmitting(true);
     try {
       // Prepare the order data
+      const garmentsNormalized = assignDefaultGarmentNames<GarmentDraft>(
+        orderDraft.garments
+      );
       const orderData = {
         clientId: orderDraft.clientId,
         discountCents: orderDraft.discountCents,
         notes: orderDraft.notes,
-        garments: orderDraft.garments.map((garment) => ({
+        garments: garmentsNormalized.map((garment: GarmentDraft) => ({
           name: garment.name,
           notes: garment.notes,
           dueDate: garment.dueDate || undefined,
@@ -66,7 +71,7 @@ export default function OrderFlowStepper() {
           // Include image data if available
           imageCloudId: garment.imageCloudId || undefined,
           imageUrl: garment.imageUrl || undefined,
-          services: garment.services.map((service) => ({
+          services: garment.services.map((service: ServiceLine) => ({
             quantity: service.quantity,
             unit: service.unit,
             unitPriceCents: service.unitPriceCents,
@@ -117,11 +122,11 @@ export default function OrderFlowStepper() {
       case 0:
         return !!orderDraft.clientId;
       case 1:
+        // Garment name is optional now; only require at least one garment
+        // and at least one service per garment.
         return (
           orderDraft.garments.length > 0 &&
-          orderDraft.garments.every(
-            (g) => g.name.trim() && g.services.length > 0
-          )
+          orderDraft.garments.every((g) => g.services.length > 0)
         );
       case 2:
         return true;
