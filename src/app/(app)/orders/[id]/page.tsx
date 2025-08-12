@@ -1,246 +1,387 @@
 import {
-	Container,
-	Typography,
-	Box,
-	Card,
-	CardContent,
-	List,
-	ListItem,
-	ListItemText,
-	Button,
-	Chip,
-	Divider,
+  Container,
+  Typography,
+  Box,
+  Card,
+  CardContent,
+  List,
+  ListItem,
+  ListItemText,
+  Button,
+  Chip,
+  Divider,
+  Grid,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import Link from 'next/link';
+import { createClient as createSupabaseClient } from '@/lib/supabase/server';
+import { ensureUserAndShop } from '@/lib/actions/users';
+import type { Database } from '@/types/supabase';
 
-export default function OrderDetailPage({
-	params,
-}: {
-	params: { id: string };
-}) {
-	// Mock data for demonstration
-	const order = {
-		id: params.id,
-		client: { id: 1, name: 'Jane Smith', phone: '(555) 123-4567' },
-		status: 'in_progress',
-		createdAt: '2024-01-15',
-		dueDate: '2024-01-25',
-		total: '$125.00',
-		paid: false,
-		garments: [
-			{
-				id: 1,
-				title: 'Blue Dress',
-				services: ['Hemming', 'Take in sides'],
-				stage: 'Cutting',
-				price: '$65',
-			},
-			{
-				id: 2,
-				title: 'Black Pants',
-				services: ['Hemming'],
-				stage: 'Sewing',
-				price: '$35',
-			},
-			{
-				id: 3,
-				title: 'White Shirt',
-				services: ['Shorten sleeves'],
-				stage: 'Pressing',
-				price: '$25',
-			},
-		],
-	};
-
-	const getStatusColor = (status: string) => {
-		switch (status) {
-			case 'pending':
-				return 'warning';
-			case 'in_progress':
-				return 'info';
-			case 'completed':
-				return 'success';
-			default:
-				return 'default';
-		}
-	};
-
-	const getStageColor = (stage: string) => {
-		switch (stage.toLowerCase()) {
-			case 'intake':
-				return 'default';
-			case 'cutting':
-				return 'info';
-			case 'sewing':
-				return 'warning';
-			case 'pressing':
-				return 'success';
-			case 'ready':
-				return 'success';
-			default:
-				return 'default';
-		}
-	};
-
-	return (
-		<Container maxWidth="lg">
-			<Box sx={{ mt: 4, mb: 4 }}>
-				{/* Header */}
-				<Box
-					sx={{
-						display: 'flex',
-						justifyContent: 'space-between',
-						alignItems: 'center',
-						mb: 3,
-					}}
-				>
-					<Box>
-						<Typography variant="h4" component="h1">
-							Order #{order.id}
-						</Typography>
-						<Typography color="text.secondary">
-							Created on {order.createdAt}
-						</Typography>
-					</Box>
-					<Box sx={{ display: 'flex', gap: 1 }}>
-						<Button variant="outlined" startIcon={<EditIcon />}>
-							Edit
-						</Button>
-						<Button
-							variant="contained"
-							startIcon={<ReceiptIcon />}
-							component={Link}
-							href={`/invoices/new?order=${order.id}`}
-						>
-							Create Invoice
-						</Button>
-					</Box>
-				</Box>
-
-				{/* Order Info */}
-				<Grid container spacing={3}>
-					<Grid item xs={12} md={8}>
-						{/* Client Info */}
-						<Card sx={{ mb: 3 }}>
-							<CardContent>
-								<Typography variant="h6" gutterBottom>
-									Client Information
-								</Typography>
-								<Typography variant="body1">
-									<Link
-										href={`/clients/${order.client.id}`}
-										style={{ textDecoration: 'none', color: 'inherit' }}
-									>
-										{order.client.name}
-									</Link>
-								</Typography>
-								<Typography variant="body2" color="text.secondary">
-									{order.client.phone}
-								</Typography>
-							</CardContent>
-						</Card>
-
-						{/* Garments */}
-						<Card>
-							<CardContent>
-								<Typography variant="h6" gutterBottom>
-									Garments ({order.garments.length})
-								</Typography>
-								<List>
-									{order.garments.map((garment, index) => (
-										<Box key={garment.id}>
-											<ListItem
-												component={Link}
-												href={`/garments/${garment.id}`}
-												sx={{ px: 0 }}
-											>
-												<ListItemText
-													primary={garment.title}
-													secondary={<Box>{garment.services.join(', ')}</Box>}
-												/>
-												<Box
-													sx={{ display: 'flex', alignItems: 'center', gap: 2 }}
-												>
-													<Chip
-														label={garment.stage}
-														size="small"
-														color={getStageColor(garment.stage) as any}
-													/>
-													<Typography variant="body1">
-														{garment.price}
-													</Typography>
-												</Box>
-											</ListItem>
-											{index < order.garments.length - 1 && <Divider />}
-										</Box>
-									))}
-								</List>
-							</CardContent>
-						</Card>
-					</Grid>
-
-					<Grid item xs={12} md={4}>
-						{/* Order Summary */}
-						<Card>
-							<CardContent>
-								<Typography variant="h6" gutterBottom>
-									Order Summary
-								</Typography>
-								<Box sx={{ mb: 2 }}>
-									<Box
-										sx={{
-											display: 'flex',
-											justifyContent: 'space-between',
-											mb: 1,
-										}}
-									>
-										<Typography color="text.secondary">Status</Typography>
-										<Chip
-											label={order.status.split('_').join(' ').toUpperCase()}
-											color={getStatusColor(order.status) as any}
-											size="small"
-										/>
-									</Box>
-									<Box
-										sx={{
-											display: 'flex',
-											justifyContent: 'space-between',
-											mb: 1,
-										}}
-									>
-										<Typography color="text.secondary">Due Date</Typography>
-										<Typography>{order.dueDate}</Typography>
-									</Box>
-									<Box
-										sx={{
-											display: 'flex',
-											justifyContent: 'space-between',
-											mb: 1,
-										}}
-									>
-										<Typography color="text.secondary">Payment</Typography>
-										<Chip
-											label={order.paid ? 'Paid' : 'Unpaid'}
-											color={order.paid ? 'success' : 'error'}
-											size="small"
-										/>
-									</Box>
-								</Box>
-								<Divider sx={{ my: 2 }} />
-								<Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-									<Typography variant="h6">Total</Typography>
-									<Typography variant="h6">{order.total}</Typography>
-								</Box>
-							</CardContent>
-						</Card>
-					</Grid>
-				</Grid>
-			</Box>
-		</Container>
-	);
+function formatUSD(cents: number) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format((cents || 0) / 100);
 }
 
-// Add missing import
-import { Grid } from '@mui/material';
+export default async function OrderDetailPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  await ensureUserAndShop();
+  const supabase = await createSupabaseClient();
+
+  const { data: order } = (await supabase
+    .from('orders')
+    .select(
+      'id, client_id, status, order_due_date, subtotal_cents, discount_cents, tax_cents, total_cents, created_at, order_number, is_paid, paid_at, notes'
+    )
+    .eq('id', params.id)
+    .single()) as {
+    data: Database['public']['Tables']['orders']['Row'] | null;
+  };
+
+  let client = null;
+  if (order?.client_id) {
+    const { data } = (await supabase
+      .from('clients')
+      .select('id, first_name, last_name, phone_number, email, mailing_address')
+      .eq('id', order.client_id)
+      .single()) as {
+      data: Database['public']['Tables']['clients']['Row'] | null;
+    };
+    client = data;
+  }
+
+  const { data: garments } = (await supabase
+    .from('garments')
+    .select('id, name, stage, notes, due_date, event_date, is_done')
+    .eq('order_id', params.id)
+    .order('created_at', { ascending: true })) as {
+    data: Database['public']['Tables']['garments']['Row'][] | null;
+  };
+
+  const garmentIds = (garments || []).map((g: any) => g.id);
+  const { data: lines } = garmentIds.length
+    ? ((await supabase
+        .from('garment_services')
+        .select(
+          'id, garment_id, name, quantity, unit, unit_price_cents, line_total_cents, is_done'
+        )
+        .in('garment_id', garmentIds)) as {
+        data: Database['public']['Tables']['garment_services']['Row'][] | null;
+      })
+    : { data: [] as Database['public']['Tables']['garment_services']['Row'][] };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'new':
+      case 'pending':
+        return 'warning';
+      case 'in_progress':
+        return 'info';
+      case 'ready_for_pickup':
+      case 'completed':
+        return 'success';
+      case 'cancelled':
+        return 'error';
+      default:
+        return 'default';
+    }
+  };
+
+  const getStageColor = (stage: string) => {
+    switch (stage.toLowerCase()) {
+      case 'new':
+        return 'default';
+      case 'in progress':
+        return 'info';
+      case 'done':
+        return 'success';
+      case 'archived':
+        return 'default';
+      default:
+        return 'default';
+    }
+  };
+
+  return (
+    <Container maxWidth="lg">
+      <Box sx={{ mt: 4, mb: 4 }}>
+        {/* Header */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mb: 3,
+          }}
+        >
+          <Box>
+            <Typography variant="h4" component="h1">
+              Order {order?.order_number || `#${order?.id.slice(0, 8)}`}
+            </Typography>
+            <Typography color="text.secondary">
+              Created on{' '}
+              {order?.created_at
+                ? new Date(order.created_at).toLocaleDateString()
+                : ''}
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button variant="outlined" startIcon={<EditIcon />}>
+              Edit
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<ReceiptIcon />}
+              component={Link}
+              href={`/invoices/new?order=${order?.id}`}
+            >
+              Create Invoice
+            </Button>
+          </Box>
+        </Box>
+
+        {/* Order Info */}
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={8}>
+            {/* Client Info */}
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Client Information
+                </Typography>
+                <Typography variant="body1">
+                  <Link
+                    href={`/clients/${client?.id}`}
+                    style={{ textDecoration: 'none', color: 'inherit' }}
+                  >
+                    {client
+                      ? `${client.first_name} ${client.last_name}`
+                      : 'Client'}
+                  </Link>
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {client?.phone_number || ''}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {client?.email || ''}
+                </Typography>
+                {client?.mailing_address && (
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mt: 1 }}
+                  >
+                    {client.mailing_address}
+                  </Typography>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Garments */}
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Garments ({garments?.length || 0})
+                </Typography>
+                <List>
+                  {(garments || []).map((garment: any, index: number) => (
+                    <Box key={garment.id}>
+                      <ListItem
+                        component={Link}
+                        href={`/garments/${garment.id}`}
+                        sx={{ px: 0 }}
+                      >
+                        <ListItemText
+                          primary={garment.name}
+                          secondary={
+                            <>
+                              {(lines || [])
+                                .filter((l: any) => l.garment_id === garment.id)
+                                .map(
+                                  (l: any) =>
+                                    `${l.name} (${l.quantity} ${l.unit})`
+                                )
+                                .join(', ')}
+                              {garment.due_date && (
+                                <>
+                                  <br />
+                                  Due:{' '}
+                                  {new Date(
+                                    garment.due_date
+                                  ).toLocaleDateString()}
+                                </>
+                              )}
+                              {garment.event_date && (
+                                <>
+                                  <br />
+                                  Event:{' '}
+                                  {new Date(
+                                    garment.event_date
+                                  ).toLocaleDateString()}
+                                </>
+                              )}
+                            </>
+                          }
+                        />
+                        <Box
+                          sx={{ display: 'flex', alignItems: 'center', gap: 2 }}
+                        >
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              gap: 1,
+                              alignItems: 'center',
+                            }}
+                          >
+                            {garment.is_done && (
+                              <Chip label="✓" size="small" color="success" />
+                            )}
+                            <Chip
+                              label={garment.stage}
+                              size="small"
+                              color={getStageColor(garment.stage) as any}
+                            />
+                          </Box>
+                          <Typography variant="body1">
+                            {formatUSD(
+                              (lines || [])
+                                .filter((l: any) => l.garment_id === garment.id)
+                                .reduce(
+                                  (sum: number, l: any) =>
+                                    sum + (l.line_total_cents || 0),
+                                  0
+                                )
+                            )}
+                          </Typography>
+                        </Box>
+                      </ListItem>
+                      {index < (garments?.length || 0) - 1 && <Divider />}
+                    </Box>
+                  ))}
+                </List>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            {/* Order Summary */}
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Order Summary
+                </Typography>
+                <Box sx={{ mb: 2 }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      mb: 1,
+                    }}
+                  >
+                    <Typography color="text.secondary">Status</Typography>
+                    <Chip
+                      label={(order?.status || 'new').toString().toUpperCase()}
+                      color={getStatusColor(order?.status || 'new') as any}
+                      size="small"
+                    />
+                  </Box>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      mb: 1,
+                    }}
+                  >
+                    <Typography color="text.secondary">Due Date</Typography>
+                    <Typography>
+                      {order?.order_due_date
+                        ? new Date(order.order_due_date).toLocaleDateString()
+                        : '-'}
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      mb: 1,
+                    }}
+                  >
+                    <Typography color="text.secondary">Subtotal</Typography>
+                    <Typography>
+                      {formatUSD(order?.subtotal_cents || 0)}
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      mb: 1,
+                    }}
+                  >
+                    <Typography color="text.secondary">Discount</Typography>
+                    <Typography>
+                      -{formatUSD(order?.discount_cents || 0)}
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      mb: 1,
+                    }}
+                  >
+                    <Typography color="text.secondary">Tax</Typography>
+                    <Typography>{formatUSD(order?.tax_cents || 0)}</Typography>
+                  </Box>
+                </Box>
+                <Divider sx={{ my: 2 }} />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography variant="h6">Total</Typography>
+                  <Typography variant="h6">
+                    {formatUSD(order?.total_cents || 0)}
+                  </Typography>
+                </Box>
+                {order?.is_paid && (
+                  <Box sx={{ mt: 2 }}>
+                    <Chip
+                      label="PAID"
+                      color="success"
+                      sx={{ height: 'auto', py: 1, width: '100%' }}
+                    />
+                    {order.paid_at && (
+                      <Typography
+                        variant="caption"
+                        display="block"
+                        sx={{ mt: 1, textAlign: 'center' }}
+                      >
+                        Paid on {new Date(order.paid_at).toLocaleDateString()}
+                      </Typography>
+                    )}
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Order Notes */}
+            {order?.notes && (
+              <Card sx={{ mt: 3 }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Order Notes
+                  </Typography>
+                  <Typography variant="body2">{order.notes}</Typography>
+                </CardContent>
+              </Card>
+            )}
+          </Grid>
+        </Grid>
+      </Box>
+    </Container>
+  );
+}

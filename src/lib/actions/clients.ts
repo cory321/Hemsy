@@ -34,10 +34,29 @@ export async function getClients(
 
   // Apply search filter
   if (filters?.search) {
-    const searchTerm = `%${filters.search}%`;
-    query = query.or(
-      `first_name.ilike.${searchTerm},last_name.ilike.${searchTerm},email.ilike.${searchTerm},phone_number.ilike.${searchTerm}`
-    );
+    const raw = String(filters.search).trim();
+    const searchTerm = `%${raw}%`;
+
+    // Base conditions: match single-field partials
+    const conditions: string[] = [
+      `first_name.ilike.${searchTerm}`,
+      `last_name.ilike.${searchTerm}`,
+      `email.ilike.${searchTerm}`,
+      `phone_number.ilike.${searchTerm}`,
+    ];
+
+    // If user typed multiple words (e.g., "john doe"), also match as first+last tokens
+    const tokens = raw.split(/\s+/).filter(Boolean);
+    if (tokens.length >= 2) {
+      const first = `%${tokens[0]}%`;
+      const last = `%${tokens.slice(1).join(' ')}%`;
+      // Match First Last
+      conditions.push(`and(first_name.ilike.${first},last_name.ilike.${last})`);
+      // Match Last First as well, for safety
+      conditions.push(`and(first_name.ilike.${last},last_name.ilike.${first})`);
+    }
+
+    query = query.or(conditions.join(','));
   }
 
   // Apply sorting

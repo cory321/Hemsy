@@ -47,7 +47,9 @@ export default function NewClientPage() {
     handleSubmit,
     formState: { errors },
     reset,
+    watch,
   } = useForm<ClientFormData>({
+    mode: 'onChange',
     resolver: zodResolver(clientSchema),
     defaultValues: {
       first_name: '',
@@ -60,6 +62,13 @@ export default function NewClientPage() {
       mailing_address: '',
     },
   });
+
+  const emailValue = watch('email');
+  const phoneValue = watch('phone_number');
+  const emailToggleDisabled =
+    !(emailValue && emailValue.length > 0) || !!errors.email;
+  const smsToggleDisabled =
+    !(phoneValue && phoneValue.length > 0) || !!errors.phone_number;
 
   const onSubmit = async (data: ClientFormData) => {
     setLoading(true);
@@ -238,6 +247,7 @@ export default function NewClientPage() {
                           <Switch
                             checked={value}
                             onChange={(e) => onChange(e.target.checked)}
+                            disabled={emailToggleDisabled}
                           />
                         }
                         label="Accept Email Communications"
@@ -256,6 +266,7 @@ export default function NewClientPage() {
                           <Switch
                             checked={value}
                             onChange={(e) => onChange(e.target.checked)}
+                            disabled={smsToggleDisabled}
                           />
                         }
                         label="Accept SMS Communications"

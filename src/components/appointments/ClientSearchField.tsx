@@ -21,12 +21,18 @@ interface ClientSearchFieldProps {
   value: Client | null;
   onChange: (client: Client | null) => void;
   disabled?: boolean;
+  label?: string;
+  placeholder?: string;
+  helperText?: string;
 }
 
 export function ClientSearchField({
   value,
   onChange,
   disabled = false,
+  label = 'Client',
+  placeholder = 'Search by name, email, or phone...',
+  helperText = 'Select a client for this appointment',
 }: ClientSearchFieldProps) {
   const [inputValue, setInputValue] = useState('');
   const [options, setOptions] = useState<Client[]>([]);
@@ -144,9 +150,9 @@ export function ClientSearchField({
       renderInput={(params) => (
         <TextField
           {...params}
-          label="Client"
-          placeholder="Search by name, email, or phone..."
-          helperText="Select a client for this appointment"
+          label={label}
+          placeholder={placeholder}
+          helperText={helperText}
           InputProps={{
             ...params.InputProps,
             startAdornment: (

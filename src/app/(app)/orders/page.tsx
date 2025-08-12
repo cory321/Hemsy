@@ -1,156 +1,188 @@
-'use client';
-
 import {
-	Container,
-	Typography,
-	Box,
-	Tabs,
-	Tab,
-	List,
-	ListItem,
-	ListItemText,
-	Chip,
-	Fab,
+  Container,
+  Typography,
+  Box,
+  Button,
+  Chip,
+  Card,
+  CardContent,
+  Stack,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import Link from 'next/link';
-import { useState } from 'react';
+import { createClient as createSupabaseClient } from '@/lib/supabase/server';
+import { ensureUserAndShop } from '@/lib/actions/users';
 
-export default function OrdersPage() {
-	const [tabValue, setTabValue] = useState(0);
+function formatUSD(cents: number) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format((cents || 0) / 100);
+}
 
-	// Mock data for demonstration
-	const orders = [
-		{
-			id: 1,
-			client: 'Jane Smith',
-			items: 3,
-			total: '$125',
-			status: 'pending',
-			createdAt: '2024-01-15',
-		},
-		{
-			id: 2,
-			client: 'John Doe',
-			items: 1,
-			total: '$45',
-			status: 'in_progress',
-			createdAt: '2024-01-14',
-		},
-		{
-			id: 3,
-			client: 'Sarah Johnson',
-			items: 2,
-			total: '$80',
-			status: 'completed',
-			createdAt: '2024-01-13',
-		},
-		{
-			id: 4,
-			client: 'Mike Wilson',
-			items: 4,
-			total: '$200',
-			status: 'in_progress',
-			createdAt: '2024-01-12',
-		},
-	];
+export default async function OrdersPage() {
+  await ensureUserAndShop();
+  const supabase = await createSupabaseClient();
 
-	const filteredOrders = orders.filter((order) => {
-		if (tabValue === 0) return true; // All
-		if (tabValue === 1) return order.status === 'pending';
-		if (tabValue === 2) return order.status === 'in_progress';
-		if (tabValue === 3) return order.status === 'completed';
-		return true;
-	});
+  const { data: orders } = await supabase
+    .from('orders')
+    .select(
+      `
+			id,
+			status,
+			total_cents,
+			created_at,
+			client:clients(id, first_name, last_name),
+			garments(id)
+		`
+    )
+    .order('created_at', { ascending: false });
 
-	const getStatusColor = (status: string) => {
-		switch (status) {
-			case 'pending':
-				return 'warning';
-			case 'in_progress':
-				return 'info';
-			case 'completed':
-				return 'success';
-			default:
-				return 'default';
-		}
-	};
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'new':
+      case 'pending':
+        return 'warning';
+      case 'in_progress':
+        return 'info';
+      case 'ready_for_pickup':
+      case 'completed':
+        return 'success';
+      case 'cancelled':
+        return 'error';
+      default:
+        return 'default';
+    }
+  };
 
-	const getStatusLabel = (status: string) => {
-		return status
-			.split('_')
-			.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-			.join(' ');
-	};
+  const getStatusLabel = (status: string) => {
+    return status
+      .split('_')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
 
-	return (
-		<Container maxWidth="lg">
-			<Box sx={{ mt: 4, mb: 4 }}>
-				<Typography variant="h4" component="h1" gutterBottom>
-					Orders
-				</Typography>
+  return (
+    <Container maxWidth="lg">
+      <Box sx={{ mt: 4, mb: 4 }}>
+        {/* Header with title and CTA */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mb: 3,
+          }}
+        >
+          <Typography variant="h4" component="h1">
+            Orders
+          </Typography>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            component={Link}
+            href="/orders/new"
+            sx={{ display: { xs: 'none', sm: 'flex' } }}
+          >
+            Create Order
+          </Button>
+        </Box>
 
-				{/* Tabs */}
-				<Tabs
-					value={tabValue}
-					onChange={(_, newValue) => setTabValue(newValue)}
-					sx={{ mb: 3 }}
-				>
-					<Tab label="All" />
-					<Tab label="Pending" />
-					<Tab label="In Progress" />
-					<Tab label="Completed" />
-				</Tabs>
+        {/* Orders List */}
+        <Stack spacing={2}>
+          {!orders || orders.length === 0 ? (
+            <Card>
+              <CardContent sx={{ textAlign: 'center', py: 5 }}>
+                <Typography variant="h6" color="text.secondary" gutterBottom>
+                  No orders yet
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 3 }}
+                >
+                  Create your first order to get started
+                </Typography>
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  component={Link}
+                  href="/orders/new"
+                >
+                  Create Order
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            orders.map((order) => (
+              <Card
+                key={order.id}
+                component={Link}
+                href={`/orders/${order.id}`}
+                sx={{
+                  textDecoration: 'none',
+                  '&:hover': {
+                    boxShadow: 2,
+                  },
+                }}
+              >
+                <CardContent>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'start',
+                    }}
+                  >
+                    <Box>
+                      <Typography variant="h6" component="div">
+                        {order.client
+                          ? `${order.client.first_name} ${order.client.last_name}`
+                          : 'Order #' + order.id.slice(0, 8)}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {order.created_at
+                          ? new Date(order.created_at).toLocaleDateString()
+                          : 'No date'}{' '}
+                        • {order.garments?.length || 0} garment
+                        {order.garments?.length !== 1 ? 's' : ''}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ textAlign: 'right' }}>
+                      <Typography variant="h6" sx={{ mb: 1 }}>
+                        {formatUSD(order.total_cents)}
+                      </Typography>
+                      <Chip
+                        label={getStatusLabel(order.status)}
+                        color={getStatusColor(order.status) as any}
+                        size="small"
+                      />
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </Stack>
 
-				{/* Orders List */}
-				<List>
-					{filteredOrders.map((order) => (
-						<ListItem
-							key={order.id}
-							component={Link}
-							href={`/orders/${order.id}`}
-							sx={{
-								bgcolor: 'background.paper',
-								mb: 1,
-								borderRadius: 1,
-								display: 'flex',
-								alignItems: 'center',
-								'&:hover': {
-									bgcolor: 'action.hover',
-								},
-							}}
-						>
-							<ListItemText
-								primary={`Order #${order.id} - ${order.client}`}
-								secondary={`${order.items} items • ${order.createdAt}`}
-							/>
-							<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-								<Typography variant="h6">{order.total}</Typography>
-								<Chip
-									label={getStatusLabel(order.status)}
-									color={getStatusColor(order.status) as any}
-									size="small"
-								/>
-							</Box>
-						</ListItem>
-					))}
-				</List>
-
-				{/* Floating Action Button */}
-				<Fab
-					color="primary"
-					aria-label="add order"
-					component={Link}
-					href="/orders/new"
-					sx={{
-						position: 'fixed',
-						bottom: 80,
-						right: 16,
-					}}
-				>
-					<AddIcon />
-				</Fab>
-			</Box>
-		</Container>
-	);
+        {/* Mobile Floating Action Button */}
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          component={Link}
+          href="/orders/new"
+          sx={{
+            position: 'fixed',
+            bottom: 16,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: { xs: 'flex', sm: 'none' },
+            zIndex: 1000,
+          }}
+        >
+          Create Order
+        </Button>
+      </Box>
+    </Container>
+  );
 }
