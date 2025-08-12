@@ -1,5 +1,3 @@
-'use client';
-
 import {
   Container,
   Typography,
@@ -16,51 +14,65 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  Grid,
+  Alert,
+  CircularProgress,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
-import { useState } from 'react';
+import { getGarmentById } from '@/lib/actions/orders';
+import { notFound } from 'next/navigation';
 
-export default function GarmentDetailPage({
+// Stage options
+const stages = [
+  'New',
+  'Intake',
+  'Cutting',
+  'Sewing',
+  'Fitting',
+  'Finishing',
+  'Ready',
+  'Picked Up',
+] as const;
+
+export default async function GarmentDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const [stage, setStage] = useState('Sewing');
+  // Await params directly in Server Components (Next.js 15)
+  const { id } = await params;
 
-  // Mock data for demonstration
-  const garment = {
-    id: params.id,
-    title: 'Blue Wedding Dress',
-    client: { id: 1, name: 'Jane Smith' },
-    order: { id: 1, number: '#001' },
-    image: '/api/placeholder/400/400',
-    stage: stage,
-    dueDate: '2024-01-25',
-    eventDate: '2024-02-01',
-    createdAt: '2024-01-10',
-    notes: 'Customer requested extra care with the lace details',
-    services: [
-      { name: 'Hemming', price: '$35', completed: true },
-      { name: 'Take in sides', price: '$30', completed: false },
-      { name: 'Add bustle', price: '$45', completed: false },
-    ],
-    measurements: {
-      bust: '36"',
-      waist: '28"',
-      hips: '38"',
-      length: '58"',
-    },
+  // Fetch garment data from Supabase
+  const result = await getGarmentById(id);
+
+  if (!result.success || !result.garment) {
+    notFound();
+  }
+
+  const garment = result.garment;
+
+  // Format client name
+  const clientName = garment.order?.client
+    ? `${garment.order.client.first_name} ${garment.order.client.last_name}`
+    : 'Unknown Client';
+
+  // Format dates
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'Not set';
+    return new Date(dateString).toLocaleDateString();
   };
 
-  const stages = [
-    'Intake',
-    'Cutting',
-    'Sewing',
-    'Pressing',
-    'Ready',
-    'Picked Up',
-  ];
+  // Calculate total price
+  const totalPrice = (garment.totalPriceCents / 100).toFixed(2);
+
+  // Prefer persisted photo_url; fallback to Cloudinary delivery URL if we only have image_cloud_id
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  const imageSrc =
+    garment.photo_url ||
+    (garment.image_cloud_id && cloudName
+      ? `https://res.cloudinary.com/${cloudName}/image/upload/${garment.image_cloud_id}`
+      : null);
 
   return (
     <Container maxWidth="lg">
@@ -72,14 +84,16 @@ export default function GarmentDetailPage({
             justifyContent: 'space-between',
             alignItems: 'center',
             mb: 3,
+            flexWrap: 'wrap',
+            gap: 2,
           }}
         >
           <Box>
             <Typography variant="h4" component="h1">
-              {garment.title}
+              {garment.name || 'Untitled Garment'}
             </Typography>
             <Typography color="text.secondary">
-              Order {garment.order.number} • {garment.client.name}
+              Order #{garment.order?.order_number || 'N/A'} • {clientName}
             </Typography>
           </Box>
           <Button variant="outlined" startIcon={<EditIcon />}>
@@ -91,40 +105,54 @@ export default function GarmentDetailPage({
           {/* Left Column - Image and Stage */}
           <Grid item xs={12} md={4}>
             <Card sx={{ mb: 3 }}>
-              <CardMedia
-                component="img"
-                image={garment.image}
-                alt={garment.title}
-                sx={{ height: 400, objectFit: 'cover' }}
-              />
+              {imageSrc ? (
+                <CardMedia
+                  component="img"
+                  image={imageSrc}
+                  alt={garment.name}
+                  sx={{ height: 400, objectFit: 'cover' }}
+                />
+              ) : (
+                <Box
+                  sx={{
+                    height: 400,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    bgcolor: 'grey.100',
+                  }}
+                >
+                  <Typography color="text.secondary">
+                    No image uploaded
+                  </Typography>
+                </Box>
+              )}
               <Box sx={{ p: 2 }}>
                 <Button
                   variant="outlined"
                   fullWidth
                   startIcon={<CameraAltIcon />}
                 >
-                  Update Photo
+                  {imageSrc ? 'Update Photo' : 'Add Photo'}
                 </Button>
               </Box>
             </Card>
 
-            {/* Stage Selector */}
+            {/* Stage Display */}
             <Card>
               <CardContent>
-                <FormControl fullWidth>
-                  <InputLabel>Stage</InputLabel>
-                  <Select
-                    value={stage}
-                    label="Stage"
-                    onChange={(e) => setStage(e.target.value)}
-                  >
-                    {stages.map((s) => (
-                      <MenuItem key={s} value={s}>
-                        {s}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                <Typography
+                  variant="subtitle2"
+                  color="text.secondary"
+                  gutterBottom
+                >
+                  Current Stage
+                </Typography>
+                <Chip
+                  label={garment.stage || 'New'}
+                  color="primary"
+                  sx={{ mt: 1 }}
+                />
               </CardContent>
             </Card>
           </Grid>
@@ -137,26 +165,32 @@ export default function GarmentDetailPage({
                 <Typography variant="h6" gutterBottom>
                   Important Dates
                 </Typography>
-                <Box sx={{ display: 'flex', gap: 3 }}>
-                  <Box>
+                <Grid container spacing={3}>
+                  <Grid item xs={6} sm={4}>
                     <Typography variant="body2" color="text.secondary">
                       Due Date
                     </Typography>
-                    <Typography variant="body1">{garment.dueDate}</Typography>
-                  </Box>
-                  <Box>
+                    <Typography variant="body1">
+                      {formatDate(garment.due_date)}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={6} sm={4}>
                     <Typography variant="body2" color="text.secondary">
                       Event Date
                     </Typography>
-                    <Typography variant="body1">{garment.eventDate}</Typography>
-                  </Box>
-                  <Box>
+                    <Typography variant="body1">
+                      {formatDate(garment.event_date)}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={6} sm={4}>
                     <Typography variant="body2" color="text.secondary">
                       Created
                     </Typography>
-                    <Typography variant="body1">{garment.createdAt}</Typography>
-                  </Box>
-                </Box>
+                    <Typography variant="body1">
+                      {formatDate(garment.created_at)}
+                    </Typography>
+                  </Grid>
+                </Grid>
               </CardContent>
             </Card>
 
@@ -166,52 +200,88 @@ export default function GarmentDetailPage({
                 <Typography variant="h6" gutterBottom>
                   Services
                 </Typography>
-                <List>
-                  {garment.services.map((service, index) => (
-                    <ListItem
-                      key={index}
-                      divider={index < garment.services.length - 1}
-                    >
-                      <ListItemText
-                        primary={service.name}
-                        secondary={service.price}
-                      />
-                      <Chip
-                        label={service.completed ? 'Completed' : 'Pending'}
-                        color={service.completed ? 'success' : 'default'}
-                        size="small"
-                      />
-                    </ListItem>
-                  ))}
-                </List>
-                <Typography variant="h6" sx={{ mt: 2, textAlign: 'right' }}>
-                  Total: $110
-                </Typography>
+                {garment.garment_services &&
+                garment.garment_services.length > 0 ? (
+                  <>
+                    <List>
+                      {garment.garment_services.map(
+                        (service: any, index: number) => (
+                          <ListItem
+                            key={service.id || index}
+                            divider={
+                              index < garment.garment_services.length - 1
+                            }
+                          >
+                            <ListItemText
+                              primary={service.name}
+                              secondary={
+                                <>
+                                  {service.quantity} {service.unit}
+                                  {service.quantity > 1 ? 's' : ''} @ $
+                                  {(service.unit_price_cents / 100).toFixed(2)}/
+                                  {service.unit}
+                                  {service.description &&
+                                    ` • ${service.description}`}
+                                </>
+                              }
+                            />
+                            <Typography variant="body1">
+                              $
+                              {(
+                                (service.quantity * service.unit_price_cents) /
+                                100
+                              ).toFixed(2)}
+                            </Typography>
+                          </ListItem>
+                        )
+                      )}
+                    </List>
+                    <Typography variant="h6" sx={{ mt: 2, textAlign: 'right' }}>
+                      Total: ${totalPrice}
+                    </Typography>
+                  </>
+                ) : (
+                  <Typography color="text.secondary">
+                    No services added
+                  </Typography>
+                )}
               </CardContent>
             </Card>
 
-            {/* Measurements */}
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Measurements
-                </Typography>
-                <Grid container spacing={2}>
-                  {Object.entries(garment.measurements).map(([key, value]) => (
-                    <Grid item xs={6} sm={3} key={key}>
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ textTransform: 'capitalize' }}
-                      >
-                        {key}
+            {/* Client Information */}
+            {garment.order?.client && (
+              <Card sx={{ mb: 3 }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Client Information
+                  </Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="body2" color="text.secondary">
+                        Name
                       </Typography>
-                      <Typography variant="body1">{value}</Typography>
+                      <Typography variant="body1">{clientName}</Typography>
                     </Grid>
-                  ))}
-                </Grid>
-              </CardContent>
-            </Card>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="body2" color="text.secondary">
+                        Email
+                      </Typography>
+                      <Typography variant="body1">
+                        {garment.order.client.email}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="body2" color="text.secondary">
+                        Phone
+                      </Typography>
+                      <Typography variant="body1">
+                        {garment.order.client.phone_number}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Notes */}
             {garment.notes && (
@@ -220,7 +290,9 @@ export default function GarmentDetailPage({
                   <Typography variant="h6" gutterBottom>
                     Notes
                   </Typography>
-                  <Typography>{garment.notes}</Typography>
+                  <Typography style={{ whiteSpace: 'pre-wrap' }}>
+                    {garment.notes}
+                  </Typography>
                 </CardContent>
               </Card>
             )}
@@ -230,6 +302,3 @@ export default function GarmentDetailPage({
     </Container>
   );
 }
-
-// Add missing import
-import { Grid } from '@mui/material';

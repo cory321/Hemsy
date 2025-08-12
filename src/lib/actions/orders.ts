@@ -34,6 +34,9 @@ const GarmentInputSchema = z.object({
   dueDate: z.string().regex(isoDateRegex).optional(),
   specialEvent: z.boolean().optional(),
   eventDate: z.string().regex(isoDateRegex).optional(),
+  // Optional image fields from Cloudinary upload
+  imageCloudId: z.string().min(1).optional(),
+  imageUrl: z.string().url().optional(),
   services: z.array(ServiceLineSchema).min(1),
 });
 
@@ -107,6 +110,9 @@ export async function createOrder(
           event_date: eventDate,
           due_date: dueDate,
           stage: 'New',
+          // Persist optional image fields
+          image_cloud_id: garment.imageCloudId ?? null,
+          photo_url: garment.imageUrl ?? null,
         })
         .select('id')
         .single();
@@ -285,5 +291,81 @@ export async function submitOrderFromForm(formData: FormData) {
   } catch (e) {
     console.error('submitOrderFromForm error:', e);
     return { success: false, errors: { root: ['Invalid payload'] } };
+  }
+}
+
+export async function getGarmentById(garmentId: string) {
+  'use server';
+
+  try {
+    const { shop } = await getUserAndShop();
+    const supabase = await createSupabaseClient();
+
+    // Fetch garment with all related data
+    const { data: garment, error: garmentError } = await supabase
+      .from('garments')
+      .select(
+        `
+        *,
+        order:orders(
+          id,
+          order_number,
+          status,
+          client:clients(
+            id,
+            first_name,
+            last_name,
+            email,
+            phone_number
+          )
+        ),
+        garment_services(
+          *,
+          service:services(
+            id,
+            name,
+            description
+          )
+        )
+      `
+      )
+      .eq('id', garmentId)
+      .single();
+
+    if (garmentError) {
+      console.error('Error fetching garment:', garmentError);
+      throw new Error(garmentError.message);
+    }
+
+    // Verify the garment belongs to the current shop
+    const { data: orderCheck } = await supabase
+      .from('orders')
+      .select('shop_id')
+      .eq('id', garment.order_id)
+      .single();
+
+    if (!orderCheck || orderCheck.shop_id !== shop.id) {
+      throw new Error('Garment not found or access denied');
+    }
+
+    // Calculate total price from garment services
+    const totalPriceCents =
+      garment.garment_services?.reduce((total: number, service: any) => {
+        return total + service.quantity * service.unit_price_cents;
+      }, 0) || 0;
+
+    return {
+      success: true,
+      garment: {
+        ...garment,
+        totalPriceCents,
+      },
+    };
+  } catch (error) {
+    console.error('Error in getGarmentById:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch garment',
+    };
   }
 }

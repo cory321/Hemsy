@@ -60,9 +60,12 @@ export default function OrderFlowStepper() {
         garments: orderDraft.garments.map((garment) => ({
           name: garment.name,
           notes: garment.notes,
-          dueDate: garment.dueDate,
+          dueDate: garment.dueDate || undefined,
           specialEvent: garment.specialEvent,
-          eventDate: garment.eventDate,
+          eventDate: garment.eventDate || undefined,
+          // Include image data if available
+          imageCloudId: garment.imageCloudId || undefined,
+          imageUrl: garment.imageUrl || undefined,
           services: garment.services.map((service) => ({
             quantity: service.quantity,
             unit: service.unit,

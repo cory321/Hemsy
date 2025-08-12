@@ -24,11 +24,18 @@ import CheckroomIcon from '@mui/icons-material/Checkroom';
 import { v4 as uuidv4 } from 'uuid';
 import { useOrderFlow, GarmentDraft } from '@/contexts/OrderFlowContext';
 import ServiceSelector from '../ServiceSelector';
+import GarmentImageUpload from '../GarmentImageUpload';
 import { formatCurrency } from '@/lib/utils/currency';
 
 export default function Step2GarmentDetails() {
-  const { orderDraft, addGarment, updateGarment, removeGarment } =
-    useOrderFlow();
+  const {
+    orderDraft,
+    addGarment,
+    updateGarment,
+    removeGarment,
+    updateGarmentImage,
+    removeGarmentImage,
+  } = useOrderFlow();
   const [expandedGarment, setExpandedGarment] = useState<string | false>(false);
 
   const handleAddGarment = () => {
@@ -36,8 +43,8 @@ export default function Step2GarmentDetails() {
       id: uuidv4(),
       name: '',
       notes: '',
-      dueDate: '',
-      eventDate: '',
+      dueDate: undefined,
+      eventDate: undefined,
       specialEvent: false,
       services: [],
     };
@@ -137,6 +144,22 @@ export default function Step2GarmentDetails() {
                     />
                   </Grid>
 
+                  {/* Garment Image */}
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Garment Photo (Optional)
+                    </Typography>
+                    <GarmentImageUpload
+                      imageUrl={garment.imageUrl}
+                      publicId={garment.imageCloudId}
+                      garmentName={garment.name}
+                      onUpload={(result) =>
+                        updateGarmentImage(garment.id, result)
+                      }
+                      onRemove={() => removeGarmentImage(garment.id)}
+                    />
+                  </Grid>
+
                   <Grid item xs={12} sm={6}>
                     <TextField
                       fullWidth
@@ -144,7 +167,9 @@ export default function Step2GarmentDetails() {
                       label="Due Date"
                       value={garment.dueDate || ''}
                       onChange={(e) =>
-                        updateGarment(garment.id, { dueDate: e.target.value })
+                        updateGarment(garment.id, {
+                          dueDate: e.target.value || undefined,
+                        })
                       }
                       InputLabelProps={{ shrink: true }}
                     />
@@ -158,7 +183,7 @@ export default function Step2GarmentDetails() {
                       value={garment.eventDate || ''}
                       onChange={(e) =>
                         updateGarment(garment.id, {
-                          eventDate: e.target.value,
+                          eventDate: e.target.value || undefined,
                           specialEvent: !!e.target.value,
                         })
                       }

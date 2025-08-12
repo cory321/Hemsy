@@ -29,19 +29,21 @@ export interface GarmentDraft {
   id: string; // Temporary ID for UI tracking
   name: string;
   notes?: string;
-  dueDate?: string;
-  eventDate?: string;
+  dueDate?: string | undefined;
+  eventDate?: string | undefined;
   specialEvent: boolean;
   services: ServiceLine[];
-  imageCloudId?: string; // For future Cloudinary integration
+  imageCloudId?: string | undefined; // Cloudinary public ID
+  imageUrl?: string | undefined; // Full Cloudinary URL
+  imageThumbnailUrl?: string | undefined; // Cloudinary thumbnail URL
 }
 
 export interface OrderDraft {
   clientId: string;
-  client?: Tables<'clients'>;
+  client?: Tables<'clients'> | undefined;
   garments: GarmentDraft[];
   discountCents: number;
-  notes?: string;
+  notes?: string | undefined;
 }
 
 interface OrderFlowContextType {
@@ -59,6 +61,15 @@ interface OrderFlowContextType {
     updates: Partial<ServiceLine>
   ) => void;
   removeServiceFromGarment: (garmentId: string, serviceIndex: number) => void;
+  updateGarmentImage: (
+    garmentId: string,
+    imageData: {
+      publicId: string;
+      url: string;
+      thumbnailUrl?: string;
+    }
+  ) => void;
+  removeGarmentImage: (garmentId: string) => void;
   resetOrder: () => void;
   calculateSubtotal: () => number;
   calculateTotal: (taxPercent: number) => number;
@@ -174,6 +185,45 @@ export function OrderFlowProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  const updateGarmentImage = (
+    garmentId: string,
+    imageData: {
+      publicId: string;
+      url: string;
+      thumbnailUrl?: string;
+    }
+  ) => {
+    setOrderDraft((prev) => ({
+      ...prev,
+      garments: prev.garments.map((g) =>
+        g.id === garmentId
+          ? {
+              ...g,
+              imageCloudId: imageData.publicId,
+              imageUrl: imageData.url,
+              imageThumbnailUrl: imageData.thumbnailUrl,
+            }
+          : g
+      ),
+    }));
+  };
+
+  const removeGarmentImage = (garmentId: string) => {
+    setOrderDraft((prev) => ({
+      ...prev,
+      garments: prev.garments.map((g) =>
+        g.id === garmentId
+          ? {
+              ...g,
+              imageCloudId: undefined,
+              imageUrl: undefined,
+              imageThumbnailUrl: undefined,
+            }
+          : g
+      ),
+    }));
+  };
+
   const resetOrder = () => {
     setOrderDraft(initialOrderDraft);
     setCurrentStep(0);
@@ -210,6 +260,8 @@ export function OrderFlowProvider({ children }: { children: ReactNode }) {
         addServiceToGarment,
         updateServiceInGarment,
         removeServiceFromGarment,
+        updateGarmentImage,
+        removeGarmentImage,
         resetOrder,
         calculateSubtotal,
         calculateTotal,
