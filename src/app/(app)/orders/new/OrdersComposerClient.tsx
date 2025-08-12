@@ -23,6 +23,11 @@ import { ClientSearchField } from '@/components/appointments/ClientSearchField';
 import type { Tables } from '@/types/supabase';
 import ClientCreateDialog from '@/components/clients/ClientCreateDialog';
 import { assignDefaultGarmentNames } from '@/lib/utils/order-normalization';
+import { format as formatDate } from 'date-fns';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs from 'dayjs';
 
 type ClientLite = { id: string; name: string };
 type ServiceLite = {
@@ -84,7 +89,7 @@ export default function OrdersComposerClient({
       {
         name: '',
         notes: '',
-        dueDate: null,
+        dueDate: formatDate(new Date(), 'yyyy-MM-dd'),
         specialEvent: false,
         eventDate: null,
         services: [],
@@ -301,31 +306,158 @@ export default function OrdersComposerClient({
                     />
                   </Grid>
                   <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      type="date"
-                      label="Due date"
-                      InputLabelProps={{ shrink: true }}
-                      value={g.dueDate || ''}
-                      onChange={(e) =>
-                        updateGarment(gi, { dueDate: e.target.value || null })
-                      }
-                    />
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                      <DatePicker
+                        label="Due date"
+                        value={g.dueDate ? dayjs(g.dueDate) : null}
+                        format="dddd, MMMM D, YYYY"
+                        onChange={(newValue) => {
+                          if (!newValue) {
+                            updateGarment(gi, { dueDate: null });
+                            return;
+                          }
+                          const asDate = dayjs.isDayjs(newValue)
+                            ? newValue.toDate()
+                            : new Date(newValue as any);
+                          updateGarment(gi, {
+                            dueDate: formatDate(asDate, 'yyyy-MM-dd'),
+                          });
+                        }}
+                        minDate={dayjs()}
+                        slotProps={{
+                          textField: {
+                            fullWidth: true,
+                            onClick: (e: any) => {
+                              // Find and click the calendar button to open picker
+                              const button =
+                                e.currentTarget.querySelector('button');
+                              if (button) button.click();
+                            },
+                            InputProps: {
+                              readOnly: true,
+                            },
+                            inputProps: {
+                              style: {
+                                cursor: 'pointer',
+                                caretColor: 'transparent',
+                              },
+                              onKeyDown: (e: any) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                              },
+                              onPaste: (e: any) => e.preventDefault(),
+                              onCut: (e: any) => e.preventDefault(),
+                              onDrop: (e: any) => e.preventDefault(),
+                              onMouseDown: (e: any) => e.preventDefault(),
+                              onSelect: (e: any) => {
+                                if (
+                                  e.target.selectionStart !==
+                                  e.target.selectionEnd
+                                ) {
+                                  e.target.setSelectionRange(0, 0);
+                                }
+                              },
+                            },
+                            sx: {
+                              '& input': {
+                                cursor: 'pointer',
+                                userSelect: 'none',
+                                WebkitUserSelect: 'none',
+                                MozUserSelect: 'none',
+                                msUserSelect: 'none',
+                                pointerEvents: 'none',
+                              },
+                              '& .MuiInputBase-root': {
+                                cursor: 'pointer',
+                              },
+                              '& fieldset': { cursor: 'pointer' },
+                              '& .MuiInputBase-root.MuiOutlinedInput-root': {
+                                pointerEvents: 'auto',
+                              },
+                            },
+                          },
+                        }}
+                      />
+                    </LocalizationProvider>
                   </Grid>
                   <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      label="Special event date (optional)"
-                      type="date"
-                      InputLabelProps={{ shrink: true }}
-                      value={g.eventDate || ''}
-                      onChange={(e) =>
-                        updateGarment(gi, {
-                          eventDate: e.target.value || null,
-                          specialEvent: !!e.target.value,
-                        })
-                      }
-                    />
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                      <DatePicker
+                        label="Special event date (optional)"
+                        value={g.eventDate ? dayjs(g.eventDate) : null}
+                        format="dddd, MMMM D, YYYY"
+                        onChange={(newValue) => {
+                          if (!newValue) {
+                            updateGarment(gi, {
+                              eventDate: null,
+                              specialEvent: false,
+                            });
+                            return;
+                          }
+                          const asDate = dayjs.isDayjs(newValue)
+                            ? newValue.toDate()
+                            : new Date(newValue as any);
+                          updateGarment(gi, {
+                            eventDate: formatDate(asDate, 'yyyy-MM-dd'),
+                            specialEvent: true,
+                          });
+                        }}
+                        minDate={g.dueDate ? dayjs(g.dueDate) : dayjs()}
+                        slotProps={{
+                          textField: {
+                            fullWidth: true,
+                            onClick: (e: any) => {
+                              // Find and click the calendar button to open picker
+                              const button =
+                                e.currentTarget.querySelector('button');
+                              if (button) button.click();
+                            },
+                            InputProps: {
+                              readOnly: true,
+                            },
+                            inputProps: {
+                              style: {
+                                cursor: 'pointer',
+                                caretColor: 'transparent',
+                              },
+                              onKeyDown: (e: any) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                              },
+                              onPaste: (e: any) => e.preventDefault(),
+                              onCut: (e: any) => e.preventDefault(),
+                              onDrop: (e: any) => e.preventDefault(),
+                              onMouseDown: (e: any) => e.preventDefault(),
+                              onSelect: (e: any) => {
+                                if (
+                                  e.target.selectionStart !==
+                                  e.target.selectionEnd
+                                ) {
+                                  e.target.setSelectionRange(0, 0);
+                                }
+                              },
+                            },
+                            sx: {
+                              '& input': {
+                                cursor: 'pointer',
+                                userSelect: 'none',
+                                WebkitUserSelect: 'none',
+                                MozUserSelect: 'none',
+                                msUserSelect: 'none',
+                                pointerEvents: 'none',
+                              },
+                              '& .MuiInputBase-root': {
+                                cursor: 'pointer',
+                              },
+                              '& fieldset': { cursor: 'pointer' },
+                              '& .MuiInputBase-root.MuiOutlinedInput-root': {
+                                pointerEvents: 'auto',
+                              },
+                            },
+                          },
+                        }}
+                      />
+                    </LocalizationProvider>
                   </Grid>
                   <Grid item xs={12}>
                     <TextField

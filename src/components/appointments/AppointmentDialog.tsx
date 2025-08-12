@@ -371,26 +371,85 @@ export function AppointmentDialog({
             <DatePicker
               label="Date"
               value={formData.date}
+              format="dddd, MMMM D, YYYY"
               onChange={(newValue) => {
                 if (newValue) {
-                  // Ensure newValue is a Dayjs object
                   const dayjsDate = dayjs.isDayjs(newValue)
                     ? newValue
                     : dayjs(newValue);
                   setFormData((prev) => ({
                     ...prev,
                     date: dayjsDate,
-                    // Reset time selections when date changes
                     start_time: null,
                     end_time: null,
                   }));
                 }
               }}
+              minDate={dayjs()}
               slotProps={{
                 textField: {
                   fullWidth: true,
                   required: true,
-                  inputProps: { 'aria-label': 'Date' },
+                  onClick: (e: any) => {
+                    // Find and click the calendar button to open picker
+                    const button = e.currentTarget.querySelector('button');
+                    if (button) button.click();
+                  },
+                  InputProps: {
+                    readOnly: true,
+                  },
+                  inputProps: {
+                    'aria-label': 'Date',
+                    style: {
+                      cursor: 'pointer',
+                      caretColor: 'transparent', // Hide the caret
+                    },
+                    onKeyDown: (e: any) => {
+                      // Prevent all keyboard input including backspace/delete
+                      e.preventDefault();
+                      e.stopPropagation();
+                    },
+                    onPaste: (e: any) => {
+                      // Prevent paste
+                      e.preventDefault();
+                    },
+                    onCut: (e: any) => {
+                      // Prevent cut
+                      e.preventDefault();
+                    },
+                    onDrop: (e: any) => {
+                      // Prevent drag and drop
+                      e.preventDefault();
+                    },
+                    onMouseDown: (e: any) => {
+                      // Prevent text selection with mouse
+                      e.preventDefault();
+                    },
+                    onSelect: (e: any) => {
+                      // Clear any selection
+                      if (e.target.selectionStart !== e.target.selectionEnd) {
+                        e.target.setSelectionRange(0, 0);
+                      }
+                    },
+                  },
+                  sx: {
+                    '& input': {
+                      cursor: 'pointer',
+                      userSelect: 'none', // Prevent text selection
+                      WebkitUserSelect: 'none',
+                      MozUserSelect: 'none',
+                      msUserSelect: 'none',
+                      pointerEvents: 'none', // Disable all pointer events on input
+                    },
+                    '& .MuiInputBase-root': {
+                      cursor: 'pointer',
+                    },
+                    '& fieldset': { cursor: 'pointer' },
+                    // Re-enable pointer events on the root to allow clicks
+                    '& .MuiInputBase-root.MuiOutlinedInput-root': {
+                      pointerEvents: 'auto',
+                    },
+                  },
                 },
               }}
             />
