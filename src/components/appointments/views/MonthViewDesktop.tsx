@@ -9,7 +9,7 @@ import {
   Tooltip,
   Stack,
 } from '@mui/material';
-import { format, isSameMonth, isToday, getWeek } from 'date-fns';
+import { format, isSameMonth, isToday } from 'date-fns';
 import {
   generateMonthDays,
   getAppointmentColor,
@@ -131,7 +131,7 @@ export function MonthViewDesktop({
           const isOpen = isShopOpen(day, shopHours);
           const isPast = isPastDate(day);
           const canCreate = canCreateAppointment(day, shopHours);
-          const weekNumber = index % 7 === 0 ? getWeek(day) : null;
+          // Week numbers removed per UX request
 
           return (
             <Paper
@@ -179,21 +179,7 @@ export function MonthViewDesktop({
                   mb: 1,
                 }}
               >
-                {/* Week number on first day of each week */}
-                {weekNumber !== null && (
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{
-                      position: 'absolute',
-                      top: 8,
-                      left: 8,
-                      fontWeight: 500,
-                    }}
-                  >
-                    {`W${weekNumber}`}
-                  </Typography>
-                )}
+                {/* Week number display removed */}
                 <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
                   <Typography
                     variant="h6"

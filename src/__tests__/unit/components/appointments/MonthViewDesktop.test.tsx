@@ -279,12 +279,11 @@ describe('MonthViewDesktop', () => {
     expect(todayTypography).toBeTruthy();
   });
 
-  it('displays week numbers on first day of week', () => {
+  it('does not display week numbers', () => {
     renderComponent();
 
-    // Week numbers should be displayed (W followed by number)
-    const weekNumbers = screen.getAllByText(/^W\d+$/);
-    expect(weekNumbers.length).toBeGreaterThan(0);
+    // Week numbers should not be displayed anymore
+    expect(screen.queryByText(/^W\d+$/)).toBeNull();
   });
 
   it('displays appointment times without titles or client information', () => {
