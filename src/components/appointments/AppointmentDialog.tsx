@@ -76,6 +76,7 @@ interface AppointmentDialogProps {
   rescheduleSendEmailDefault?: boolean;
   selectedDate?: Date;
   selectedTime?: string | null;
+  prefilledClient?: Client | null;
   shopHours?: Array<{
     day_of_week: number;
     open_time: string | null;
@@ -116,6 +117,7 @@ export function AppointmentDialog({
   rescheduleSendEmailDefault,
   selectedDate,
   selectedTime,
+  prefilledClient,
   shopHours = [],
   existingAppointments = [],
   calendarSettings = {
@@ -238,12 +240,16 @@ export function AppointmentDialog({
     if (open) {
       if (appointment?.client_id && appointment.client) {
         setSelectedClient(appointment.client as Client);
+      } else if (prefilledClient && !appointment) {
+        // Use prefilled client for new appointments
+        setSelectedClient(prefilledClient);
+        setFormData((prev) => ({ ...prev, client_id: prefilledClient.id }));
       } else {
         setSelectedClient(null);
         setFormData((prev) => ({ ...prev, client_id: null }));
       }
     }
-  }, [open, appointment?.id]);
+  }, [open, appointment?.id, prefilledClient]);
 
   const handleSubmit = async () => {
     setError(null);
@@ -355,7 +361,7 @@ export function AppointmentDialog({
             </Box>
           ) : (
             <ClientSearchField
-              value={(appointment ? selectedClient : null) as any}
+              value={selectedClient as any}
               onChange={(newClient) => {
                 setSelectedClient(newClient as Client | null);
                 setFormData((prev) => ({

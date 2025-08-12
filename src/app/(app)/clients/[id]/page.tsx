@@ -18,6 +18,7 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import NotesIcon from '@mui/icons-material/Notes';
 import PersonIcon from '@mui/icons-material/Person';
 import { getClient } from '@/lib/actions/clients';
+import { getShopHours, getCalendarSettings } from '@/lib/actions/appointments';
 import ClientEditDialog from '@/components/clients/ClientEditDialog';
 import ClientDeleteDialog from '@/components/clients/ClientDeleteDialog';
 import ClientAppointmentsSection from '@/components/clients/ClientAppointmentsSection';
@@ -43,23 +44,39 @@ export default async function ClientDetailPage({
 
     // Resolve current user's shopId for appointments queries
     const { userId } = await auth();
+    if (!userId) {
+      notFound();
+    }
+
     const supabase = await createClient();
     const { data: userData } = await supabase
       .from('users')
       .select('id')
       .eq('clerk_user_id', userId)
       .single();
+
+    if (!userData) {
+      notFound();
+    }
+
     const { data: shopData } = await supabase
       .from('shops')
       .select('id')
-      .eq('owner_user_id', userData?.id)
+      .eq('owner_user_id', userData.id)
       .single();
+
+    // Fetch shop hours and calendar settings
+    const [shopHours, calendarSettings] = await Promise.all([
+      getShopHours(),
+      getCalendarSettings(),
+    ]);
 
     const formatPhoneNumber = (phone: string) => {
       return phone.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
     };
 
-    const formatDate = (dateString: string) => {
+    const formatDate = (dateString: string | null) => {
+      if (!dateString) return 'N/A';
       return new Date(dateString).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
@@ -226,7 +243,23 @@ export default async function ClientDetailPage({
                 <ClientAppointmentsSection
                   clientId={client.id}
                   clientName={`${client.first_name} ${client.last_name}`}
+                  clientEmail={client.email}
+                  clientPhone={client.phone_number}
+                  clientAcceptEmail={client.accept_email ?? false}
+                  clientAcceptSms={client.accept_sms ?? false}
                   shopId={shopData.id}
+                  shopHours={shopHours.map((hour) => ({
+                    day_of_week: hour.day_of_week,
+                    open_time: hour.open_time,
+                    close_time: hour.close_time,
+                    is_closed: hour.is_closed ?? false,
+                  }))}
+                  calendarSettings={{
+                    buffer_time_minutes:
+                      calendarSettings.buffer_time_minutes ?? 0,
+                    default_appointment_duration:
+                      calendarSettings.default_appointment_duration ?? 30,
+                  }}
                 />
               </Grid>
             )}
