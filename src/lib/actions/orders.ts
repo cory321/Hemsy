@@ -393,3 +393,54 @@ export async function getGarmentById(garmentId: string) {
     };
   }
 }
+
+export async function getOrdersByClient(clientId: string) {
+  'use server';
+
+  try {
+    const { shop } = await getUserAndShop();
+    const supabase = await createSupabaseClient();
+
+    // Fetch orders for the client with garments count
+    const { data: orders, error: ordersError } = await supabase
+      .from('orders')
+      .select(
+        `
+        *,
+        garments(id),
+        client:clients(
+          id,
+          first_name,
+          last_name
+        )
+      `
+      )
+      .eq('shop_id', shop.id)
+      .eq('client_id', clientId)
+      .order('created_at', { ascending: false });
+
+    if (ordersError) {
+      console.error('Error fetching orders:', ordersError);
+      throw new Error(ordersError.message);
+    }
+
+    // Transform the data to include garment count
+    const transformedOrders = orders?.map((order) => ({
+      ...order,
+      garment_count: order.garments?.length || 0,
+      garments: undefined, // Remove the array to keep response clean
+    }));
+
+    return {
+      success: true,
+      orders: transformedOrders || [],
+    };
+  } catch (error) {
+    console.error('Error in getOrdersByClient:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch orders',
+      orders: [],
+    };
+  }
+}

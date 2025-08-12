@@ -21,6 +21,7 @@ import { getClient } from '@/lib/actions/clients';
 import ClientEditDialog from '@/components/clients/ClientEditDialog';
 import ClientDeleteDialog from '@/components/clients/ClientDeleteDialog';
 import ClientAppointmentsSection from '@/components/clients/ClientAppointmentsSection';
+import ClientOrdersSection from '@/components/clients/ClientOrdersSection';
 import { createClient } from '@/lib/supabase/server';
 import { auth } from '@clerk/nextjs/server';
 
@@ -229,6 +230,14 @@ export default async function ClientDetailPage({
                 />
               </Grid>
             )}
+
+            {/* Orders Section */}
+            <Grid item xs={12}>
+              <ClientOrdersSection
+                clientId={client.id}
+                clientName={`${client.first_name} ${client.last_name}`}
+              />
+            </Grid>
 
             {/* Timestamps */}
             <Grid item xs={12}>

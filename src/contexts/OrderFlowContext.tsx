@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Tables } from '@/types/supabase';
+import { getClient } from '@/lib/actions/clients';
 
 // Types for order flow
 export interface ServiceLine {
@@ -89,10 +90,32 @@ const initialOrderDraft: OrderDraft = {
   notes: '',
 };
 
-export function OrderFlowProvider({ children }: { children: ReactNode }) {
+export function OrderFlowProvider({
+  children,
+  initialClientId,
+}: {
+  children: ReactNode;
+  initialClientId?: string;
+}) {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
   const [orderDraft, setOrderDraft] = useState<OrderDraft>(initialOrderDraft);
+
+  // Fetch client data by ID
+  const fetchClientData = async (clientId: string) => {
+    try {
+      const client = await getClient(clientId);
+      if (client) {
+        setOrderDraft((prev) => ({
+          ...prev,
+          clientId: client.id,
+          client: client,
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to fetch client:', error);
+    }
+  };
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -100,12 +123,22 @@ export function OrderFlowProvider({ children }: { children: ReactNode }) {
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        setOrderDraft(parsed);
+        // Only use stored data if no initialClientId is provided
+        if (!initialClientId) {
+          setOrderDraft(parsed);
+        }
       } catch (e) {
         console.error('Failed to parse stored order draft:', e);
       }
     }
-  }, []);
+  }, [initialClientId]);
+
+  // Handle initial client ID
+  useEffect(() => {
+    if (initialClientId && initialClientId !== orderDraft.clientId) {
+      fetchClientData(initialClientId);
+    }
+  }, [initialClientId, orderDraft.clientId]);
 
   // Save to localStorage on changes
   useEffect(() => {

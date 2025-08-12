@@ -2,12 +2,16 @@
 
 import { Container, Typography, Box } from '@mui/material';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { OrderFlowProvider } from '@/contexts/OrderFlowContext';
 import OrderFlowStepper from '@/components/orders/OrderFlowStepper';
 
 export default function NewOrderPage() {
+  const searchParams = useSearchParams();
+  const clientId = searchParams.get('clientId');
+
   return (
-    <OrderFlowProvider>
+    <OrderFlowProvider initialClientId={clientId || undefined}>
       <Container maxWidth="lg">
         <Box
           sx={{
