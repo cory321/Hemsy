@@ -26,15 +26,43 @@ import { getCurrentUserShop } from '@/lib/actions/shops';
 import GarmentCard from '@/components/garments/GarmentCard';
 import CustomizeStagesDialog from '@/components/garments/CustomizeStagesDialog';
 import StageBox from '@/components/garments/StageBox';
+import {
+  getGarmentSortComparator,
+  groupGarmentsByClientName,
+} from '@/utils/garments-sort';
+
+type GarmentListItem = {
+  id: string;
+  name: string;
+  order_id: string;
+  stage_id: string;
+  stage_name?: string;
+  stage_color?: string | null;
+  client_name?: string;
+  photo_url?: string | null;
+  image_cloud_id?: string | null;
+  due_date?: string | null;
+  event_date?: string | null;
+  services?: any[];
+};
+
+type StageItem = {
+  id: string;
+  name: string;
+  color: string | null;
+  position: number;
+};
 
 export default function GarmentsPage() {
-  const [garmentsData, setGarmentsData] = useState([]);
-  const [stages, setStages] = useState([]);
-  const [selectedStage, setSelectedStage] = useState(null);
+  const [garmentsData, setGarmentsData] = useState<GarmentListItem[]>([]);
+  const [stages, setStages] = useState<StageItem[]>([]);
+  const [selectedStage, setSelectedStage] = useState<StageItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [customizeDialogOpen, setCustomizeDialogOpen] = useState(false);
-  const [sortOrder, setSortOrder] = useState('asc');
-  const [sortField, setSortField] = useState('due_date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [sortField, setSortField] = useState<
+    'due_date' | 'created_at' | 'client_name' | 'name' | 'overdue' | 'due_soon'
+  >('due_date');
   const [shopId, setShopId] = useState<string | null>(null);
   const { userId } = useAuth();
   const { user } = useUser();
@@ -79,7 +107,7 @@ export default function GarmentsPage() {
     }
   }, [fetchGarmentsData, userId]);
 
-  const handleStagesUpdated = async (deletedStageId) => {
+  const handleStagesUpdated = async (deletedStageId?: string) => {
     console.log('handleStagesUpdated called');
     await fetchGarmentsData();
 
@@ -93,8 +121,8 @@ export default function GarmentsPage() {
   };
 
   // Compute counts of garments per stage
-  const garmentCounts = useMemo(() => {
-    const counts = {};
+  const garmentCounts = useMemo<Record<string, number>>(() => {
+    const counts: Record<string, number> = {};
 
     garmentsData.forEach((garment) => {
       const stageId = garment.stage_id;
@@ -106,8 +134,8 @@ export default function GarmentsPage() {
 
   const totalGarments = garmentsData.length;
 
-  const filteredGarments = useMemo(() => {
-    let garments = garmentsData;
+  const filteredGarments = useMemo<GarmentListItem[]>(() => {
+    let garments: GarmentListItem[] = garmentsData;
 
     if (selectedStage) {
       garments = garments.filter(
@@ -115,61 +143,17 @@ export default function GarmentsPage() {
       );
     }
 
-    // Sort the garments by the selected field
-    garments = garments.sort((a, b) => {
-      let valueA = a[sortField];
-      let valueB = b[sortField];
-
-      if (sortField === 'client_name' || sortField === 'name') {
-        // For string fields, use localeCompare
-        valueA = valueA ? valueA.toLowerCase() : '';
-        valueB = valueB ? valueB.toLowerCase() : '';
-
-        return sortOrder === 'asc'
-          ? valueA.localeCompare(valueB)
-          : valueB.localeCompare(valueA);
-      } else {
-        // For date fields
-        valueA = valueA ? new Date(valueA) : new Date(0);
-        valueB = valueB ? new Date(valueB) : new Date(0);
-
-        return sortOrder === 'asc' ? valueA - valueB : valueB - valueA;
-      }
-    });
+    // Sort the garments by the selected field, including special orders for overdue/due soon
+    const comparator = getGarmentSortComparator(sortField, sortOrder);
+    garments = garments.slice().sort(comparator);
 
     return garments;
   }, [garmentsData, selectedStage, sortOrder, sortField]);
 
   // Group garments by client name if sorting by client_name
   const groupedGarments = useMemo(() => {
-    if (sortField !== 'client_name') {
-      // Do not group if not sorting by client_name
-      return null;
-    }
-
-    // Group garments by client name
-    const groups = filteredGarments.reduce((acc, garment) => {
-      const clientName = garment.client_name || 'Unknown Client';
-
-      if (!acc[clientName]) {
-        acc[clientName] = [];
-      }
-
-      acc[clientName].push(garment);
-
-      return acc;
-    }, {});
-
-    // Extract and sort client names
-    const sortedClientNames = Object.keys(groups).sort((a, b) => {
-      if (sortOrder === 'asc') {
-        return a.localeCompare(b);
-      } else {
-        return b.localeCompare(a);
-      }
-    });
-
-    return { groups, sortedClientNames }; // Return both groups and the sorted client names
+    if (sortField !== 'client_name') return null;
+    return groupGarmentsByClientName(filteredGarments, sortOrder);
   }, [filteredGarments, sortOrder, sortField]);
 
   const theme = useTheme();
@@ -257,7 +241,8 @@ export default function GarmentsPage() {
               <MenuItem value="due_date">Due Date</MenuItem>
               <MenuItem value="created_at">Date Created</MenuItem>
               <MenuItem value="client_name">Client Name</MenuItem>
-              {/* Add other sorting options if needed */}
+              <MenuItem value="overdue">Overdue first</MenuItem>
+              <MenuItem value="due_soon">Due soon first</MenuItem>
             </Select>
           </FormControl>
 

@@ -39,6 +39,8 @@ const GarmentInputSchema = z.object({
   // Optional image fields from Cloudinary upload
   imageCloudId: z.string().min(1).optional(),
   imageUrl: z.string().url().optional(),
+  // Optional preset icon key selected by user
+  presetIconKey: z.string().optional(),
   services: z.array(ServiceLineSchema).min(1),
 });
 
@@ -83,6 +85,7 @@ export async function createOrder(
       eventDate?: string;
       imageCloudId?: string;
       imageUrl?: string;
+      presetIconKey?: string;
       services: {
         quantity: number;
         unit: 'item' | 'hour' | 'day' | 'week';
@@ -144,6 +147,7 @@ export async function createOrder(
           // Persist optional image fields
           image_cloud_id: garment.imageCloudId ?? null,
           photo_url: garment.imageUrl ?? null,
+          preset_icon_key: garment.presetIconKey ?? null,
         })
         .select('id')
         .single();

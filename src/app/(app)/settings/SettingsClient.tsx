@@ -38,6 +38,7 @@ import {
   updateShopBusinessInfo,
 } from '@/lib/actions/shops';
 import { useToast } from '@/hooks/useToast';
+import PastelColorPicker from '@/components/ui/PastelColorPicker';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -66,6 +67,7 @@ export function SettingsClient() {
   const [emailReminders, setEmailReminders] = useState(true);
   const [smsReminders, setSmsReminders] = useState(false);
   const [paymentPreference, setPaymentPreference] = useState('after_service');
+  const [brandColor, setBrandColor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [businessInfo, setBusinessInfo] = useState({
     business_name: '',
@@ -304,6 +306,46 @@ export function SettingsClient() {
                     This sets the default payment preference for new orders. You
                     can override this for individual orders.
                   </Typography>
+                </CardContent>
+              </Card>
+
+              {/* Brand Color (Pastel Demo) */}
+              <Card sx={{ mb: 3 }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Brand Color (Pastel Demo)
+                  </Typography>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 2,
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <PastelColorPicker
+                      value={brandColor || undefined}
+                      onChange={setBrandColor}
+                      includeNone
+                      ariaLabel="brand pastel color"
+                    />
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box
+                        aria-label="selected color preview"
+                        sx={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 1,
+                          border: '1px solid',
+                          borderColor: 'divider',
+                          backgroundColor: brandColor || 'transparent',
+                        }}
+                      />
+                      <Typography variant="body2" color="text.secondary">
+                        {brandColor || 'No color selected'}
+                      </Typography>
+                    </Box>
+                  </Box>
                 </CardContent>
               </Card>
 

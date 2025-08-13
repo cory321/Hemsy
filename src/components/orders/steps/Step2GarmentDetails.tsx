@@ -36,6 +36,9 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
+import PresetGarmentIconPicker from '../PresetGarmentIconPicker';
+import InlinePresetSvg from '@/components/ui/InlinePresetSvg';
+import { PastelColorPicker } from '@/components/ui/PastelColorPicker';
 
 export default function Step2GarmentDetails() {
   const {
@@ -191,17 +194,94 @@ export default function Step2GarmentDetails() {
                   {/* Garment Image */}
                   <Grid item xs={12}>
                     <Typography variant="subtitle2" gutterBottom>
-                      Garment Photo (Optional)
+                      Garment Photo or Preset Image (Optional)
                     </Typography>
-                    <GarmentImageUpload
-                      imageUrl={garment.imageUrl}
-                      publicId={garment.imageCloudId}
-                      garmentName={garment.name}
-                      onUpload={(result) =>
-                        updateGarmentImage(garment.id, result)
-                      }
-                      onRemove={() => removeGarmentImage(garment.id)}
-                    />
+                    <Stack spacing={2}>
+                      <GarmentImageUpload
+                        imageUrl={garment.imageUrl}
+                        publicId={garment.imageCloudId}
+                        garmentName={garment.name}
+                        onUpload={(result) =>
+                          updateGarmentImage(garment.id, result)
+                        }
+                        onRemove={() => removeGarmentImage(garment.id)}
+                      />
+                      <PresetGarmentIconPicker
+                        {...(garment.presetIconKey !== undefined
+                          ? { value: garment.presetIconKey }
+                          : {})}
+                        onChange={(key) =>
+                          updateGarment(garment.id, { presetIconKey: key })
+                        }
+                      />
+                      {garment.presetIconKey && (
+                        <Box
+                          sx={{ display: 'flex', alignItems: 'center', gap: 2 }}
+                        >
+                          <Box
+                            sx={{
+                              width: 96,
+                              height: 96,
+                              borderRadius: 1,
+                              bgcolor: 'background.default',
+                              display: 'grid',
+                              placeItems: 'center',
+                              position: 'relative',
+                            }}
+                          >
+                            {(() => {
+                              const url = (
+                                require('@/utils/presetIcons') as any
+                              ).getPresetIconUrl(garment.presetIconKey);
+                              return url ? (
+                                <InlinePresetSvg
+                                  {...(garment.presetOutlineColor
+                                    ? {
+                                        outlineColor:
+                                          garment.presetOutlineColor,
+                                      }
+                                    : {})}
+                                  {...(garment.presetFillColor
+                                    ? { fillColor: garment.presetFillColor }
+                                    : {})}
+                                  src={url}
+                                />
+                              ) : null;
+                            })()}
+                          </Box>
+                          <Stack spacing={1} sx={{ flexGrow: 1 }}>
+                            <Typography variant="body2" color="text.secondary">
+                              Outline color
+                            </Typography>
+                            <PastelColorPicker
+                              value={garment.presetOutlineColor || ''}
+                              onChange={(hex) =>
+                                updateGarment(garment.id, {
+                                  presetOutlineColor: hex || undefined,
+                                })
+                              }
+                              includeNone
+                            />
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ mt: 1 }}
+                            >
+                              Fill color
+                            </Typography>
+                            <PastelColorPicker
+                              value={garment.presetFillColor || ''}
+                              onChange={(hex) =>
+                                updateGarment(garment.id, {
+                                  presetFillColor: hex || undefined,
+                                })
+                              }
+                              includeNone
+                            />
+                          </Stack>
+                        </Box>
+                      )}
+                    </Stack>
                   </Grid>
 
                   <Grid item xs={12} sm={6}>

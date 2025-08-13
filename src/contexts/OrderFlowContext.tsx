@@ -37,6 +37,11 @@ export interface GarmentDraft {
   imageCloudId?: string | undefined; // Cloudinary public ID
   imageUrl?: string | undefined; // Full Cloudinary URL
   imageThumbnailUrl?: string | undefined; // Cloudinary thumbnail URL
+  // Preset proxy image key (e.g., "tops.button_up_shirt"). Used when no real photo is uploaded.
+  presetIconKey?: string | undefined;
+  // Optional colors for parameterized preset SVGs
+  presetOutlineColor?: string | undefined;
+  presetFillColor?: string | undefined;
 }
 
 export interface OrderDraft {

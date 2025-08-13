@@ -18,6 +18,7 @@ import {
   Alert,
   CircularProgress,
 } from '@mui/material';
+import CheckroomIcon from '@mui/icons-material/Checkroom';
 import EditIcon from '@mui/icons-material/Edit';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import { getGarmentById } from '@/lib/actions/orders';
@@ -26,6 +27,9 @@ import { ensureUserAndShop } from '@/lib/actions/users';
 import GarmentStageSelector from '@/components/garments/GarmentStageSelector';
 import GarmentTimeTracker from '@/components/garments/GarmentTimeTracker';
 import { notFound } from 'next/navigation';
+import Image from 'next/image';
+import InlinePresetSvg from '@/components/ui/InlinePresetSvg';
+import { resolveGarmentDisplayImage } from '@/utils/displayImage';
 
 // Stage options
 const stages = [
@@ -74,13 +78,12 @@ export default async function GarmentDetailPage({
   // Calculate total price
   const totalPrice = (garment.totalPriceCents / 100).toFixed(2);
 
-  // Prefer persisted photo_url; fallback to Cloudinary delivery URL if we only have image_cloud_id
-  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-  const imageSrc =
-    garment.photo_url ||
-    (garment.image_cloud_id && cloudName
-      ? `https://res.cloudinary.com/${cloudName}/image/upload/${garment.image_cloud_id}`
-      : null);
+  // Resolve display image with fallbacks: photo > cloud public id > preset key > default
+  const resolved = resolveGarmentDisplayImage({
+    photoUrl: garment.photo_url || undefined,
+    cloudPublicId: garment.image_cloud_id || undefined,
+    presetIconKey: garment.preset_icon_key || undefined,
+  });
 
   return (
     <Container maxWidth="lg">
@@ -113,13 +116,34 @@ export default async function GarmentDetailPage({
           {/* Left Column - Image and Stage */}
           <Grid item xs={12} md={4}>
             <Card sx={{ mb: 3 }}>
-              {imageSrc ? (
+              {resolved.kind === 'photo' || resolved.kind === 'cloud' ? (
                 <CardMedia
                   component="img"
-                  image={imageSrc}
+                  image={resolved.src as string}
                   alt={garment.name}
                   sx={{ height: 400, objectFit: 'cover' }}
                 />
+              ) : resolved.kind === 'preset' && resolved.src ? (
+                <Box
+                  sx={{
+                    height: 400,
+                    display: 'grid',
+                    placeItems: 'center',
+                    bgcolor: 'grey.100',
+                    position: 'relative',
+                    aspectRatio: '1 / 1',
+                    maxWidth: 400,
+                    mx: 'auto',
+                  }}
+                >
+                  {typeof resolved.src === 'string' ? (
+                    <InlinePresetSvg
+                      src={resolved.src}
+                      outlineColor={garment.preset_outline_color || undefined}
+                      fillColor={garment.preset_fill_color || undefined}
+                    />
+                  ) : null}
+                </Box>
               ) : (
                 <Box
                   sx={{
@@ -128,10 +152,18 @@ export default async function GarmentDetailPage({
                     alignItems: 'center',
                     justifyContent: 'center',
                     bgcolor: 'grey.100',
+                    flexDirection: 'column',
+                    gap: 1,
                   }}
                 >
+                  {/* If preset icon is selected but no real image, show a large icon placeholder for now */}
+                  <CheckroomIcon
+                    sx={{ fontSize: 80, color: 'text.disabled' }}
+                  />
                   <Typography color="text.secondary">
-                    No image uploaded
+                    {resolved.kind === 'preset'
+                      ? 'Preset selected'
+                      : 'No image available'}
                   </Typography>
                 </Box>
               )}
@@ -141,7 +173,9 @@ export default async function GarmentDetailPage({
                   fullWidth
                   startIcon={<CameraAltIcon />}
                 >
-                  {imageSrc ? 'Update Photo' : 'Add Photo'}
+                  {resolved.kind === 'photo' || resolved.kind === 'cloud'
+                    ? 'Update Photo'
+                    : 'Add Photo'}
                 </Button>
               </Box>
             </Card>
