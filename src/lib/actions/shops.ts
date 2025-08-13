@@ -115,3 +115,17 @@ export async function updateShopBusinessInfo(
     };
   }
 }
+
+/**
+ * Returns the current user's shop or null if unavailable
+ */
+export async function getCurrentUserShop(): Promise<Tables<'shops'> | null> {
+  try {
+    const { ensureUserAndShop } = await import('@/lib/actions/users');
+    const { shop } = await ensureUserAndShop();
+    return shop;
+  } catch (error) {
+    console.error('Failed to get current user shop:', error);
+    return null;
+  }
+}

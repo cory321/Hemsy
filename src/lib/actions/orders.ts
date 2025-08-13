@@ -95,6 +95,16 @@ export async function createOrder(
     const { shop } = await getUserAndShop();
     const supabase = await createSupabaseClient();
 
+    // Generate order number per shop
+    const { data: orderNumberData, error: orderNumberError } =
+      await supabase.rpc('generate_order_number', { p_shop_id: shop.id });
+
+    if (orderNumberError || !orderNumberData) {
+      throw new Error(
+        orderNumberError?.message || 'Failed to generate order number'
+      );
+    }
+
     // Insert order
     const { data: orderInsert, error: orderError } = await supabase
       .from('orders')
@@ -104,6 +114,7 @@ export async function createOrder(
         status: 'new',
         discount_cents: input.discountCents ?? 0,
         notes: input.notes ?? null,
+        order_number: orderNumberData as string,
       })
       .select('id')
       .single();
@@ -331,6 +342,11 @@ export async function getGarmentById(garmentId: string) {
       .select(
         `
         *,
+        garment_stage:garment_stages!garments_stage_id_fkey(
+          id,
+          name,
+          color
+        ),
         order:orders(
           id,
           order_number,
@@ -366,7 +382,7 @@ export async function getGarmentById(garmentId: string) {
       .from('orders')
       .select('shop_id')
       .eq('id', garment.order_id)
-      .single();
+      .maybeSingle();
 
     if (!orderCheck || orderCheck.shop_id !== shop.id) {
       throw new Error('Garment not found or access denied');
@@ -382,6 +398,9 @@ export async function getGarmentById(garmentId: string) {
       success: true,
       garment: {
         ...garment,
+        stage_id: garment.stage_id ?? garment.garment_stage?.id ?? null,
+        stage_name: garment.garment_stage?.name ?? null,
+        stage_color: garment.garment_stage?.color ?? null,
         totalPriceCents,
       },
     };

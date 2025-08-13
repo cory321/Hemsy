@@ -29,17 +29,18 @@ function formatUSD(cents: number) {
 export default async function OrderDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   await ensureUserAndShop();
   const supabase = await createSupabaseClient();
+  const { id } = await params;
 
   const { data: order } = (await supabase
     .from('orders')
     .select(
       'id, client_id, status, order_due_date, subtotal_cents, discount_cents, tax_cents, total_cents, created_at, order_number, is_paid, paid_at, notes'
     )
-    .eq('id', params.id)
+    .eq('id', id)
     .single()) as {
     data: Database['public']['Tables']['orders']['Row'] | null;
   };
@@ -56,13 +57,14 @@ export default async function OrderDetailPage({
     client = data;
   }
 
-  const { data: garments } = (await supabase
+  const { data: garments } = await supabase
     .from('garments')
-    .select('id, name, stage, notes, due_date, event_date, is_done')
-    .eq('order_id', params.id)
-    .order('created_at', { ascending: true })) as {
-    data: Database['public']['Tables']['garments']['Row'][] | null;
-  };
+    .select(
+      `id, name, stage, stage_id, notes, due_date, event_date, is_done,
+       garment_stages!garments_stage_id_fkey ( id, name, color )`
+    )
+    .eq('order_id', id)
+    .order('created_at', { ascending: true });
 
   const garmentIds = (garments || []).map((g: any) => g.id);
   const { data: lines } = garmentIds.length
@@ -93,19 +95,10 @@ export default async function OrderDetailPage({
     }
   };
 
-  const getStageColor = (stage: string) => {
-    switch (stage.toLowerCase()) {
-      case 'new':
-        return 'default';
-      case 'in progress':
-        return 'info';
-      case 'done':
-        return 'success';
-      case 'archived':
-        return 'default';
-      default:
-        return 'default';
-    }
+  const getStageDisplay = (garment: any) => {
+    const name = garment?.garment_stages?.name || garment?.stage || 'New';
+    const color = garment?.garment_stages?.color || null;
+    return { name, color };
   };
 
   return (
@@ -242,11 +235,19 @@ export default async function OrderDetailPage({
                             {garment.is_done && (
                               <Chip label="✓" size="small" color="success" />
                             )}
-                            <Chip
-                              label={garment.stage}
-                              size="small"
-                              color={getStageColor(garment.stage) as any}
-                            />
+                            {(() => {
+                              const { name, color } = getStageDisplay(garment);
+                              const chipSx: any = color
+                                ? {
+                                    bgcolor: color,
+                                    color: '#000',
+                                    '& .MuiChip-label': { fontWeight: 600 },
+                                  }
+                                : undefined;
+                              return (
+                                <Chip label={name} size="small" sx={chipSx} />
+                              );
+                            })()}
                           </Box>
                           <Typography variant="body1">
                             {formatUSD(

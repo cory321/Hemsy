@@ -21,6 +21,10 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import { getGarmentById } from '@/lib/actions/orders';
+import { getStages } from '@/lib/actions/garment-stages';
+import { ensureUserAndShop } from '@/lib/actions/users';
+import GarmentStageSelector from '@/components/garments/GarmentStageSelector';
+import GarmentTimeTracker from '@/components/garments/GarmentTimeTracker';
 import { notFound } from 'next/navigation';
 
 // Stage options
@@ -50,7 +54,11 @@ export default async function GarmentDetailPage({
     notFound();
   }
 
-  const garment = result.garment;
+  const garment = result.garment as any;
+
+  // Load stages for selector (shop-scoped)
+  const { shop } = await ensureUserAndShop();
+  const stages = await getStages(shop.id);
 
   // Format client name
   const clientName = garment.order?.client
@@ -138,7 +146,7 @@ export default async function GarmentDetailPage({
               </Box>
             </Card>
 
-            {/* Stage Display */}
+            {/* Stage Selector */}
             <Card>
               <CardContent>
                 <Typography
@@ -148,10 +156,11 @@ export default async function GarmentDetailPage({
                 >
                   Current Stage
                 </Typography>
-                <Chip
-                  label={garment.stage || 'New'}
-                  color="primary"
-                  sx={{ mt: 1 }}
+                <GarmentStageSelector
+                  garmentId={garment.id}
+                  shopId={shop.id}
+                  stages={stages as any}
+                  currentStageId={garment.stage_id || null}
                 />
               </CardContent>
             </Card>
@@ -250,37 +259,54 @@ export default async function GarmentDetailPage({
 
             {/* Client Information */}
             {garment.order?.client && (
-              <Card sx={{ mb: 3 }}>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Client Information
-                  </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
-                      <Typography variant="body2" color="text.secondary">
-                        Name
-                      </Typography>
-                      <Typography variant="body1">{clientName}</Typography>
+              <>
+                <Card sx={{ mb: 3 }}>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Client Information
+                    </Typography>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="body2" color="text.secondary">
+                          Name
+                        </Typography>
+                        <Typography variant="body1">{clientName}</Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="body2" color="text.secondary">
+                          Email
+                        </Typography>
+                        <Typography variant="body1">
+                          {garment.order.client.email}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="body2" color="text.secondary">
+                          Phone
+                        </Typography>
+                        <Typography variant="body1">
+                          {garment.order.client.phone_number}
+                        </Typography>
+                      </Grid>
                     </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <Typography variant="body2" color="text.secondary">
-                        Email
-                      </Typography>
-                      <Typography variant="body1">
-                        {garment.order.client.email}
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <Typography variant="body2" color="text.secondary">
-                        Phone
-                      </Typography>
-                      <Typography variant="body1">
-                        {garment.order.client.phone_number}
-                      </Typography>
-                    </Grid>
-                  </Grid>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+
+                {/* Time Tracker moved to bottom under client info */}
+                <Card sx={{ mb: 3 }}>
+                  <CardContent>
+                    <GarmentTimeTracker
+                      garmentId={garment.id}
+                      services={(garment.garment_services || []).map(
+                        (s: any) => ({
+                          id: s.id,
+                          name: s.name,
+                        })
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+              </>
             )}
 
             {/* Notes */}
