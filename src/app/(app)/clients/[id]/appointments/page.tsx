@@ -49,7 +49,7 @@ export default async function ClientAppointmentsPaginatedPage({
   const { data: shopData } = await supabase
     .from('shops')
     .select('id')
-    .eq('owner_user_id', userData?.id)
+    .eq('owner_user_id', userData!.id)
     .single();
   if (!shopData?.id) notFound();
 

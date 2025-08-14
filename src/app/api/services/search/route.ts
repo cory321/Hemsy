@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseServer } from '@/lib/supabase/server';
-import { getCurrentUser } from '@/lib/actions/users';
+import { createClient } from '@/lib/supabase/server';
+import { ensureUserAndShop } from '@/lib/actions/users';
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,17 +14,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const supabase = await createSupabaseServer();
-    const user = await getCurrentUser();
+    const supabase = await createClient();
+    const { shop } = await ensureUserAndShop();
 
-    if (!user?.shopId) {
+    if (!shop?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { data, error } = await supabase
       .from('services')
       .select('*')
-      .eq('shop_id', user.shopId)
+      .eq('shop_id', shop.id)
       .ilike('name', `%${query}%`)
       .order('frequently_used_position', { ascending: true, nullsFirst: false })
       .order('name', { ascending: true })

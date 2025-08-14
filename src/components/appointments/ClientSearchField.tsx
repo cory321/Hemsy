@@ -101,7 +101,9 @@ export function ClientSearchField({
   return (
     <Autocomplete
       value={value}
-      onChange={(_, newValue) => onChange(newValue)}
+      onChange={(_, newValue) =>
+        onChange(typeof newValue === 'string' ? null : newValue)
+      }
       inputValue={inputValue}
       onInputChange={(_, newInputValue) => setInputValue(newInputValue)}
       options={options}
@@ -147,30 +149,34 @@ export function ClientSearchField({
           </Box>
         </li>
       )}
-      renderInput={(params) => (
-        <TextField
-          {...params}
-          label={label}
-          placeholder={placeholder}
-          helperText={helperText}
-          InputProps={{
-            ...params.InputProps,
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-            endAdornment: (
-              <>
-                {loading ? (
-                  <CircularProgress color="inherit" size={20} />
-                ) : null}
-                {params.InputProps.endAdornment}
-              </>
-            ),
-          }}
-        />
-      )}
+      renderInput={(params) => {
+        const { InputProps, inputProps, id } = params;
+        return (
+          <TextField
+            label={label}
+            placeholder={placeholder}
+            helperText={helperText}
+            InputProps={{
+              ...InputProps,
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+              endAdornment: (
+                <>
+                  {loading ? (
+                    <CircularProgress color="inherit" size={20} />
+                  ) : null}
+                  {InputProps.endAdornment}
+                </>
+              ),
+            }}
+            inputProps={inputProps}
+            id={id}
+          />
+        );
+      }}
     />
   );
 }

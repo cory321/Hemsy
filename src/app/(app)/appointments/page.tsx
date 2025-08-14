@@ -1,5 +1,6 @@
 // Placeholder to keep file unchanged; functional edits were in server actions only
 import { Suspense } from 'react';
+import type { ShopHours } from '@/types';
 
 // Always fetch fresh data for calendar settings and hours to ensure buffer changes apply immediately
 export const revalidate = 0;
@@ -42,10 +43,23 @@ export default async function AppointmentsPage() {
   const shopId = await getShopId();
 
   // Fetch only the necessary initial data (not appointments)
-  const [shopHours, calendarSettings] = await Promise.all([
+  const [rawShopHours, calendarSettings] = await Promise.all([
     getShopHours(),
     getCalendarSettings(),
   ]);
+
+  const shopHours: ShopHours[] = (rawShopHours as any[]).map((h) => ({
+    day_of_week: h.day_of_week,
+    open_time: h.open_time,
+    close_time: h.close_time,
+    is_closed: !!h.is_closed,
+  }));
+
+  const normalizedCalendarSettings = {
+    buffer_time_minutes: calendarSettings.buffer_time_minutes ?? 0,
+    default_appointment_duration:
+      calendarSettings.default_appointment_duration ?? 30,
+  } as const;
 
   return (
     <Suspense
@@ -58,7 +72,7 @@ export default async function AppointmentsPage() {
       <AppointmentsClient
         shopId={shopId}
         shopHours={shopHours}
-        calendarSettings={calendarSettings}
+        calendarSettings={normalizedCalendarSettings}
       />
     </Suspense>
   );

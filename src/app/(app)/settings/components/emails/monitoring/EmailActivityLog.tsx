@@ -30,6 +30,7 @@ import {
   Send as ResendIcon,
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers';
+import type { Dayjs } from 'dayjs';
 import { format } from 'date-fns';
 
 import { getEmailLogs } from '@/lib/actions/emails';
@@ -52,8 +53,8 @@ export function EmailActivityLog() {
   const [filters, setFilters] = useState({
     status: '',
     emailType: '',
-    startDate: null as Date | null,
-    endDate: null as Date | null,
+    startDate: null as Dayjs | null,
+    endDate: null as Dayjs | null,
     page: 0,
     rowsPerPage: 10,
   });

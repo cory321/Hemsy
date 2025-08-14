@@ -105,35 +105,34 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform the data to match our Appointment type
-    const transformedAppointments: Appointment[] = appointments.map(
-      (apt: any) => ({
-        id: apt.id,
-        shop_id: apt.shop_id,
-        client_id: apt.client_id,
-        order_id: apt.order_id,
-        date: apt.date,
-        start_time: apt.start_time,
-        end_time: apt.end_time,
-        type: apt.type,
-        status: apt.status,
-        notes: apt.notes,
-        reminder_sent: apt.reminder_sent,
-        created_at: apt.created_at,
-        updated_at: apt.updated_at,
-        client:
-          includeClient && apt.client_id
-            ? {
-                id: apt.client_id,
-                first_name: apt.client_first_name || '',
-                last_name: apt.client_last_name || '',
-                email: apt.client_email,
-                phone_number: apt.client_phone_number,
-                accept_email: true,
-                accept_sms: true,
-              }
-            : null,
-      })
-    );
+    const transformedAppointments = appointments.map((apt: any) => ({
+      id: apt.id,
+      shop_id: apt.shop_id,
+      client_id: apt.client_id,
+      order_id: apt.order_id,
+      date: apt.date,
+      start_time: apt.start_time,
+      end_time: apt.end_time,
+      type: apt.type,
+      status: apt.status,
+      notes: apt.notes,
+      reminder_sent: apt.reminder_sent,
+      created_at: apt.created_at,
+      updated_at: apt.updated_at,
+      ...(includeClient && apt.client
+        ? {
+            client: {
+              id: apt.client_id,
+              first_name: apt.client.first_name || '',
+              last_name: apt.client.last_name || '',
+              email: apt.client.email,
+              phone_number: apt.client.phone_number,
+              accept_email: true,
+              accept_sms: true,
+            },
+          }
+        : {}),
+    }));
 
     // Return with cache headers for Edge Runtime
     return NextResponse.json(transformedAppointments, {

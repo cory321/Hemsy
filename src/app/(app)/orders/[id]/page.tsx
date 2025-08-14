@@ -192,47 +192,130 @@ export default async function OrderDetailPage({
                         href={`/garments/${garment.id}?from=order&orderId=${id}`}
                         sx={{ px: 0 }}
                       >
-                        <ListItemText
-                          primary={
-                            <span
-                              style={{
-                                display: 'inline-flex',
+                        <Box
+                          sx={{
+                            display: 'grid',
+                            gridTemplateColumns: '64px 1fr',
+                            columnGap: 2,
+                            alignItems: 'stretch',
+                            width: '100%',
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              alignSelf: 'stretch',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            {(() => {
+                              const key = (garment as any).preset_icon_key as
+                                | string
+                                | null;
+                              if (!key) return null;
+                              const url = getPresetIconUrl(key);
+                              if (!url) return null;
+                              return (
+                                <span
+                                  style={{
+                                    width: 48,
+                                    height: 48,
+                                    display: 'inline-block',
+                                  }}
+                                >
+                                  <InlinePresetSvg
+                                    src={url}
+                                    {...((garment as any).preset_fill_color
+                                      ? {
+                                          fillColor: (garment as any)
+                                            .preset_fill_color as string,
+                                        }
+                                      : {})}
+                                  />
+                                </span>
+                              );
+                            })()}
+                          </Box>
+
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: 0.5,
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                display: 'flex',
                                 alignItems: 'center',
-                                gap: 8,
+                                justifyContent: 'space-between',
+                                gap: 2,
                               }}
                             >
-                              {(() => {
-                                const key = (garment as any).preset_icon_key as
-                                  | string
-                                  | null;
-                                if (!key) return null;
-                                const url = getPresetIconUrl(key);
-                                if (!url) return null;
-                                return (
-                                  <span
-                                    style={{
-                                      width: 20,
-                                      height: 20,
-                                      display: 'inline-block',
-                                    }}
-                                  >
-                                    <InlinePresetSvg
-                                      src={url}
-                                      {...((garment as any).preset_fill_color
-                                        ? {
-                                            fillColor: (garment as any)
-                                              .preset_fill_color as string,
-                                          }
-                                        : {})}
+                              <Typography variant="subtitle1" component="div">
+                                {garment.name}
+                              </Typography>
+
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 2,
+                                }}
+                              >
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    gap: 1,
+                                    alignItems: 'center',
+                                  }}
+                                >
+                                  {garment.is_done && (
+                                    <Chip
+                                      label="✓"
+                                      size="small"
+                                      color="success"
                                     />
-                                  </span>
-                                );
-                              })()}
-                              {garment.name}
-                            </span>
-                          }
-                          secondary={
-                            <>
+                                  )}
+                                  {(() => {
+                                    const { name, color } =
+                                      getStageDisplay(garment);
+                                    const chipSx: any = color
+                                      ? {
+                                          bgcolor: color,
+                                          color: 'text.primary',
+                                          '& .MuiChip-label': {
+                                            fontWeight: 600,
+                                          },
+                                        }
+                                      : undefined;
+                                    return (
+                                      <Chip
+                                        label={name}
+                                        size="small"
+                                        sx={chipSx}
+                                      />
+                                    );
+                                  })()}
+                                </Box>
+                                <Typography variant="body1">
+                                  {formatUSD(
+                                    (lines || [])
+                                      .filter(
+                                        (l: any) => l.garment_id === garment.id
+                                      )
+                                      .reduce(
+                                        (sum: number, l: any) =>
+                                          sum + (l.line_total_cents || 0),
+                                        0
+                                      )
+                                  )}
+                                </Typography>
+                              </Box>
+                            </Box>
+
+                            <Typography variant="body2" color="text.secondary">
                               {(lines || [])
                                 .filter((l: any) => l.garment_id === garment.id)
                                 .map(
@@ -240,65 +323,31 @@ export default async function OrderDetailPage({
                                     `${l.name} (${l.quantity} ${l.unit})`
                                 )
                                 .join(', ')}
-                              {garment.due_date && (
-                                <>
-                                  <br />
-                                  Due:{' '}
-                                  {new Date(
-                                    garment.due_date
-                                  ).toLocaleDateString()}
-                                </>
-                              )}
-                              {garment.event_date && (
-                                <>
-                                  <br />
-                                  Event:{' '}
-                                  {new Date(
-                                    garment.event_date
-                                  ).toLocaleDateString()}
-                                </>
-                              )}
-                            </>
-                          }
-                        />
-                        <Box
-                          sx={{ display: 'flex', alignItems: 'center', gap: 2 }}
-                        >
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              gap: 1,
-                              alignItems: 'center',
-                            }}
-                          >
-                            {garment.is_done && (
-                              <Chip label="✓" size="small" color="success" />
+                            </Typography>
+
+                            {garment.due_date && (
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                Due:{' '}
+                                {new Date(
+                                  garment.due_date
+                                ).toLocaleDateString()}
+                              </Typography>
                             )}
-                            {(() => {
-                              const { name, color } = getStageDisplay(garment);
-                              const chipSx: any = color
-                                ? {
-                                    bgcolor: color,
-                                    color: 'text.primary',
-                                    '& .MuiChip-label': { fontWeight: 600 },
-                                  }
-                                : undefined;
-                              return (
-                                <Chip label={name} size="small" sx={chipSx} />
-                              );
-                            })()}
+                            {garment.event_date && (
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                Event:{' '}
+                                {new Date(
+                                  garment.event_date
+                                ).toLocaleDateString()}
+                              </Typography>
+                            )}
                           </Box>
-                          <Typography variant="body1">
-                            {formatUSD(
-                              (lines || [])
-                                .filter((l: any) => l.garment_id === garment.id)
-                                .reduce(
-                                  (sum: number, l: any) =>
-                                    sum + (l.line_total_cents || 0),
-                                  0
-                                )
-                            )}
-                          </Typography>
                         </Box>
                       </ListItem>
                       {index < (garments?.length || 0) - 1 && <Divider />}

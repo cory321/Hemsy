@@ -46,17 +46,22 @@ function extractAndParametrize(svg: string) {
     .replace(/\swidth="[^"]*"/i, '')
     .replace(/\sheight="[^"]*"/i, '');
 
+  // Helper to append attribute(s) to the <svg ...> start tag without clobbering others
+  const appendSvgAttrs = (input: string, attrs: string) =>
+    input.replace(/<svg\b([^>]*)>/i, (_m, inner) => `<svg${inner} ${attrs}>`);
+
   if (!/preserveAspectRatio=/i.test(normalizedRoot)) {
-    normalizedRoot = normalizedRoot.replace(
-      /<svg\b/i,
-      '<svg preserveAspectRatio="xMidYMid meet"'
+    normalizedRoot = appendSvgAttrs(
+      normalizedRoot,
+      'preserveAspectRatio="xMidYMid meet"'
     );
   }
+  // Ensure SVG content is not clipped by default
+  if (!/overflow=/i.test(normalizedRoot)) {
+    normalizedRoot = appendSvgAttrs(normalizedRoot, 'overflow="visible"');
+  }
   // Force width/height 100%
-  normalizedRoot = normalizedRoot.replace(
-    /<svg\b/i,
-    '<svg width="100%" height="100%"'
-  );
+  normalizedRoot = appendSvgAttrs(normalizedRoot, 'width="100%" height="100%"');
 
   // Replace the original root tag with normalized one
   out = out.replace(rootTag, normalizedRoot);

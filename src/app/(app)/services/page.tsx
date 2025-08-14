@@ -15,6 +15,7 @@ import ServiceList from '@/components/services/ServiceList';
 import AddServiceDialog from '@/components/services/AddServiceDialog';
 import { fetchAllServices } from '@/lib/actions/services';
 import { Service } from '@/lib/utils/serviceUtils';
+import type { ServiceUnitType } from '@/lib/utils/serviceUnitTypes';
 
 export default function ServicesPage() {
   const [services, setServices] = useState<Service[]>([]);
@@ -27,7 +28,17 @@ export default function ServicesPage() {
         setLoading(true);
         setError(null);
         const fetchedServices = await fetchAllServices();
-        setServices(fetchedServices);
+        const normalized: Service[] = (fetchedServices as any[]).map((s) => ({
+          id: s.id,
+          name: s.name,
+          description: s.description ?? undefined,
+          default_qty: s.default_qty ?? 1,
+          default_unit: (s.default_unit as ServiceUnitType) ?? 'item',
+          default_unit_price_cents: s.default_unit_price_cents ?? 0,
+          frequently_used: !!s.frequently_used,
+          frequently_used_position: s.frequently_used_position ?? null,
+        }));
+        setServices(normalized);
       } catch (error) {
         console.error('Error loading services:', error);
         setError(

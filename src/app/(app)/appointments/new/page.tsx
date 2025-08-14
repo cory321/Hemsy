@@ -63,15 +63,20 @@ export default function NewAppointmentPage() {
               <Autocomplete
                 options={clients}
                 getOptionLabel={(option) => option.name}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Select Client"
-                    required
-                    fullWidth
-                    sx={{ mb: 3 }}
-                  />
-                )}
+                renderInput={(params) => {
+                  const { InputProps, inputProps, id } = params;
+                  return (
+                    <TextField
+                      label="Select Client"
+                      required
+                      fullWidth
+                      sx={{ mb: 3 }}
+                      InputProps={InputProps}
+                      inputProps={inputProps}
+                      id={id}
+                    />
+                  );
+                }}
               />
 
               {/* Date & Time */}

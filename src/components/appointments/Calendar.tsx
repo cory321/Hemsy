@@ -373,7 +373,7 @@ export function Calendar({
             shopHours={shopHours}
             onAppointmentClick={onAppointmentClick}
             onTimeSlotClick={(date, time) => onDateClick?.(date, time)}
-            focusAppointmentId={focusAppointmentId}
+            {...(focusAppointmentId && { focusAppointmentId })}
           />
         )}
         {view === 'list' && onAppointmentClick && (

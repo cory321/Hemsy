@@ -85,14 +85,14 @@ export function OrderListItem({ order, garmentCount }: OrderListItemProps) {
         <Box sx={{ flex: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
             <Typography variant="subtitle1" fontWeight="medium">
-              Order #{order.order_number}
+              Order #{(order as any).order_number ?? order.id.slice(0, 8)}
             </Typography>
             <Chip
               label={getStatusLabel(order.status)}
               color={getStatusColor(order.status)}
               size="small"
             />
-            {order.is_paid && (
+            {(order as any).is_paid && (
               <Chip
                 label="Paid"
                 color="success"
@@ -125,7 +125,9 @@ export function OrderListItem({ order, garmentCount }: OrderListItemProps) {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
               <AttachMoneyIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
               <Typography variant="body2" color="text.secondary">
-                {formatCurrency(order.total_cents)}
+                {formatCurrency(
+                  (order as any).total_cents ?? (order as any).total ?? 0
+                )}
               </Typography>
             </Box>
           </Box>

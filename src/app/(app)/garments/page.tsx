@@ -349,9 +349,13 @@ export default function GarmentsPage() {
             </Box>
 
             {/* Garments Grid for the Client */}
-            <Grid container spacing={3}>
+            <Grid
+              container
+              spacing={3}
+              columns={{ xs: 4, sm: 8, md: 12, lg: 20 }}
+            >
               {groupedGarments.groups[clientName]?.map((garment) => (
-                <Grid item xs={12} sm={6} md={4} lg={3} key={garment.id}>
+                <Grid item xs={4} sm={4} md={4} lg={4} key={garment.id}>
                   <GarmentCard
                     garment={garment}
                     orderId={garment.order_id}
@@ -368,9 +372,9 @@ export default function GarmentsPage() {
           </Box>
         ))
       ) : (
-        <Grid container spacing={3}>
+        <Grid container spacing={3} columns={{ xs: 4, sm: 8, md: 12, lg: 20 }}>
           {filteredGarments.map((garment) => (
-            <Grid item xs={12} sm={6} md={4} lg={3} key={garment.id}>
+            <Grid item xs={4} sm={4} md={4} lg={4} key={garment.id}>
               <GarmentCard
                 garment={garment}
                 orderId={garment.order_id}

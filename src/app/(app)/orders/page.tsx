@@ -152,11 +152,13 @@ export default async function OrdersPage() {
                       <Typography variant="h6" sx={{ mb: 1 }}>
                         {formatUSD(order.total_cents)}
                       </Typography>
-                      <Chip
-                        label={getStatusLabel(order.status)}
-                        color={getStatusColor(order.status) as any}
-                        size="small"
-                      />
+                      {order.status && (
+                        <Chip
+                          label={getStatusLabel(order.status)}
+                          color={getStatusColor(order.status) as any}
+                          size="small"
+                        />
+                      )}
                     </Box>
                   </Box>
                 </CardContent>

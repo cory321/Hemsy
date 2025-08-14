@@ -164,6 +164,8 @@ export default async function GarmentDetailPage({
                     aspectRatio: '1 / 1',
                     maxWidth: 400,
                     mx: 'auto',
+                    overflow: 'hidden',
+                    p: 3,
                   }}
                 >
                   {typeof resolved.src === 'string' ? (
@@ -171,6 +173,11 @@ export default async function GarmentDetailPage({
                       src={resolved.src}
                       outlineColor={garment.preset_outline_color || undefined}
                       fillColor={garment.preset_fill_color || undefined}
+                      style={{
+                        height: '88%',
+                        width: 'auto',
+                        maxWidth: '100%',
+                      }}
                     />
                   ) : null}
                 </Box>

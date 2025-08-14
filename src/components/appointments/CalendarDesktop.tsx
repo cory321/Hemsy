@@ -497,7 +497,7 @@ export function CalendarDesktop({
                 shopHours={shopHours}
                 onAppointmentClick={handleAppointmentSelect}
                 {...(onDateClick && { onTimeSlotClick: onDateClick })}
-                focusAppointmentId={focusAppointmentId}
+                {...(focusAppointmentId && { focusAppointmentId })}
               />
             )}
             {view === 'list' && (

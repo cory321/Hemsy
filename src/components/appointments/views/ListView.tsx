@@ -62,7 +62,6 @@ export function ListView({ appointments, onAppointmentClick }: ListViewProps) {
           : '';
 
         return (
-          apt.title.toLowerCase().includes(search) ||
           clientName.includes(search) ||
           apt.type.toLowerCase().includes(search) ||
           apt.notes?.toLowerCase().includes(search)

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseServer } from '@/lib/supabase/server';
-import { getCurrentUser } from '@/lib/actions/users';
+import { createClient } from '@/lib/supabase/server';
+import { ensureUserAndShop } from '@/lib/actions/users';
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,17 +27,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createSupabaseServer();
-    const user = await getCurrentUser();
+    const supabase = await createClient();
+    const { shop } = await ensureUserAndShop();
 
-    if (!user?.shopId) {
+    if (!shop?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { data, error } = await supabase
       .from('services')
       .insert({
-        shop_id: user.shopId,
+        shop_id: shop.id,
         name,
         description: description || null,
         default_qty: default_qty || 1,

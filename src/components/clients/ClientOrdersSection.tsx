@@ -42,7 +42,11 @@ export function ClientOrdersSection({
         setLoading(true);
         const result = await getOrdersByClient(clientId);
         if (result.success) {
-          setOrders(result.orders);
+          const normalized = (result.orders as any[]).map((o) => ({
+            ...o,
+            total: (o.total_cents ?? 0) / 100,
+          }));
+          setOrders(normalized);
         } else {
           setError(result.error || 'Failed to load orders');
         }

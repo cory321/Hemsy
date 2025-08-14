@@ -49,7 +49,7 @@ export function AppointmentsClient({
       calendarSettings={calendarSettings}
       initialView={initialView}
       initialDate={initialDate}
-      focusAppointmentId={focusParam}
+      {...(focusParam && { focusAppointmentId: focusParam })}
     />
   );
 }

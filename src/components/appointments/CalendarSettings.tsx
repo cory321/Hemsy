@@ -43,7 +43,12 @@ export function CalendarSettings({ onSave }: CalendarSettingsProps) {
     async function loadSettings() {
       try {
         const data = await getCalendarSettings();
-        setSettings(data);
+        setSettings({
+          buffer_time_minutes: data.buffer_time_minutes ?? 0,
+          default_appointment_duration: data.default_appointment_duration ?? 30,
+          send_reminders: data.send_reminders ?? true,
+          reminder_hours_before: data.reminder_hours_before ?? 24,
+        });
       } catch (err) {
         setError('Failed to load calendar settings');
       } finally {

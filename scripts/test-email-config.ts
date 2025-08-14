@@ -39,7 +39,9 @@ async function testEmailConfig() {
   }
 
   // Import email config after environment variables are loaded
-  const { emailConfig } = await import('../src/lib/config/email.config');
+  const { emailConfig, resend } = await import(
+    '../src/lib/config/email.config'
+  );
 
   // Check email config (this will now work since we have the API key)
   console.log('Preview Mode:', emailConfig.features.previewMode);
@@ -51,7 +53,6 @@ async function testEmailConfig() {
   // Test Resend connection
   if (!emailConfig.features.previewMode) {
     try {
-      const resend = new Resend(emailConfig.resend.apiKey);
       const response = await resend.emails.send({
         from: `${emailConfig.sender.name} <${emailConfig.sender.address}>`,
         to: 'cory321@gmail.com', // Your email address

@@ -11,7 +11,7 @@ export default function NewOrderPage() {
   const clientId = searchParams.get('clientId');
 
   return (
-    <OrderFlowProvider initialClientId={clientId || undefined}>
+    <OrderFlowProvider {...(clientId ? { initialClientId: clientId } : {})}>
       <Container maxWidth="lg">
         <Box
           sx={{
