@@ -11,9 +11,13 @@ body {
   overflow-x: hidden;
 }
 
+html {
+  font-size: 15px; /* 1rem = 15px */
+}
+
 body {
   font-family: inherit;
-  background-color: var(--background);
+  background-color: #fff7ee;
   color: var(--foreground);
 }
 

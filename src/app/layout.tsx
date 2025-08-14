@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
+import { Nunito } from 'next/font/google';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import { QueryProvider } from '@/providers/QueryProvider';
 import { DateLocalizationProvider } from '@/providers/DateLocalizationProvider';
@@ -7,7 +7,12 @@ import { ClerkProvider } from '@clerk/nextjs';
 import { Toaster } from 'react-hot-toast';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'] });
+const nunito = Nunito({
+  subsets: ['latin'],
+  weight: ['400', '600', '700'],
+  display: 'swap',
+  variable: '--font-sans-rounded',
+});
 
 export const metadata: Metadata = {
   title: 'Threadfolio - Seamstress Business Management',
@@ -37,7 +42,10 @@ export default function RootLayout({
 
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <head>
+        <link href="/icons/generated-icons.css" rel="stylesheet" />
+      </head>
+      <body className={`${nunito.variable} ${nunito.className}`}>
         <DateLocalizationProvider>
           {hasClerkKey ? (
             <ClerkProvider>

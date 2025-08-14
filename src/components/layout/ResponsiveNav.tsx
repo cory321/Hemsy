@@ -25,53 +25,69 @@ import { UserButton, useUser } from '@clerk/nextjs';
 import { Breadcrumbs } from './Breadcrumbs';
 
 // Icons
-import HomeIcon from '@mui/icons-material/Home';
-import PeopleIcon from '@mui/icons-material/People';
-import ReceiptIcon from '@mui/icons-material/Receipt';
-import CheckroomIcon from '@mui/icons-material/Checkroom';
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
-import MenuIcon from '@mui/icons-material/Menu';
-import BuildIcon from '@mui/icons-material/Build';
-import DescriptionIcon from '@mui/icons-material/Description';
-import SettingsIcon from '@mui/icons-material/Settings';
 import { useState } from 'react';
+
+function RemixIcon({ name, size = 22 }: { name: string; size?: number }) {
+  return <i className={`ri ${name}`} style={{ fontSize: size }} aria-hidden />;
+}
 
 // Navigation items configuration
 const navItems = [
-  { label: 'Home', href: '/dashboard', icon: <HomeIcon />, showInBottom: true },
+  {
+    label: 'Home',
+    href: '/dashboard',
+    icon: <RemixIcon name="ri-home-smile-line" />,
+    showInBottom: true,
+  },
   {
     label: 'Clients',
     href: '/clients',
-    icon: <PeopleIcon />,
+    icon: <RemixIcon name="ri-group-line" />,
     showInBottom: true,
   },
   {
     label: 'Orders',
     href: '/orders',
-    icon: <ReceiptIcon />,
+    icon: <RemixIcon name="ri-shopping-bag-3-line" />,
     showInBottom: true,
   },
   {
     label: 'Garments',
     href: '/garments',
-    icon: <CheckroomIcon />,
+    icon: <RemixIcon name="ri-t-shirt-line" />,
     showInBottom: true,
   },
   {
     label: 'Calendar',
     href: '/appointments',
-    icon: <CalendarMonthIcon />,
+    icon: <RemixIcon name="ri-calendar-2-line" />,
     showInBottom: true,
   },
-  { label: 'More', href: '/more', icon: <MoreHorizIcon />, showInBottom: true },
+  {
+    label: 'More',
+    href: '/more',
+    icon: <RemixIcon name="ri-more-2-fill" />,
+    showInBottom: true,
+  },
 ];
 
 // Additional items that only show in desktop navigation
 const desktopOnlyItems = [
-  { label: 'Services', href: '/services', icon: <BuildIcon /> },
-  { label: 'Invoices', href: '/invoices', icon: <DescriptionIcon /> },
-  { label: 'Settings', href: '/settings', icon: <SettingsIcon /> },
+  {
+    label: 'Services',
+    href: '/services',
+    icon: <RemixIcon name="ri-pencil-ruler-line" />,
+  },
+  {
+    label: 'Invoices',
+    href: '/invoices',
+    icon: <RemixIcon name="ri-money-dollar-circle-line" />,
+  },
+  {
+    label: 'Settings',
+    href: '/settings',
+    icon: <RemixIcon name="ri-settings-5-line" />,
+  },
 ];
 
 const DRAWER_WIDTH = 240; // Used for tablet drawer
@@ -88,7 +104,7 @@ function MobileHeader() {
   const currentPageTitle = (() => {
     const allItems = [...navItems, ...desktopOnlyItems];
     const currentItem = allItems.find((item) => pathname.startsWith(item.href));
-    return currentItem?.label || 'Threadfolio';
+    return currentItem?.label || 'Hemsy';
   })();
 
   return (
@@ -172,61 +188,76 @@ function DesktopTopNav() {
 
   return (
     <AppBar position="fixed">
-      <Toolbar>
-        <Typography variant="h6" component="div" sx={{ mr: 4 }}>
-          Threadfolio
-        </Typography>
-        <Box sx={{ display: 'flex', flexGrow: 1, alignItems: 'center' }}>
-          {allDesktopItems.map((item) => {
-            const isActive = pathname.startsWith(item.href);
-            return (
-              <Button
-                key={item.href}
-                component={Link}
-                href={item.href}
-                startIcon={item.icon}
-                sx={{
-                  color: 'white',
-                  mx: 0.5,
-                  px: 2,
-                  py: 1,
-                  borderRadius: 1,
-                  backgroundColor: isActive
-                    ? 'rgba(255, 255, 255, 0.15)'
-                    : 'transparent',
-                  borderBottom: isActive
-                    ? '2px solid white'
-                    : '2px solid transparent',
-                  '&:hover': {
+      <Toolbar sx={{ px: 0 }}>
+        <Box
+          sx={{
+            width: '100%',
+            maxWidth: '1400px',
+            mx: 'auto',
+            px: { xs: 2, sm: 3, md: 4, lg: 6 },
+            display: 'flex',
+            alignItems: 'center',
+          }}
+        >
+          <Typography
+            variant="h6"
+            component="div"
+            sx={{ mr: 4, color: 'common.white' }}
+          >
+            Hemsy
+          </Typography>
+          <Box sx={{ display: 'flex', flexGrow: 1, alignItems: 'center' }}>
+            {allDesktopItems.map((item) => {
+              const isActive = pathname.startsWith(item.href);
+              return (
+                <Button
+                  key={item.href}
+                  component={Link}
+                  href={item.href}
+                  startIcon={item.icon}
+                  sx={{
+                    color: 'white',
+                    mx: 0.5,
+                    px: 2,
+                    py: 1,
+                    borderRadius: 1,
                     backgroundColor: isActive
-                      ? 'rgba(255, 255, 255, 0.2)'
-                      : 'rgba(255, 255, 255, 0.08)',
+                      ? 'rgba(255, 255, 255, 0.15)'
+                      : 'transparent',
+                    borderBottom: isActive
+                      ? '2px solid white'
+                      : '2px solid transparent',
+                    '&:hover': {
+                      backgroundColor: isActive
+                        ? 'rgba(255, 255, 255, 0.2)'
+                        : 'rgba(255, 255, 255, 0.08)',
+                    },
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  {item.label}
+                </Button>
+              );
+            })}
+          </Box>
+          <Box sx={{ ml: 2 }}>
+            <UserButton
+              appearance={{
+                elements: {
+                  rootBox: {
+                    marginLeft: '8px',
                   },
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                {item.label}
-              </Button>
-            );
-          })}
-        </Box>
-        <Box sx={{ ml: 2 }}>
-          <UserButton
-            appearance={{
-              elements: {
-                rootBox: {
-                  marginLeft: '8px',
+                  userButtonAvatarBox: {
+                    width: '36px',
+                    height: '36px',
+                  },
                 },
-                userButtonAvatarBox: {
-                  width: '36px',
-                  height: '36px',
-                },
-              },
-            }}
-            userProfileMode="navigation"
-            userProfileUrl="/settings"
-            afterSignOutUrl="/"
-          />
+              }}
+              userProfileMode="navigation"
+              userProfileUrl="/settings"
+              afterSignOutUrl="/"
+            />
+          </Box>
         </Box>
       </Toolbar>
     </AppBar>
@@ -253,36 +284,56 @@ function TabletNav() {
           zIndex: (theme) => theme.zIndex.drawer + 1,
         }}
       >
-        <Toolbar>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ mr: 2 }}
+        <Toolbar sx={{ px: 0 }}>
+          <Box
+            sx={{
+              width: '100%',
+              maxWidth: '1400px',
+              mx: 'auto',
+              px: { xs: 2, sm: 3, md: 4, lg: 6 },
+              display: 'flex',
+              alignItems: 'center',
+            }}
           >
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            Threadfolio
-          </Typography>
-          <Box>
-            <UserButton
-              appearance={{
-                elements: {
-                  rootBox: {
-                    marginLeft: '8px',
+            <IconButton
+              color="inherit"
+              aria-label="open drawer"
+              edge="start"
+              onClick={handleDrawerToggle}
+              sx={{ mr: 2 }}
+            >
+              <i
+                className="ri-menu-line"
+                aria-hidden
+                style={{ fontSize: 22 }}
+              />
+            </IconButton>
+            <Typography
+              variant="h6"
+              noWrap
+              component="div"
+              sx={{ flexGrow: 1, color: 'common.white' }}
+            >
+              Hemsy
+            </Typography>
+            <Box>
+              <UserButton
+                appearance={{
+                  elements: {
+                    rootBox: {
+                      marginLeft: '8px',
+                    },
+                    userButtonAvatarBox: {
+                      width: '36px',
+                      height: '36px',
+                    },
                   },
-                  userButtonAvatarBox: {
-                    width: '36px',
-                    height: '36px',
-                  },
-                },
-              }}
-              userProfileMode="navigation"
-              userProfileUrl="/settings"
-              afterSignOutUrl="/"
-            />
+                }}
+                userProfileMode="navigation"
+                userProfileUrl="/settings"
+                afterSignOutUrl="/"
+              />
+            </Box>
           </Box>
         </Toolbar>
       </AppBar>

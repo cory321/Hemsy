@@ -10,34 +10,35 @@ import {
   ListItemIcon,
   Divider,
 } from '@mui/material';
-import BuildIcon from '@mui/icons-material/Build';
-import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
-import SettingsIcon from '@mui/icons-material/Settings';
-import HelpIcon from '@mui/icons-material/Help';
-import LogoutIcon from '@mui/icons-material/Logout';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+// Using Remix icons for leading icons; keep MUI Chevron for secondary action or swap to Remix for consistency
+// import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import Link from 'next/link';
 import { useClerk } from '@clerk/nextjs';
 
 export default function MorePage() {
   const { signOut } = useClerk();
+  function RemixIcon({ name, size = 22 }: { name: string; size?: number }) {
+    return (
+      <i className={`ri ${name}`} style={{ fontSize: size }} aria-hidden />
+    );
+  }
   const menuItems = [
     {
       title: 'Services',
       description: 'Manage your alteration services',
-      icon: <BuildIcon />,
+      icon: <RemixIcon name="ri-pencil-ruler-line" />,
       href: '/services',
     },
     {
       title: 'Invoices',
       description: 'View and manage invoices',
-      icon: <ReceiptLongIcon />,
+      icon: <RemixIcon name="ri-money-dollar-circle-line" />,
       href: '/invoices',
     },
     {
       title: 'Settings',
       description: 'Business info and preferences',
-      icon: <SettingsIcon />,
+      icon: <RemixIcon name="ri-settings-5-line" />,
       href: '/settings',
     },
   ];
@@ -45,12 +46,12 @@ export default function MorePage() {
   const supportItems = [
     {
       title: 'Help & Support',
-      icon: <HelpIcon />,
+      icon: <RemixIcon name="ri-question-line" />,
       href: '/help',
     },
     {
       title: 'Sign Out',
-      icon: <LogoutIcon />,
+      icon: <RemixIcon name="ri-logout-box-r-line" />,
       onClick: () => signOut({ redirectUrl: '/' }),
     },
   ];
@@ -77,7 +78,13 @@ export default function MorePage() {
                   bgcolor: 'action.hover',
                 },
               }}
-              secondaryAction={<ChevronRightIcon color="action" />}
+              secondaryAction={
+                <i
+                  className="ri-arrow-right-s-line"
+                  aria-hidden
+                  style={{ color: 'var(--mui-palette-action-active)' }}
+                />
+              }
             >
               <ListItemIcon>{item.icon}</ListItemIcon>
               <ListItemText primary={item.title} secondary={item.description} />

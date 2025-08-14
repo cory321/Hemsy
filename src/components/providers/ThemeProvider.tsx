@@ -13,9 +13,9 @@ const theme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#1976d2',
-      light: '#42a5f5',
-      dark: '#1565c0',
+      main: '#FF7C4D',
+      light: '#FDC5AF',
+      dark: '#9e472a',
     },
     secondary: {
       main: '#dc004e',
@@ -23,34 +23,60 @@ const theme = createTheme({
       dark: '#9a0036',
     },
     background: {
-      default: '#fafafa',
+      default: '#faf5ed',
       paper: '#ffffff',
     },
   },
   typography: {
-    fontFamily: 'Inter, sans-serif',
-    h1: {
-      fontSize: '2.5rem',
-      fontWeight: 600,
-      lineHeight: 1.2,
+    fontFamily: [
+      'ui-rounded',
+      '"SF Pro Rounded"',
+      'var(--font-sans-rounded)',
+      'system-ui',
+      '-apple-system',
+      '"Segoe UI"',
+      'Roboto',
+      '"Helvetica Neue"',
+      'Arial',
+      '"Noto Sans"',
+      'sans-serif',
+    ].join(', '),
+    allVariants: {
+      lineHeight: 1.5,
     },
-    h2: {
-      fontSize: '2rem',
-      fontWeight: 600,
-      lineHeight: 1.3,
+    // UI Heading
+    h6: {
+      fontSize: '1.125rem', // 17px
+      fontWeight: 700,
     },
-    h3: {
-      fontSize: '1.75rem',
-      fontWeight: 600,
-      lineHeight: 1.4,
+    // Title
+    subtitle1: {
+      fontSize: '1.125rem', // 17px
+      fontWeight: 500,
     },
+    // Body text
     body1: {
-      fontSize: '1rem',
-      lineHeight: 1.6,
+      fontSize: '1rem', // 15px
+      fontWeight: 600,
+    },
+    body2: {
+      fontSize: '1rem', // 15px
+      fontWeight: 400,
+    },
+    // Captions
+    caption: {
+      fontSize: '0.86rem', // 13px
+      fontWeight: 600,
+    },
+    overline: {
+      fontSize: '0.86rem', // 13px
+      fontWeight: 400,
+      textTransform: 'none',
     },
     button: {
       textTransform: 'none',
       fontWeight: 500,
+      fontSize: '1rem',
     },
   },
   breakpoints: {
@@ -87,6 +113,7 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+          backgroundColor: '#615244',
         },
       },
     },

@@ -3,8 +3,6 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Breadcrumbs as MuiBreadcrumbs, Typography, Box } from '@mui/material';
-import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-import HomeIcon from '@mui/icons-material/Home';
 
 interface BreadcrumbSegment {
   label: string;
@@ -116,6 +114,13 @@ function capitalizeFirst(str: string): string {
 export function Breadcrumbs() {
   const pathname = usePathname();
   const breadcrumbs = generateBreadcrumbs(pathname);
+  const Separator = () => (
+    <i
+      className="ri ri-arrow-right-s-line"
+      style={{ fontSize: 14 }}
+      aria-hidden
+    />
+  );
 
   if (breadcrumbs.length === 0) {
     return null;
@@ -124,93 +129,102 @@ export function Breadcrumbs() {
   return (
     <Box
       sx={{
-        px: { xs: 2, sm: 3, md: 4, lg: 6 },
         py: 1,
         borderBottom: '1px solid',
         borderColor: 'divider',
         backgroundColor: 'background.default',
       }}
     >
-      <MuiBreadcrumbs
-        separator={<NavigateNextIcon fontSize="small" />}
-        aria-label="breadcrumb"
+      <Box
         sx={{
-          '& .MuiBreadcrumbs-separator': {
-            mx: 0.5,
-          },
+          px: { xs: 2, sm: 3, md: 4, lg: 6 },
+          maxWidth: '1400px',
+          mx: 'auto',
         }}
       >
-        <Link
-          href="/dashboard"
-          style={{
-            textDecoration: 'none',
-            color: 'inherit',
-            display: 'flex',
-            alignItems: 'center',
+        <MuiBreadcrumbs
+          separator={<Separator />}
+          aria-label="breadcrumb"
+          sx={{
+            '& .MuiBreadcrumbs-separator': {
+              mx: 0.5,
+            },
           }}
         >
-          <HomeIcon
-            sx={{
-              mr: 0.5,
-              fontSize: '1rem',
-              color: 'text.secondary',
-            }}
-          />
-          <Typography
-            variant="body2"
-            sx={{
-              color: 'text.secondary',
-              '&:hover': {
-                color: 'primary.main',
-                textDecoration: 'underline',
-              },
+          <Link
+            href="/dashboard"
+            style={{
+              textDecoration: 'none',
+              color: 'inherit',
+              display: 'flex',
+              alignItems: 'center',
             }}
           >
-            Home
-          </Typography>
-        </Link>
-
-        {breadcrumbs.map((crumb, index) => {
-          if (crumb.isLast || !crumb.href) {
-            return (
-              <Typography
-                key={index}
-                variant="body2"
-                sx={{
-                  color: 'text.primary',
-                  fontWeight: 500,
-                }}
-              >
-                {crumb.label}
-              </Typography>
-            );
-          }
-
-          return (
-            <Link
-              key={index}
-              href={crumb.href}
+            <i
+              className="ri ri-home-smile-line"
               style={{
-                textDecoration: 'none',
-                color: 'inherit',
+                marginRight: 4,
+                fontSize: '1rem',
+                color: 'var(--mui-palette-text-secondary)',
+              }}
+              aria-hidden
+            />
+            <Typography
+              variant="body2"
+              sx={{
+                color: 'text.secondary',
+                '&:hover': {
+                  color: 'primary.main',
+                  textDecoration: 'underline',
+                },
               }}
             >
-              <Typography
-                variant="body2"
-                sx={{
-                  color: 'text.secondary',
-                  '&:hover': {
-                    color: 'primary.main',
-                    textDecoration: 'underline',
-                  },
+              Home
+            </Typography>
+          </Link>
+
+          {breadcrumbs.map((crumb, index) => {
+            if (crumb.isLast || !crumb.href) {
+              return (
+                <Typography
+                  key={index}
+                  variant="body2"
+                  sx={{
+                    color: 'text.primary',
+                    fontWeight: 500,
+                  }}
+                >
+                  {crumb.label}
+                </Typography>
+              );
+            }
+
+            return (
+              <Link
+                key={index}
+                href={crumb.href}
+                style={{
+                  textDecoration: 'none',
+                  color: 'inherit',
                 }}
               >
-                {crumb.label}
-              </Typography>
-            </Link>
-          );
-        })}
-      </MuiBreadcrumbs>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: 'text.secondary',
+                    '&:hover': {
+                      color: 'primary.main',
+                      textDecoration: 'underline',
+                    },
+                  }}
+                >
+                  {crumb.label}
+                </Typography>
+              </Link>
+            );
+          })}
+        </MuiBreadcrumbs>
+      </Box>
     </Box>
   );
 }
