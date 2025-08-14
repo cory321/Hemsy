@@ -36,9 +36,9 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
-import PresetGarmentIconPicker from '../PresetGarmentIconPicker';
 import InlinePresetSvg from '@/components/ui/InlinePresetSvg';
-import { PastelColorPicker } from '@/components/ui/PastelColorPicker';
+import PresetGarmentIconModal from '../PresetGarmentIconModal';
+import { getPresetIconUrl } from '@/utils/presetIcons';
 
 export default function Step2GarmentDetails() {
   const {
@@ -50,6 +50,9 @@ export default function Step2GarmentDetails() {
     removeGarmentImage,
   } = useOrderFlow();
   const [expandedGarment, setExpandedGarment] = useState<string | false>(false);
+  const [iconModalGarmentId, setIconModalGarmentId] = useState<string | null>(
+    null
+  );
   const [dateValidationErrors, setDateValidationErrors] = useState<
     Record<string, { dueDate?: string; eventDate?: string }>
   >({});
@@ -206,81 +209,61 @@ export default function Step2GarmentDetails() {
                         }
                         onRemove={() => removeGarmentImage(garment.id)}
                       />
-                      <PresetGarmentIconPicker
-                        {...(garment.presetIconKey !== undefined
-                          ? { value: garment.presetIconKey }
-                          : {})}
-                        onChange={(key) =>
-                          updateGarment(garment.id, { presetIconKey: key })
-                        }
-                      />
-                      {garment.presetIconKey && (
+                      <Box>
                         <Box
-                          sx={{ display: 'flex', alignItems: 'center', gap: 2 }}
+                          role="button"
+                          onClick={() => setIconModalGarmentId(garment.id)}
+                          sx={{
+                            width: '100%',
+                            aspectRatio: '3 / 1',
+                            borderRadius: 1,
+                            display: 'grid',
+                            placeItems: 'center',
+                            position: 'relative',
+                            cursor: 'pointer',
+                            border: '2px',
+                            borderStyle: garment.presetIconKey
+                              ? 'solid'
+                              : 'dashed',
+                            borderColor: 'primary.main',
+                            bgcolor: 'background.paper',
+                          }}
                         >
-                          <Box
-                            sx={{
-                              width: 96,
-                              height: 96,
-                              borderRadius: 1,
-                              bgcolor: 'background.default',
-                              display: 'grid',
-                              placeItems: 'center',
-                              position: 'relative',
-                            }}
-                          >
-                            {(() => {
-                              const url = (
-                                require('@/utils/presetIcons') as any
-                              ).getPresetIconUrl(garment.presetIconKey);
+                          {garment.presetIconKey ? (
+                            (() => {
+                              const url = getPresetIconUrl(
+                                garment.presetIconKey!
+                              );
                               return url ? (
-                                <InlinePresetSvg
-                                  {...(garment.presetOutlineColor
-                                    ? {
-                                        outlineColor:
-                                          garment.presetOutlineColor,
-                                      }
-                                    : {})}
-                                  {...(garment.presetFillColor
-                                    ? { fillColor: garment.presetFillColor }
-                                    : {})}
-                                  src={url}
-                                />
+                                <Box
+                                  sx={{
+                                    width: 128,
+                                    height: 128,
+                                    position: 'relative',
+                                  }}
+                                >
+                                  <InlinePresetSvg
+                                    src={url}
+                                    {...(garment.presetOutlineColor
+                                      ? {
+                                          outlineColor:
+                                            garment.presetOutlineColor,
+                                        }
+                                      : {})}
+                                    {...(garment.presetFillColor
+                                      ? { fillColor: garment.presetFillColor }
+                                      : {})}
+                                  />
+                                </Box>
                               ) : null;
-                            })()}
-                          </Box>
-                          <Stack spacing={1} sx={{ flexGrow: 1 }}>
-                            <Typography variant="body2" color="text.secondary">
-                              Outline color
+                            })()
+                          ) : (
+                            <Typography color="primary">
+                              Choose Garment Icon
                             </Typography>
-                            <PastelColorPicker
-                              value={garment.presetOutlineColor || ''}
-                              onChange={(hex) =>
-                                updateGarment(garment.id, {
-                                  presetOutlineColor: hex || undefined,
-                                })
-                              }
-                              includeNone
-                            />
-                            <Typography
-                              variant="body2"
-                              color="text.secondary"
-                              sx={{ mt: 1 }}
-                            >
-                              Fill color
-                            </Typography>
-                            <PastelColorPicker
-                              value={garment.presetFillColor || ''}
-                              onChange={(hex) =>
-                                updateGarment(garment.id, {
-                                  presetFillColor: hex || undefined,
-                                })
-                              }
-                              includeNone
-                            />
-                          </Stack>
+                          )}
                         </Box>
-                      )}
+                      </Box>
                     </Stack>
                   </Grid>
 
@@ -644,6 +627,29 @@ export default function Step2GarmentDetails() {
           </Button>
         </>
       )}
+      <PresetGarmentIconModal
+        open={!!iconModalGarmentId}
+        onClose={() => setIconModalGarmentId(null)}
+        onSave={(res) => {
+          if (!iconModalGarmentId) return;
+          updateGarment(iconModalGarmentId, {
+            presetIconKey: res.presetIconKey,
+            presetFillColor: res.presetFillColor,
+          });
+        }}
+        initialKey={((): string | undefined => {
+          const g = orderDraft.garments.find(
+            (x) => x.id === iconModalGarmentId
+          );
+          return g?.presetIconKey;
+        })()}
+        initialFill={((): string | undefined => {
+          const g = orderDraft.garments.find(
+            (x) => x.id === iconModalGarmentId
+          );
+          return g?.presetFillColor;
+        })()}
+      />
     </Box>
   );
 }

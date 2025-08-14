@@ -9,9 +9,7 @@ import {
   Grid,
   Stack,
   Typography,
-  Chip,
 } from '@mui/material';
-import CategoryIcon from '@mui/icons-material/Category';
 import Image from 'next/image';
 import InlinePresetSvg from '@/components/ui/InlinePresetSvg';
 import { getPresetIconUrl, presetCatalog } from '@/utils/presetIcons';
@@ -33,18 +31,6 @@ export default function PresetGarmentIconPicker({
 
   return (
     <Stack spacing={2}>
-      <Stack direction="row" spacing={1} alignItems="center">
-        <CategoryIcon fontSize="small" />
-        <Typography variant="subtitle2">Choose a preset image</Typography>
-        {value && (
-          <Chip
-            label="Selected"
-            size="small"
-            color="primary"
-            onDelete={() => onChange(undefined)}
-          />
-        )}
-      </Stack>
       {categories.map((cat) => (
         <Box key={cat.id}>
           <Typography variant="overline" color="text.secondary">

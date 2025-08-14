@@ -1,8 +1,6 @@
 import { createOrder } from '@/lib/actions/orders';
-import { assignDefaultGarmentNames } from '@/lib/utils/order-normalization';
 import { createClient as createSupabaseClient } from '@/lib/supabase/server';
 
-// Mock dependencies
 jest.mock('@/lib/supabase/server');
 jest.mock('@/lib/actions/users', () => ({
   ensureUserAndShop: jest.fn().mockResolvedValue({
@@ -11,27 +9,7 @@ jest.mock('@/lib/actions/users', () => ({
   }),
 }));
 
-describe('assignDefaultGarmentNames', () => {
-  it('assigns sequential default names when names are missing or blank', () => {
-    const input = [
-      { name: '', notes: 'n1' },
-      { name: '  ' },
-      { name: 'Custom Jacket' },
-      { name: undefined as unknown as string },
-    ];
-
-    const result = assignDefaultGarmentNames(input);
-
-    expect(result.map((g: { name: string }) => g.name)).toEqual([
-      'Garment 1',
-      'Garment 2',
-      'Custom Jacket',
-      'Garment 4',
-    ]);
-  });
-});
-
-describe('createOrder with default garment names', () => {
+describe('createOrder persists garment preset icon and colors', () => {
   const supabaseMock = {
     rpc: jest.fn().mockReturnThis(),
     from: jest.fn().mockReturnThis(),
@@ -44,27 +22,30 @@ describe('createOrder with default garment names', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (createSupabaseClient as jest.Mock).mockResolvedValue(supabaseMock);
-    supabaseMock.rpc.mockResolvedValue({ data: 'ORD-001', error: null });
-  });
 
-  it('fills in blank garment names as Garment 1, Garment 2, ...', async () => {
-    // Order insert returns id
+    // generate_order_number
+    supabaseMock.rpc.mockResolvedValue({ data: 'ORD-001', error: null });
+
+    // orders insert -> id
     supabaseMock.single
-      // orders insert -> id
       .mockResolvedValueOnce({ data: { id: 'order-1' }, error: null })
       // garments[0] insert -> id
-      .mockResolvedValueOnce({ data: { id: 'garment-1' }, error: null })
-      // garments[1] insert -> id
-      .mockResolvedValueOnce({ data: { id: 'garment-2' }, error: null });
+      .mockResolvedValueOnce({ data: { id: 'garment-1' }, error: null });
+  });
 
+  it('passes preset_icon_key and preset colors to garments insert', async () => {
     supabaseMock.insert.mockReturnThis();
 
     const input = {
       clientId: '11111111-1111-1111-1111-111111111111',
       discountCents: 0,
+      notes: 'n',
       garments: [
         {
-          name: '',
+          name: 'Dress',
+          presetIconKey: 'tops.sweater_knit_top',
+          presetOutlineColor: '#111111',
+          presetFillColor: '#ffccaa',
           services: [
             {
               quantity: 1,
@@ -74,30 +55,20 @@ describe('createOrder with default garment names', () => {
             },
           ],
         },
-        {
-          name: '  ',
-          services: [
-            {
-              quantity: 2,
-              unit: 'hour',
-              unitPriceCents: 2000,
-              inline: { name: 'Fitting', unit: 'hour', unitPriceCents: 2000 },
-            },
-          ],
-        },
       ],
     };
 
     const result = await createOrder(input);
-
     expect(result.success).toBe(true);
 
-    // Verify garments insert received default names
-    const garmentInsertCalls = supabaseMock.insert.mock.calls.filter(
+    // Find the garments insert payload
+    const garmentInsertCall = supabaseMock.insert.mock.calls.find(
       (args: any[]) =>
         args[0] && typeof args[0] === 'object' && 'order_id' in args[0]
     );
-    expect(garmentInsertCalls[0][0].name).toBe('Garment 1');
-    expect(garmentInsertCalls[1][0].name).toBe('Garment 2');
+    expect(garmentInsertCall).toBeTruthy();
+    const payload = garmentInsertCall![0];
+    expect(payload.preset_icon_key).toBe('tops.sweater_knit_top');
+    expect(payload.preset_fill_color).toBe('#ffccaa');
   });
 });

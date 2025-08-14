@@ -14,6 +14,44 @@ jest.mock('@/lib/actions/clients', () => ({
   getClient: jest.fn(),
 }));
 
+jest.mock('@clerk/nextjs/server', () => ({
+  auth: jest.fn().mockResolvedValue({ userId: 'clerk-user-1' }),
+}));
+
+jest.mock('@/lib/supabase/server', () => ({
+  createClient: jest.fn().mockResolvedValue({
+    from(table: string) {
+      const api = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({ data: null }),
+      } as any;
+      if (table === 'users') {
+        api.single = jest.fn().mockResolvedValue({ data: { id: 'user-1' } });
+      }
+      if (table === 'shops') {
+        api.single = jest.fn().mockResolvedValue({ data: { id: 'shop-1' } });
+      }
+      return api;
+    },
+  }),
+}));
+
+jest.mock('@/lib/actions/appointments', () => ({
+  getShopHours: jest.fn().mockResolvedValue([
+    {
+      day_of_week: 1,
+      open_time: '09:00',
+      close_time: '17:00',
+      is_closed: false,
+    },
+  ]),
+  getCalendarSettings: jest.fn().mockResolvedValue({
+    buffer_time_minutes: 0,
+    default_appointment_duration: 30,
+  }),
+}));
+
 jest.mock('@/components/clients/ClientEditDialog', () => {
   return function MockClientEditDialog({
     children,
@@ -31,6 +69,12 @@ jest.mock('@/components/clients/ClientDeleteDialog', () => {
     children: React.ReactNode;
   }) {
     return <div data-testid="delete-dialog">{children}</div>;
+  };
+});
+
+jest.mock('@/components/clients/ClientAppointmentsSection', () => {
+  return function MockClientAppointmentsSection() {
+    return <div data-testid="appointments-section" />;
   };
 });
 

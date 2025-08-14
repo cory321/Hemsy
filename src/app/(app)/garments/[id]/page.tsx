@@ -18,6 +18,7 @@ import {
   Alert,
   CircularProgress,
 } from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CheckroomIcon from '@mui/icons-material/Checkroom';
 import EditIcon from '@mui/icons-material/Edit';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
@@ -30,6 +31,7 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import InlinePresetSvg from '@/components/ui/InlinePresetSvg';
 import { resolveGarmentDisplayImage } from '@/utils/displayImage';
+import Link from 'next/link';
 
 // Stage options
 const stages = [
@@ -45,11 +47,26 @@ const stages = [
 
 export default async function GarmentDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   // Await params directly in Server Components (Next.js 15)
   const { id } = await params;
+  const sp = (await searchParams) || {};
+  const from =
+    typeof sp.from === 'string'
+      ? sp.from
+      : Array.isArray(sp.from)
+        ? sp.from[0]
+        : undefined;
+  const orderId =
+    typeof sp.orderId === 'string'
+      ? sp.orderId
+      : Array.isArray(sp.orderId)
+        ? sp.orderId[0]
+        : undefined;
 
   // Fetch garment data from Supabase
   const result = await getGarmentById(id);
@@ -88,6 +105,19 @@ export default async function GarmentDetailPage({
   return (
     <Container maxWidth="lg">
       <Box sx={{ mt: 4, mb: 4 }}>
+        {from === 'order' && orderId ? (
+          <Box sx={{ mb: 2 }}>
+            <Button
+              component={Link}
+              href={`/orders/${orderId}`}
+              variant="text"
+              startIcon={<ArrowBackIcon />}
+              aria-label={`Back to Order ${orderId}`}
+            >
+              Back to Order
+            </Button>
+          </Box>
+        ) : null}
         {/* Header */}
         <Box
           sx={{

@@ -41,6 +41,11 @@ const GarmentInputSchema = z.object({
   imageUrl: z.string().url().optional(),
   // Optional preset icon key selected by user
   presetIconKey: z.string().optional(),
+  // Optional fill color for parameterized SVGs (outline will be derived)
+  presetFillColor: z
+    .string()
+    .regex(/^#?[0-9a-fA-F]{3,8}$/)
+    .optional(),
   services: z.array(ServiceLineSchema).min(1),
 });
 
@@ -86,6 +91,7 @@ export async function createOrder(
       imageCloudId?: string;
       imageUrl?: string;
       presetIconKey?: string;
+      presetFillColor?: string;
       services: {
         quantity: number;
         unit: 'item' | 'hour' | 'day' | 'week';
@@ -138,6 +144,7 @@ export async function createOrder(
       const { data: garmentIns, error: garmentErr } = await supabase
         .from('garments')
         .insert({
+          shop_id: shop.id,
           order_id: orderId,
           name: garment.name,
           notes: garment.notes ?? null,
@@ -148,6 +155,7 @@ export async function createOrder(
           image_cloud_id: garment.imageCloudId ?? null,
           photo_url: garment.imageUrl ?? null,
           preset_icon_key: garment.presetIconKey ?? null,
+          preset_fill_color: garment.presetFillColor ?? null,
         })
         .select('id')
         .single();
@@ -197,6 +205,7 @@ export async function createOrder(
     // Revalidate and redirect handled by caller if desired
     try {
       revalidatePath('/orders');
+      revalidatePath('/garments');
     } catch {}
 
     return { success: true, orderId };

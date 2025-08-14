@@ -472,6 +472,7 @@ export type Database = {
           order_id: string;
           photo_url: string | null;
           preset_icon_key: string | null;
+          preset_fill_color: string | null;
           shop_id: string | null;
           stage: string;
           stage_id: string | null;
@@ -489,6 +490,7 @@ export type Database = {
           order_id: string;
           photo_url?: string | null;
           preset_icon_key?: string | null;
+          preset_fill_color?: string | null;
           shop_id?: string | null;
           stage?: string;
           stage_id?: string | null;
@@ -506,6 +508,7 @@ export type Database = {
           order_id?: string;
           photo_url?: string | null;
           preset_icon_key?: string | null;
+          preset_fill_color?: string | null;
           shop_id?: string | null;
           stage?: string;
           stage_id?: string | null;

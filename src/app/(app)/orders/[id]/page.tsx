@@ -16,6 +16,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import Link from 'next/link';
 import { createClient as createSupabaseClient } from '@/lib/supabase/server';
+import InlinePresetSvg from '@/components/ui/InlinePresetSvg';
+import { getPresetIconUrl } from '@/utils/presetIcons';
 import { ensureUserAndShop } from '@/lib/actions/users';
 import type { Database } from '@/types/supabase';
 
@@ -60,7 +62,7 @@ export default async function OrderDetailPage({
   const { data: garments } = await supabase
     .from('garments')
     .select(
-      `id, name, stage, stage_id, notes, due_date, event_date, is_done,
+      `id, name, stage, stage_id, notes, due_date, event_date, is_done, preset_icon_key, preset_fill_color,
        garment_stages!garments_stage_id_fkey ( id, name, color )`
     )
     .eq('order_id', id)
@@ -187,11 +189,48 @@ export default async function OrderDetailPage({
                     <Box key={garment.id}>
                       <ListItem
                         component={Link}
-                        href={`/garments/${garment.id}`}
+                        href={`/garments/${garment.id}?from=order&orderId=${id}`}
                         sx={{ px: 0 }}
                       >
                         <ListItemText
-                          primary={garment.name}
+                          primary={
+                            <span
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 8,
+                              }}
+                            >
+                              {(() => {
+                                const key = (garment as any).preset_icon_key as
+                                  | string
+                                  | null;
+                                if (!key) return null;
+                                const url = getPresetIconUrl(key);
+                                if (!url) return null;
+                                return (
+                                  <span
+                                    style={{
+                                      width: 20,
+                                      height: 20,
+                                      display: 'inline-block',
+                                    }}
+                                  >
+                                    <InlinePresetSvg
+                                      src={url}
+                                      {...((garment as any).preset_fill_color
+                                        ? {
+                                            fillColor: (garment as any)
+                                              .preset_fill_color as string,
+                                          }
+                                        : {})}
+                                    />
+                                  </span>
+                                );
+                              })()}
+                              {garment.name}
+                            </span>
+                          }
                           secondary={
                             <>
                               {(lines || [])

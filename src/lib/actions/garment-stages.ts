@@ -194,6 +194,8 @@ export async function getGarmentsAndStages(shopId: string) {
       order_id,
       image_cloud_id,
       photo_url,
+      preset_icon_key,
+      preset_fill_color,
       notes,
       due_date,
       created_at,

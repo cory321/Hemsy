@@ -32,9 +32,11 @@ describe('resolveGarmentDisplayImage', () => {
   });
 
   it('falls back to preset icon key when no photo or cloud id', () => {
-    const res = resolveGarmentDisplayImage({ presetIconKey: 'tops.t_shirt' });
+    const res = resolveGarmentDisplayImage({ presetIconKey: 'tops.tshirt' });
     expect(res.kind).toBe('preset');
-    expect(res.src).toBe('tops.t_shirt');
+    // For presets we return a URL to the SVG asset
+    expect(typeof res.src).toBe('string');
+    expect(res.src as string).toContain('.svg');
   });
 
   it('returns default when nothing is set', () => {

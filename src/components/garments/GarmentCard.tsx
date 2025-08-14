@@ -10,6 +10,8 @@ import {
   Chip,
 } from '@mui/material';
 import { CldImage } from 'next-cloudinary';
+import InlinePresetSvg from '@/components/ui/InlinePresetSvg';
+import { resolveGarmentDisplayImage } from '@/utils/displayImage';
 
 interface GarmentCardProps {
   garment: {
@@ -17,6 +19,8 @@ interface GarmentCardProps {
     name: string;
     image_cloud_id?: string;
     photo_url?: string;
+    preset_icon_key?: string | null;
+    preset_fill_color?: string | null;
     client_name?: string;
     due_date?: string;
     event_date?: string;
@@ -88,49 +92,85 @@ const GarmentCard: React.FC<GarmentCardProps> = ({
       <Box
         sx={{ position: 'relative', paddingTop: '100%', overflow: 'hidden' }}
       >
-        {garment.image_cloud_id ? (
-          <CldImage
-            src={garment.image_cloud_id}
-            alt={garment.name}
-            fill
-            style={{ objectFit: 'cover' }}
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          />
-        ) : garment.photo_url ? (
-          <Box
-            component="img"
-            src={garment.photo_url}
-            alt={garment.name}
-            sx={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-            }}
-          />
-        ) : (
-          <Box
-            sx={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              backgroundColor: '#f5f5f5',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Avatar sx={{ width: 80, height: 80, bgcolor: '#e0e0e0' }}>
-              <Typography variant="h6" color="text.secondary">
-                {garment.name.charAt(0)}
-              </Typography>
-            </Avatar>
-          </Box>
-        )}
+        {(() => {
+          const resolved = resolveGarmentDisplayImage({
+            photoUrl: garment.photo_url ?? undefined,
+            cloudPublicId: garment.image_cloud_id ?? undefined,
+            presetIconKey: garment.preset_icon_key ?? undefined,
+          } as any);
+          if (resolved.kind === 'cloud') {
+            return (
+              <CldImage
+                src={garment.image_cloud_id as string}
+                alt={garment.name}
+                fill
+                style={{ objectFit: 'cover' }}
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              />
+            );
+          }
+          if (resolved.kind === 'photo') {
+            return (
+              <Box
+                component="img"
+                src={resolved.src as string}
+                alt={garment.name}
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                }}
+              />
+            );
+          }
+          if (resolved.kind === 'preset' && resolved.src) {
+            return (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  display: 'grid',
+                  placeItems: 'center',
+                  bgcolor: '#f5f5f5',
+                  p: 2,
+                }}
+              >
+                <InlinePresetSvg
+                  src={resolved.src as string}
+                  fillColor={(garment.preset_fill_color ?? undefined) as any}
+                  style={{ maxWidth: '90%', maxHeight: '90%' }}
+                />
+              </Box>
+            );
+          }
+          return (
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                backgroundColor: '#f5f5f5',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Avatar sx={{ width: 80, height: 80, bgcolor: '#e0e0e0' }}>
+                <Typography variant="h6" color="text.secondary">
+                  {garment.name.charAt(0)}
+                </Typography>
+              </Avatar>
+            </Box>
+          );
+        })()}
       </Box>
 
       <CardContent sx={{ flexGrow: 1, p: 2 }}>

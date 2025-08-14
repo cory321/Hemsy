@@ -15,6 +15,7 @@ const mockSupabase = {
   select: jest.fn().mockReturnThis(),
   eq: jest.fn().mockReturnThis(),
   single: jest.fn(),
+  maybeSingle: jest.fn(),
 };
 
 (createClient as jest.Mock).mockResolvedValue(mockSupabase);
@@ -72,9 +73,14 @@ describe('getGarmentById', () => {
     };
 
     // Setup mock responses
-    mockSupabase.single
-      .mockResolvedValueOnce({ data: mockGarment, error: null })
-      .mockResolvedValueOnce({ data: mockOrderCheck, error: null });
+    mockSupabase.single.mockResolvedValueOnce({
+      data: mockGarment,
+      error: null,
+    });
+    mockSupabase.maybeSingle.mockResolvedValueOnce({
+      data: mockOrderCheck,
+      error: null,
+    });
 
     const result = await getGarmentById('garment-123');
 
@@ -82,6 +88,9 @@ describe('getGarmentById', () => {
       success: true,
       garment: {
         ...mockGarment,
+        stage_id: null,
+        stage_name: null,
+        stage_color: null,
         totalPriceCents: 9500, // 3500 + (2 * 3000)
       },
     });
@@ -119,9 +128,14 @@ describe('getGarmentById', () => {
       shop_id: 'different-shop-id',
     };
 
-    mockSupabase.single
-      .mockResolvedValueOnce({ data: mockGarment, error: null })
-      .mockResolvedValueOnce({ data: mockOrderCheck, error: null });
+    mockSupabase.single.mockResolvedValueOnce({
+      data: mockGarment,
+      error: null,
+    });
+    mockSupabase.maybeSingle.mockResolvedValueOnce({
+      data: mockOrderCheck,
+      error: null,
+    });
 
     const result = await getGarmentById('garment-123');
 
@@ -143,9 +157,14 @@ describe('getGarmentById', () => {
       shop_id: 'test-shop-id',
     };
 
-    mockSupabase.single
-      .mockResolvedValueOnce({ data: mockGarment, error: null })
-      .mockResolvedValueOnce({ data: mockOrderCheck, error: null });
+    mockSupabase.single.mockResolvedValueOnce({
+      data: mockGarment,
+      error: null,
+    });
+    mockSupabase.maybeSingle.mockResolvedValueOnce({
+      data: mockOrderCheck,
+      error: null,
+    });
 
     const result = await getGarmentById('garment-123');
 

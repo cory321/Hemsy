@@ -21,6 +21,8 @@ import {
 import { useOrderFlow } from '@/contexts/OrderFlowContext';
 import { formatCurrency, dollarsToCents } from '@/lib/utils/currency';
 import { createClient as createSupabaseClient } from '@/lib/supabase/client';
+import InlinePresetSvg from '@/components/ui/InlinePresetSvg';
+import { getPresetIconUrl } from '@/utils/presetIcons';
 
 export default function Step3Summary() {
   const { orderDraft, updateOrderDraft, calculateSubtotal, calculateTotal } =
@@ -146,7 +148,36 @@ export default function Step3Summary() {
                         colSpan={4}
                         sx={{ bgcolor: 'grey.100', fontWeight: 'bold' }}
                       >
-                        {garment.name}
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 8,
+                          }}
+                        >
+                          {(() => {
+                            if (!garment.presetIconKey) return null;
+                            const url = getPresetIconUrl(garment.presetIconKey);
+                            if (!url) return null;
+                            return (
+                              <span
+                                style={{
+                                  width: 24,
+                                  height: 24,
+                                  display: 'inline-block',
+                                }}
+                              >
+                                <InlinePresetSvg
+                                  src={url}
+                                  {...(garment.presetFillColor
+                                    ? { fillColor: garment.presetFillColor }
+                                    : {})}
+                                />
+                              </span>
+                            );
+                          })()}
+                          {garment.name}
+                        </span>
                         {garment.dueDate && (
                           <Chip
                             label={`Due: ${new Date(garment.dueDate).toLocaleDateString()}`}

@@ -15,7 +15,9 @@ export function resolveGarmentDisplayImage(
 ): ResolvedDisplayImage {
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   // Lazy import to avoid cycles in server envs
-  const { getPresetIconUrl } = require('./presetIcons');
+  const { getPresetIconUrl } = require('./presetIcons') as {
+    getPresetIconUrl: (key?: string | null) => string | null;
+  };
 
   if (input.photoUrl) {
     return { kind: 'photo', src: input.photoUrl };
@@ -30,7 +32,7 @@ export function resolveGarmentDisplayImage(
 
   if (input.presetIconKey) {
     const url = getPresetIconUrl(input.presetIconKey);
-    return { kind: 'preset', src: url };
+    return { kind: 'preset', src: url ?? null };
   }
 
   return { kind: 'default', src: null };

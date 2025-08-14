@@ -32,10 +32,14 @@ function extractAndParametrize(svg: string) {
     new RegExp(`fill="${escapeRegex(outline)}"`, 'g'),
     `fill="var(--garment-outline, ${outline})"`
   );
-  out = out.replace(
-    new RegExp(`fill="${escapeRegex(fill)}"`, 'g'),
-    `fill="var(--garment-fill, ${fill})"`
-  );
+  // Map all remaining colors to the fill variable to enforce a 2-color scheme
+  const remaining = colors.filter((c) => c !== outline);
+  for (const c of remaining) {
+    out = out.replace(
+      new RegExp(`fill="${escapeRegex(c)}"`, 'g'),
+      `fill="var(--garment-fill, ${c})"`
+    );
+  }
 
   // Normalize root width/height to be responsive and square-friendly
   let normalizedRoot = rootTag
@@ -104,9 +108,36 @@ export default function InlinePresetSvg({
     [raw]
   );
 
+  function darken(hex: string, amount = 0.25): string {
+    try {
+      const v = hex.replace('#', '');
+      const full =
+        v.length === 3
+          ? v
+              .split('')
+              .map((c) => c + c)
+              .join('')
+          : v;
+      const bigint = parseInt(full, 16);
+      const r = (bigint >> 16) & 255;
+      const g = (bigint >> 8) & 255;
+      const b = bigint & 255;
+      const dr = Math.max(0, Math.round(r * (1 - amount)));
+      const dg = Math.max(0, Math.round(g * (1 - amount)));
+      const db = Math.max(0, Math.round(b * (1 - amount)));
+      const toHex = (n: number) => n.toString(16).padStart(2, '0');
+      return `#${toHex(dr)}${toHex(dg)}${toHex(db)}`;
+    } catch {
+      return hex;
+    }
+  }
+
+  const computedOutline =
+    outlineColor || (fillColor ? darken(fillColor) : undefined);
+
   const vars: CSSProperties = {
-    ...(outlineColor
-      ? ({ ['--garment-outline' as any]: outlineColor } as any)
+    ...(computedOutline
+      ? ({ ['--garment-outline' as any]: computedOutline } as any)
       : {}),
     ...(fillColor ? ({ ['--garment-fill' as any]: fillColor } as any) : {}),
   };

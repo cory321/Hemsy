@@ -17,19 +17,4 @@ describe('PresetGarmentIconPicker', () => {
     fireEvent.click(tshirt);
     expect(onChange).toHaveBeenCalled();
   });
-
-  it('shows Selected chip and allows clearing selection', () => {
-    const onChange = jest.fn();
-    render(
-      <PresetGarmentIconPicker value={'tops.t_shirt'} onChange={onChange} />
-    );
-
-    expect(screen.getByText('Selected')).toBeInTheDocument();
-
-    // Trigger deletion via keyboard on the chip button
-    const chipButton = screen.getByRole('button', { name: 'Selected' });
-    chipButton.focus();
-    fireEvent.keyDown(chipButton, { key: 'Backspace' });
-    expect(onChange).toHaveBeenCalledWith(undefined);
-  });
 });

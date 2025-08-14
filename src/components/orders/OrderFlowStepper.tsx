@@ -71,6 +71,8 @@ export default function OrderFlowStepper() {
           // Include image data if available
           imageCloudId: garment.imageCloudId || undefined,
           imageUrl: garment.imageUrl || undefined,
+          presetIconKey: garment.presetIconKey || undefined,
+          presetFillColor: garment.presetFillColor || undefined,
           services: garment.services.map((service: ServiceLine) => ({
             quantity: service.quantity,
             unit: service.unit,
