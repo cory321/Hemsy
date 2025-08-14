@@ -279,8 +279,7 @@ export default async function OrderDetailPage({
                               const chipSx: any = color
                                 ? {
                                     bgcolor: color,
-                                    color: (theme: any) =>
-                                      theme.palette.text.primary,
+                                    color: 'text.primary',
                                     '& .MuiChip-label': { fontWeight: 600 },
                                   }
                                 : undefined;

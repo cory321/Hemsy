@@ -41,6 +41,8 @@ type GarmentListItem = {
   client_name?: string;
   photo_url?: string;
   image_cloud_id?: string;
+  preset_icon_key?: string | null;
+  preset_fill_color?: string | null;
   due_date?: string;
   event_date?: string;
   services?: any[];
@@ -107,6 +109,12 @@ export default function GarmentsPage() {
               : {}),
             ...(garment.image_cloud_id
               ? { image_cloud_id: garment.image_cloud_id as string }
+              : {}),
+            ...(garment.preset_icon_key
+              ? { preset_icon_key: garment.preset_icon_key as string }
+              : {}),
+            ...(garment.preset_fill_color
+              ? { preset_fill_color: garment.preset_fill_color as string }
               : {}),
             ...(garment.due_date
               ? { due_date: garment.due_date as string }
