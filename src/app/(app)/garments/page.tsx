@@ -37,12 +37,12 @@ type GarmentListItem = {
   order_id: string;
   stage_id: string;
   stage_name?: string;
-  stage_color?: string | null;
+  stage_color?: string;
   client_name?: string;
-  photo_url?: string | null;
-  image_cloud_id?: string | null;
-  due_date?: string | null;
-  event_date?: string | null;
+  photo_url?: string;
+  image_cloud_id?: string;
+  due_date?: string;
+  event_date?: string;
   services?: any[];
 };
 
@@ -88,10 +88,37 @@ export default function GarmentsPage() {
       console.log('Fetched stages:', fetchedStages);
 
       setGarmentsData(
-        garments.map((garment) => ({
-          ...garment,
-          client_name: garment.client_name || 'Unknown Client',
-        }))
+        garments.map(
+          (garment): GarmentListItem => ({
+            id: garment.id as string,
+            name: garment.name as string,
+            order_id: garment.order_id as string,
+            stage_id: (garment.stage_id as string) || '',
+            ...(garment.stage_name
+              ? { stage_name: garment.stage_name as string }
+              : {}),
+            ...(garment.stage_color
+              ? { stage_color: garment.stage_color as string }
+              : {}),
+            client_name:
+              (garment.client_name as string | undefined) || 'Unknown Client',
+            ...(garment.photo_url
+              ? { photo_url: garment.photo_url as string }
+              : {}),
+            ...(garment.image_cloud_id
+              ? { image_cloud_id: garment.image_cloud_id as string }
+              : {}),
+            ...(garment.due_date
+              ? { due_date: garment.due_date as string }
+              : {}),
+            ...(garment.event_date
+              ? { event_date: garment.event_date as string }
+              : {}),
+            ...(garment.services
+              ? { services: garment.services as any[] }
+              : {}),
+          })
+        )
       );
       setStages(fetchedStages);
     } catch (error) {
@@ -183,7 +210,11 @@ export default function GarmentsPage() {
           {stages.map((stage, index) => (
             <StageBox
               key={stage.id}
-              stage={{ ...stage, count: garmentCounts[stage.id] || 0 }}
+              stage={{
+                name: stage.name,
+                ...(stage.color ? { color: stage.color } : {}),
+                count: garmentCounts[stage.id] || 0,
+              }}
               isSelected={selectedStage?.id === stage.id}
               onClick={() => setSelectedStage(stage)}
               isLast={index === stages.length - 1}
@@ -235,7 +266,7 @@ export default function GarmentsPage() {
             <InputLabel>Sort By</InputLabel>
             <Select
               value={sortField}
-              onChange={(e) => setSortField(e.target.value)}
+              onChange={(e) => setSortField(e.target.value as typeof sortField)}
               label="Sort By"
             >
               <MenuItem value="due_date">Due Date</MenuItem>
@@ -301,22 +332,27 @@ export default function GarmentsPage() {
                 mb: 2,
               }}
             >
-              <Typography variant="h5" sx={{ color: '#000' }}>
+              <Typography
+                variant="h5"
+                sx={{ color: (theme) => theme.palette.text.primary }}
+              >
                 {clientName}
               </Typography>
             </Box>
 
             {/* Garments Grid for the Client */}
             <Grid container spacing={3}>
-              {groupedGarments.groups[clientName].map((garment) => (
+              {groupedGarments.groups[clientName]?.map((garment) => (
                 <Grid item xs={12} sm={6} md={4} lg={3} key={garment.id}>
                   <GarmentCard
                     garment={garment}
                     orderId={garment.order_id}
-                    stageColor={
-                      stages.find((stage) => stage.id === garment.stage_id)
-                        ?.color
-                    }
+                    {...(() => {
+                      const sc = stages.find(
+                        (stage) => stage.id === garment.stage_id
+                      )?.color;
+                      return sc ? { stageColor: sc } : {};
+                    })()}
                   />
                 </Grid>
               ))}
@@ -330,9 +366,12 @@ export default function GarmentsPage() {
               <GarmentCard
                 garment={garment}
                 orderId={garment.order_id}
-                stageColor={
-                  stages.find((stage) => stage.id === garment.stage_id)?.color
-                }
+                {...(() => {
+                  const sc = stages.find(
+                    (stage) => stage.id === garment.stage_id
+                  )?.color;
+                  return sc ? { stageColor: sc } : {};
+                })()}
               />
             </Grid>
           ))}
@@ -345,7 +384,12 @@ export default function GarmentsPage() {
           open={customizeDialogOpen}
           onClose={() => setCustomizeDialogOpen(false)}
           onStagesUpdated={handleStagesUpdated}
-          stages={stages}
+          stages={stages.map((s) => ({
+            id: s.id,
+            name: s.name,
+            position: s.position,
+            color: s.color || '',
+          }))}
           shopId={shopId}
         />
       )}

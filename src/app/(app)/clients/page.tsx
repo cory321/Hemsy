@@ -1,4 +1,4 @@
-import { Container, Typography, Box, Fab } from '@mui/material';
+import { Container, Typography, Box, Fab, Button } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import Link from 'next/link';
 import ClientsList from '@/components/clients/ClientsList';
@@ -11,9 +11,28 @@ export default async function ClientsPage() {
   return (
     <Container maxWidth="lg">
       <Box sx={{ mt: 4, mb: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Clients
-        </Typography>
+        {/* Header with title and desktop CTA */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mb: 3,
+          }}
+        >
+          <Typography variant="h4" component="h1">
+            Clients
+          </Typography>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            component={Link}
+            href="/clients/new"
+            sx={{ display: { xs: 'none', sm: 'flex' } }}
+          >
+            Add Client
+          </Button>
+        </Box>
 
         {/* Clients List with pagination */}
         <ClientsList initialData={initialData} getClientsAction={getClients} />
@@ -28,6 +47,7 @@ export default async function ClientsPage() {
             position: 'fixed',
             bottom: 80,
             right: 16,
+            display: { xs: 'flex', sm: 'none' },
           }}
         >
           <AddIcon />

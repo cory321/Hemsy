@@ -26,6 +26,9 @@ const theme = createTheme({
       default: '#faf5ed',
       paper: '#ffffff',
     },
+    text: {
+      primary: '#605143',
+    },
   },
   typography: {
     fontFamily: [

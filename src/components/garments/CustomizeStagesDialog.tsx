@@ -113,6 +113,9 @@ export default function CustomizeStagesDialog({
     if (!result.destination) return;
     const reorderedStages = Array.from(stages);
     const [removed] = reorderedStages.splice(result.source.index, 1);
+    if (!removed) {
+      return;
+    }
 
     reorderedStages.splice(result.destination.index, 0, removed);
     const updatedStages = reorderedStages.map((stage, index) => ({
@@ -147,14 +150,19 @@ export default function CustomizeStagesDialog({
   };
 
   const handleDeleteStage = (index: number) => {
-    const stageToDelete = stages[index];
+    const localStageToDelete = stages[index];
 
-    if (stageToDelete.id === null) {
+    if (!localStageToDelete) {
+      setError('Invalid stage selected.');
+      return;
+    }
+
+    if (localStageToDelete.id === null) {
       // If the stage is new (unsaved), remove it from local state
       setStages((prevStages) => prevStages.filter((_, i) => i !== index));
     } else {
       // Existing stage, proceed with confirmation dialog
-      setStageToDelete(stageToDelete);
+      setStageToDelete(localStageToDelete);
       setConfirmDeleteOpen(true);
     }
 
@@ -247,11 +255,11 @@ export default function CustomizeStagesDialog({
         await updateStages(
           shopId,
           stagesToSave,
-          stageToDelete.id,
-          reassignStageId
+          stageToDelete.id as string,
+          reassignStageId || undefined
         );
 
-        onStagesUpdated(stageToDelete.id); // Pass the deleted stage ID
+        onStagesUpdated(stageToDelete.id ?? undefined); // Pass the deleted stage ID
         onClose();
 
         // Reset variables
@@ -391,7 +399,7 @@ export default function CustomizeStagesDialog({
                               right: 4,
                               width: 24,
                               height: 24,
-                              backgroundColor: stage.color || '#000',
+                              backgroundColor: stage.color || '#605143',
                               border: '1px solid #fff',
                               borderRadius: '4px',
                               cursor: 'pointer',
@@ -426,10 +434,12 @@ export default function CustomizeStagesDialog({
                                 size="small"
                                 sx={{ width: '100%' }}
                                 error={
-                                  stage.touched && stage.name.trim() === ''
+                                  Boolean(stage.touched) &&
+                                  stage.name.trim() === ''
                                 }
                                 helperText={
-                                  stage.touched && stage.name.trim() === ''
+                                  Boolean(stage.touched) &&
+                                  stage.name.trim() === ''
                                     ? 'Stage name is required'
                                     : ''
                                 }

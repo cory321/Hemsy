@@ -29,6 +29,9 @@ export interface ServiceLine {
 export interface GarmentDraft {
   id: string; // Temporary ID for UI tracking
   name: string;
+  // When true, indicates the user has manually typed/edited the garment name.
+  // Used to prevent auto-updating the name from preset icon selections.
+  isNameUserEdited?: boolean;
   notes?: string;
   dueDate?: string | undefined;
   eventDate?: string | undefined;

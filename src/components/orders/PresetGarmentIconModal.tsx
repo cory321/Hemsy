@@ -50,7 +50,20 @@ export default function PresetGarmentIconModal({
   const url = selectedKey ? getPresetIconUrl(selectedKey) : null;
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="lg">
+    <Dialog
+      open={open}
+      onClose={(_, reason) => {
+        // If user clicks backdrop or presses Escape, auto-save current selection if any
+        if (reason === 'backdropClick' || reason === 'escapeKeyDown') {
+          if (selectedKey) {
+            onSave({ presetIconKey: selectedKey, presetFillColor: fill });
+          }
+        }
+        onClose();
+      }}
+      fullWidth
+      maxWidth="lg"
+    >
       <DialogTitle>Choose Garment Icon</DialogTitle>
       <DialogContent dividers>
         <Grid container spacing={3}>

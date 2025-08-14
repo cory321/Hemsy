@@ -23,6 +23,7 @@ interface GarmentImageUploadProps {
   onUpload: (result: any) => void;
   onRemove: () => void;
   garmentName?: string | undefined;
+  variant?: 'card' | 'link';
 }
 
 export default function GarmentImageUpload({
@@ -31,6 +32,7 @@ export default function GarmentImageUpload({
   onUpload,
   onRemove,
   garmentName,
+  variant = 'card',
 }: GarmentImageUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
 
@@ -49,45 +51,122 @@ export default function GarmentImageUpload({
 
   return (
     <Box>
-      {publicId ? (
-        <Card variant="outlined" sx={{ position: 'relative' }}>
-          <Box sx={{ position: 'relative', paddingTop: '75%' }}>
-            <CldImage
-              src={publicId}
-              alt={garmentName || 'Garment image'}
-              fill
-              style={{ objectFit: 'cover' }}
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            />
-            <Stack
-              direction="row"
-              spacing={1}
-              sx={{
-                position: 'absolute',
-                top: 8,
-                right: 8,
-              }}
-            >
-              <Chip
-                icon={<CheckCircleIcon />}
-                label="Uploaded"
-                size="small"
-                color="success"
-                sx={{ bgcolor: 'background.paper' }}
+      {variant === 'card' ? (
+        publicId ? (
+          <Card variant="outlined" sx={{ position: 'relative' }}>
+            <Box sx={{ position: 'relative', paddingTop: '75%' }}>
+              <CldImage
+                src={publicId}
+                alt={garmentName || 'Garment image'}
+                fill
+                style={{ objectFit: 'cover' }}
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               />
-              <IconButton
-                size="small"
-                onClick={onRemove}
-                sx={{
-                  bgcolor: 'background.paper',
-                  '&:hover': { bgcolor: 'error.main', color: 'white' },
-                }}
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{ position: 'absolute', top: 8, right: 8 }}
               >
-                <DeleteIcon fontSize="small" />
-              </IconButton>
-            </Stack>
-          </Box>
-        </Card>
+                <Chip
+                  icon={<CheckCircleIcon />}
+                  label="Uploaded"
+                  size="small"
+                  color="success"
+                  sx={{ bgcolor: 'background.paper' }}
+                />
+                <IconButton
+                  size="small"
+                  onClick={onRemove}
+                  sx={{
+                    bgcolor: 'background.paper',
+                    '&:hover': { bgcolor: 'error.main', color: 'white' },
+                  }}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Stack>
+            </Box>
+          </Card>
+        ) : (
+          <CldUploadWidget
+            uploadPreset={
+              process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'threadfolio'
+            }
+            signatureEndpoint="/api/sign-cloudinary-params"
+            onSuccess={handleUploadSuccess}
+            onQueuesStart={() => setIsUploading(true)}
+            onQueuesEnd={() => setIsUploading(false)}
+            options={{
+              sources: ['local', 'camera'],
+              multiple: false,
+              maxFiles: 1,
+              clientAllowedFormats: ['image'],
+              maxImageFileSize: 10000000,
+              showAdvancedOptions: false,
+              cropping: true,
+              croppingAspectRatio: 4 / 3,
+              croppingShowDimensions: true,
+              resourceType: 'image',
+              showSkipCropButton: false,
+              styles: {
+                palette: {
+                  window: '#FFFFFF',
+                  windowBorder: '#90A0B3',
+                  tabIcon: '#1976D2',
+                  menuIcons: '#5A616A',
+                  textDark: '#605143',
+                  textLight: '#FFFFFF',
+                  link: '#1976D2',
+                  action: '#339CE3',
+                  inactiveTabIcon: '#0E2F5A',
+                  error: '#F44235',
+                  inProgress: '#1976D2',
+                  complete: '#20B832',
+                  sourceBg: '#E4EBF1',
+                },
+              },
+            }}
+          >
+            {({ open }) => (
+              <Card
+                variant="outlined"
+                sx={{
+                  p: 3,
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    borderColor: 'primary.main',
+                    bgcolor: 'action.hover',
+                  },
+                }}
+                onClick={() => open()}
+              >
+                <Stack spacing={2} alignItems="center">
+                  <Box
+                    sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}
+                  >
+                    <CameraAltIcon
+                      sx={{ fontSize: 48, color: 'text.secondary' }}
+                    />
+                    <AddPhotoAlternateIcon
+                      sx={{ fontSize: 48, color: 'text.secondary' }}
+                    />
+                  </Box>
+                  <Typography variant="h6" color="text.secondary">
+                    {isUploading ? 'Uploading...' : 'Add Garment Photo'}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Tap to take a photo or upload an image
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Max size: 10MB • JPG, PNG, WEBP
+                  </Typography>
+                </Stack>
+              </Card>
+            )}
+          </CldUploadWidget>
+        )
       ) : (
         <CldUploadWidget
           uploadPreset={
@@ -102,74 +181,23 @@ export default function GarmentImageUpload({
             multiple: false,
             maxFiles: 1,
             clientAllowedFormats: ['image'],
-            maxImageFileSize: 10000000, // 10MB
+            maxImageFileSize: 10000000,
             showAdvancedOptions: false,
             cropping: true,
             croppingAspectRatio: 4 / 3,
             croppingShowDimensions: true,
             resourceType: 'image',
             showSkipCropButton: false,
-            // This helps with mobile experience
-            styles: {
-              palette: {
-                window: '#FFFFFF',
-                windowBorder: '#90A0B3',
-                tabIcon: '#1976D2',
-                menuIcons: '#5A616A',
-                textDark: '#000000',
-                textLight: '#FFFFFF',
-                link: '#1976D2',
-                action: '#339CE3',
-                inactiveTabIcon: '#0E2F5A',
-                error: '#F44235',
-                inProgress: '#1976D2',
-                complete: '#20B832',
-                sourceBg: '#E4EBF1',
-              },
-            },
           }}
         >
           {({ open }) => (
-            <Card
-              variant="outlined"
-              sx={{
-                p: 3,
-                textAlign: 'center',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                '&:hover': {
-                  borderColor: 'primary.main',
-                  bgcolor: 'action.hover',
-                },
-              }}
+            <Button
+              variant="text"
               onClick={() => open()}
+              sx={{ p: 0, textDecoration: 'underline' }}
             >
-              <Stack spacing={2} alignItems="center">
-                <Box
-                  sx={{
-                    display: 'flex',
-                    gap: 2,
-                    justifyContent: 'center',
-                  }}
-                >
-                  <CameraAltIcon
-                    sx={{ fontSize: 48, color: 'text.secondary' }}
-                  />
-                  <AddPhotoAlternateIcon
-                    sx={{ fontSize: 48, color: 'text.secondary' }}
-                  />
-                </Box>
-                <Typography variant="h6" color="text.secondary">
-                  {isUploading ? 'Uploading...' : 'Add Garment Photo'}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Tap to take a photo or upload an image
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Max size: 10MB • JPG, PNG, WEBP
-                </Typography>
-              </Stack>
-            </Card>
+              {isUploading ? 'Uploading…' : 'Upload photo'}
+            </Button>
           )}
         </CldUploadWidget>
       )}

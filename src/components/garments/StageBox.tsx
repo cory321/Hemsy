@@ -42,7 +42,8 @@ const StageBox: React.FC<StageBoxProps> = ({
           variant="h6"
           sx={{
             fontWeight: isSelected ? 700 : 500,
-            color: stage.name === 'View All' ? '#000' : '#fff',
+            color: (theme) =>
+              stage.name === 'View All' ? theme.palette.text.primary : '#fff',
           }}
         >
           {stage.name}
@@ -51,7 +52,8 @@ const StageBox: React.FC<StageBoxProps> = ({
           variant="h5"
           sx={{
             fontWeight: 700,
-            color: stage.name === 'View All' ? '#000' : '#fff',
+            color: (theme) =>
+              stage.name === 'View All' ? theme.palette.text.primary : '#fff',
           }}
         >
           {stage.count}

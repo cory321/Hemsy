@@ -24,7 +24,7 @@ function extractAndParametrize(svg: string) {
     if (!colors.includes(c)) colors.push(c);
   }
 
-  const outline = colors[0] ?? '#000000';
+  const outline = colors[0] ?? '#605143';
   const fill = colors[1] ?? colors[0] ?? '#cccccc';
 
   // Replace outline then fill with CSS variables + fallback

@@ -38,7 +38,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import InlinePresetSvg from '@/components/ui/InlinePresetSvg';
 import PresetGarmentIconModal from '../PresetGarmentIconModal';
-import { getPresetIconUrl } from '@/utils/presetIcons';
+import { getPresetIconUrl, presetCatalog } from '@/utils/presetIcons';
 
 export default function Step2GarmentDetails() {
   const {
@@ -62,6 +62,7 @@ export default function Step2GarmentDetails() {
       id: uuidv4(),
       // Name is optional; user can leave blank
       name: '',
+      isNameUserEdited: false,
       notes: '',
       dueDate: formatDate(new Date(), 'yyyy-MM-dd'),
       eventDate: undefined,
@@ -169,7 +170,7 @@ export default function Step2GarmentDetails() {
                 </Box>
               </AccordionSummary>
               <AccordionDetails>
-                <Grid container spacing={3}>
+                <Grid container spacing={1}>
                   {/* Date Validation Alert */}
                   {(dateValidationErrors[garment.id]?.dueDate ||
                     dateValidationErrors[garment.id]?.eventDate) && (
@@ -181,279 +182,117 @@ export default function Step2GarmentDetails() {
                     </Grid>
                   )}
 
-                  {/* Garment Details */}
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      label="Garment Name (Optional)"
-                      value={garment.name}
-                      onChange={(e) =>
-                        updateGarment(garment.id, { name: e.target.value })
-                      }
-                      placeholder="e.g., Wedding Dress, Suit Jacket"
-                    />
-                  </Grid>
+                  {/* Visual + Basics layout */}
+                  <Grid item xs={12} sm={3}>
+                    <Stack spacing={1} alignItems="stretch">
+                      {/* Square icon picker */}
+                      <Box
+                        role="button"
+                        onClick={() => setIconModalGarmentId(garment.id)}
+                        sx={{
+                          width: { xs: 140, sm: 160 },
+                          maxWidth: '100%',
+                          mx: 'auto',
+                          aspectRatio: '1 / 1',
+                          borderRadius: 1,
+                          display: 'grid',
+                          placeItems: 'center',
+                          position: 'relative',
+                          cursor: 'pointer',
+                          border: '2px',
+                          borderStyle: garment.presetIconKey
+                            ? 'solid'
+                            : 'dashed',
+                          borderColor: 'primary.main',
+                          bgcolor: 'background.paper',
+                          p: 1,
+                        }}
+                      >
+                        {garment.presetIconKey ? (
+                          (() => {
+                            const url = getPresetIconUrl(
+                              garment.presetIconKey!
+                            );
+                            return url ? (
+                              <Box
+                                sx={{
+                                  width: '100%',
+                                  height: '100%',
+                                  position: 'relative',
+                                }}
+                              >
+                                <InlinePresetSvg
+                                  src={url}
+                                  {...(garment.presetOutlineColor
+                                    ? {
+                                        outlineColor:
+                                          garment.presetOutlineColor,
+                                      }
+                                    : {})}
+                                  {...(garment.presetFillColor
+                                    ? { fillColor: garment.presetFillColor }
+                                    : {})}
+                                />
+                              </Box>
+                            ) : null;
+                          })()
+                        ) : (
+                          <Typography color="primary">
+                            Choose Garment Icon
+                          </Typography>
+                        )}
+                      </Box>
 
-                  {/* Garment Image */}
-                  <Grid item xs={12}>
-                    <Typography variant="subtitle2" gutterBottom>
-                      Garment Photo or Preset Image (Optional)
-                    </Typography>
-                    <Stack spacing={2}>
-                      <GarmentImageUpload
-                        imageUrl={garment.imageUrl}
-                        publicId={garment.imageCloudId}
-                        garmentName={garment.name}
-                        onUpload={(result) =>
-                          updateGarmentImage(garment.id, result)
-                        }
-                        onRemove={() => removeGarmentImage(garment.id)}
-                      />
+                      {/* Upload photo link */}
                       <Box>
-                        <Box
-                          role="button"
-                          onClick={() => setIconModalGarmentId(garment.id)}
-                          sx={{
-                            width: '100%',
-                            aspectRatio: '3 / 1',
-                            borderRadius: 1,
-                            display: 'grid',
-                            placeItems: 'center',
-                            position: 'relative',
-                            cursor: 'pointer',
-                            border: '2px',
-                            borderStyle: garment.presetIconKey
-                              ? 'solid'
-                              : 'dashed',
-                            borderColor: 'primary.main',
-                            bgcolor: 'background.paper',
-                          }}
-                        >
-                          {garment.presetIconKey ? (
-                            (() => {
-                              const url = getPresetIconUrl(
-                                garment.presetIconKey!
-                              );
-                              return url ? (
-                                <Box
-                                  sx={{
-                                    width: 128,
-                                    height: 128,
-                                    position: 'relative',
-                                  }}
-                                >
-                                  <InlinePresetSvg
-                                    src={url}
-                                    {...(garment.presetOutlineColor
-                                      ? {
-                                          outlineColor:
-                                            garment.presetOutlineColor,
-                                        }
-                                      : {})}
-                                    {...(garment.presetFillColor
-                                      ? { fillColor: garment.presetFillColor }
-                                      : {})}
-                                  />
-                                </Box>
-                              ) : null;
-                            })()
-                          ) : (
-                            <Typography color="primary">
-                              Choose Garment Icon
-                            </Typography>
-                          )}
-                        </Box>
+                        <GarmentImageUpload
+                          imageUrl={garment.imageUrl}
+                          publicId={garment.imageCloudId}
+                          garmentName={garment.name}
+                          onUpload={(result) =>
+                            updateGarmentImage(garment.id, result)
+                          }
+                          onRemove={() => removeGarmentImage(garment.id)}
+                          variant="link"
+                        />
                       </Box>
                     </Stack>
                   </Grid>
 
-                  <Grid item xs={12} sm={6}>
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                      <DatePicker
-                        label="Due Date"
-                        value={garment.dueDate ? dayjs(garment.dueDate) : null}
-                        format="dddd, MMMM D, YYYY"
-                        onChange={(newValue) => {
-                          if (!newValue) {
-                            updateGarment(garment.id, { dueDate: undefined });
-                            // Clear any validation errors
-                            setDateValidationErrors((prev) => {
-                              const newErrors = { ...prev };
-                              const errorEntry = newErrors[garment.id];
-                              if (errorEntry) {
-                                const { dueDate, ...rest } = errorEntry;
-                                if (Object.keys(rest).length === 0) {
-                                  delete newErrors[garment.id];
-                                } else {
-                                  newErrors[garment.id] = rest;
-                                }
-                              }
-                              return newErrors;
-                            });
-                            return;
-                          }
-                          const asDate = dayjs.isDayjs(newValue)
-                            ? newValue.toDate()
-                            : new Date(newValue as any);
-
-                          // Validate that due date is not after event date
-                          if (garment.eventDate) {
-                            const eventDate = new Date(garment.eventDate);
-                            if (asDate > eventDate) {
-                              // Set error state
-                              setDateValidationErrors((prev) => ({
-                                ...prev,
-                                [garment.id]: {
-                                  ...prev[garment.id],
-                                  dueDate:
-                                    'Due date cannot be after the event date',
-                                },
-                              }));
-                              return; // Don't update the date
-                            }
-                          }
-
-                          // Clear any validation errors
-                          setDateValidationErrors((prev) => {
-                            const newErrors = { ...prev };
-                            const errorEntry = newErrors[garment.id];
-                            if (errorEntry) {
-                              const { dueDate, ...rest } = errorEntry;
-                              if (Object.keys(rest).length === 0) {
-                                delete newErrors[garment.id];
-                              } else {
-                                newErrors[garment.id] = rest;
-                              }
-                            }
-                            return newErrors;
-                          });
-
+                  <Grid item xs={12} sm={8}>
+                    <Stack spacing={1}>
+                      <TextField
+                        fullWidth
+                        label="Garment Name (Optional)"
+                        value={garment.name}
+                        onChange={(e) => {
+                          const nextName = e.target.value;
+                          const trimmed = nextName.trim();
                           updateGarment(garment.id, {
-                            dueDate: formatDate(asDate, 'yyyy-MM-dd'),
+                            name: nextName,
+                            // Mark as user edited when non-empty; reset when cleared
+                            isNameUserEdited: trimmed.length > 0,
                           });
                         }}
-                        minDate={dayjs()}
-                        slotProps={{
-                          textField: {
-                            fullWidth: true,
-                            error: !!dateValidationErrors[garment.id]?.dueDate,
-                            helperText:
-                              dateValidationErrors[garment.id]?.dueDate,
-                            onClick: (e: any) => {
-                              // Find and click the calendar button to open picker
-                              const button =
-                                e.currentTarget.querySelector('button');
-                              if (button) button.click();
-                            },
-                            InputProps: {
-                              readOnly: true,
-                            },
-                            inputProps: {
-                              style: {
-                                cursor: 'pointer',
-                                caretColor: 'transparent',
-                              },
-                              onKeyDown: (e: any) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                              },
-                              onPaste: (e: any) => e.preventDefault(),
-                              onCut: (e: any) => e.preventDefault(),
-                              onDrop: (e: any) => e.preventDefault(),
-                              onMouseDown: (e: any) => e.preventDefault(),
-                              onSelect: (e: any) => {
-                                if (
-                                  e.target.selectionStart !==
-                                  e.target.selectionEnd
-                                ) {
-                                  e.target.setSelectionRange(0, 0);
-                                }
-                              },
-                            },
-                            sx: {
-                              '& input': {
-                                cursor: 'pointer',
-                                userSelect: 'none',
-                                WebkitUserSelect: 'none',
-                                MozUserSelect: 'none',
-                                msUserSelect: 'none',
-                                pointerEvents: 'none',
-                              },
-                              '& .MuiInputBase-root': {
-                                cursor: 'pointer',
-                              },
-                              '& fieldset': { cursor: 'pointer' },
-                              '& .MuiInputBase-root.MuiOutlinedInput-root': {
-                                pointerEvents: 'auto',
-                              },
-                            },
-                          },
-                        }}
+                        placeholder="e.g., Wedding Dress, Suit Jacket"
                       />
-                    </LocalizationProvider>
-                  </Grid>
-
-                  <Grid item xs={12}>
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={garment.specialEvent || false}
-                          onChange={(e) => {
-                            const isChecked = e.target.checked;
-                            if (!isChecked) {
-                              // When unchecking, clear event date
-                              updateGarment(garment.id, {
-                                eventDate: undefined,
-                                specialEvent: false,
-                              });
-                              // Clear any validation errors
-                              setDateValidationErrors((prev) => {
-                                const newErrors = { ...prev };
-                                const errorEntry = newErrors[garment.id];
-                                if (errorEntry) {
-                                  const { eventDate, ...rest } = errorEntry;
-                                  if (Object.keys(rest).length === 0) {
-                                    delete newErrors[garment.id];
-                                  } else {
-                                    newErrors[garment.id] = rest;
-                                  }
-                                }
-                                return newErrors;
-                              });
-                            } else {
-                              // When checking, just set specialEvent to true
-                              updateGarment(garment.id, {
-                                specialEvent: true,
-                              });
-                            }
-                          }}
-                        />
-                      }
-                      label="Garment is for a special event"
-                    />
-                  </Grid>
-
-                  {/* Event Date Picker - Only show when specialEvent is checked */}
-                  {garment.specialEvent && (
-                    <Grid item xs={12} sm={6}>
+                      {/* Due date */}
                       <LocalizationProvider dateAdapter={AdapterDayjs}>
                         <DatePicker
-                          label="Event Date"
+                          label="Due Date"
                           value={
-                            garment.eventDate ? dayjs(garment.eventDate) : null
+                            garment.dueDate ? dayjs(garment.dueDate) : null
                           }
                           format="dddd, MMMM D, YYYY"
                           onChange={(newValue) => {
                             if (!newValue) {
-                              updateGarment(garment.id, {
-                                eventDate: undefined,
-                              });
+                              updateGarment(garment.id, { dueDate: undefined });
                               // Clear any validation errors
                               setDateValidationErrors((prev) => {
                                 const newErrors = { ...prev };
                                 const errorEntry = newErrors[garment.id];
                                 if (errorEntry) {
-                                  const { eventDate, ...rest } = errorEntry;
+                                  const { dueDate, ...rest } = errorEntry;
                                   if (Object.keys(rest).length === 0) {
                                     delete newErrors[garment.id];
                                   } else {
@@ -468,17 +307,17 @@ export default function Step2GarmentDetails() {
                               ? newValue.toDate()
                               : new Date(newValue as any);
 
-                            // Validate that event date is not before due date
-                            if (garment.dueDate) {
-                              const dueDate = new Date(garment.dueDate);
-                              if (asDate < dueDate) {
+                            // Validate that due date is not after event date
+                            if (garment.eventDate) {
+                              const eventDate = new Date(garment.eventDate);
+                              if (asDate > eventDate) {
                                 // Set error state
                                 setDateValidationErrors((prev) => ({
                                   ...prev,
                                   [garment.id]: {
                                     ...prev[garment.id],
-                                    eventDate:
-                                      'Event date cannot be before the due date',
+                                    dueDate:
+                                      'Due date cannot be after the event date',
                                   },
                                 }));
                                 return; // Don't update the date
@@ -490,7 +329,7 @@ export default function Step2GarmentDetails() {
                               const newErrors = { ...prev };
                               const errorEntry = newErrors[garment.id];
                               if (errorEntry) {
-                                const { eventDate, ...rest } = errorEntry;
+                                const { dueDate, ...rest } = errorEntry;
                                 if (Object.keys(rest).length === 0) {
                                   delete newErrors[garment.id];
                                 } else {
@@ -501,19 +340,17 @@ export default function Step2GarmentDetails() {
                             });
 
                             updateGarment(garment.id, {
-                              eventDate: formatDate(asDate, 'yyyy-MM-dd'),
+                              dueDate: formatDate(asDate, 'yyyy-MM-dd'),
                             });
                           }}
-                          minDate={
-                            garment.dueDate ? dayjs(garment.dueDate) : dayjs()
-                          }
+                          minDate={dayjs()}
                           slotProps={{
                             textField: {
                               fullWidth: true,
                               error:
-                                !!dateValidationErrors[garment.id]?.eventDate,
+                                !!dateValidationErrors[garment.id]?.dueDate,
                               helperText:
-                                dateValidationErrors[garment.id]?.eventDate,
+                                dateValidationErrors[garment.id]?.dueDate,
                               onClick: (e: any) => {
                                 // Find and click the calendar button to open picker
                                 const button =
@@ -566,8 +403,183 @@ export default function Step2GarmentDetails() {
                           }}
                         />
                       </LocalizationProvider>
-                    </Grid>
-                  )}
+
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={garment.specialEvent || false}
+                            onChange={(e) => {
+                              const isChecked = e.target.checked;
+                              if (!isChecked) {
+                                // When unchecking, clear event date
+                                updateGarment(garment.id, {
+                                  eventDate: undefined,
+                                  specialEvent: false,
+                                });
+                                // Clear any validation errors
+                                setDateValidationErrors((prev) => {
+                                  const newErrors = { ...prev };
+                                  const errorEntry = newErrors[garment.id];
+                                  if (errorEntry) {
+                                    const { eventDate, ...rest } = errorEntry;
+                                    if (Object.keys(rest).length === 0) {
+                                      delete newErrors[garment.id];
+                                    } else {
+                                      newErrors[garment.id] = rest;
+                                    }
+                                  }
+                                  return newErrors;
+                                });
+                              } else {
+                                // When checking, just set specialEvent to true
+                                updateGarment(garment.id, {
+                                  specialEvent: true,
+                                });
+                              }
+                            }}
+                          />
+                        }
+                        label="Garment is for a special event"
+                      />
+
+                      {/* Event Date Picker - Only show when specialEvent is checked */}
+                      {garment.specialEvent && (
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                          <DatePicker
+                            label="Event Date"
+                            value={
+                              garment.eventDate
+                                ? dayjs(garment.eventDate)
+                                : null
+                            }
+                            format="dddd, MMMM D, YYYY"
+                            onChange={(newValue) => {
+                              if (!newValue) {
+                                updateGarment(garment.id, {
+                                  eventDate: undefined,
+                                });
+                                // Clear any validation errors
+                                setDateValidationErrors((prev) => {
+                                  const newErrors = { ...prev };
+                                  const errorEntry = newErrors[garment.id];
+                                  if (errorEntry) {
+                                    const { eventDate, ...rest } = errorEntry;
+                                    if (Object.keys(rest).length === 0) {
+                                      delete newErrors[garment.id];
+                                    } else {
+                                      newErrors[garment.id] = rest;
+                                    }
+                                  }
+                                  return newErrors;
+                                });
+                                return;
+                              }
+                              const asDate = dayjs.isDayjs(newValue)
+                                ? newValue.toDate()
+                                : new Date(newValue as any);
+
+                              // Validate that event date is not before due date
+                              if (garment.dueDate) {
+                                const dueDate = new Date(garment.dueDate);
+                                if (asDate < dueDate) {
+                                  // Set error state
+                                  setDateValidationErrors((prev) => ({
+                                    ...prev,
+                                    [garment.id]: {
+                                      ...prev[garment.id],
+                                      eventDate:
+                                        'Event date cannot be before the due date',
+                                    },
+                                  }));
+                                  return; // Don't update the date
+                                }
+                              }
+
+                              // Clear any validation errors
+                              setDateValidationErrors((prev) => {
+                                const newErrors = { ...prev };
+                                const errorEntry = newErrors[garment.id];
+                                if (errorEntry) {
+                                  const { eventDate, ...rest } = errorEntry;
+                                  if (Object.keys(rest).length === 0) {
+                                    delete newErrors[garment.id];
+                                  } else {
+                                    newErrors[garment.id] = rest;
+                                  }
+                                }
+                                return newErrors;
+                              });
+
+                              updateGarment(garment.id, {
+                                eventDate: formatDate(asDate, 'yyyy-MM-dd'),
+                              });
+                            }}
+                            minDate={
+                              garment.dueDate ? dayjs(garment.dueDate) : dayjs()
+                            }
+                            slotProps={{
+                              textField: {
+                                fullWidth: true,
+                                error:
+                                  !!dateValidationErrors[garment.id]?.eventDate,
+                                helperText:
+                                  dateValidationErrors[garment.id]?.eventDate,
+                                onClick: (e: any) => {
+                                  // Find and click the calendar button to open picker
+                                  const button =
+                                    e.currentTarget.querySelector('button');
+                                  if (button) button.click();
+                                },
+                                InputProps: {
+                                  readOnly: true,
+                                },
+                                inputProps: {
+                                  style: {
+                                    cursor: 'pointer',
+                                    caretColor: 'transparent',
+                                  },
+                                  onKeyDown: (e: any) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                  },
+                                  onPaste: (e: any) => e.preventDefault(),
+                                  onCut: (e: any) => e.preventDefault(),
+                                  onDrop: (e: any) => e.preventDefault(),
+                                  onMouseDown: (e: any) => e.preventDefault(),
+                                  onSelect: (e: any) => {
+                                    if (
+                                      e.target.selectionStart !==
+                                      e.target.selectionEnd
+                                    ) {
+                                      e.target.setSelectionRange(0, 0);
+                                    }
+                                  },
+                                },
+                                sx: {
+                                  '& input': {
+                                    cursor: 'pointer',
+                                    userSelect: 'none',
+                                    WebkitUserSelect: 'none',
+                                    MozUserSelect: 'none',
+                                    msUserSelect: 'none',
+                                    pointerEvents: 'none',
+                                  },
+                                  '& .MuiInputBase-root': {
+                                    cursor: 'pointer',
+                                  },
+                                  '& fieldset': { cursor: 'pointer' },
+                                  '& .MuiInputBase-root.MuiOutlinedInput-root':
+                                    {
+                                      pointerEvents: 'auto',
+                                    },
+                                },
+                              },
+                            }}
+                          />
+                        </LocalizationProvider>
+                      )}
+                    </Stack>
+                  </Grid>
 
                   {/* Services Section */}
                   <Grid item xs={12}>
@@ -632,9 +644,51 @@ export default function Step2GarmentDetails() {
         onClose={() => setIconModalGarmentId(null)}
         onSave={(res) => {
           if (!iconModalGarmentId) return;
+          const garment = orderDraft.garments.find(
+            (g) => g.id === iconModalGarmentId
+          );
+          // Determine if we can overwrite the garment name based on user edits.
+          // Backwards-compatible behavior:
+          // - If isNameUserEdited === true -> never overwrite
+          // - If isNameUserEdited === false -> always overwrite with preset label
+          // - If isNameUserEdited is undefined -> overwrite when name is empty
+          //   OR when the current name matches the previous preset label (implies auto-filled earlier)
+          const previousLabel = garment?.presetIconKey
+            ? (() => {
+                for (const category of presetCatalog) {
+                  const found = category.items.find(
+                    (i) => i.key === garment.presetIconKey
+                  );
+                  if (found) return found.label;
+                }
+                return undefined;
+              })()
+            : undefined;
+
+          const canOverwriteName =
+            garment?.isNameUserEdited === true
+              ? false
+              : garment?.isNameUserEdited === false
+                ? true
+                : !garment?.name ||
+                  !garment.name.trim() ||
+                  (previousLabel && garment?.name?.trim() === previousLabel);
+          const label = res.presetIconKey
+            ? (() => {
+                for (const category of presetCatalog) {
+                  const found = category.items.find(
+                    (i) => i.key === res.presetIconKey
+                  );
+                  if (found) return found.label;
+                }
+                return undefined;
+              })()
+            : undefined;
+
           updateGarment(iconModalGarmentId, {
             presetIconKey: res.presetIconKey,
             presetFillColor: res.presetFillColor,
+            ...(canOverwriteName && label ? { name: label } : {}),
           });
         }}
         initialKey={((): string | undefined => {
