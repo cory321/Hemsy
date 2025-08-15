@@ -63,7 +63,7 @@ export interface Garment {
   photo_url?: string;
   due_date?: string;
   event_date?: string;
-  stage: 'intake' | 'cutting' | 'sewing' | 'fitting' | 'finishing' | 'ready';
+  stage: GarmentStage;
   notes?: string;
   created_at: string;
   updated_at: string;
@@ -130,7 +130,7 @@ export interface Appointment {
 }
 
 // UI/UX types
-export type GarmentStage = Garment['stage'];
+export type GarmentStage = 'New' | 'In Progress' | 'Ready For Pickup' | 'Done';
 export type OrderStatus = Order['status'];
 export type InvoiceStatus = Invoice['status'];
 export type AppointmentType = Appointment['type'];

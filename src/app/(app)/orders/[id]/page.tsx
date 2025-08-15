@@ -62,8 +62,7 @@ export default async function OrderDetailPage({
   const { data: garments } = await supabase
     .from('garments')
     .select(
-      `id, name, stage, stage_id, notes, due_date, event_date, is_done, preset_icon_key, preset_fill_color,
-       garment_stages!garments_stage_id_fkey ( id, name, color )`
+      `id, name, stage, notes, due_date, event_date, is_done, preset_icon_key, preset_fill_color`
     )
     .eq('order_id', id)
     .order('created_at', { ascending: true });
@@ -98,9 +97,8 @@ export default async function OrderDetailPage({
   };
 
   const getStageDisplay = (garment: any) => {
-    const name = garment?.garment_stages?.name || garment?.stage || 'New';
-    const color = garment?.garment_stages?.color || null;
-    return { name, color };
+    const stageName = garment?.stage || 'New';
+    return { name: stageName };
   };
 
   return (
@@ -279,24 +277,8 @@ export default async function OrderDetailPage({
                                     />
                                   )}
                                   {(() => {
-                                    const { name, color } =
-                                      getStageDisplay(garment);
-                                    const chipSx: any = color
-                                      ? {
-                                          bgcolor: color,
-                                          color: 'text.primary',
-                                          '& .MuiChip-label': {
-                                            fontWeight: 600,
-                                          },
-                                        }
-                                      : undefined;
-                                    return (
-                                      <Chip
-                                        label={name}
-                                        size="small"
-                                        sx={chipSx}
-                                      />
-                                    );
+                                    const { name } = getStageDisplay(garment);
+                                    return <Chip label={name} size="small" />;
                                   })()}
                                 </Box>
                                 <Typography variant="body1">

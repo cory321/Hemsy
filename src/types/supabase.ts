@@ -383,82 +383,7 @@ export type Database = {
           },
         ];
       };
-      garment_stage_templates: {
-        Row: {
-          created_at: string | null;
-          display_order: number;
-          id: string;
-          is_system_default: boolean;
-          name: string;
-          shop_id: string | null;
-          updated_at: string | null;
-        };
-        Insert: {
-          created_at?: string | null;
-          display_order?: number;
-          id?: string;
-          is_system_default?: boolean;
-          name: string;
-          shop_id?: string | null;
-          updated_at?: string | null;
-        };
-        Update: {
-          created_at?: string | null;
-          display_order?: number;
-          id?: string;
-          is_system_default?: boolean;
-          name?: string;
-          shop_id?: string | null;
-          updated_at?: string | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'garment_stage_templates_shop_id_fkey';
-            columns: ['shop_id'];
-            isOneToOne: false;
-            referencedRelation: 'shops';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
-      garment_stages: {
-        Row: {
-          color: string | null;
-          created_at: string | null;
-          id: string;
-          name: string;
-          position: number;
-          shop_id: string;
-          updated_at: string | null;
-        };
-        Insert: {
-          color?: string | null;
-          created_at?: string | null;
-          id?: string;
-          name: string;
-          position: number;
-          shop_id: string;
-          updated_at?: string | null;
-        };
-        Update: {
-          color?: string | null;
-          created_at?: string | null;
-          id?: string;
-          name?: string;
-          position?: number;
-          shop_id?: string;
-          updated_at?: string | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'garment_stages_shop_id_fkey';
-            columns: ['shop_id'];
-            isOneToOne: false;
-            referencedRelation: 'shops';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
+
       garments: {
         Row: {
           created_at: string | null;
@@ -474,8 +399,7 @@ export type Database = {
           preset_icon_key: string | null;
           preset_fill_color: string | null;
           shop_id: string | null;
-          stage: string;
-          stage_id: string | null;
+          stage: Database['public']['Enums']['garment_stage_enum'];
           updated_at: string | null;
         };
         Insert: {
@@ -492,8 +416,7 @@ export type Database = {
           preset_icon_key?: string | null;
           preset_fill_color?: string | null;
           shop_id?: string | null;
-          stage?: string;
-          stage_id?: string | null;
+          stage?: Database['public']['Enums']['garment_stage_enum'];
           updated_at?: string | null;
         };
         Update: {
@@ -510,8 +433,7 @@ export type Database = {
           preset_icon_key?: string | null;
           preset_fill_color?: string | null;
           shop_id?: string | null;
-          stage?: string;
-          stage_id?: string | null;
+          stage?: Database['public']['Enums']['garment_stage_enum'];
           updated_at?: string | null;
         };
         Relationships: [
@@ -527,13 +449,6 @@ export type Database = {
             columns: ['shop_id'];
             isOneToOne: false;
             referencedRelation: 'shops';
-            referencedColumns: ['id'];
-          },
-          {
-            foreignKeyName: 'garments_stage_id_fkey';
-            columns: ['stage_id'];
-            isOneToOne: false;
-            referencedRelation: 'garment_stages';
             referencedColumns: ['id'];
           },
         ];
@@ -936,6 +851,7 @@ export type Database = {
         | 'confirmed'
         | 'canceled'
         | 'no_show';
+      garment_stage_enum: 'New' | 'In Progress' | 'Ready For Pickup' | 'Done';
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -1073,6 +989,7 @@ export const Constants = {
         'canceled',
         'no_show',
       ],
+      garment_stage_enum: ['New', 'In Progress', 'Ready For Pickup', 'Done'],
     },
   },
 } as const;

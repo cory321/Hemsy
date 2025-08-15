@@ -355,11 +355,6 @@ export async function getGarmentById(garmentId: string) {
       .select(
         `
         *,
-        garment_stage:garment_stages!garments_stage_id_fkey(
-          id,
-          name,
-          color
-        ),
         order:orders(
           id,
           order_number,
@@ -411,9 +406,7 @@ export async function getGarmentById(garmentId: string) {
       success: true,
       garment: {
         ...garment,
-        stage_id: garment.stage_id ?? garment.garment_stage?.id ?? null,
-        stage_name: garment.garment_stage?.name ?? null,
-        stage_color: garment.garment_stage?.color ?? null,
+        stage_name: garment.stage,
         totalPriceCents,
       },
     };

@@ -27,7 +27,7 @@
 - **Dashboard:** Quick actions, high-priority garments, upcoming appointments.
 - **Clients:** Mini CRM with contact info, order history, and appointments.
 - **Orders:** Parent entity containing garments; supports quick client lookup, service attachment, and confirmation flow.
-- **Garments:** Stage-based tracking with filters, sorting, and customization (future).
+- **Garments:** Stage-based tracking with filters and sorting. Fixed stages: "New", "In Progress", "Ready For Pickup", "Done".
 - **Appointments:** Mobile-friendly calendar with conflict prevention, working hour enforcement, buffer times, and color-coded types.
 - **Services:** Manage alteration services with quick-add shortcuts.
 - **Invoices:** Create, send, and manage invoices with Stripe integration and manual payment tracking.
@@ -187,7 +187,7 @@
 - **Feature 3.1.1: Create Order Flow**
   - **User Story**: As a seamstress, I want to create an order by selecting a client and adding garments + services so I can record new jobs.
 - **Feature 3.1.2: Garment Details in Order**
-  - **User Story**: As a seamstress, within order creation, I want to add garments (title, photo, due/event dates, stage) so I capture all details.
+  - **User Story**: As a seamstress, within order creation, I want to add garments (title, photo, due/event dates) so I capture all details. Garments automatically start in "New" stage.
 - **Feature 3.1.3: Orders List & Detail**
   - **User Story**: As a seamstress, I want a list of all orders (filterable) and a detail page showing its garments/services so I can track progress.
 - **Feature 3.1.4: Garment Backlog & Filters**

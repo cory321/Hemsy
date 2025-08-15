@@ -23,27 +23,15 @@ import CheckroomIcon from '@mui/icons-material/Checkroom';
 import EditIcon from '@mui/icons-material/Edit';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import { getGarmentById } from '@/lib/actions/orders';
-import { getStages } from '@/lib/actions/garment-stages';
-import { ensureUserAndShop } from '@/lib/actions/users';
-import GarmentStageSelector from '@/components/garments/GarmentStageSelector';
+
+import { getStageColor } from '@/constants/garmentStages';
+
 import GarmentTimeTracker from '@/components/garments/GarmentTimeTracker';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import InlinePresetSvg from '@/components/ui/InlinePresetSvg';
 import { resolveGarmentDisplayImage } from '@/utils/displayImage';
 import Link from 'next/link';
-
-// Stage options
-const stages = [
-  'New',
-  'Intake',
-  'Cutting',
-  'Sewing',
-  'Fitting',
-  'Finishing',
-  'Ready',
-  'Picked Up',
-] as const;
 
 export default async function GarmentDetailPage({
   params,
@@ -76,10 +64,6 @@ export default async function GarmentDetailPage({
   }
 
   const garment = result.garment as any;
-
-  // Load stages for selector (shop-scoped)
-  const { shop } = await ensureUserAndShop();
-  const stages = await getStages(shop.id);
 
   // Format client name
   const clientName = garment.order?.client
@@ -145,6 +129,22 @@ export default async function GarmentDetailPage({
         <Grid container spacing={3}>
           {/* Left Column - Image and Stage */}
           <Grid item xs={12} md={4}>
+            {/* Stage Label */}
+            <Box
+              sx={{
+                width: '100%',
+                mb: 2,
+                p: 2,
+                borderRadius: 1,
+                backgroundColor: getStageColor(garment.stage),
+                textAlign: 'center',
+              }}
+            >
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                {garment.stage}
+              </Typography>
+            </Box>
+
             <Card sx={{ mb: 3 }}>
               {resolved.kind === 'photo' || resolved.kind === 'cloud' ? (
                 <CardMedia
@@ -215,25 +215,6 @@ export default async function GarmentDetailPage({
                     : 'Add Photo'}
                 </Button>
               </Box>
-            </Card>
-
-            {/* Stage Selector */}
-            <Card>
-              <CardContent>
-                <Typography
-                  variant="subtitle2"
-                  color="text.secondary"
-                  gutterBottom
-                >
-                  Current Stage
-                </Typography>
-                <GarmentStageSelector
-                  garmentId={garment.id}
-                  shopId={shop.id}
-                  stages={stages as any}
-                  currentStageId={garment.stage_id || null}
-                />
-              </CardContent>
             </Card>
           </Grid>
 

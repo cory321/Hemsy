@@ -17,14 +17,15 @@ import {
   useTheme,
   useMediaQuery,
 } from '@mui/material';
-import SettingsIcon from '@mui/icons-material/Settings';
+
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 
 import { getGarmentsAndStages } from '@/lib/actions/garment-stages';
+import { GARMENT_STAGES, getStageColor } from '@/constants/garmentStages';
 import { getCurrentUserShop } from '@/lib/actions/shops';
 import GarmentCard from '@/components/garments/GarmentCard';
-import CustomizeStagesDialog from '@/components/garments/CustomizeStagesDialog';
+
 import StageBox from '@/components/garments/StageBox';
 import {
   getGarmentSortComparator,
@@ -48,19 +49,12 @@ type GarmentListItem = {
   services?: any[];
 };
 
-type StageItem = {
-  id: string;
-  name: string;
-  color: string | null;
-  position: number;
-};
-
 export default function GarmentsPage() {
   const [garmentsData, setGarmentsData] = useState<GarmentListItem[]>([]);
-  const [stages, setStages] = useState<StageItem[]>([]);
-  const [selectedStage, setSelectedStage] = useState<StageItem | null>(null);
+
+  const [selectedStage, setSelectedStage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [customizeDialogOpen, setCustomizeDialogOpen] = useState(false);
+
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [sortField, setSortField] = useState<
     'due_date' | 'created_at' | 'client_name' | 'name' | 'overdue' | 'due_soon'
@@ -82,12 +76,9 @@ export default function GarmentsPage() {
 
       setShopId(shop.id);
 
-      const { garments, stages: fetchedStages } = await getGarmentsAndStages(
-        shop.id
-      );
+      const { garments } = await getGarmentsAndStages(shop.id);
 
       console.log('Fetched garments:', garments);
-      console.log('Fetched stages:', fetchedStages);
 
       setGarmentsData(
         garments.map(
@@ -128,7 +119,6 @@ export default function GarmentsPage() {
           })
         )
       );
-      setStages(fetchedStages);
     } catch (error) {
       console.error('Failed to fetch garments data:', error);
     } finally {
@@ -142,26 +132,13 @@ export default function GarmentsPage() {
     }
   }, [fetchGarmentsData, userId]);
 
-  const handleStagesUpdated = async (deletedStageId?: string) => {
-    console.log('handleStagesUpdated called');
-    await fetchGarmentsData();
-
-    if (
-      deletedStageId &&
-      selectedStage &&
-      selectedStage.id === deletedStageId
-    ) {
-      setSelectedStage(null);
-    }
-  };
-
   // Compute counts of garments per stage
   const garmentCounts = useMemo<Record<string, number>>(() => {
     const counts: Record<string, number> = {};
 
     garmentsData.forEach((garment) => {
-      const stageId = garment.stage_id;
-      counts[stageId] = (counts[stageId] || 0) + 1;
+      const stageName = garment.stage_name || 'New';
+      counts[stageName] = (counts[stageName] || 0) + 1;
     });
 
     return counts;
@@ -174,7 +151,7 @@ export default function GarmentsPage() {
 
     if (selectedStage) {
       garments = garments.filter(
-        (garment) => garment.stage_id === selectedStage.id
+        (garment) => (garment.stage_name || 'New') === selectedStage
       );
     }
 
@@ -203,9 +180,7 @@ export default function GarmentsPage() {
             display: 'flex',
             alignItems: 'center',
             mb: 3,
-            overflowX: 'scroll',
-            overflowY: 'hidden',
-            pb: 4,
+            gap: 2,
           }}
         >
           {/* "View All" Stage */}
@@ -215,17 +190,17 @@ export default function GarmentsPage() {
             onClick={() => setSelectedStage(null)}
             isLast={false}
           />
-          {stages.map((stage, index) => (
+          {GARMENT_STAGES.map((stage, index) => (
             <StageBox
-              key={stage.id}
+              key={stage.name}
               stage={{
-                name: stage.name,
-                ...(stage.color ? { color: stage.color } : {}),
-                count: garmentCounts[stage.id] || 0,
+                name: stage.displayName,
+                color: stage.color,
+                count: garmentCounts[stage.name] || 0,
               }}
-              isSelected={selectedStage?.id === stage.id}
-              onClick={() => setSelectedStage(stage)}
-              isLast={index === stages.length - 1}
+              isSelected={selectedStage === stage.name}
+              onClick={() => setSelectedStage(stage.name)}
+              isLast={index === GARMENT_STAGES.length - 1}
             />
           ))}
         </Box>
@@ -234,21 +209,19 @@ export default function GarmentsPage() {
           <InputLabel id="stage-select-label">Select Stage</InputLabel>
           <Select
             labelId="stage-select-label"
-            value={selectedStage?.id || ''}
+            value={selectedStage || ''}
             label="Select Stage"
             onChange={(e) => {
-              const stageId = e.target.value;
-              const stage = stages.find((s) => s.id === stageId) || null;
-
-              setSelectedStage(stage);
+              const stageName = e.target.value;
+              setSelectedStage(stageName || null);
             }}
           >
             <MenuItem value="">
               <em>View All ({totalGarments})</em>
             </MenuItem>
-            {stages.map((stage) => (
-              <MenuItem key={stage.id} value={stage.id}>
-                {stage.name} ({garmentCounts[stage.id] || 0})
+            {GARMENT_STAGES.map((stage) => (
+              <MenuItem key={stage.name} value={stage.name}>
+                {stage.displayName} ({garmentCounts[stage.name] || 0})
               </MenuItem>
             ))}
           </Select>
@@ -301,17 +274,6 @@ export default function GarmentsPage() {
             </IconButton>
           </Tooltip>
         </Box>
-
-        {/* Customize Stages Button */}
-        {!isMobile && (
-          <Button
-            variant="outlined"
-            onClick={() => setCustomizeDialogOpen(true)}
-            startIcon={<SettingsIcon />}
-          >
-            Customize Stages
-          </Button>
-        )}
       </Box>
 
       {/* Garments Grid */}
@@ -359,12 +321,9 @@ export default function GarmentsPage() {
                   <GarmentCard
                     garment={garment}
                     orderId={garment.order_id}
-                    {...(() => {
-                      const sc = stages.find(
-                        (stage) => stage.id === garment.stage_id
-                      )?.color;
-                      return sc ? { stageColor: sc } : {};
-                    })()}
+                    stageColor={getStageColor(
+                      (garment.stage_name || 'New') as any
+                    )}
                   />
                 </Grid>
               ))}
@@ -378,32 +337,11 @@ export default function GarmentsPage() {
               <GarmentCard
                 garment={garment}
                 orderId={garment.order_id}
-                {...(() => {
-                  const sc = stages.find(
-                    (stage) => stage.id === garment.stage_id
-                  )?.color;
-                  return sc ? { stageColor: sc } : {};
-                })()}
+                stageColor={getStageColor((garment.stage_name || 'New') as any)}
               />
             </Grid>
           ))}
         </Grid>
-      )}
-
-      {/* Customize Stages Dialog */}
-      {shopId && (
-        <CustomizeStagesDialog
-          open={customizeDialogOpen}
-          onClose={() => setCustomizeDialogOpen(false)}
-          onStagesUpdated={handleStagesUpdated}
-          stages={stages.map((s) => ({
-            id: s.id,
-            name: s.name,
-            position: s.position,
-            color: s.color || '',
-          }))}
-          shopId={shopId}
-        />
       )}
     </Box>
   );

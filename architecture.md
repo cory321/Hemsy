@@ -107,7 +107,7 @@ This document captures the **end-to-end system architecture** for Threadfolio—
 - `shops(id, owner_user_id, trial_countdown_enabled, …)`
 - `clients(...)` (see below)
 - `orders(id, shop_id, client_id, status, total)`
-- `garments(id, order_id, title, due_date, stage)`
+- `garments(id, order_id, title, due_date, stage)` - stage is VARCHAR with values: "New", "In Progress", "Ready For Pickup", "Done"
 - `services(id, shop_id, name, unit_price, unit)`
 - `garment_services(garment_id, service_id, quantity)`
 - `invoices(id, order_id, status, stripe_link, due_date)`
