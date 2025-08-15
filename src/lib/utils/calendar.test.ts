@@ -24,8 +24,8 @@ describe('Calendar Utilities', () => {
       // February 2024 starts on Thursday and ends on Thursday
       // So we need Sun-Wed from January and Fri-Sat from March
       expect(days.length).toBeGreaterThan(28); // February has 29 days in 2024 (leap year)
-      expect(days[0].getDate()).toBe(28); // Jan 28 (Sunday)
-      expect(days[days.length - 1].getDate()).toBe(2); // March 2 (Saturday)
+      expect(days[0]?.getDate()).toBe(28); // Jan 28 (Sunday)
+      expect(days[days.length - 1]?.getDate()).toBe(2); // March 2 (Saturday)
     });
   });
 
@@ -35,8 +35,8 @@ describe('Calendar Utilities', () => {
       const days = generateWeekDays(date);
 
       expect(days).toHaveLength(7);
-      expect(days[0].getDay()).toBe(0); // Sunday
-      expect(days[6].getDay()).toBe(6); // Saturday
+      expect(days[0]?.getDay()).toBe(0); // Sunday
+      expect(days[6]?.getDay()).toBe(6); // Saturday
     });
   });
 

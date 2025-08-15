@@ -15,6 +15,9 @@ export interface Shop {
   business_name: string;
   email: string;
   phone_number: string;
+  business_email?: string;
+  business_phone?: string;
+  business_address?: string;
   location_type: 'home_based' | 'shop_location' | 'mobile_service';
   mailing_address?: string;
   working_hours: Record<
@@ -39,7 +42,7 @@ export interface Client {
   accept_email: boolean;
   accept_sms: boolean;
   notes?: string;
-  mailing_address?: string;
+  mailing_address?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -51,6 +54,7 @@ export interface Order {
   status: 'draft' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
   total: number;
   notes?: string;
+  order_due_date?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -75,7 +79,7 @@ export interface Service {
   name: string;
   unit_price: number;
   unit: 'per_item' | 'per_hour' | 'flat_rate';
-  description?: string;
+  description?: string | null;
   created_at: string;
   updated_at: string;
 }

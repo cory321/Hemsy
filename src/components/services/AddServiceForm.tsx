@@ -26,6 +26,7 @@ import {
   parseFloatFromCurrency,
   formatUnitPrice,
 } from '@/lib/utils/currency';
+import { addService } from '@/lib/actions/services';
 
 interface AddServiceFormProps {
   setServices: React.Dispatch<React.SetStateAction<Service[]>>;
@@ -85,16 +86,14 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
 
     try {
       const serviceData = convertServiceForDatabase(newService);
-      const res = await fetch('/api/services/add', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...serviceData,
-          frequently_used: isFrequentlyUsed,
-        }),
+      const newServiceItem = await addService({
+        name: serviceData.name!,
+        description: serviceData.description,
+        default_qty: serviceData.default_qty!,
+        default_unit: serviceData.default_unit!,
+        default_unit_price_cents: serviceData.default_unit_price_cents!,
+        frequently_used: isFrequentlyUsed,
       });
-      if (!res.ok) throw new Error('Failed to add service');
-      const newServiceItem = await res.json();
 
       // Update the services state in ServicePage
       setServices((prevServices) => [...prevServices, newServiceItem]);

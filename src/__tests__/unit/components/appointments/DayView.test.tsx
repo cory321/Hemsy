@@ -45,7 +45,7 @@ describe('DayView', () => {
   const mockAppointments: Appointment[] = [
     {
       id: '1',
-      user_id: 'user1',
+
       shop_id: 'shop1',
       client_id: 'client1',
 
@@ -54,17 +54,25 @@ describe('DayView', () => {
       end_time: '10:00',
       type: 'fitting',
       status: 'confirmed',
-      notes: null,
+
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       client: {
+        id: 'client1',
+        shop_id: 'shop1',
         first_name: 'John',
         last_name: 'Doe',
+        email: 'john@example.com',
+        phone_number: '555-1234',
+        accept_email: true,
+        accept_sms: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       },
     },
     {
       id: '2',
-      user_id: 'user1',
+
       shop_id: 'shop1',
       client_id: 'client2',
 
@@ -73,12 +81,20 @@ describe('DayView', () => {
       end_time: '15:30',
       type: 'consultation',
       status: 'confirmed',
-      notes: null,
+
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       client: {
+        id: 'client2',
+        shop_id: 'shop1',
         first_name: 'Jane',
         last_name: 'Smith',
+        email: 'jane@example.com',
+        phone_number: '555-5678',
+        accept_email: true,
+        accept_sms: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       },
     },
   ];

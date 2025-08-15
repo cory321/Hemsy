@@ -29,6 +29,7 @@ import {
   dollarsToCents,
 } from '@/lib/utils/currency';
 import { Service } from '@/lib/utils/serviceUtils';
+import { addService } from '@/lib/actions/services';
 
 interface CreateServiceDialogProps {
   open: boolean;
@@ -113,15 +114,15 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
         payload.description = newService.description;
       }
 
-      const res = await fetch('/api/services/add', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error('Failed to add service');
-      const newServiceItem = await res.json();
+      const newServiceItem = await addService(payload);
 
-      onServiceSelect(newServiceItem);
+      // Convert null description to undefined for the Service type
+      const serviceForSelect: Service = {
+        ...newServiceItem,
+        description: newServiceItem.description || undefined,
+      };
+
+      onServiceSelect(serviceForSelect);
 
       // Reset form
       setNewService({

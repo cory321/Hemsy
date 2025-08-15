@@ -17,6 +17,7 @@ import AddIcon from '@mui/icons-material/Add';
 import Link from 'next/link';
 import type { Order } from '@/types';
 import { OrderListItem } from './OrderListItem';
+import { getClientOrders } from '@/lib/actions/clients';
 
 interface ClientOrdersSectionProps {
   clientId: string;
@@ -39,14 +40,8 @@ export function ClientOrdersSection({
     const fetchOrders = async () => {
       try {
         setLoading(true);
-        const url = new URL(
-          `/api/clients/${clientId}/orders`,
-          window.location.origin
-        );
-        const res = await fetch(url.toString());
-        if (!res.ok) throw new Error('Failed to load orders');
-        const data = await res.json();
-        const normalized = (data.orders as any[]).map((o) => ({
+        const ordersData = await getClientOrders(clientId);
+        const normalized = ordersData.map((o) => ({
           ...o,
           total: (o.total_cents ?? 0) / 100,
         }));

@@ -20,6 +20,7 @@ import { z } from 'zod';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { Tables } from '@/types/supabase';
+import { createClient } from '@/lib/actions/clients';
 
 const clientSchema = z.object({
   first_name: z.string().min(1, 'First name is required'),
@@ -78,17 +79,11 @@ export default function ClientCreateDialog({
     setError(null);
 
     try {
-      const res = await fetch('/api/clients/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...data,
-          notes: data.notes || null,
-          mailing_address: data.mailing_address || null,
-        }),
+      const newClient = await createClient({
+        ...data,
+        notes: data.notes || null,
+        mailing_address: data.mailing_address || null,
       });
-      if (!res.ok) throw new Error('Failed to create client');
-      const newClient = await res.json();
       onCreated(newClient);
       internalClose();
     } catch (err) {

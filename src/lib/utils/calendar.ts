@@ -36,17 +36,17 @@ export function generateWeekDays(date: Date) {
 // Format time for display
 export function formatTime(time: string) {
   const [hours, minutes] = time.split(':').map(Number);
-  const period = hours >= 12 ? 'PM' : 'AM';
-  const displayHours = hours % 12 || 12;
-  return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+  const period = (hours ?? 0) >= 12 ? 'PM' : 'AM';
+  const displayHours = (hours ?? 0) % 12 || 12;
+  return `${displayHours}:${(minutes ?? 0).toString().padStart(2, '0')} ${period}`;
 }
 
 // Convert 24-hour time to 12-hour format
 export function to12HourFormat(time24: string): string {
   const [hours, minutes] = time24.split(':').map(Number);
-  const period = hours >= 12 ? 'PM' : 'AM';
-  const hours12 = hours % 12 || 12;
-  return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
+  const period = (hours ?? 0) >= 12 ? 'PM' : 'AM';
+  const hours12 = (hours ?? 0) % 12 || 12;
+  return `${hours12}:${(minutes ?? 0).toString().padStart(2, '0')} ${period}`;
 }
 
 // Convert 12-hour time to 24-hour format
@@ -93,7 +93,7 @@ export function timeRangesOverlap(
 ): boolean {
   const toMinutes = (time: string) => {
     const [hours, minutes] = time.split(':').map(Number);
-    return hours * 60 + minutes;
+    return (hours ?? 0) * 60 + (minutes ?? 0);
   };
 
   const start1Min = toMinutes(start1);
@@ -107,7 +107,7 @@ export function timeRangesOverlap(
 // Add minutes to time string
 export function addMinutesToTime(time: string, minutes: number): string {
   const [hours, mins] = time.split(':').map(Number);
-  const totalMinutes = hours * 60 + mins + minutes;
+  const totalMinutes = (hours ?? 0) * 60 + (mins ?? 0) + minutes;
   const newHours = Math.floor(totalMinutes / 60) % 24;
   const newMinutes = totalMinutes % 60;
 
@@ -119,8 +119,8 @@ export function getDurationMinutes(startTime: string, endTime: string): number {
   const [startHours, startMinutes] = startTime.split(':').map(Number);
   const [endHours, endMinutes] = endTime.split(':').map(Number);
 
-  const startTotalMinutes = startHours * 60 + startMinutes;
-  const endTotalMinutes = endHours * 60 + endMinutes;
+  const startTotalMinutes = (startHours ?? 0) * 60 + (startMinutes ?? 0);
+  const endTotalMinutes = (endHours ?? 0) * 60 + (endMinutes ?? 0);
 
   return endTotalMinutes - startTotalMinutes;
 }
@@ -281,8 +281,9 @@ export function getAvailableTimeSlots(
 
     // Check if end time is before or at closing time
     if (
-      endHour > closeHour ||
-      (endHour === closeHour && endMin > closeMinute)
+      (endHour ?? 0) > (closeHour ?? 0) ||
+      ((endHour ?? 0) === (closeHour ?? 0) &&
+        (endMin ?? 0) > (closeMinute ?? 0))
     ) {
       return false;
     }

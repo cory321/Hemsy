@@ -31,8 +31,8 @@ describe('CalendarDesktop', () => {
       start_time: '10:00',
       end_time: '11:00',
       type: 'fitting' as const,
-      status: 'scheduled' as const,
-      user_id: 'user1',
+      status: 'confirmed' as const,
+      client_id: 'client1',
       shop_id: 'shop1',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -42,7 +42,7 @@ describe('CalendarDesktop', () => {
         last_name: 'Doe',
         email: 'jane@example.com',
         phone_number: '555-1234',
-        user_id: 'user1',
+
         shop_id: 'shop1',
         accept_email: true,
         accept_sms: true,
@@ -57,8 +57,8 @@ describe('CalendarDesktop', () => {
       start_time: '14:00',
       end_time: '14:30',
       type: 'consultation' as const,
-      status: 'scheduled' as const,
-      user_id: 'user1',
+      status: 'confirmed' as const,
+      client_id: 'client1',
       shop_id: 'shop1',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -209,10 +209,10 @@ describe('CalendarDesktop', () => {
     const prevButton = screen.getAllByRole('button')[0]; // First navigation button
     const nextButton = screen.getAllByRole('button')[1]; // Second navigation button
 
-    fireEvent.click(prevButton);
+    if (prevButton) fireEvent.click(prevButton);
     expect(mockHandlers.onRefresh).toHaveBeenCalled();
 
-    fireEvent.click(nextButton);
+    if (nextButton) fireEvent.click(nextButton);
     expect(mockHandlers.onRefresh).toHaveBeenCalledTimes(2);
   });
 

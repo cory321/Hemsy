@@ -160,7 +160,7 @@ describe('Step2GarmentDetails - preset icon autofill name behavior', () => {
           {
             id: 'g1',
             name: 'Blouse',
-            isNameUserEdited: false,
+
             notes: '',
             dueDate: undefined,
             eventDate: undefined,

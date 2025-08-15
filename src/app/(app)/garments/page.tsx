@@ -25,6 +25,7 @@ import { getGarmentsAndStages } from '@/lib/actions/garment-stages';
 import { GARMENT_STAGES, getStageColor } from '@/constants/garmentStages';
 import { getCurrentUserShop } from '@/lib/actions/shops';
 import GarmentCard from '@/components/garments/GarmentCard';
+import { GarmentStage } from '@/types';
 
 import StageBox from '@/components/garments/StageBox';
 import {
@@ -36,9 +37,8 @@ type GarmentListItem = {
   id: string;
   name: string;
   order_id: string;
-  stage_id: string;
+  stage: GarmentStage;
   stage_name?: string;
-  stage_color?: string;
   client_name?: string;
   photo_url?: string;
   image_cloud_id?: string;
@@ -86,12 +86,9 @@ export default function GarmentsPage() {
             id: garment.id as string,
             name: garment.name as string,
             order_id: garment.order_id as string,
-            stage_id: (garment.stage_id as string) || '',
+            stage: (garment.stage as GarmentStage) || 'New',
             ...(garment.stage_name
               ? { stage_name: garment.stage_name as string }
-              : {}),
-            ...(garment.stage_color
-              ? { stage_color: garment.stage_color as string }
               : {}),
             client_name:
               (garment.client_name as string | undefined) || 'Unknown Client',

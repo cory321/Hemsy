@@ -1,6 +1,6 @@
 'use client';
 
-import { useTheme } from '@mui/material/styles';
+import { useTheme, Breakpoint } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 
 /**
@@ -75,7 +75,7 @@ export function useBreakpoint(): 'xs' | 'sm' | 'md' | 'lg' | 'xl' {
   const keys = [...theme.breakpoints.keys].reverse();
 
   return (
-    keys.reduce((output, key) => {
+    keys.reduce<Breakpoint | null>((output, key) => {
       // eslint-disable-next-line react-hooks/rules-of-hooks
       const matches = useMediaQuery(theme.breakpoints.up(key));
       return !output && matches ? key : output;

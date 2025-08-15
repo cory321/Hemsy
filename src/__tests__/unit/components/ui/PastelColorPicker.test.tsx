@@ -9,7 +9,7 @@ import {
 describe('PastelColorPicker', () => {
   test('renders with default palette', () => {
     const handleChange = jest.fn();
-    render(<PastelColorPicker value={undefined} onChange={handleChange} />);
+    render(<PastelColorPicker onChange={handleChange} />);
     // Ensure a few known swatches are present
     expect(
       screen.getByTestId(`pastel-swatch-${pastelPalette[0]}`)
@@ -22,7 +22,7 @@ describe('PastelColorPicker', () => {
   test('calls onChange when a swatch is clicked', () => {
     const handleChange = jest.fn();
     const color = pastelPalette[3];
-    render(<PastelColorPicker value={undefined} onChange={handleChange} />);
+    render(<PastelColorPicker onChange={handleChange} />);
     fireEvent.click(screen.getByTestId(`pastel-swatch-${color}`));
     expect(handleChange).toHaveBeenCalledWith(color);
   });
@@ -34,7 +34,7 @@ describe('PastelColorPicker', () => {
     const swatch = screen.getByTestId(`pastel-swatch-${color}`);
     expect(swatch).toHaveAttribute(
       'aria-label',
-      expect.stringContaining(color)
+      expect.stringContaining(color || '')
     );
   });
 

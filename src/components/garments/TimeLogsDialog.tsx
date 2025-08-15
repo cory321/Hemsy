@@ -18,7 +18,11 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
-// API-backed operations instead of server actions
+import {
+  getTimeEntriesForGarment,
+  updateTimeEntry,
+  deleteTimeEntry,
+} from '@/lib/actions/garment-time-entries';
 
 interface TimeLogsDialogProps {
   open: boolean;
@@ -38,13 +42,11 @@ export default function TimeLogsDialog({
   const [minutesInput, setMinutesInput] = useState<string>('');
 
   async function refresh() {
-    const url = new URL('/api/garments/time-entries', window.location.origin);
-    url.searchParams.set('garmentId', garmentId);
-    const res = await fetch(url.toString());
-    if (res.ok) {
-      const list = await res.json();
+    try {
+      const list = await getTimeEntriesForGarment(garmentId);
       setEntries(list);
-    } else {
+    } catch (error) {
+      console.error('Failed to fetch time entries:', error);
       setEntries([]);
     }
   }
@@ -64,23 +66,26 @@ export default function TimeLogsDialog({
   const saveEdit = async () => {
     const mins = parseInt(minutesInput, 10);
     if (!editingId || !mins || mins <= 0) return;
-    await fetch('/api/garments/time-entries', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ entryId: editingId, minutes: mins }),
-    });
-    setEditingId(null);
-    setMinutesInput('');
-    await refresh();
-    onChanged?.();
+
+    try {
+      await updateTimeEntry(editingId, mins);
+      setEditingId(null);
+      setMinutesInput('');
+      await refresh();
+      onChanged?.();
+    } catch (error) {
+      console.error('Failed to update time entry:', error);
+    }
   };
 
   const handleDelete = async (id: string) => {
-    const url = new URL('/api/garments/time-entries', window.location.origin);
-    url.searchParams.set('entryId', id);
-    await fetch(url.toString(), { method: 'DELETE' });
-    await refresh();
-    onChanged?.();
+    try {
+      await deleteTimeEntry(id);
+      await refresh();
+      onChanged?.();
+    } catch (error) {
+      console.error('Failed to delete time entry:', error);
+    }
   };
 
   return (

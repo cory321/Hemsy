@@ -2,7 +2,9 @@ export const formatAsCurrency = (value: string | number): string => {
   const numericValue = value.toString().replace(/[^0-9.]/g, '');
   const parts = numericValue.split('.');
 
-  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  if (parts[0]) {
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
 
   if (parts[1]) {
     parts[1] = parts[1].slice(0, 2); // Limit to 2 decimal places

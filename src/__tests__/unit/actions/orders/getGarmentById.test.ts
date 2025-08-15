@@ -88,9 +88,6 @@ describe('getGarmentById', () => {
       success: true,
       garment: {
         ...mockGarment,
-        stage_id: null,
-        stage_name: null,
-        stage_color: null,
         totalPriceCents: 9500, // 3500 + (2 * 3000)
       },
     });

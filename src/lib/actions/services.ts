@@ -134,6 +134,24 @@ export async function fetchAllServices() {
   return services || [];
 }
 
+export async function getFrequentlyUsedServices() {
+  const { shop } = await ensureUserAndShop();
+  const supabase = await createSupabaseClient();
+
+  const { data, error } = await supabase
+    .from('services')
+    .select('id, name, default_unit, default_qty, default_unit_price_cents')
+    .eq('shop_id', shop.id)
+    .eq('frequently_used', true)
+    .order('frequently_used_position', { ascending: true });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data || [];
+}
+
 export async function duplicateService(id: string) {
   const { shop } = await ensureUserAndShop();
   const supabase = await createSupabaseClient();

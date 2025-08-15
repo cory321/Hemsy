@@ -200,7 +200,7 @@ describe('CalendarWithQuery - Rapid Navigation Protection', () => {
     const nextButton = screen.getAllByRole('button')[2];
 
     // First click should work
-    fireEvent.click(nextButton);
+    if (nextButton) fireEvent.click(nextButton);
 
     // Now simulate that we're fetching
     mockAppointmentQueries.useAppointmentsTimeRange.mockReturnValue({
@@ -216,8 +216,8 @@ describe('CalendarWithQuery - Rapid Navigation Protection', () => {
     expect(nextButton).toBeDisabled();
 
     // Even if user tries to click, nothing should happen
-    fireEvent.click(nextButton);
-    fireEvent.click(nextButton);
+    if (nextButton) fireEvent.click(nextButton);
+    if (nextButton) fireEvent.click(nextButton);
 
     // The rapid clicks shouldn't cause additional issues
   });

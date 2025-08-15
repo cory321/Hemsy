@@ -12,6 +12,8 @@ import {
 import { CldImage } from 'next-cloudinary';
 import InlinePresetSvg from '@/components/ui/InlinePresetSvg';
 import { resolveGarmentDisplayImage } from '@/utils/displayImage';
+import { getStageColor } from '@/constants/garmentStages';
+import { GarmentStage } from '@/types';
 
 interface GarmentCardProps {
   garment: {
@@ -25,8 +27,8 @@ interface GarmentCardProps {
     due_date?: string;
     event_date?: string;
     services?: any[];
+    stage?: GarmentStage;
     stage_name?: string;
-    stage_color?: string;
   };
   orderId: string;
   stageColor?: string;
@@ -79,7 +81,7 @@ const GarmentCard: React.FC<GarmentCardProps> = ({
         flexDirection: 'column',
         cursor: 'pointer',
         position: 'relative',
-        borderTop: `4px solid ${stageColor || garment.stage_color || '#ccc'}`,
+        borderTop: `4px solid ${stageColor || (garment.stage ? getStageColor(garment.stage) : '#ccc')}`,
         '&:hover': {
           transform: 'translateY(-2px)',
           boxShadow: 3,
@@ -237,7 +239,9 @@ const GarmentCard: React.FC<GarmentCardProps> = ({
                 width: 12,
                 height: 12,
                 borderRadius: '50%',
-                backgroundColor: stageColor || garment.stage_color || '#ccc',
+                backgroundColor:
+                  stageColor ||
+                  (garment.stage ? getStageColor(garment.stage) : '#ccc'),
               }}
             />
           </Tooltip>

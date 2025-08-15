@@ -178,3 +178,37 @@ export async function getAllClients(): Promise<Tables<'clients'>[]> {
 
   return data || [];
 }
+
+export async function getClientOrders(clientId: string) {
+  const { shop } = await ensureUserAndShop();
+  const supabase = await createSupabaseClient();
+
+  const { data: orders, error } = await supabase
+    .from('orders')
+    .select(
+      `
+      *,
+      garments(id),
+      client:clients(
+        id,
+        first_name,
+        last_name
+      )
+    `
+    )
+    .eq('shop_id', shop.id)
+    .eq('client_id', clientId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throw new Error(`Failed to fetch client orders: ${error.message}`);
+  }
+
+  const transformed = (orders || []).map((order) => ({
+    ...order,
+    garment_count: (order as any).garments?.length || 0,
+    garments: undefined,
+  }));
+
+  return transformed;
+}

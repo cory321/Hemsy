@@ -62,7 +62,7 @@ export async function sendConfirmationRequestEmail(
   confirmationUrl?: string;
 }> {
   try {
-    const { userId } = auth();
+    const { userId } = await auth();
     if (!userId) {
       return { success: false, error: 'Unauthorized' };
     }
@@ -91,7 +91,7 @@ export async function sendPaymentLinkEmail(
   amount: number
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const { userId } = auth();
+    const { userId } = await auth();
     if (!userId) {
       return { success: false, error: 'Unauthorized' };
     }
@@ -125,7 +125,7 @@ async function sendAppointmentEmail(
     // Validate input
     const validatedData = SendEmailSchema.parse(input);
 
-    const { userId } = auth();
+    const { userId } = await auth();
     if (!userId) {
       return { success: false, error: 'Unauthorized' };
     }
@@ -167,7 +167,7 @@ export async function resendEmail(
   emailLogId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const { userId } = auth();
+    const { userId } = await auth();
     if (!userId) {
       return { success: false, error: 'Unauthorized' };
     }

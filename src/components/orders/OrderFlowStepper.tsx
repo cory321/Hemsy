@@ -22,7 +22,7 @@ import { assignDefaultGarmentNames } from '@/lib/utils/order-normalization';
 import Step1ClientSelection from './steps/Step1ClientSelection';
 import Step2GarmentDetails from './steps/Step2GarmentDetails';
 import Step3Summary from './steps/Step3Summary';
-// Call API route instead of importing server action directly
+import { createOrder } from '@/lib/actions/orders';
 
 const steps = ['Select Client', 'Add Garments & Services', 'Review & Confirm'];
 
@@ -83,12 +83,7 @@ export default function OrderFlowStepper() {
         })),
       };
 
-      const res = await fetch('/api/orders/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderData),
-      });
-      const result = await res.json();
+      const result = await createOrder(orderData);
 
       if (result.success) {
         toast.success('Order created successfully!');

@@ -42,6 +42,8 @@ describe('EmailTemplateEditor - Test Email Functionality', () => {
     subject: 'Appointment Scheduled',
     body: 'Your appointment is scheduled for {appointment_date}',
     is_active: true,
+    is_default: false,
+    created_by: 'user',
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
   };

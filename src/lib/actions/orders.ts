@@ -401,9 +401,6 @@ export async function getGarmentById(garmentId: string) {
       success: true,
       garment: {
         ...garment,
-        stage_name: null,
-        stage_id: null,
-        stage_color: null,
         totalPriceCents,
       },
     };

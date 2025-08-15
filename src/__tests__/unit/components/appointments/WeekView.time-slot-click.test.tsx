@@ -36,10 +36,10 @@ jest.mock('@/lib/utils/calendar', () => ({
   getAppointmentColor: jest.fn(() => '#1976d2'),
   formatTime: jest.fn((time: string) => {
     const [hours, minutes] = time.split(':');
-    const hour = parseInt(hours);
+    const hour = parseInt(hours || '0');
     const period = hour >= 12 ? 'PM' : 'AM';
     const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-    return `${displayHour}:${minutes} ${period}`;
+    return `${displayHour}:${minutes || '00'} ${period}`;
   }),
 }));
 
@@ -98,21 +98,29 @@ describe('WeekView - Time Slot Click', () => {
   const mockAppointments: Appointment[] = [
     {
       id: '1',
-      user_id: 'user1',
+
       shop_id: 'shop1',
       client_id: 'client1',
 
-      date: format(weekDays[1], 'yyyy-MM-dd'), // Monday
+      date: format(weekDays[1] || new Date(), 'yyyy-MM-dd'), // Monday
       start_time: '10:00',
       end_time: '11:00',
       type: 'fitting',
       status: 'confirmed',
-      notes: null,
+
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       client: {
+        id: 'client1',
+        shop_id: 'shop1',
         first_name: 'John',
         last_name: 'Doe',
+        email: 'john@example.com',
+        phone_number: '555-1234',
+        accept_email: true,
+        accept_sms: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       },
     },
   ];
@@ -222,7 +230,7 @@ describe('WeekView - Time Slot Click', () => {
       );
 
       if (timeSlotElements.length > 0) {
-        fireEvent.click(timeSlotElements[0]);
+        if (timeSlotElements[0]) fireEvent.click(timeSlotElements[0]);
 
         // Should not throw error or cause issues
         expect(consoleSpy).not.toHaveBeenCalled();

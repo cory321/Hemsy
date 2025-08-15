@@ -28,6 +28,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
+import { searchServices, addService } from '@/lib/actions/services';
 
 type ClientLite = { id: string; name: string };
 type ServiceLite = {
@@ -140,12 +141,13 @@ export default function OrdersComposerClient({
       setSearchResults([]);
       return;
     }
-    const res = await fetch(
-      `/api/services/search?q=${encodeURIComponent(query)}`
-    );
-    if (!res.ok) return;
-    const data = (await res.json()) as ServiceLite[];
-    setSearchResults(data);
+    try {
+      const data = (await searchServices(query)) as ServiceLite[];
+      setSearchResults(data);
+    } catch (error) {
+      console.error('Failed to search services:', error);
+      setSearchResults([]);
+    }
   }
 
   async function handleQuickAdd(
@@ -156,20 +158,17 @@ export default function OrdersComposerClient({
     persistToCatalog: boolean
   ) {
     if (persistToCatalog) {
-      const res = await fetch('/api/services/add', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      try {
+        const svc = (await addService({
           name,
-          defaultUnit: unit,
-          defaultQty: 1,
-          defaultUnitPriceCents: priceCents,
-        }),
-      });
-      if (res.ok) {
-        const svc = (await res.json()) as ServiceLite;
+          default_unit: unit,
+          default_qty: 1,
+          default_unit_price_cents: priceCents,
+        })) as ServiceLite;
         addServiceFromPreset(garmentIdx, svc);
         return;
+      } catch (error) {
+        console.error('Failed to add service to catalog:', error);
       }
     }
     // Inline line if not persisted

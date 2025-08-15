@@ -23,8 +23,14 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
-// Use API routes instead of server actions
 import TimeLogsDialog from '@/components/garments/TimeLogsDialog';
+import {
+  getTimeEntriesForGarment,
+  getTotalTimeForGarment,
+  addTimeEntry,
+  updateTimeEntry,
+  deleteTimeEntry,
+} from '@/lib/actions/garment-time-entries';
 
 interface GarmentTimeTrackerProps {
   garmentId: string;
@@ -47,24 +53,18 @@ export default function GarmentTimeTracker({
   const [logsOpen, setLogsOpen] = useState(false);
 
   async function refresh() {
-    const listUrl = new URL(
-      '/api/garments/time-entries',
-      window.location.origin
-    );
-    listUrl.searchParams.set('garmentId', garmentId);
-    const totalUrl = new URL(
-      '/api/garments/time-entries/total',
-      window.location.origin
-    );
-    totalUrl.searchParams.set('garmentId', garmentId);
-    const [listRes, totalRes] = await Promise.all([
-      fetch(listUrl.toString()),
-      fetch(totalUrl.toString()),
-    ]);
-    const list = listRes.ok ? await listRes.json() : [];
-    const totalJson = totalRes.ok ? await totalRes.json() : { total: 0 };
-    setEntries(list);
-    setTotalMinutes(totalJson.total || 0);
+    try {
+      const [list, total] = await Promise.all([
+        getTimeEntriesForGarment(garmentId),
+        getTotalTimeForGarment(garmentId),
+      ]);
+      setEntries(list);
+      setTotalMinutes(total);
+    } catch (error) {
+      console.error('Failed to refresh time entries:', error);
+      setEntries([]);
+      setTotalMinutes(0);
+    }
   }
 
   useEffect(() => {
@@ -83,37 +83,41 @@ export default function GarmentTimeTracker({
       (parseInt(minutesInput || '0', 10) || 0);
     const mins = isNaN(minsCombined) ? 0 : minsCombined;
     if (!selectedServiceId || !mins || mins <= 0) return;
-    await fetch('/api/garments/time-entries', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ serviceId: selectedServiceId, minutes: mins }),
-    });
-    setIsAddOpen(false);
-    setSelectedServiceId('');
-    setHoursInput('');
-    setMinutesInput('');
-    await refresh();
+
+    try {
+      await addTimeEntry(selectedServiceId, mins);
+      setIsAddOpen(false);
+      setSelectedServiceId('');
+      setHoursInput('');
+      setMinutesInput('');
+      await refresh();
+    } catch (error) {
+      console.error('Failed to add time entry:', error);
+    }
   };
 
   const handleEdit = async () => {
     const mins = parseInt(minutes, 10);
     if (!editingEntry?.id || !mins || mins <= 0) return;
-    await fetch('/api/garments/time-entries', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ entryId: editingEntry.id, minutes: mins }),
-    });
-    setIsEditOpen(false);
-    setEditingEntry(null);
-    setMinutes('');
-    await refresh();
+
+    try {
+      await updateTimeEntry(editingEntry.id, mins);
+      setIsEditOpen(false);
+      setEditingEntry(null);
+      setMinutes('');
+      await refresh();
+    } catch (error) {
+      console.error('Failed to update time entry:', error);
+    }
   };
 
   const handleDelete = async (entryId: string) => {
-    const url = new URL('/api/garments/time-entries', window.location.origin);
-    url.searchParams.set('entryId', entryId);
-    await fetch(url.toString(), { method: 'DELETE' });
-    await refresh();
+    try {
+      await deleteTimeEntry(entryId);
+      await refresh();
+    } catch (error) {
+      console.error('Failed to delete time entry:', error);
+    }
   };
 
   return (

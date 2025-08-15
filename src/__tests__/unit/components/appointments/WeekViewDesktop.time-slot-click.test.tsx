@@ -36,15 +36,19 @@ jest.mock('@/lib/utils/calendar', () => ({
   getAppointmentColor: jest.fn(() => '#1976d2'),
   formatTime: jest.fn((time: string) => {
     const [hours, minutes] = time.split(':');
-    const hour = parseInt(hours);
+    const hour = parseInt(hours || '0');
     const period = hour >= 12 ? 'PM' : 'AM';
     const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-    return `${displayHour}:${minutes} ${period}`;
+    return `${displayHour}:${minutes || '00'} ${period}`;
   }),
   getDurationMinutes: jest.fn((start: string, end: string) => {
     const [startHour, startMin] = start.split(':').map(Number);
     const [endHour, endMin] = end.split(':').map(Number);
-    return endHour * 60 + endMin - (startHour * 60 + startMin);
+    return (
+      (endHour || 0) * 60 +
+      (endMin || 0) -
+      ((startHour || 0) * 60 + (startMin || 0))
+    );
   }),
 }));
 
@@ -103,40 +107,56 @@ describe('WeekViewDesktop - Time Slot Click', () => {
   const mockAppointments: Appointment[] = [
     {
       id: '1',
-      user_id: 'user1',
+
       shop_id: 'shop1',
       client_id: 'client1',
 
-      date: format(weekDays[1], 'yyyy-MM-dd'), // Monday
+      date: format(weekDays[1] || new Date(), 'yyyy-MM-dd'), // Monday
       start_time: '10:00',
       end_time: '11:00',
       type: 'fitting',
       status: 'confirmed',
-      notes: null,
+
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       client: {
+        id: 'client1',
+        shop_id: 'shop1',
         first_name: 'John',
         last_name: 'Doe',
+        email: 'john@example.com',
+        phone_number: '555-1234',
+        accept_email: true,
+        accept_sms: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       },
     },
     {
       id: '2',
-      user_id: 'user1',
+
       shop_id: 'shop1',
       client_id: 'client2',
 
-      date: format(weekDays[2], 'yyyy-MM-dd'), // Tuesday
+      date: format(weekDays[2] || new Date(), 'yyyy-MM-dd'), // Tuesday
       start_time: '14:00',
       end_time: '16:30', // 2.5 hour appointment
       type: 'consultation',
       status: 'confirmed',
-      notes: null,
+
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       client: {
+        id: 'client2',
+        shop_id: 'shop1',
         first_name: 'Jane',
         last_name: 'Smith',
+        email: 'jane@example.com',
+        phone_number: '555-5678',
+        accept_email: true,
+        accept_sms: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       },
     },
   ];
@@ -315,8 +335,16 @@ describe('WeekViewDesktop - Time Slot Click', () => {
         start_time: '09:00',
         end_time: '10:00',
         client: {
+          id: 'client3',
+          shop_id: 'shop1',
           first_name: 'Alice',
           last_name: 'Johnson',
+          email: 'alice@example.com',
+          phone_number: '555-3333',
+          accept_email: true,
+          accept_sms: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         },
       },
       {
@@ -325,8 +353,16 @@ describe('WeekViewDesktop - Time Slot Click', () => {
         start_time: '09:30',
         end_time: '10:30',
         client: {
+          id: 'client4',
+          shop_id: 'shop1',
           first_name: 'Bob',
           last_name: 'Wilson',
+          email: 'bob@example.com',
+          phone_number: '555-4444',
+          accept_email: false,
+          accept_sms: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         },
       },
     ];
@@ -367,7 +403,7 @@ describe('WeekViewDesktop - Time Slot Click', () => {
     // Try to click on any element - should not cause errors
     const clickableElements = document.querySelectorAll('div');
     if (clickableElements.length > 0) {
-      fireEvent.click(clickableElements[0]);
+      if (clickableElements[0]) fireEvent.click(clickableElements[0]);
     }
 
     // Should not throw error or cause issues

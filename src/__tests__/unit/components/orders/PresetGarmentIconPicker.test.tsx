@@ -4,7 +4,7 @@ import PresetGarmentIconPicker from '@/components/orders/PresetGarmentIconPicker
 describe('PresetGarmentIconPicker', () => {
   it('renders categories and items, and calls onChange when selecting', () => {
     const onChange = jest.fn();
-    render(<PresetGarmentIconPicker value={undefined} onChange={onChange} />);
+    render(<PresetGarmentIconPicker onChange={onChange} />);
 
     // Basic smoke checks for a couple of labels
     expect(screen.getByText('Tops')).toBeInTheDocument();

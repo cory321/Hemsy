@@ -12,8 +12,8 @@ function makeQueryClient() {
         // Stale time: how long until a query is considered stale
         staleTime: 5 * 60 * 1000, // 5 minutes
 
-        // Cache time: how long to keep unused data in cache
-        cacheTime: 30 * 60 * 1000, // 30 minutes
+        // GC time: how long to keep unused data in cache
+        gcTime: 30 * 60 * 1000, // 30 minutes
 
         // Retry configuration
         retry: (failureCount, error: any) => {
@@ -105,7 +105,11 @@ export function QueryProvider({ children }: QueryProviderProps) {
     <QueryClientProvider client={queryClient}>
       {children}
       {process.env.NODE_ENV === 'development' && (
-        <ReactQueryDevtools initialIsOpen={false} position="bottom-right" />
+        <ReactQueryDevtools
+          initialIsOpen={false}
+          position="bottom"
+          buttonPosition="bottom-right"
+        />
       )}
     </QueryClientProvider>
   );

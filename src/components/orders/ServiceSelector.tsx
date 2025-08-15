@@ -23,7 +23,6 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import { useOrderFlow, ServiceLine } from '@/contexts/OrderFlowContext';
-// Remove direct server action imports. Use API routes instead.
 import {
   formatCurrency,
   dollarsToCents,
@@ -31,6 +30,11 @@ import {
 } from '@/lib/utils/currency';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'react-hot-toast';
+import {
+  getFrequentlyUsedServices,
+  searchServices,
+  addService,
+} from '@/lib/actions/services';
 
 interface ServiceSelectorProps {
   garmentId: string;
@@ -66,9 +70,7 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
   useEffect(() => {
     const loadFrequentServices = async () => {
       try {
-        const res = await fetch('/api/services/frequently-used');
-        if (!res.ok) throw new Error('Failed to load');
-        const services = await res.json();
+        const services = await getFrequentlyUsedServices();
         setFrequentServices(services);
       } catch (error) {
         console.error('Failed to load frequent services:', error);
@@ -85,11 +87,7 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
         return;
       }
       try {
-        const url = new URL('/api/services/search', window.location.origin);
-        url.searchParams.set('q', searchQuery);
-        const res = await fetch(url.toString());
-        if (!res.ok) throw new Error('Failed');
-        const results = await res.json();
+        const results = await searchServices(searchQuery);
         setSearchResults(results);
       } catch (error) {
         console.error('Failed to search services:', error);
@@ -126,18 +124,12 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
 
     if (quickAddToCatalog) {
       try {
-        const res = await fetch('/api/services/add', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: quickAddName,
-            default_qty: 1,
-            default_unit: quickAddUnit,
-            default_unit_price_cents: priceCents,
-          }),
+        const created = await addService({
+          name: quickAddName,
+          default_qty: 1,
+          default_unit: quickAddUnit,
+          default_unit_price_cents: priceCents,
         });
-        if (!res.ok) throw new Error('Failed');
-        const created = await res.json();
         const newService: ServiceLine = {
           serviceId: created.id,
           name: quickAddName,

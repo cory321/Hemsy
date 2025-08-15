@@ -127,8 +127,8 @@ export type Database = {
       };
       clients: {
         Row: {
-          accept_email: boolean | null;
-          accept_sms: boolean | null;
+          accept_email: boolean;
+          accept_sms: boolean;
           created_at: string | null;
           email: string;
           first_name: string;
@@ -141,8 +141,8 @@ export type Database = {
           updated_at: string | null;
         };
         Insert: {
-          accept_email?: boolean | null;
-          accept_sms?: boolean | null;
+          accept_email?: boolean;
+          accept_sms?: boolean;
           created_at?: string | null;
           email: string;
           first_name: string;
@@ -155,8 +155,8 @@ export type Database = {
           updated_at?: string | null;
         };
         Update: {
-          accept_email?: boolean | null;
-          accept_sms?: boolean | null;
+          accept_email?: boolean;
+          accept_sms?: boolean;
           created_at?: string | null;
           email?: string;
           first_name?: string;

@@ -51,10 +51,10 @@ jest.mock('@/lib/utils/calendar', () => ({
   isShopOpen: jest.fn(() => true),
   formatTime: jest.fn((time: string) => {
     const [hours, minutes] = time.split(':');
-    const hour = parseInt(hours);
+    const hour = parseInt(hours || '0');
     const ampm = hour >= 12 ? 'PM' : 'AM';
     const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-    return `${displayHour}:${minutes} ${ampm}`;
+    return `${displayHour}:${minutes || '00'} ${ampm}`;
   }),
   isPastDate: jest.fn(() => false),
   canCreateAppointment: jest.fn(() => true),
@@ -80,7 +80,7 @@ const mockAppointments: Appointment[] = [
     start_time: '10:00',
     end_time: '11:00',
     type: 'fitting',
-    status: 'scheduled',
+    status: 'confirmed',
     shop_id: 'shop1',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -89,7 +89,9 @@ const mockAppointments: Appointment[] = [
       first_name: 'Jane',
       last_name: 'Doe',
       email: 'jane@example.com',
-      phone: '555-0123',
+      phone_number: '555-0123',
+      accept_email: true,
+      accept_sms: false,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       shop_id: 'shop1',
@@ -103,7 +105,7 @@ const mockAppointments: Appointment[] = [
     start_time: '14:00',
     end_time: '15:00',
     type: 'consultation',
-    status: 'scheduled',
+    status: 'confirmed',
     shop_id: 'shop1',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -112,7 +114,9 @@ const mockAppointments: Appointment[] = [
       first_name: 'John',
       last_name: 'Smith',
       email: 'john@example.com',
-      phone: '555-0124',
+      phone_number: '555-0124',
+      accept_email: true,
+      accept_sms: true,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       shop_id: 'shop1',

@@ -46,7 +46,7 @@ describe('DayView - Appointment spanning across 30-minute rows', () => {
     const appointments: Appointment[] = [
       {
         id: 'apt-60',
-        user_id: 'user1',
+
         shop_id: 'shop1',
         client_id: 'client1',
         date: dateStr,
@@ -54,14 +54,25 @@ describe('DayView - Appointment spanning across 30-minute rows', () => {
         end_time: '10:00', // 60 minutes
         type: 'fitting',
         status: 'confirmed',
-        notes: null,
+
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        client: { first_name: 'Alice', last_name: 'Johnson' },
+        client: {
+          id: 'client1',
+          shop_id: 'shop1',
+          first_name: 'Alice',
+          last_name: 'Johnson',
+          email: 'alice@example.com',
+          phone_number: '555-1111',
+          accept_email: true,
+          accept_sms: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
       },
       {
         id: 'apt-90',
-        user_id: 'user1',
+
         shop_id: 'shop1',
         client_id: 'client2',
         date: dateStr,
@@ -69,10 +80,21 @@ describe('DayView - Appointment spanning across 30-minute rows', () => {
         end_time: '12:00', // 90 minutes
         type: 'consultation',
         status: 'confirmed',
-        notes: null,
+
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        client: { first_name: 'Bob', last_name: 'Smith' },
+        client: {
+          id: 'client2',
+          shop_id: 'shop1',
+          first_name: 'Bob',
+          last_name: 'Smith',
+          email: 'bob@example.com',
+          phone_number: '555-2222',
+          accept_email: true,
+          accept_sms: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
       },
     ];
 
