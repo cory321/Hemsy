@@ -23,13 +23,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
-import {
-  addTimeEntry,
-  deleteTimeEntry,
-  getTimeEntriesForGarment,
-  getTotalTimeForGarment,
-  updateTimeEntry,
-} from '@/lib/actions/garment-time-entries';
+// Use API routes instead of server actions
 import TimeLogsDialog from '@/components/garments/TimeLogsDialog';
 
 interface GarmentTimeTrackerProps {
@@ -53,12 +47,24 @@ export default function GarmentTimeTracker({
   const [logsOpen, setLogsOpen] = useState(false);
 
   async function refresh() {
-    const [list, total] = await Promise.all([
-      getTimeEntriesForGarment(garmentId),
-      getTotalTimeForGarment(garmentId),
+    const listUrl = new URL(
+      '/api/garments/time-entries',
+      window.location.origin
+    );
+    listUrl.searchParams.set('garmentId', garmentId);
+    const totalUrl = new URL(
+      '/api/garments/time-entries/total',
+      window.location.origin
+    );
+    totalUrl.searchParams.set('garmentId', garmentId);
+    const [listRes, totalRes] = await Promise.all([
+      fetch(listUrl.toString()),
+      fetch(totalUrl.toString()),
     ]);
+    const list = listRes.ok ? await listRes.json() : [];
+    const totalJson = totalRes.ok ? await totalRes.json() : { total: 0 };
     setEntries(list);
-    setTotalMinutes(total);
+    setTotalMinutes(totalJson.total || 0);
   }
 
   useEffect(() => {
@@ -77,7 +83,11 @@ export default function GarmentTimeTracker({
       (parseInt(minutesInput || '0', 10) || 0);
     const mins = isNaN(minsCombined) ? 0 : minsCombined;
     if (!selectedServiceId || !mins || mins <= 0) return;
-    await addTimeEntry(selectedServiceId, mins);
+    await fetch('/api/garments/time-entries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ serviceId: selectedServiceId, minutes: mins }),
+    });
     setIsAddOpen(false);
     setSelectedServiceId('');
     setHoursInput('');
@@ -88,7 +98,11 @@ export default function GarmentTimeTracker({
   const handleEdit = async () => {
     const mins = parseInt(minutes, 10);
     if (!editingEntry?.id || !mins || mins <= 0) return;
-    await updateTimeEntry(editingEntry.id, mins);
+    await fetch('/api/garments/time-entries', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entryId: editingEntry.id, minutes: mins }),
+    });
     setIsEditOpen(false);
     setEditingEntry(null);
     setMinutes('');
@@ -96,7 +110,9 @@ export default function GarmentTimeTracker({
   };
 
   const handleDelete = async (entryId: string) => {
-    await deleteTimeEntry(entryId);
+    const url = new URL('/api/garments/time-entries', window.location.origin);
+    url.searchParams.set('entryId', entryId);
+    await fetch(url.toString(), { method: 'DELETE' });
     await refresh();
   };
 

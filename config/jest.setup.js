@@ -27,6 +27,15 @@ if (typeof global.Response === 'undefined') {
 // Mock Clerk for tests
 jest.mock('@clerk/nextjs/server', () => ({
   auth: jest.fn(() => Promise.resolve({ userId: 'test-user-id' })),
+  currentUser: jest.fn(() =>
+    Promise.resolve({
+      id: 'test-user-id',
+      emailAddresses: [{ emailAddress: 'test@example.com' }],
+      firstName: 'Test',
+      lastName: 'User',
+      username: 'testuser',
+    })
+  ),
 }));
 
 // Mock email config and Resend for tests to avoid requiring real API keys

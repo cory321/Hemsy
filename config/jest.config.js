@@ -1,4 +1,4 @@
-const nextJest = require('next/jest');
+import nextJest from 'next/jest.js';
 
 const createJestConfig = nextJest({
   // Provide the path to your Next.js app to load next.config.js and .env files
@@ -16,7 +16,11 @@ const customJestConfig = {
   ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/../src/$1',
+    '@clerk/backend/dist/runtime/browser/crypto':
+      '<rootDir>/../src/lib/testing/__mocks__/crypto.js',
+    isows: '<rootDir>/../src/lib/testing/__mocks__/isows.js',
   },
+  transformIgnorePatterns: ['node_modules/(?!(@supabase|@clerk|isows)/)'],
   collectCoverageFrom: [
     '../src/**/*.{js,jsx,ts,tsx}',
     '!../src/**/*.d.ts',
@@ -38,4 +42,4 @@ const customJestConfig = {
 };
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
-module.exports = createJestConfig(customJestConfig);
+export default createJestConfig(customJestConfig);

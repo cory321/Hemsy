@@ -13,7 +13,6 @@ import {
   CircularProgress,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import { searchServices } from '@/lib/actions/services';
 import { Service } from '@/lib/utils/serviceUtils';
 import { formatCentsAsCurrency } from '@/lib/utils/currency';
 import { debounce } from '@/lib/utils/debounce';
@@ -43,7 +42,11 @@ const ServicesSearch: React.FC<ServicesSearchProps> = ({
 
       setLoading(true);
       try {
-        const results = await searchServices(query);
+        const url = new URL('/api/services/search', window.location.origin);
+        url.searchParams.set('q', query);
+        const res = await fetch(url.toString());
+        if (!res.ok) throw new Error('Search failed');
+        const results = await res.json();
         setOptions(results);
       } catch (error) {
         console.error('Error searching services:', error);

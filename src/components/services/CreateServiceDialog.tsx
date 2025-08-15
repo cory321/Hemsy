@@ -21,7 +21,6 @@ import CloseIcon from '@mui/icons-material/Close';
 import { toast } from 'react-hot-toast';
 
 import { calculateTotalPrice, ServiceFormData } from '@/lib/utils/serviceUtils';
-import { addService } from '@/lib/actions/services';
 import SERVICE_UNIT_TYPES from '@/lib/utils/serviceUnitTypes';
 import {
   formatAsCurrency,
@@ -99,7 +98,7 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
     setIsLoading(true);
 
     try {
-      const serviceData: Parameters<typeof addService>[0] = {
+      const serviceData = {
         name: newService.name,
         default_qty:
           typeof newService.qty === 'string'
@@ -107,13 +106,20 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
             : newService.qty,
         default_unit: newService.unit,
         default_unit_price_cents: dollarsToCents(newService.unit_price),
-      };
+      } as const;
 
+      const payload = { ...serviceData } as any;
       if (newService.description) {
-        serviceData.description = newService.description;
+        payload.description = newService.description;
       }
 
-      const newServiceItem = await addService(serviceData);
+      const res = await fetch('/api/services/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error('Failed to add service');
+      const newServiceItem = await res.json();
 
       onServiceSelect(newServiceItem);
 

@@ -18,11 +18,7 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
-import {
-  getTimeEntriesForGarment,
-  updateTimeEntry,
-  deleteTimeEntry,
-} from '@/lib/actions/garment-time-entries';
+// API-backed operations instead of server actions
 
 interface TimeLogsDialogProps {
   open: boolean;
@@ -42,8 +38,15 @@ export default function TimeLogsDialog({
   const [minutesInput, setMinutesInput] = useState<string>('');
 
   async function refresh() {
-    const list = await getTimeEntriesForGarment(garmentId);
-    setEntries(list);
+    const url = new URL('/api/garments/time-entries', window.location.origin);
+    url.searchParams.set('garmentId', garmentId);
+    const res = await fetch(url.toString());
+    if (res.ok) {
+      const list = await res.json();
+      setEntries(list);
+    } else {
+      setEntries([]);
+    }
   }
 
   useEffect(() => {
@@ -61,7 +64,11 @@ export default function TimeLogsDialog({
   const saveEdit = async () => {
     const mins = parseInt(minutesInput, 10);
     if (!editingId || !mins || mins <= 0) return;
-    await updateTimeEntry(editingId, mins);
+    await fetch('/api/garments/time-entries', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entryId: editingId, minutes: mins }),
+    });
     setEditingId(null);
     setMinutesInput('');
     await refresh();
@@ -69,7 +76,9 @@ export default function TimeLogsDialog({
   };
 
   const handleDelete = async (id: string) => {
-    await deleteTimeEntry(id);
+    const url = new URL('/api/garments/time-entries', window.location.origin);
+    url.searchParams.set('entryId', id);
+    await fetch(url.toString(), { method: 'DELETE' });
     await refresh();
     onChanged?.();
   };

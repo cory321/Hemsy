@@ -1,14 +1,10 @@
 'use server';
 
 import { createClient as createSupabaseClient } from '@/lib/supabase/server';
-
-async function getUserAndShop() {
-  const { ensureUserAndShop } = await import('@/lib/actions/users');
-  return ensureUserAndShop();
-}
+import { ensureUserAndShop } from './users';
 
 export async function addTimeEntry(serviceId: string, minutes: number) {
-  const { user } = await getUserAndShop();
+  const { user } = await ensureUserAndShop();
   const supabase = await createSupabaseClient();
 
   const { error } = await supabase

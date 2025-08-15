@@ -23,11 +23,7 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import { useOrderFlow, ServiceLine } from '@/contexts/OrderFlowContext';
-import {
-  getFrequentlyUsedServices,
-  searchServices,
-  addService,
-} from '@/lib/actions/orders';
+// Remove direct server action imports. Use API routes instead.
 import {
   formatCurrency,
   dollarsToCents,
@@ -70,7 +66,9 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
   useEffect(() => {
     const loadFrequentServices = async () => {
       try {
-        const services = await getFrequentlyUsedServices();
+        const res = await fetch('/api/services/frequently-used');
+        if (!res.ok) throw new Error('Failed to load');
+        const services = await res.json();
         setFrequentServices(services);
       } catch (error) {
         console.error('Failed to load frequent services:', error);
@@ -87,7 +85,11 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
         return;
       }
       try {
-        const results = await searchServices(searchQuery);
+        const url = new URL('/api/services/search', window.location.origin);
+        url.searchParams.set('q', searchQuery);
+        const res = await fetch(url.toString());
+        if (!res.ok) throw new Error('Failed');
+        const results = await res.json();
         setSearchResults(results);
       } catch (error) {
         console.error('Failed to search services:', error);
@@ -124,26 +126,27 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
 
     if (quickAddToCatalog) {
       try {
-        const result = await addService({
-          name: quickAddName,
-          defaultUnit: quickAddUnit,
-          defaultQty: 1,
-          defaultUnitPriceCents: priceCents,
-        });
-
-        if (result.success) {
-          const newService: ServiceLine = {
-            serviceId: result.serviceId,
+        const res = await fetch('/api/services/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
             name: quickAddName,
-            quantity: 1,
-            unit: quickAddUnit,
-            unitPriceCents: priceCents,
-          };
-          addServiceToGarment(garmentId, newService);
-          toast.success('Service added to catalog');
-        } else {
-          toast.error('Failed to add service to catalog');
-        }
+            default_qty: 1,
+            default_unit: quickAddUnit,
+            default_unit_price_cents: priceCents,
+          }),
+        });
+        if (!res.ok) throw new Error('Failed');
+        const created = await res.json();
+        const newService: ServiceLine = {
+          serviceId: created.id,
+          name: quickAddName,
+          quantity: 1,
+          unit: quickAddUnit,
+          unitPriceCents: priceCents,
+        };
+        addServiceToGarment(garmentId, newService);
+        toast.success('Service added to catalog');
       } catch (error) {
         console.error('Failed to add service:', error);
         toast.error('Failed to add service');

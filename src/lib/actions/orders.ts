@@ -4,12 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { createClient as createSupabaseClient } from '@/lib/supabase/server';
 import { assignDefaultGarmentNames } from '@/lib/utils/order-normalization';
-
-// Dynamic import to avoid static cycles and ease testing
-async function getUserAndShop() {
-  const { ensureUserAndShop } = await import('@/lib/actions/users');
-  return ensureUserAndShop();
-}
+import { ensureUserAndShop } from './users';
 
 // Schema definitions
 const ServiceInlineSchema = z.object({
@@ -101,7 +96,7 @@ export async function createOrder(
       }[];
     }>(input.garments as any);
 
-    const { shop } = await getUserAndShop();
+    const { shop } = await ensureUserAndShop();
     const supabase = await createSupabaseClient();
 
     // Generate order number per shop
@@ -233,7 +228,7 @@ export async function getFrequentlyUsedServices(): Promise<
     default_unit_price_cents: number;
   }[]
 > {
-  const { shop } = await getUserAndShop();
+  const { shop } = await ensureUserAndShop();
   const supabase = await createSupabaseClient();
   const { data, error } = await supabase
     .from('services')
@@ -254,7 +249,7 @@ export async function searchServices(query: string): Promise<
     default_unit_price_cents: number;
   }[]
 > {
-  const { shop } = await getUserAndShop();
+  const { shop } = await ensureUserAndShop();
   const supabase = await createSupabaseClient();
   const { data, error } = await supabase
     .from('services')
@@ -283,7 +278,7 @@ export async function addService(
 > {
   try {
     const input = AddServiceInputSchema.parse(rawInput);
-    const { shop } = await getUserAndShop();
+    const { shop } = await ensureUserAndShop();
     const supabase = await createSupabaseClient();
 
     const { data, error } = await supabase
@@ -346,7 +341,7 @@ export async function getGarmentById(garmentId: string) {
   'use server';
 
   try {
-    const { shop } = await getUserAndShop();
+    const { shop } = await ensureUserAndShop();
     const supabase = await createSupabaseClient();
 
     // Fetch garment with all related data
@@ -406,7 +401,9 @@ export async function getGarmentById(garmentId: string) {
       success: true,
       garment: {
         ...garment,
-        stage_name: garment.stage,
+        stage_name: null,
+        stage_id: null,
+        stage_color: null,
         totalPriceCents,
       },
     };
@@ -423,7 +420,7 @@ export async function getOrdersByClient(clientId: string) {
   'use server';
 
   try {
-    const { shop } = await getUserAndShop();
+    const { shop } = await ensureUserAndShop();
     const supabase = await createSupabaseClient();
 
     // Fetch orders for the client with garments count

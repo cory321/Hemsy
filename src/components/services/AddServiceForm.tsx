@@ -13,7 +13,6 @@ import {
 } from '@mui/material';
 import { toast } from 'react-hot-toast';
 
-import { addService } from '@/lib/actions/services';
 import {
   handleChange,
   calculateTotalPrice,
@@ -86,10 +85,16 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
 
     try {
       const serviceData = convertServiceForDatabase(newService);
-      const newServiceItem = await addService({
-        ...serviceData,
-        frequently_used: isFrequentlyUsed,
-      } as any);
+      const res = await fetch('/api/services/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...serviceData,
+          frequently_used: isFrequentlyUsed,
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to add service');
+      const newServiceItem = await res.json();
 
       // Update the services state in ServicePage
       setServices((prevServices) => [...prevServices, newServiceItem]);

@@ -15,7 +15,6 @@ import {
 import ShoppingBagIcon from '@mui/icons-material/ShoppingBag';
 import AddIcon from '@mui/icons-material/Add';
 import Link from 'next/link';
-import { getOrdersByClient } from '@/lib/actions/orders';
 import type { Order } from '@/types';
 import { OrderListItem } from './OrderListItem';
 
@@ -40,16 +39,18 @@ export function ClientOrdersSection({
     const fetchOrders = async () => {
       try {
         setLoading(true);
-        const result = await getOrdersByClient(clientId);
-        if (result.success) {
-          const normalized = (result.orders as any[]).map((o) => ({
-            ...o,
-            total: (o.total_cents ?? 0) / 100,
-          }));
-          setOrders(normalized);
-        } else {
-          setError(result.error || 'Failed to load orders');
-        }
+        const url = new URL(
+          `/api/clients/${clientId}/orders`,
+          window.location.origin
+        );
+        const res = await fetch(url.toString());
+        if (!res.ok) throw new Error('Failed to load orders');
+        const data = await res.json();
+        const normalized = (data.orders as any[]).map((o) => ({
+          ...o,
+          total: (o.total_cents ?? 0) / 100,
+        }));
+        setOrders(normalized);
       } catch (err) {
         setError('Failed to load orders');
         console.error('Error fetching orders:', err);

@@ -7,7 +7,7 @@ export type Json =
   | Json[];
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: '12.2.12 (cd3cf9e)';
@@ -323,6 +323,45 @@ export type Database = {
           },
         ];
       };
+      garment_service_time_entries: {
+        Row: {
+          created_by: string | null;
+          id: string;
+          logged_at: string;
+          minutes: number;
+          service_id: string;
+        };
+        Insert: {
+          created_by?: string | null;
+          id?: string;
+          logged_at?: string;
+          minutes: number;
+          service_id: string;
+        };
+        Update: {
+          created_by?: string | null;
+          id?: string;
+          logged_at?: string;
+          minutes?: number;
+          service_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'garment_service_time_entries_created_by_fkey';
+            columns: ['created_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'garment_service_time_entries_service_id_fkey';
+            columns: ['service_id'];
+            isOneToOne: false;
+            referencedRelation: 'garment_services';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       garment_services: {
         Row: {
           created_at: string | null;
@@ -383,7 +422,6 @@ export type Database = {
           },
         ];
       };
-
       garments: {
         Row: {
           created_at: string | null;
@@ -396,10 +434,10 @@ export type Database = {
           notes: string | null;
           order_id: string;
           photo_url: string | null;
-          preset_icon_key: string | null;
           preset_fill_color: string | null;
+          preset_icon_key: string | null;
           shop_id: string | null;
-          stage: Database['public']['Enums']['garment_stage_enum'];
+          stage: Database['public']['Enums']['garment_stage_enum'] | null;
           updated_at: string | null;
         };
         Insert: {
@@ -413,10 +451,10 @@ export type Database = {
           notes?: string | null;
           order_id: string;
           photo_url?: string | null;
-          preset_icon_key?: string | null;
           preset_fill_color?: string | null;
+          preset_icon_key?: string | null;
           shop_id?: string | null;
-          stage?: Database['public']['Enums']['garment_stage_enum'];
+          stage?: Database['public']['Enums']['garment_stage_enum'] | null;
           updated_at?: string | null;
         };
         Update: {
@@ -430,10 +468,10 @@ export type Database = {
           notes?: string | null;
           order_id?: string;
           photo_url?: string | null;
-          preset_icon_key?: string | null;
           preset_fill_color?: string | null;
+          preset_icon_key?: string | null;
           shop_id?: string | null;
-          stage?: Database['public']['Enums']['garment_stage_enum'];
+          stage?: Database['public']['Enums']['garment_stage_enum'] | null;
           updated_at?: string | null;
         };
         Relationships: [
@@ -744,20 +782,20 @@ export type Database = {
     Functions: {
       check_appointment_conflict: {
         Args: {
-          p_shop_id: string;
-          p_date: string;
-          p_start_time: string;
-          p_end_time: string;
           p_appointment_id?: string;
+          p_date: string;
+          p_end_time: string;
+          p_shop_id: string;
+          p_start_time: string;
         };
         Returns: boolean;
       };
       check_within_working_hours: {
         Args: {
-          p_shop_id: string;
           p_date: string;
-          p_start_time: string;
           p_end_time: string;
+          p_shop_id: string;
+          p_start_time: string;
         };
         Returns: boolean;
       };
@@ -767,13 +805,13 @@ export type Database = {
       };
       create_appointment_atomic: {
         Args: {
-          p_shop_id: string;
           p_client_id: string;
           p_date: string;
-          p_start_time: string;
           p_end_time: string;
-          p_type: string;
           p_notes?: string;
+          p_shop_id: string;
+          p_start_time: string;
+          p_type: string;
         };
         Returns: {
           client_id: string;
@@ -796,47 +834,47 @@ export type Database = {
         Returns: string;
       };
       get_appointment_counts_by_date: {
-        Args: { p_shop_id: string; p_start_date: string; p_end_date: string };
+        Args: { p_end_date: string; p_shop_id: string; p_start_date: string };
         Returns: {
-          date: string;
-          total_count: number;
-          scheduled_count: number;
           confirmed_count: number;
+          date: string;
+          scheduled_count: number;
+          total_count: number;
         }[];
       };
       get_appointments_time_range: {
         Args: {
-          p_shop_id: string;
-          p_start_date: string;
           p_end_date: string;
           p_include_cancelled?: boolean;
+          p_shop_id: string;
+          p_start_date: string;
         };
         Returns: {
-          id: string;
-          shop_id: string;
-          client_id: string;
-          order_id: string;
-          date: string;
-          start_time: string;
-          end_time: string;
-          type: string;
-          status: string;
-          notes: string;
-          reminder_sent: boolean;
-          created_at: string;
-          updated_at: string;
-          client_first_name: string;
-          client_last_name: string;
           client_email: string;
+          client_first_name: string;
+          client_id: string;
+          client_last_name: string;
           client_phone_number: string;
+          created_at: string;
+          date: string;
+          end_time: string;
+          id: string;
+          notes: string;
+          order_id: string;
+          reminder_sent: boolean;
+          shop_id: string;
+          start_time: string;
+          status: string;
+          type: string;
+          updated_at: string;
         }[];
       };
       get_default_email_templates: {
         Args: Record<PropertyKey, never>;
         Returns: {
+          body: string;
           email_type: string;
           subject: string;
-          body: string;
         }[];
       };
       initialize_default_email_templates: {

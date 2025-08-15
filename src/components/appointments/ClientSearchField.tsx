@@ -12,10 +12,9 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import PersonIcon from '@mui/icons-material/Person';
 import { useDebounce } from '@/hooks/useDebounce';
-import { getClients } from '@/lib/actions/clients';
-import type { Tables } from '@/types/supabase';
+import type { Client as ClientType } from '@/types';
 
-type Client = Tables<'clients'>;
+type Client = ClientType;
 
 interface ClientSearchFieldProps {
   value: Client | null;
@@ -69,10 +68,16 @@ export function ClientSearchField({
     const searchClients = async () => {
       setLoading(true);
       try {
-        const result = await getClients(1, 10, { search: debouncedSearch });
-        if (!searchRef.current?.signal.aborted) {
-          setOptions(result.data);
-        }
+        const url = new URL('/api/clients/search', window.location.origin);
+        url.searchParams.set('page', '1');
+        url.searchParams.set('pageSize', '10');
+        url.searchParams.set('search', debouncedSearch);
+        const res = await fetch(url.toString(), {
+          signal: searchRef.current?.signal ?? (null as any),
+        });
+        if (!res.ok) throw new Error('Search failed');
+        const result = await res.json();
+        if (!searchRef.current?.signal.aborted) setOptions(result.data);
       } catch (error) {
         if (!searchRef.current?.signal.aborted) {
           console.error('Failed to search clients:', error);
