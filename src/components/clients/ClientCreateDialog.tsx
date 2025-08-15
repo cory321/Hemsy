@@ -15,7 +15,9 @@ import {
   FormControlLabel,
   Switch,
   Typography,
+  IconButton,
 } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import { z } from 'zod';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -101,7 +103,21 @@ export default function ClientCreateDialog({
       fullWidth
       PaperProps={{ component: 'form', onSubmit: handleSubmit(onSubmit) }}
     >
-      <DialogTitle>Add New Client</DialogTitle>
+      <DialogTitle>
+        Add New Client
+        <IconButton
+          aria-label="close"
+          onClick={internalClose}
+          sx={{
+            position: 'absolute',
+            right: 8,
+            top: 8,
+            color: (theme) => theme.palette.grey[500],
+          }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
       <DialogContent>
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>

@@ -39,9 +39,9 @@ describe('resolveGarmentDisplayImage', () => {
     expect(res.src as string).toContain('.svg');
   });
 
-  it('returns default when nothing is set', () => {
+  it('returns placeholder preset when nothing is set', () => {
     const res = resolveGarmentDisplayImage({});
-    expect(res.kind).toBe('default');
-    expect(res.src).toBeNull();
+    expect(res.kind).toBe('preset');
+    expect(res.src).toContain('/presets/garments/select-garment.svg');
   });
 });

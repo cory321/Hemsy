@@ -11,7 +11,9 @@ import {
   Tooltip,
   Button,
   CircularProgress,
+  IconButton,
 } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import EmailIcon from '@mui/icons-material/Email';
 import SmsIcon from '@mui/icons-material/Sms';
 import type { Appointment } from '@/types';
@@ -38,7 +40,21 @@ export function CancelConfirmationDialog({
 }: CancelConfirmationDialogProps) {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Cancel Appointment</DialogTitle>
+      <DialogTitle>
+        Cancel Appointment
+        <IconButton
+          aria-label="close"
+          onClick={onClose}
+          sx={{
+            position: 'absolute',
+            right: 8,
+            top: 8,
+            color: (theme) => theme.palette.grey[500],
+          }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
       <DialogContent>
         <Typography sx={{ mb: 3 }}>
           Are you sure you want to cancel this appointment with{' '}

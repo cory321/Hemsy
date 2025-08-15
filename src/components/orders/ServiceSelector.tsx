@@ -24,6 +24,7 @@ import {
   DialogActions,
   CircularProgress,
 } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
@@ -432,7 +433,21 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Quick Add Service</DialogTitle>
+        <DialogTitle>
+          Quick Add Service
+          <IconButton
+            aria-label="close"
+            onClick={() => setShowQuickAdd(false)}
+            sx={{
+              position: 'absolute',
+              right: 8,
+              top: 8,
+              color: (theme) => theme.palette.grey[500],
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 2 }}>
             <TextField

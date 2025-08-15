@@ -3,6 +3,7 @@ import {
   createClient,
   updateClient,
   deleteClient,
+  searchClients,
 } from './clients';
 import { createClient as createSupabaseClient } from '@/lib/supabase/server';
 import { ensureUserAndShop } from './users';

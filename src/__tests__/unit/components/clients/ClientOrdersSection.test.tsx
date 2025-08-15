@@ -1,11 +1,11 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { ClientOrdersSection } from '@/components/clients/ClientOrdersSection';
-import { getOrdersByClient } from '@/lib/actions/orders';
+import { getClientOrders } from '@/lib/actions/clients';
 
 // Mock the server action
-jest.mock('@/lib/actions/orders', () => ({
-  getOrdersByClient: jest.fn(),
+jest.mock('@/lib/actions/clients', () => ({
+  getClientOrders: jest.fn(),
 }));
 
 // Mock next/link
@@ -33,7 +33,7 @@ describe('ClientOrdersSection', () => {
   });
 
   it('should render loading state initially', () => {
-    (getOrdersByClient as jest.Mock).mockImplementation(
+    (getClientOrders as jest.Mock).mockImplementation(
       () => new Promise(() => {}) // Never resolves to keep loading state
     );
 
@@ -66,10 +66,7 @@ describe('ClientOrdersSection', () => {
       },
     ];
 
-    (getOrdersByClient as jest.Mock).mockResolvedValue({
-      success: true,
-      orders: mockOrders,
-    });
+    (getClientOrders as jest.Mock).mockResolvedValue(mockOrders);
 
     render(<ClientOrdersSection {...mockProps} />);
 
@@ -88,10 +85,7 @@ describe('ClientOrdersSection', () => {
   });
 
   it('should render empty state when no orders exist', async () => {
-    (getOrdersByClient as jest.Mock).mockResolvedValue({
-      success: true,
-      orders: [],
-    });
+    (getClientOrders as jest.Mock).mockResolvedValue([]);
 
     render(<ClientOrdersSection {...mockProps} />);
 
@@ -104,21 +98,19 @@ describe('ClientOrdersSection', () => {
   });
 
   it('should render error state when fetch fails', async () => {
-    (getOrdersByClient as jest.Mock).mockResolvedValue({
-      success: false,
-      error: 'Failed to fetch orders',
-      orders: [],
-    });
+    (getClientOrders as jest.Mock).mockRejectedValue(
+      new Error('Failed to fetch orders')
+    );
 
     render(<ClientOrdersSection {...mockProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText('Failed to fetch orders')).toBeInTheDocument();
+      expect(screen.getByText('Failed to load orders')).toBeInTheDocument();
     });
   });
 
   it('should handle unexpected errors gracefully', async () => {
-    (getOrdersByClient as jest.Mock).mockRejectedValue(
+    (getClientOrders as jest.Mock).mockRejectedValue(
       new Error('Network error')
     );
 

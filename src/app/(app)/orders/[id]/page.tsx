@@ -211,9 +211,7 @@ export default async function OrderDetailPage({
                               const key = (garment as any).preset_icon_key as
                                 | string
                                 | null;
-                              if (!key) return null;
-                              const url = getPresetIconUrl(key);
-                              if (!url) return null;
+                              const url = key ? getPresetIconUrl(key) : null;
                               return (
                                 <span
                                   style={{
@@ -223,7 +221,10 @@ export default async function OrderDetailPage({
                                   }}
                                 >
                                   <InlinePresetSvg
-                                    src={url}
+                                    src={
+                                      url ||
+                                      '/presets/garments/select-garment.svg'
+                                    }
                                     {...((garment as any).preset_fill_color
                                       ? {
                                           fillColor: (garment as any)

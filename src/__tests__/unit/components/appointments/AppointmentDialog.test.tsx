@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AppointmentDialog } from '@/components/appointments/AppointmentDialog';
-import { getClients } from '@/lib/actions/clients';
+import { searchClients } from '@/lib/actions/clients';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import {
@@ -12,7 +12,9 @@ import {
 } from '@/lib/testing/mock-factories';
 
 // Mock the actions
-jest.mock('@/lib/actions/clients');
+jest.mock('@/lib/actions/clients', () => ({
+  searchClients: jest.fn(),
+}));
 jest.mock('@/lib/actions/appointments', () => ({
   createAppointment: jest.fn(),
   updateAppointment: jest.fn(),
@@ -71,13 +73,7 @@ const renderWithLocalization = (component: React.ReactElement) => {
 describe('AppointmentDialog', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (getClients as jest.Mock).mockResolvedValue({
-      data: mockClients,
-      count: mockClients.length,
-      page: 1,
-      pageSize: 10,
-      totalPages: 1,
-    });
+    (searchClients as jest.Mock).mockResolvedValue(mockClients);
   });
 
   it('searches and displays clients when typing', async () => {
@@ -92,7 +88,7 @@ describe('AppointmentDialog', () => {
 
     // Wait for search to be called
     await waitFor(() => {
-      expect(getClients).toHaveBeenCalledWith(1, 10, { search: 'john' });
+      expect(searchClients).toHaveBeenCalledWith('john');
     });
 
     // Check if clients are displayed in the dropdown
@@ -108,23 +104,11 @@ describe('AppointmentDialog', () => {
     const user = userEvent.setup();
 
     // Mock different results for different searches
-    (getClients as jest.Mock).mockImplementation((page, pageSize, filters) => {
-      if (filters?.search === 'jane') {
-        return Promise.resolve({
-          data: [mockClients[1]], // Only Jane
-          count: 1,
-          page: 1,
-          pageSize: 10,
-          totalPages: 1,
-        });
+    (searchClients as jest.Mock).mockImplementation((searchTerm) => {
+      if (searchTerm === 'jane') {
+        return Promise.resolve([mockClients[1]]); // Only Jane
       }
-      return Promise.resolve({
-        data: mockClients,
-        count: mockClients.length,
-        page: 1,
-        pageSize: 10,
-        totalPages: 1,
-      });
+      return Promise.resolve(mockClients);
     });
 
     renderWithLocalization(<AppointmentDialog {...defaultProps} />);
@@ -144,7 +128,7 @@ describe('AppointmentDialog', () => {
 
   it('handles error when searching clients fails', async () => {
     const consoleError = jest.spyOn(console, 'error').mockImplementation();
-    (getClients as jest.Mock).mockRejectedValue(
+    (searchClients as jest.Mock).mockRejectedValue(
       new Error('Failed to search clients')
     );
 
@@ -177,7 +161,7 @@ describe('AppointmentDialog', () => {
       resolveSearch = resolve;
     });
 
-    (getClients as jest.Mock).mockReturnValue(searchPromise);
+    (searchClients as jest.Mock).mockReturnValue(searchPromise);
 
     renderWithLocalization(<AppointmentDialog {...defaultProps} />);
 
@@ -193,13 +177,7 @@ describe('AppointmentDialog', () => {
     });
 
     // Resolve the search
-    resolveSearch({
-      data: mockClients,
-      count: mockClients.length,
-      page: 1,
-      pageSize: 10,
-      totalPages: 1,
-    });
+    resolveSearch(mockClients);
 
     // Wait for loading to complete
     await waitFor(() => {
@@ -219,7 +197,7 @@ describe('AppointmentDialog', () => {
 
     // Wait for search results
     await waitFor(() => {
-      expect(getClients).toHaveBeenCalled();
+      expect(searchClients).toHaveBeenCalled();
     });
 
     // Select John Doe
@@ -241,7 +219,7 @@ describe('AppointmentDialog', () => {
     await user.type(clientInput, 'john');
 
     await waitFor(() => {
-      expect(getClients).toHaveBeenCalled();
+      expect(searchClients).toHaveBeenCalled();
     });
 
     const johnOption = await screen.findByText('John Doe');
@@ -276,13 +254,7 @@ describe('AppointmentDialog', () => {
       },
     ];
 
-    (getClients as jest.Mock).mockResolvedValue({
-      data: clientsWithDuplicates,
-      count: clientsWithDuplicates.length,
-      page: 1,
-      pageSize: 10,
-      totalPages: 1,
-    });
+    (searchClients as jest.Mock).mockResolvedValue(clientsWithDuplicates);
 
     // Spy on console.error to catch React key warnings
     const consoleError = jest.spyOn(console, 'error').mockImplementation();
@@ -298,7 +270,7 @@ describe('AppointmentDialog', () => {
 
     // Wait for search to complete
     await waitFor(() => {
-      expect(getClients).toHaveBeenCalled();
+      expect(searchClients).toHaveBeenCalled();
     });
 
     // Check that both John Doe entries are displayed

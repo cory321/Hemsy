@@ -20,6 +20,7 @@ import {
   MenuItem,
   SelectChangeEvent,
 } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import CalendarViewMonthIcon from '@mui/icons-material/CalendarViewMonth';
 import ViewWeekIcon from '@mui/icons-material/ViewWeek';
 import ViewDayIcon from '@mui/icons-material/ViewDay';
@@ -391,7 +392,21 @@ export function Calendar({
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Calendar Settings</DialogTitle>
+        <DialogTitle>
+          Calendar Settings
+          <IconButton
+            aria-label="close"
+            onClick={() => setSettingsDialogOpen(false)}
+            sx={{
+              position: 'absolute',
+              right: 8,
+              top: 8,
+              color: (theme) => theme.palette.grey[500],
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
         <DialogContent>
           <CalendarSettings onSave={() => setSettingsDialogOpen(false)} />
         </DialogContent>

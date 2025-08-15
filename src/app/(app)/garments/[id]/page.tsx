@@ -193,14 +193,12 @@ export default async function GarmentDetailPage({
                     gap: 1,
                   }}
                 >
-                  {/* If preset icon is selected but no real image, show a large icon placeholder for now */}
-                  <CheckroomIcon
-                    sx={{ fontSize: 80, color: 'text.disabled' }}
+                  <InlinePresetSvg
+                    src={'/presets/garments/select-garment.svg'}
+                    style={{ height: '88%', width: 'auto', maxWidth: '100%' }}
                   />
                   <Typography color="text.secondary">
-                    {resolved.kind === 'preset'
-                      ? 'Preset selected'
-                      : 'No image available'}
+                    Preset selected
                   </Typography>
                 </Box>
               )}

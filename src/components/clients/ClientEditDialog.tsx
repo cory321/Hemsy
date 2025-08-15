@@ -14,7 +14,9 @@ import {
   CircularProgress,
   Alert,
   Box,
+  IconButton,
 } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -125,7 +127,21 @@ export default function ClientEditDialog({
           onSubmit: handleSubmit(onSubmit),
         }}
       >
-        <DialogTitle>Edit Client</DialogTitle>
+        <DialogTitle>
+          Edit Client
+          <IconButton
+            aria-label="close"
+            onClick={handleClose}
+            sx={{
+              position: 'absolute',
+              right: 8,
+              top: 8,
+              color: (theme) => theme.palette.grey[500],
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
 
         <DialogContent>
           {error && (

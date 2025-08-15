@@ -23,6 +23,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
+import CloseIcon from '@mui/icons-material/Close';
 import TimeLogsDialog from '@/components/garments/TimeLogsDialog';
 import {
   getTimeEntriesForGarment,
@@ -198,7 +199,21 @@ export default function GarmentTimeTracker({
         fullWidth
         maxWidth="xs"
       >
-        <DialogTitle>Add Time</DialogTitle>
+        <DialogTitle>
+          Add Time
+          <IconButton
+            aria-label="close"
+            onClick={() => setIsAddOpen(false)}
+            sx={{
+              position: 'absolute',
+              right: 8,
+              top: 8,
+              color: (theme) => theme.palette.grey[500],
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
         <DialogContent>
           <TextField
             fullWidth
@@ -250,7 +265,21 @@ export default function GarmentTimeTracker({
         fullWidth
         maxWidth="xs"
       >
-        <DialogTitle>Edit Time Entry</DialogTitle>
+        <DialogTitle>
+          Edit Time Entry
+          <IconButton
+            aria-label="close"
+            onClick={() => setIsEditOpen(false)}
+            sx={{
+              position: 'absolute',
+              right: 8,
+              top: 8,
+              color: (theme) => theme.palette.grey[500],
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
         <DialogContent>
           <TextField
             fullWidth

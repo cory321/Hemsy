@@ -11,7 +11,9 @@ import {
   Grid,
   Stack,
   Typography,
+  IconButton,
 } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import PresetGarmentIconPicker from './PresetGarmentIconPicker';
 import InlinePresetSvg from '@/components/ui/InlinePresetSvg';
 import { PastelColorPicker } from '@/components/ui/PastelColorPicker';
@@ -64,7 +66,21 @@ export default function PresetGarmentIconModal({
       fullWidth
       maxWidth="lg"
     >
-      <DialogTitle>Choose Garment Icon</DialogTitle>
+      <DialogTitle>
+        Choose Garment Icon
+        <IconButton
+          aria-label="close"
+          onClick={onClose}
+          sx={{
+            position: 'absolute',
+            right: 8,
+            top: 8,
+            color: (theme) => theme.palette.grey[500],
+          }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
       <DialogContent dividers>
         <Grid container spacing={3}>
           <Grid item xs={12} md={8}>

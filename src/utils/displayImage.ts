@@ -32,8 +32,12 @@ export function resolveGarmentDisplayImage(
 
   if (input.presetIconKey) {
     const url = getPresetIconUrl(input.presetIconKey);
-    return { kind: 'preset', src: url ?? null };
+    return {
+      kind: 'preset',
+      src: url ?? '/presets/garments/select-garment.svg',
+    };
   }
 
-  return { kind: 'default', src: null };
+  // Default placeholder when nothing is set
+  return { kind: 'preset', src: '/presets/garments/select-garment.svg' };
 }

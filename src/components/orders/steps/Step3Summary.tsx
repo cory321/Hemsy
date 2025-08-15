@@ -156,9 +156,9 @@ export default function Step3Summary() {
                           }}
                         >
                           {(() => {
-                            if (!garment.presetIconKey) return null;
-                            const url = getPresetIconUrl(garment.presetIconKey);
-                            if (!url) return null;
+                            const url = garment.presetIconKey
+                              ? getPresetIconUrl(garment.presetIconKey)
+                              : null;
                             return (
                               <span
                                 style={{
@@ -168,7 +168,10 @@ export default function Step3Summary() {
                                 }}
                               >
                                 <InlinePresetSvg
-                                  src={url}
+                                  src={
+                                    url ||
+                                    '/presets/garments/select-garment.svg'
+                                  }
                                   {...(garment.presetFillColor
                                     ? { fillColor: garment.presetFillColor }
                                     : {})}

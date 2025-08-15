@@ -6,18 +6,17 @@ import {
 import { auth } from '@clerk/nextjs/server';
 import { createClient } from '@/lib/supabase/server';
 import { createMockUser, createMockShop } from '@/lib/testing/mock-factories';
-import { ensureUserAndShop } from '@/lib/actions/users';
 
 // Mock dependencies
 jest.mock('@clerk/nextjs/server');
 jest.mock('@/lib/supabase/server');
-jest.mock('@/lib/actions/users', () => ({
+jest.mock('@/lib/auth/user-shop', () => ({
   ensureUserAndShop: jest.fn(),
 }));
 
-const mockEnsureUserAndShop = ensureUserAndShop as jest.MockedFunction<
-  typeof ensureUserAndShop
->;
+// Import after mocking
+const { ensureUserAndShop } = require('@/lib/auth/user-shop');
+const mockEnsureUserAndShop = ensureUserAndShop as jest.MockedFunction<any>;
 
 describe('Shop Actions', () => {
   const mockAuth = auth as unknown as jest.MockedFunction<typeof auth>;
@@ -66,7 +65,7 @@ describe('Shop Actions', () => {
         location_type: 'shop_location',
         payment_preference: 'after_service',
         trial_countdown_enabled: false,
-        trial_end_date: undefined,
+        trial_end_date: null,
       });
     });
 
