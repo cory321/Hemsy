@@ -188,8 +188,16 @@ export default function Step2GarmentDetails() {
                       {/* Square icon picker */}
                       <Box
                         role="button"
+                        tabIndex={0}
+                        aria-label="Choose Garment Icon"
                         onClick={() => setIconModalGarmentId(garment.id)}
-                        sx={{
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setIconModalGarmentId(garment.id);
+                          }
+                        }}
+                        sx={(theme) => ({
                           width: { xs: 140, sm: 160 },
                           maxWidth: '100%',
                           mx: 'auto',
@@ -206,7 +214,35 @@ export default function Step2GarmentDetails() {
                           borderColor: 'primary.main',
                           bgcolor: 'background.paper',
                           p: 1,
-                        }}
+                          transition: theme.transitions.create(
+                            [
+                              'transform',
+                              'box-shadow',
+                              'background-color',
+                              'border-color',
+                            ],
+                            {
+                              duration: 160,
+                              easing: theme.transitions.easing.easeOut,
+                            }
+                          ),
+                          '&:hover': {
+                            transform: 'translateY(-1px) scale(1.02)',
+                            boxShadow: 3,
+                            borderColor: 'primary.main',
+                            bgcolor: theme.palette.action.hover,
+                          },
+                          '&:focus-visible': {
+                            outline: `3px solid ${theme.palette.primary.main}`,
+                            outlineOffset: 2,
+                            borderColor: 'primary.main',
+                          },
+                          '@media (prefers-reduced-motion: reduce)': {
+                            transition:
+                              'border-color 160ms ease-out, background-color 160ms ease-out',
+                            '&:hover': { transform: 'none', boxShadow: 2 },
+                          },
+                        })}
                       >
                         {garment.presetIconKey ? (
                           (() => {
@@ -237,9 +273,15 @@ export default function Step2GarmentDetails() {
                             ) : null;
                           })()
                         ) : (
-                          <Typography color="primary">
-                            Choose Garment Icon
-                          </Typography>
+                          <Box
+                            sx={{
+                              width: '100%',
+                              height: '100%',
+                              position: 'relative',
+                            }}
+                          >
+                            <InlinePresetSvg src="/presets/garments/select-garment.svg" />
+                          </Box>
                         )}
                       </Box>
 

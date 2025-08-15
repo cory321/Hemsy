@@ -93,8 +93,8 @@ describe('Step2GarmentDetails - preset icon autofill name behavior', () => {
     render(<Step2GarmentDetails />);
 
     // Open the preset icon picker by clicking the prompt
-    const chooseText = await screen.findByText(/Choose Garment Icon/i);
-    fireEvent.click(chooseText);
+    const chooseButton = await screen.findByLabelText(/Choose Garment Icon/i);
+    fireEvent.click(chooseButton);
 
     // Modal mock will auto-save on open
 
@@ -134,8 +134,8 @@ describe('Step2GarmentDetails - preset icon autofill name behavior', () => {
 
     render(<Step2GarmentDetails />);
 
-    const chooseText = await screen.findByText(/Choose Garment Icon/i);
-    fireEvent.click(chooseText);
+    const chooseButton = await screen.findByLabelText(/Choose Garment Icon/i);
+    fireEvent.click(chooseButton);
     // Modal mock will auto-save on open
 
     expect(ctx.updateGarment).toHaveBeenCalled();
@@ -160,6 +160,7 @@ describe('Step2GarmentDetails - preset icon autofill name behavior', () => {
           {
             id: 'g1',
             name: 'Blouse',
+            isNameUserEdited: false,
 
             notes: '',
             dueDate: undefined,
@@ -175,8 +176,8 @@ describe('Step2GarmentDetails - preset icon autofill name behavior', () => {
 
     render(<Step2GarmentDetails />);
 
-    const chooseText = await screen.findByText(/Choose Garment Icon/i);
-    fireEvent.click(chooseText);
+    const chooseButton = await screen.findByLabelText(/Choose Garment Icon/i);
+    fireEvent.click(chooseButton);
     // Modal mock auto-saves selection on open
 
     expect(ctx.updateGarment).toHaveBeenCalled();

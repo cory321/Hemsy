@@ -14,9 +14,11 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { Service } from '@/lib/utils/serviceUtils';
+import { ServiceUnitType } from '@/lib/utils/serviceUnitTypes';
 import { formatCentsAsCurrency } from '@/lib/utils/currency';
 import { debounce } from '@/lib/utils/debounce';
 import CreateServiceDialog from '@/components/services/CreateServiceDialog';
+import { searchServices } from '@/lib/actions/services';
 
 interface ServicesSearchProps {
   onServiceSelect: (service: Service) => void;
@@ -30,6 +32,7 @@ const ServicesSearch: React.FC<ServicesSearchProps> = ({
   const [inputValue, setInputValue] = useState('');
   const [options, setOptions] = useState<Service[]>([]);
   const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   // Debounced search function
@@ -42,12 +45,25 @@ const ServicesSearch: React.FC<ServicesSearchProps> = ({
 
       setLoading(true);
       try {
-        const url = new URL('/api/services/search', window.location.origin);
-        url.searchParams.set('q', query);
-        const res = await fetch(url.toString());
-        if (!res.ok) throw new Error('Search failed');
-        const results = await res.json();
-        setOptions(results);
+        const results = await searchServices(query);
+        // Map database results to Service interface
+        const services: Service[] = results.map((result) => {
+          const service: Service = {
+            id: result.id,
+            name: result.name,
+            default_qty: result.default_qty,
+            default_unit: result.default_unit as ServiceUnitType,
+            default_unit_price_cents: result.default_unit_price_cents,
+            frequently_used: result.frequently_used,
+            frequently_used_position: result.frequently_used_position,
+          };
+          // Only add description if it's not null
+          if (result.description) {
+            service.description = result.description;
+          }
+          return service;
+        });
+        setOptions(services);
       } catch (error) {
         console.error('Error searching services:', error);
         setOptions([]);
@@ -83,10 +99,21 @@ const ServicesSearch: React.FC<ServicesSearchProps> = ({
           sx={{ flex: 1 }}
           options={options}
           loading={loading}
+          open={open && (inputValue.length > 0 || loading)}
+          onOpen={() => setOpen(true)}
+          onClose={() => setOpen(false)}
           disabled={disabled}
           inputValue={inputValue}
-          onInputChange={(_, newInputValue) => setInputValue(newInputValue)}
+          onInputChange={(_, newInputValue, reason) => {
+            // Prevent option selection from populating the input; keep it like ClientSearch UX
+            if (reason === 'reset' || reason === 'clear') {
+              setInputValue('');
+              return;
+            }
+            setInputValue(newInputValue);
+          }}
           onChange={(_, newValue) => handleServiceSelect(newValue)}
+          filterOptions={(x) => x}
           getOptionLabel={(option) => option.name}
           renderInput={(params: any) => (
             <TextField
@@ -98,9 +125,13 @@ const ServicesSearch: React.FC<ServicesSearchProps> = ({
                 ...params.InputProps,
                 endAdornment: (
                   <>
-                    {loading ? (
-                      <CircularProgress color="inherit" size={20} />
-                    ) : null}
+                    {loading && (
+                      <CircularProgress
+                        color="inherit"
+                        size={20}
+                        sx={{ mr: 1 }}
+                      />
+                    )}
                     {params.InputProps.endAdornment}
                   </>
                 ),
@@ -108,42 +139,48 @@ const ServicesSearch: React.FC<ServicesSearchProps> = ({
               size={params.size || 'medium'}
             />
           )}
-          renderOption={(props: any, option) => (
-            <ListItem {...props} component="li">
-              <ListItemText
-                primary={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography>{option.name}</Typography>
-                    {option.frequently_used && (
-                      <Chip
-                        label="Frequently Used"
-                        size="small"
-                        color="primary"
-                      />
-                    )}
-                  </Box>
-                }
-                secondary={
-                  <Box>
-                    {option.description && (
+          renderOption={(props: any, option) => {
+            const { key, ...otherProps } = props;
+            return (
+              <ListItem {...otherProps} component="li" key={key}>
+                <ListItemText
+                  primary={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography>{option.name}</Typography>
+                      {option.frequently_used && (
+                        <Chip
+                          label="Frequently Used"
+                          size="small"
+                          color="primary"
+                        />
+                      )}
+                    </Box>
+                  }
+                  secondary={
+                    <Box component="span">
+                      {option.description && (
+                        <Typography variant="body2" color="text.secondary">
+                          {option.description}
+                        </Typography>
+                      )}
                       <Typography variant="body2" color="text.secondary">
-                        {option.description}
+                        {formatCentsAsCurrency(option.default_unit_price_cents)}{' '}
+                        per {option.default_unit}
                       </Typography>
-                    )}
-                    <Typography variant="body2" color="text.secondary">
-                      {formatCentsAsCurrency(option.default_unit_price_cents)}{' '}
-                      per {option.default_unit}
-                    </Typography>
-                  </Box>
-                }
-              />
-            </ListItem>
-          )}
+                    </Box>
+                  }
+                />
+              </ListItem>
+            );
+          }}
           noOptionsText={
-            inputValue.length < 2
-              ? 'Type at least 2 characters to search'
-              : 'No services found'
+            loading
+              ? 'Searching...'
+              : inputValue.length < 2
+                ? 'Type at least 2 characters to search'
+                : 'No services found'
           }
+          loadingText="Searching services..."
         />
 
         <Button

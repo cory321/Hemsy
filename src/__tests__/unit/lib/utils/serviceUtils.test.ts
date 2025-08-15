@@ -1,0 +1,109 @@
+import {
+  convertServiceForForm,
+  convertServiceForDatabase,
+  Service,
+  ServiceFormData,
+} from '@/lib/utils/serviceUtils';
+
+describe('serviceUtils', () => {
+  describe('convertServiceForForm', () => {
+    it('should include frequently_used fields when converting service to form data', () => {
+      const service: Service = {
+        id: '123',
+        name: 'Hem Pants',
+        description: 'Basic hem alteration',
+        default_qty: 1,
+        default_unit: 'item',
+        default_unit_price_cents: 2500,
+        frequently_used: true,
+        frequently_used_position: 1,
+      };
+
+      const formData = convertServiceForForm(service);
+
+      expect(formData).toEqual({
+        name: 'Hem Pants',
+        description: 'Basic hem alteration',
+        qty: 1,
+        unit: 'item',
+        unit_price: 25,
+        frequently_used: true,
+        frequently_used_position: 1,
+      });
+    });
+
+    it('should handle undefined frequently_used fields', () => {
+      const service: Service = {
+        id: '123',
+        name: 'Hem Pants',
+        description: 'Basic hem alteration',
+        default_qty: 1,
+        default_unit: 'item',
+        default_unit_price_cents: 2500,
+      };
+
+      const formData = convertServiceForForm(service);
+
+      expect(formData.frequently_used).toBeUndefined();
+      expect(formData.frequently_used_position).toBeUndefined();
+    });
+  });
+
+  describe('convertServiceForDatabase', () => {
+    it('should include frequently_used fields when converting form data to database format', () => {
+      const formData: ServiceFormData = {
+        name: 'Hem Pants',
+        description: 'Basic hem alteration',
+        qty: 1,
+        unit: 'item',
+        unit_price: 25,
+        frequently_used: true,
+        frequently_used_position: 1,
+      };
+
+      const dbData = convertServiceForDatabase(formData);
+
+      expect(dbData).toEqual({
+        name: 'Hem Pants',
+        description: 'Basic hem alteration',
+        default_qty: 1,
+        default_unit: 'item',
+        default_unit_price_cents: 2500,
+        frequently_used: true,
+        frequently_used_position: 1,
+      });
+    });
+
+    it('should handle false frequently_used value', () => {
+      const formData: ServiceFormData = {
+        name: 'Hem Pants',
+        description: 'Basic hem alteration',
+        qty: 1,
+        unit: 'item',
+        unit_price: 25,
+        frequently_used: false,
+        frequently_used_position: null,
+      };
+
+      const dbData = convertServiceForDatabase(formData);
+
+      expect(dbData.frequently_used).toBe(false);
+      expect(dbData.frequently_used_position).toBeNull();
+    });
+
+    it('should handle undefined frequently_used fields', () => {
+      const formData: ServiceFormData = {
+        name: 'Hem Pants',
+        description: 'Basic hem alteration',
+        qty: 1,
+        unit: 'item',
+        unit_price: 25,
+      };
+
+      const dbData = convertServiceForDatabase(formData);
+
+      expect(dbData.frequently_used).toBeUndefined();
+      expect(dbData.frequently_used_position).toBeUndefined();
+    });
+  });
+});

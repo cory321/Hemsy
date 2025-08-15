@@ -48,7 +48,7 @@ import {
   formatDuration,
   getDurationMinutes,
 } from '@/lib/utils/calendar';
-import type { Appointment } from '@/types';
+import type { Appointment, AppointmentType } from '@/types';
 import { useMutation } from '@tanstack/react-query';
 import { appointmentKeys } from '@/lib/queries/appointment-keys';
 import { updateAppointment as updateAppointmentRefactored } from '@/lib/actions/appointments-refactored';
@@ -265,7 +265,12 @@ export function AppointmentDetailsDialog({
     updateMutation.mutate(
       {
         id: appointment.id,
-        type: ui.editedType,
+        type: ui.editedType as
+          | 'consultation'
+          | 'fitting'
+          | 'pickup'
+          | 'delivery'
+          | 'other',
       },
       {
         onSuccess: () => {
@@ -461,7 +466,7 @@ export function AppointmentDetailsDialog({
                       onChange={(e) =>
                         uiDispatch({
                           type: 'SET_EDITED_TYPE',
-                          payload: e.target.value as any,
+                          payload: e.target.value as AppointmentType,
                         })
                       }
                       disabled={ui.savingType}

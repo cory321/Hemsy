@@ -5,6 +5,11 @@ import { AppointmentDialog } from '@/components/appointments/AppointmentDialog';
 import { getClients } from '@/lib/actions/clients';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import {
+  createMockClient,
+  createMockShopHours,
+  createMockAppointment,
+} from '@/lib/testing/mock-factories';
 
 // Mock the actions
 jest.mock('@/lib/actions/clients');
@@ -19,50 +24,34 @@ jest.mock('next/navigation', () => ({
 }));
 
 const mockClients = [
-  {
+  createMockClient({
     id: '1',
     shop_id: 'shop1',
     first_name: 'John',
     last_name: 'Doe',
     email: 'john@example.com',
     phone_number: '1234567890',
-    date_of_birth: '1990-01-01',
-    address: '123 Main St',
-    city: 'New York',
-    postal_code: '10001',
-    country: 'USA',
-    notes: null,
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z',
-  },
-  {
+  }),
+  createMockClient({
     id: '2',
     shop_id: 'shop1',
     first_name: 'Jane',
     last_name: 'Smith',
     email: 'jane@example.com',
     phone_number: '0987654321',
-    date_of_birth: '1985-05-15',
-    address: '456 Oak Ave',
-    city: 'Los Angeles',
-    postal_code: '90001',
-    country: 'USA',
-    notes: null,
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z',
-  },
+  }),
 ];
 
 const defaultProps = {
   open: true,
   onClose: jest.fn(),
   shopHours: [
-    {
+    createMockShopHours({
       day_of_week: 1,
       open_time: '09:00',
       close_time: '17:00',
       is_closed: false,
-    },
+    }),
   ],
   existingAppointments: [],
   calendarSettings: {
@@ -332,9 +321,9 @@ describe('AppointmentDialog', () => {
   it('clears the client field when opening for a new appointment', async () => {
     const user = userEvent.setup();
     // Render dialog with a pre-selected client (simulate editing)
-    const appointment = {
+    const appointment = createMockAppointment({
       id: 'apt1',
-      client_id: mockClients[0].id,
+      client_id: mockClients[0]?.id || '',
       client: mockClients[0],
       date: '2024-06-01',
       start_time: '10:00',
@@ -343,9 +332,7 @@ describe('AppointmentDialog', () => {
       notes: '',
       shop_id: 'shop1',
       status: 'pending',
-      created_at: '2024-06-01T00:00:00Z',
-      updated_at: '2024-06-01T00:00:00Z',
-    };
+    });
     const { rerender } = renderWithLocalization(
       <AppointmentDialog
         {...defaultProps}

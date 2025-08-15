@@ -13,6 +13,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import PersonIcon from '@mui/icons-material/Person';
 import { useDebounce } from '@/hooks/useDebounce';
 import type { Client as ClientType } from '@/types';
+import { searchClients } from '@/lib/actions/clients';
 
 type Client = ClientType;
 
@@ -31,7 +32,7 @@ export function ClientSearchField({
   disabled = false,
   label = 'Client',
   placeholder = 'Search by name, email, or phone...',
-  helperText = 'Select a client for this appointment',
+  helperText,
 }: ClientSearchFieldProps) {
   const [inputValue, setInputValue] = useState('');
   const [options, setOptions] = useState<Client[]>([]);
@@ -65,19 +66,13 @@ export function ClientSearchField({
     // Create new abort controller
     searchRef.current = new AbortController();
 
-    const searchClients = async () => {
+    const performSearch = async () => {
       setLoading(true);
       try {
-        const url = new URL('/api/clients/search', window.location.origin);
-        url.searchParams.set('page', '1');
-        url.searchParams.set('pageSize', '10');
-        url.searchParams.set('search', debouncedSearch);
-        const res = await fetch(url.toString(), {
-          signal: searchRef.current?.signal ?? (null as any),
-        });
-        if (!res.ok) throw new Error('Search failed');
-        const result = await res.json();
-        if (!searchRef.current?.signal.aborted) setOptions(result.data);
+        const results = await searchClients(debouncedSearch);
+        if (!searchRef.current?.signal.aborted) {
+          setOptions(results);
+        }
       } catch (error) {
         if (!searchRef.current?.signal.aborted) {
           console.error('Failed to search clients:', error);
@@ -91,7 +86,7 @@ export function ClientSearchField({
     };
 
     // Only trigger when debounced value settles
-    searchClients();
+    performSearch();
 
     return () => {
       searchRef.current?.abort();
@@ -105,6 +100,7 @@ export function ClientSearchField({
 
   return (
     <Autocomplete
+      fullWidth
       value={value}
       onChange={(_, newValue) =>
         onChange(typeof newValue === 'string' ? null : newValue)
@@ -158,6 +154,7 @@ export function ClientSearchField({
         const { InputProps, inputProps, id } = params;
         return (
           <TextField
+            fullWidth
             label={label}
             placeholder={placeholder}
             helperText={helperText}

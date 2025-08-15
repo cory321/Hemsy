@@ -7,11 +7,10 @@ import {
   Button,
   Card,
   CardContent,
-  TextField,
-  InputAdornment,
+  IconButton,
 } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import CloseIcon from '@mui/icons-material/Close';
 import { ClientSearchField } from '@/components/appointments/ClientSearchField';
 import ClientCreateDialog from '@/components/clients/ClientCreateDialog';
 import { useOrderFlow } from '@/contexts/OrderFlowContext';
@@ -33,24 +32,24 @@ export default function Step1ClientSelection() {
     setCreateDialogOpen(false);
   };
 
-  return (
-    <Box>
-      <Typography variant="h5" gutterBottom>
-        Select Client
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Choose an existing client or create a new one for this order.
-      </Typography>
-
-      <Box sx={{ mb: 3 }}>
-        <ClientSearchField
-          value={orderDraft.client || null}
-          onChange={handleClientSelect}
-        />
-      </Box>
-
-      {orderDraft.client && (
-        <Card variant="outlined" sx={{ mb: 3 }}>
+  // When a client is selected, show only the selected client card + controls
+  if (orderDraft.client) {
+    const clearSelection = () => handleClientSelect(null);
+    return (
+      <Box>
+        <Card
+          variant="outlined"
+          sx={{ mb: 2, position: 'relative' }}
+          data-testid="selected-client-card"
+        >
+          <IconButton
+            aria-label="Close"
+            onClick={clearSelection}
+            sx={{ position: 'absolute', top: 8, right: 8 }}
+            data-testid="close-selected-client"
+          >
+            <CloseIcon />
+          </IconButton>
           <CardContent>
             <Typography variant="h6" gutterBottom>
               Selected Client
@@ -71,16 +70,58 @@ export default function Step1ClientSelection() {
             )}
           </CardContent>
         </Card>
-      )}
+        <Box sx={{ textAlign: 'center' }}>
+          <Button
+            variant="text"
+            color="primary"
+            onClick={clearSelection}
+            data-testid="choose-different-client"
+          >
+            Choose a different client
+          </Button>
+        </Box>
+      </Box>
+    );
+  }
 
-      <Button
-        variant="outlined"
-        startIcon={<PersonAddIcon />}
-        onClick={() => setCreateDialogOpen(true)}
-        fullWidth
-      >
-        Create New Client
-      </Button>
+  // Otherwise, show the centered search-first layout with an "-or-" separator and Add New Client button
+  return (
+    <Box>
+      <Typography variant="h5" gutterBottom align="center">
+        Select Client
+      </Typography>
+      <Box sx={{ maxWidth: 520, mx: 'auto', width: '100%' }}>
+        <ClientSearchField
+          value={orderDraft.client || null}
+          onChange={handleClientSelect}
+        />
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          align="center"
+          sx={{ my: 2 }}
+          data-testid="or-separator"
+        >
+          - or -
+        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+          <Button
+            variant="outlined"
+            onClick={() => setCreateDialogOpen(true)}
+            aria-label="Add new client"
+            data-testid="add-new-client-button"
+            sx={{
+              px: 3,
+              py: 1.25,
+              textTransform: 'none',
+              borderRadius: 2,
+            }}
+          >
+            <PersonAddIcon sx={{ mr: 1 }} />
+            Add New Client
+          </Button>
+        </Box>
+      </Box>
 
       <ClientCreateDialog
         open={createDialogOpen}

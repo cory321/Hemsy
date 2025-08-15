@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { AppointmentDialog } from '@/components/appointments/AppointmentDialog';
+import { createMockShopHours } from '@/lib/testing/mock-factories';
 
 // Mock ClientSearchField to avoid network/dependency noise
 jest.mock('@/components/appointments/ClientSearchField', () => ({
@@ -22,19 +23,21 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 );
 
 describe('AppointmentDialog - Default Duration', () => {
+  const mockShopHours = [
+    createMockShopHours({
+      day_of_week: 1,
+      open_time: '09:00',
+      close_time: '17:00',
+      is_closed: false,
+    }),
+  ];
+
   const baseProps = {
     open: true,
     onClose: jest.fn(),
-    shopHours: [
-      {
-        day_of_week: 1,
-        open_time: '09:00',
-        close_time: '17:00',
-        is_closed: false,
-      },
-    ],
+    shopHours: mockShopHours,
     existingAppointments: [],
-  } as const;
+  };
 
   it('applies calendarSettings.default_appointment_duration when creating a new appointment', async () => {
     render(
@@ -102,7 +105,7 @@ describe('AppointmentDialog - Default Duration', () => {
     rerender(
       <AppointmentDialog
         {...baseProps}
-        appointment={undefined}
+        appointment={null}
         calendarSettings={{
           buffer_time_minutes: 0,
           default_appointment_duration: 30,

@@ -8,7 +8,10 @@ export const EMAIL_TYPE_LABELS: Record<EmailType, string> = {
   appointment_no_show: 'Appointment No-show',
   appointment_rescheduled_seamstress: 'Appointment Rescheduled (Seamstress)',
   appointment_canceled_seamstress: 'Appointment Canceled (Seamstress)',
+  appointment_reminder: 'Appointment Reminder',
   payment_link: 'Payment Link',
+  payment_received: 'Payment Received',
+  invoice_sent: 'Invoice Sent',
   appointment_confirmation_request: 'Confirmation Request',
   appointment_confirmed: 'Appointment Confirmed',
 };

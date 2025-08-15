@@ -1,54 +1,38 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ClientSearchField } from '@/components/appointments/ClientSearchField';
-import { getClients } from '@/lib/actions/clients';
-import type { Tables } from '@/types/supabase';
+import { searchClients } from '@/lib/actions/clients';
+import { createMockClient } from '@/lib/testing/mock-factories';
 
 jest.mock('@/lib/actions/clients');
 
-const mockGetClients = getClients as jest.MockedFunction<typeof getClients>;
+const mockSearchClients = searchClients as jest.MockedFunction<
+  typeof searchClients
+>;
 
-const mockClients: Tables<'clients'>[] = [
-  {
+const mockClients = [
+  createMockClient({
     id: '1',
     shop_id: 'shop1',
     first_name: 'John',
     last_name: 'Doe',
     email: 'john@example.com',
     phone_number: '5551234567',
-    mailing_address: null,
-    accept_email: null,
-    accept_sms: null,
-    notes: null,
-    created_at: '2024-01-01',
-    updated_at: '2024-01-01',
-  },
-  {
+  }),
+  createMockClient({
     id: '2',
     shop_id: 'shop1',
     first_name: 'Jane',
     last_name: 'Smith',
     email: 'jane@example.com',
     phone_number: '5559876543',
-    mailing_address: null,
-    accept_email: null,
-    accept_sms: null,
-    notes: null,
-    created_at: '2024-01-01',
-    updated_at: '2024-01-01',
-  },
+  }),
 ];
 
 describe('ClientSearchField', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockGetClients.mockResolvedValue({
-      data: [],
-      count: 0,
-      page: 1,
-      pageSize: 10,
-      totalPages: 0,
-    });
+    mockSearchClients.mockResolvedValue([] as any);
   });
 
   it('renders with search placeholder', () => {
@@ -58,20 +42,15 @@ describe('ClientSearchField', () => {
     expect(
       screen.getByPlaceholderText('Search by name, email, or phone...')
     ).toBeInTheDocument();
+    // Default helper text is undefined now; appointment-specific text should be passed where needed
     expect(
-      screen.getByText('Select a client for this appointment')
-    ).toBeInTheDocument();
+      screen.queryByText('Select a client for this appointment')
+    ).not.toBeInTheDocument();
   });
 
   it('searches clients when typing', async () => {
     const user = userEvent.setup();
-    mockGetClients.mockResolvedValue({
-      data: mockClients,
-      count: 2,
-      page: 1,
-      pageSize: 10,
-      totalPages: 1,
-    });
+    mockSearchClients.mockResolvedValue(mockClients as any);
 
     render(<ClientSearchField value={null} onChange={jest.fn()} />);
 
@@ -81,19 +60,13 @@ describe('ClientSearchField', () => {
     await user.type(input, 'john');
 
     await waitFor(() => {
-      expect(mockGetClients).toHaveBeenCalledWith(1, 10, { search: 'john' });
+      expect(mockSearchClients).toHaveBeenCalledWith('john');
     });
   });
 
   it('displays search results with name, email, and phone', async () => {
     const user = userEvent.setup();
-    mockGetClients.mockResolvedValue({
-      data: mockClients,
-      count: 2,
-      page: 1,
-      pageSize: 10,
-      totalPages: 1,
-    });
+    mockSearchClients.mockResolvedValue(mockClients as any);
 
     render(<ClientSearchField value={null} onChange={jest.fn()} />);
 
@@ -117,13 +90,7 @@ describe('ClientSearchField', () => {
   it('calls onChange when selecting a client', async () => {
     const user = userEvent.setup();
     const onChange = jest.fn();
-    mockGetClients.mockResolvedValue({
-      data: mockClients,
-      count: 1,
-      page: 1,
-      pageSize: 10,
-      totalPages: 1,
-    });
+    mockSearchClients.mockResolvedValue(mockClients as any);
 
     render(<ClientSearchField value={null} onChange={onChange} />);
 
@@ -138,18 +105,12 @@ describe('ClientSearchField', () => {
 
     fireEvent.click(screen.getByText('John Doe'));
 
-    expect(onChange).toHaveBeenCalledWith(mockClients[0]);
+    expect(onChange).toHaveBeenCalledWith(mockClients[0]!);
   });
 
   it('searches but returns no results when none match', async () => {
     const user = userEvent.setup();
-    mockGetClients.mockResolvedValue({
-      data: [],
-      count: 0,
-      page: 1,
-      pageSize: 10,
-      totalPages: 0,
-    });
+    mockSearchClients.mockResolvedValue([] as any);
 
     render(<ClientSearchField value={null} onChange={jest.fn()} />);
 
@@ -160,9 +121,7 @@ describe('ClientSearchField', () => {
 
     // Verify search was called with correct parameters
     await waitFor(() => {
-      expect(mockGetClients).toHaveBeenCalledWith(1, 10, {
-        search: 'nonexistent',
-      });
+      expect(mockSearchClients).toHaveBeenCalledWith('nonexistent');
     });
 
     // When no results, the input should still have the typed value
@@ -176,7 +135,7 @@ describe('ClientSearchField', () => {
   });
 
   it('displays selected client value', () => {
-    const selectedClient = mockClients[0];
+    const selectedClient = mockClients[0]!;
     render(<ClientSearchField value={selectedClient} onChange={jest.fn()} />);
 
     const input = screen.getByDisplayValue('John Doe');
@@ -199,13 +158,13 @@ describe('ClientSearchField', () => {
 
     // Should not have called yet (debounce in progress) - allow a tiny tick
     await new Promise((r) => setTimeout(r, 10));
-    expect(mockGetClients).not.toHaveBeenCalled();
+    expect(mockSearchClients).not.toHaveBeenCalled();
 
     // Wait for debounce
     await waitFor(
       () => {
-        expect(mockGetClients).toHaveBeenCalledTimes(1);
-        expect(mockGetClients).toHaveBeenCalledWith(1, 10, { search: 'john' });
+        expect(mockSearchClients).toHaveBeenCalledTimes(1);
+        expect(mockSearchClients).toHaveBeenCalledWith('john');
       },
       { timeout: 400 }
     );
@@ -220,7 +179,7 @@ describe('ClientSearchField', () => {
       resolveSearch = resolve;
     });
 
-    mockGetClients.mockReturnValue(searchPromise as any);
+    mockSearchClients.mockReturnValue(searchPromise as any);
 
     render(<ClientSearchField value={null} onChange={jest.fn()} />);
 
@@ -234,13 +193,7 @@ describe('ClientSearchField', () => {
     });
 
     // Resolve the search
-    resolveSearch({
-      data: mockClients,
-      count: 2,
-      page: 1,
-      pageSize: 10,
-      totalPages: 1,
-    });
+    resolveSearch(mockClients as any);
 
     await waitFor(() => {
       expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
@@ -260,7 +213,7 @@ describe('ClientSearchField', () => {
     // Should not call search
     await waitFor(
       () => {
-        expect(mockGetClients).not.toHaveBeenCalled();
+        expect(mockSearchClients).not.toHaveBeenCalled();
       },
       { timeout: 400 }
     );
@@ -270,7 +223,7 @@ describe('ClientSearchField', () => {
   });
 
   it('displays the client name in input field when value is provided', () => {
-    const selectedClient = mockClients[0]; // John Doe
+    const selectedClient = mockClients[0]!; // John Doe
     render(<ClientSearchField value={selectedClient} onChange={jest.fn()} />);
 
     const input = screen.getByDisplayValue('John Doe');
@@ -286,7 +239,7 @@ describe('ClientSearchField', () => {
     expect(screen.getByDisplayValue('')).toBeInTheDocument();
 
     // Update with client
-    const selectedClient = mockClients[1]; // Jane Smith
+    const selectedClient = mockClients[1]!; // Jane Smith
     rerender(<ClientSearchField value={selectedClient} onChange={jest.fn()} />);
 
     expect(screen.getByDisplayValue('Jane Smith')).toBeInTheDocument();

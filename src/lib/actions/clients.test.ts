@@ -275,4 +275,84 @@ describe('Client Actions', () => {
       expect(mockSupabase.eq).toHaveBeenCalledWith('id', 'client_123');
     });
   });
+
+  describe('searchClients', () => {
+    it('should return empty array for empty search term', async () => {
+      const result = await searchClients('');
+      expect(result).toEqual([]);
+    });
+
+    it('should return empty array for whitespace-only search term', async () => {
+      const result = await searchClients('   ');
+      expect(result).toEqual([]);
+    });
+
+    it('should search clients and return results', async () => {
+      const mockClients = [
+        {
+          id: 'client-1',
+          shop_id: 'shop-123',
+          first_name: 'John',
+          last_name: 'Doe',
+          email: 'john@example.com',
+          phone_number: '1234567890',
+          address: '123 Main St',
+          notes: null,
+          created_at: '2024-01-01T00:00:00Z',
+          updated_at: '2024-01-01T00:00:00Z',
+        },
+        {
+          id: 'client-2',
+          shop_id: 'shop-123',
+          first_name: 'Jane',
+          last_name: 'Smith',
+          email: 'jane@example.com',
+          phone_number: '0987654321',
+          address: '456 Oak Ave',
+          notes: null,
+          created_at: '2024-01-01T00:00:00Z',
+          updated_at: '2024-01-01T00:00:00Z',
+        },
+      ];
+
+      mockSupabase.from.mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            or: jest.fn().mockReturnValue({
+              order: jest.fn().mockReturnValue({
+                range: jest.fn().mockResolvedValue({
+                  data: mockClients,
+                  error: null,
+                  count: 2,
+                }),
+              }),
+            }),
+          }),
+        }),
+      });
+
+      const result = await searchClients('john');
+
+      expect(result).toEqual(mockClients);
+      expect(mockSupabase.from).toHaveBeenCalledWith('clients');
+    });
+
+    it('should handle search errors gracefully', async () => {
+      mockSupabase.from.mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            or: jest.fn().mockReturnValue({
+              order: jest.fn().mockReturnValue({
+                range: jest.fn().mockRejectedValue(new Error('Search failed')),
+              }),
+            }),
+          }),
+        }),
+      });
+
+      const result = await searchClients('test');
+
+      expect(result).toEqual([]);
+    });
+  });
 });

@@ -3,6 +3,10 @@ import userEvent from '@testing-library/user-event';
 import { CalendarDesktop } from '@/components/appointments/CalendarDesktop';
 import { Calendar } from '@/components/appointments/Calendar';
 import { getCalendarSettings } from '@/lib/actions/appointments';
+import {
+  createMockAppointmentWithClient,
+  createMockShopHours,
+} from '@/lib/testing/mock-factories';
 
 // Mock the CalendarSettings component
 jest.mock('@/components/appointments/CalendarSettings', () => ({
@@ -21,31 +25,34 @@ jest.mock('@/lib/actions/appointments', () => ({
 
 describe('Calendar Settings Modal', () => {
   const mockAppointments = [
-    {
-      id: '1',
-      client_id: 'client-1',
-      date: new Date().toISOString(),
-      time: '10:00',
-      duration: 60,
-      type: 'fitting' as const,
-      status: 'confirmed' as const,
-      notes: 'Test appointment',
-      client: {
-        id: 'client-1',
-        name: 'John Doe',
-        phone: '+1234567890',
-        email: 'john@example.com',
+    createMockAppointmentWithClient(
+      {
+        id: '1',
+        shop_id: 'shop-1',
+        type: 'fitting',
+        status: 'confirmed',
+        notes: 'Test appointment',
+        start_time: '10:00',
+        end_time: '11:00',
       },
-    },
+      {
+        id: 'client-1',
+        shop_id: 'shop-1',
+        first_name: 'John',
+        last_name: 'Doe',
+        email: 'john@example.com',
+        phone_number: '+1234567890',
+      }
+    ),
   ];
 
   const mockShopHours = [
-    {
+    createMockShopHours({
       day_of_week: 1,
       open_time: '09:00',
       close_time: '17:00',
       is_closed: false,
-    },
+    }),
   ];
 
   beforeEach(() => {

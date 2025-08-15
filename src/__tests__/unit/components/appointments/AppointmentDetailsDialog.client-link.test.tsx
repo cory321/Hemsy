@@ -4,6 +4,10 @@ import { AppointmentProvider } from '@/providers/AppointmentProvider';
 import userEvent from '@testing-library/user-event';
 import { AppointmentDetailsDialog } from '@/components/appointments/AppointmentDetailsDialog';
 import type { Appointment } from '@/types';
+import {
+  createMockAppointmentWithClient,
+  createMockAppointment,
+} from '@/lib/testing/mock-factories';
 
 // Mock next/navigation (used in component but not required for this test)
 jest.mock('next/navigation', () => ({
@@ -32,19 +36,19 @@ describe('AppointmentDetailsDialog - Client link', () => {
     </QueryClientProvider>
   );
 
-  const mockAppointment: Appointment = {
-    id: 'apt-1',
-    shop_id: 'shop123',
-    client_id: 'client-999',
-    date: '2025-01-20',
-    start_time: '10:00',
-    end_time: '10:30',
-    type: 'fitting',
-    status: 'confirmed',
-    notes: null,
-    created_at: '2025-01-01T00:00:00Z',
-    updated_at: '2025-01-01T00:00:00Z',
-    client: {
+  const mockAppointment = createMockAppointmentWithClient(
+    {
+      id: 'apt-1',
+      shop_id: 'shop123',
+      client_id: 'client-999',
+      date: '2025-01-20',
+      start_time: '10:00',
+      end_time: '10:30',
+      type: 'fitting',
+      status: 'confirmed',
+      notes: null,
+    },
+    {
       id: 'client-999',
       shop_id: 'shop123',
       first_name: 'Ada',
@@ -53,10 +57,8 @@ describe('AppointmentDetailsDialog - Client link', () => {
       phone_number: '5551234567',
       accept_email: true,
       accept_sms: false,
-      created_at: '2025-01-01T00:00:00Z',
-      updated_at: '2025-01-01T00:00:00Z',
-    },
-  };
+    }
+  );
 
   it('renders client name as a link to the client profile', async () => {
     render(
@@ -82,10 +84,10 @@ describe('AppointmentDetailsDialog - Client link', () => {
   });
 
   it('shows fallback text when no client selected', () => {
-    const noClientAppointment = {
+    const noClientAppointment = createMockAppointment({
       ...mockAppointment,
       client: undefined,
-    } as Appointment;
+    });
 
     render(
       <AppointmentDetailsDialog

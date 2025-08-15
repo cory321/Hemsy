@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   TextField,
@@ -18,6 +18,11 @@ import {
   Checkbox,
   FormControlLabel,
   Paper,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  CircularProgress,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -27,6 +32,7 @@ import {
   formatCurrency,
   dollarsToCents,
   parseFloatFromCurrency,
+  formatAsCurrency,
 } from '@/lib/utils/currency';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'react-hot-toast';
@@ -35,6 +41,7 @@ import {
   searchServices,
   addService,
 } from '@/lib/actions/services';
+import { useDebounce } from '@/hooks/useDebounce';
 
 interface ServiceSelectorProps {
   garmentId: string;
@@ -58,13 +65,16 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
   const [frequentServices, setFrequentServices] = useState<ServiceOption[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<ServiceOption[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [quickAddName, setQuickAddName] = useState('');
   const [quickAddPrice, setQuickAddPrice] = useState('0.00');
+  const [quickAddPriceFocused, setQuickAddPriceFocused] = useState(false);
   const [quickAddUnit, setQuickAddUnit] = useState<
     'item' | 'hour' | 'day' | 'week'
   >('item');
   const [quickAddToCatalog, setQuickAddToCatalog] = useState(true);
+  const [quickAddFrequentlyUsed, setQuickAddFrequentlyUsed] = useState(false);
 
   // Load frequently used services on mount
   useEffect(() => {
@@ -81,21 +91,36 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
 
   // Search services
   useEffect(() => {
+    let isActive = true;
     const searchDebounced = async () => {
       if (searchQuery.length < 2) {
         setSearchResults([]);
+        setSearchLoading(false);
         return;
       }
+      setSearchLoading(true);
       try {
         const results = await searchServices(searchQuery);
-        setSearchResults(results);
+        if (isActive) {
+          setSearchResults(results);
+        }
       } catch (error) {
-        console.error('Failed to search services:', error);
+        if (isActive) {
+          console.error('Failed to search services:', error);
+          setSearchResults([]);
+        }
+      } finally {
+        if (isActive) {
+          setSearchLoading(false);
+        }
       }
     };
 
     const timer = setTimeout(searchDebounced, 300);
-    return () => clearTimeout(timer);
+    return () => {
+      isActive = false;
+      clearTimeout(timer);
+    };
   }, [searchQuery]);
 
   const garment = orderDraft.garments.find((g) => g.id === garmentId);
@@ -129,6 +154,7 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
           default_qty: 1,
           default_unit: quickAddUnit,
           default_unit_price_cents: priceCents,
+          frequently_used: quickAddFrequentlyUsed,
         });
         const newService: ServiceLine = {
           serviceId: created.id,
@@ -139,6 +165,16 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
         };
         addServiceToGarment(garmentId, newService);
         toast.success('Service added to catalog');
+
+        // Reload frequently used services if the new service is marked as frequently used
+        if (quickAddFrequentlyUsed) {
+          try {
+            const services = await getFrequentlyUsedServices();
+            setFrequentServices(services);
+          } catch (error) {
+            console.error('Failed to reload frequent services:', error);
+          }
+        }
       } catch (error) {
         console.error('Failed to add service:', error);
         toast.error('Failed to add service');
@@ -160,33 +196,82 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
     // Reset quick add form
     setQuickAddName('');
     setQuickAddPrice('0.00');
+    setQuickAddPriceFocused(false);
     setQuickAddUnit('item');
+    setQuickAddFrequentlyUsed(false);
     setShowQuickAdd(false);
   };
 
   return (
     <Box>
       {/* Frequently Used Services */}
-      {frequentServices.length > 0 && (
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle2" gutterBottom>
-            Frequently Used Services
-          </Typography>
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            {frequentServices.map((service) => (
-              <Chip
-                key={service.id}
-                label={service.name}
-                onClick={() => handleAddService(service)}
-                clickable
-                color="primary"
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="subtitle2" gutterBottom>
+          {frequentServices.length > 0
+            ? 'Frequently Used Services'
+            : 'Services'}
+        </Typography>
+        <Grid container spacing={1}>
+          {frequentServices.map((service) => (
+            <Grid item xs={6} sm={4} md={3} key={service.id}>
+              <Button
                 variant="outlined"
-                sx={{ mb: 1 }}
-              />
-            ))}
-          </Stack>
-        </Box>
-      )}
+                fullWidth
+                onClick={() => handleAddService(service)}
+                sx={{
+                  p: 1.5,
+                  justifyContent: 'flex-start',
+                  textAlign: 'left',
+                  height: '100%',
+                }}
+              >
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    {service.name}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {formatCurrency(service.default_unit_price_cents / 100)} /{' '}
+                    {service.default_unit}
+                  </Typography>
+                </Box>
+              </Button>
+            </Grid>
+          ))}
+          {/* Quick Add Service Button */}
+          <Grid item xs={6} sm={4} md={3}>
+            <Button
+              variant="outlined"
+              fullWidth
+              onClick={() => setShowQuickAdd(true)}
+              sx={{
+                p: 1.5,
+                justifyContent: 'center',
+                height: '100%',
+                borderStyle: 'dashed',
+              }}
+            >
+              <Box sx={{ textAlign: 'center' }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 0.5,
+                  }}
+                >
+                  <AddIcon fontSize="small" />
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    Quick Add Service
+                  </Typography>
+                </Box>
+                <Typography variant="caption" color="text.secondary">
+                  Add custom service
+                </Typography>
+              </Box>
+            </Button>
+          </Grid>
+        </Grid>
+      </Box>
 
       {/* Search Services */}
       <Box sx={{ mb: 3 }}>
@@ -201,118 +286,54 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
                 <SearchIcon />
               </InputAdornment>
             ),
+            endAdornment: (
+              <>
+                {searchLoading ? (
+                  <CircularProgress color="inherit" size={20} />
+                ) : null}
+              </>
+            ),
           }}
         />
-        {searchResults.length > 0 && (
+        {(searchLoading || searchQuery.length > 0) && (
           <Paper sx={{ mt: 1, p: 1, maxHeight: 200, overflow: 'auto' }}>
-            {searchResults.map((service) => (
-              <Box
-                key={service.id}
-                sx={{
-                  p: 1,
-                  cursor: 'pointer',
-                  '&:hover': { bgcolor: 'action.hover' },
-                }}
-                onClick={() => handleAddService(service)}
-              >
-                <Typography variant="body2">{service.name}</Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {formatCurrency(service.default_unit_price_cents / 100)} per{' '}
-                  {service.default_unit}
+            {searchQuery.length < 2 && !searchLoading ? (
+              <Typography variant="body2" color="text.secondary" sx={{ p: 1 }}>
+                Type at least 2 characters to search
+              </Typography>
+            ) : searchLoading ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1 }}>
+                <CircularProgress size={16} />
+                <Typography variant="body2" color="text.secondary">
+                  Searching...
                 </Typography>
               </Box>
-            ))}
+            ) : searchResults.length > 0 ? (
+              searchResults.map((service) => (
+                <Box
+                  key={service.id}
+                  sx={{
+                    p: 1,
+                    cursor: 'pointer',
+                    '&:hover': { bgcolor: 'action.hover' },
+                  }}
+                  onClick={() => handleAddService(service)}
+                >
+                  <Typography variant="body2">{service.name}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {formatCurrency(service.default_unit_price_cents / 100)} per{' '}
+                    {service.default_unit}
+                  </Typography>
+                </Box>
+              ))
+            ) : (
+              <Typography variant="body2" color="text.secondary" sx={{ p: 1 }}>
+                No services found
+              </Typography>
+            )}
           </Paper>
         )}
       </Box>
-
-      {/* Quick Add */}
-      {!showQuickAdd ? (
-        <Button
-          variant="outlined"
-          startIcon={<AddIcon />}
-          onClick={() => setShowQuickAdd(true)}
-          fullWidth
-          sx={{ mb: 3 }}
-        >
-          Quick Add Service
-        </Button>
-      ) : (
-        <Card variant="outlined" sx={{ mb: 3 }}>
-          <CardContent>
-            <Typography variant="subtitle2" gutterBottom>
-              Quick Add Service
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  label="Service Name"
-                  value={quickAddName}
-                  onChange={(e) => setQuickAddName(e.target.value)}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  label="Price"
-                  value={quickAddPrice}
-                  onChange={(e) => setQuickAddPrice(e.target.value)}
-                  InputProps={{
-                    startAdornment: '$',
-                  }}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <Select
-                  fullWidth
-                  size="small"
-                  value={quickAddUnit}
-                  onChange={(e) => setQuickAddUnit(e.target.value as any)}
-                >
-                  <MenuItem value="item">per item</MenuItem>
-                  <MenuItem value="hour">per hour</MenuItem>
-                  <MenuItem value="day">per day</MenuItem>
-                  <MenuItem value="week">per week</MenuItem>
-                </Select>
-              </Grid>
-              <Grid item xs={12}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={quickAddToCatalog}
-                      onChange={(e) => setQuickAddToCatalog(e.target.checked)}
-                    />
-                  }
-                  label="Add to service catalog for future use"
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={() => setShowQuickAdd(false)}
-                  fullWidth
-                >
-                  Cancel
-                </Button>
-              </Grid>
-              <Grid item xs={6}>
-                <Button
-                  variant="contained"
-                  size="small"
-                  onClick={handleQuickAdd}
-                  fullWidth
-                >
-                  Add
-                </Button>
-              </Grid>
-            </Grid>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Service Lines */}
       <Box>
@@ -367,20 +388,13 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
                       </Select>
                     </Grid>
                     <Grid item xs={4} sm={3}>
-                      <TextField
-                        size="small"
-                        label="Price"
-                        value={(service.unitPriceCents / 100).toFixed(2)}
-                        onChange={(e) => {
-                          const cents = dollarsToCents(
-                            parseFloat(e.target.value) || 0
-                          );
+                      <ServicePriceField
+                        key={`price-${garmentId}-${index}`}
+                        unitPriceCents={service.unitPriceCents}
+                        onPriceChange={(cents: number) => {
                           updateServiceInGarment(garmentId, index, {
                             unitPriceCents: cents,
                           });
-                        }}
-                        InputProps={{
-                          startAdornment: '$',
                         }}
                       />
                     </Grid>
@@ -402,6 +416,202 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
           </Stack>
         )}
       </Box>
+
+      {/* Quick Add Dialog */}
+      <Dialog
+        open={showQuickAdd}
+        onClose={() => {
+          setShowQuickAdd(false);
+          // Reset form state
+          setQuickAddName('');
+          setQuickAddPrice('0.00');
+          setQuickAddPriceFocused(false);
+          setQuickAddUnit('item');
+          setQuickAddFrequentlyUsed(false);
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Quick Add Service</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 2 }}>
+            <TextField
+              fullWidth
+              label="Service Name"
+              value={quickAddName}
+              onChange={(e) => setQuickAddName(e.target.value)}
+              autoFocus
+            />
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <TextField
+                fullWidth
+                label="Price"
+                value={
+                  quickAddPriceFocused
+                    ? quickAddPrice
+                    : formatAsCurrency(quickAddPrice)
+                }
+                onChange={(e) => {
+                  const rawValue = e.target.value;
+                  setQuickAddPrice(formatAsCurrency(rawValue));
+                }}
+                onFocus={() => {
+                  setQuickAddPriceFocused(true);
+                  if (quickAddPrice === '0.00' || quickAddPrice === '') {
+                    setQuickAddPrice('');
+                  }
+                }}
+                onBlur={() => {
+                  const numericValue = parseFloatFromCurrency(
+                    quickAddPrice || '0'
+                  );
+                  const formatted = numericValue.toFixed(2);
+                  setQuickAddPrice(formatted);
+                  setQuickAddPriceFocused(false);
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">$</InputAdornment>
+                  ),
+                }}
+              />
+              <Select
+                fullWidth
+                value={quickAddUnit}
+                onChange={(e) => setQuickAddUnit(e.target.value as any)}
+              >
+                <MenuItem value="item">per item</MenuItem>
+                <MenuItem value="hour">per hour</MenuItem>
+                <MenuItem value="day">per day</MenuItem>
+                <MenuItem value="week">per week</MenuItem>
+              </Select>
+            </Box>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={quickAddToCatalog}
+                  onChange={(e) => {
+                    setQuickAddToCatalog(e.target.checked);
+                    // Reset frequently used if not adding to catalog
+                    if (!e.target.checked) {
+                      setQuickAddFrequentlyUsed(false);
+                    }
+                  }}
+                />
+              }
+              label="Add to service catalog for future use"
+            />
+            {quickAddToCatalog && (
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={quickAddFrequentlyUsed}
+                    onChange={(e) =>
+                      setQuickAddFrequentlyUsed(e.target.checked)
+                    }
+                  />
+                }
+                label="Mark as frequently used service"
+                sx={{ ml: 3 }}
+              />
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setShowQuickAdd(false);
+              // Reset form state
+              setQuickAddName('');
+              setQuickAddPrice('0.00');
+              setQuickAddPriceFocused(false);
+              setQuickAddUnit('item');
+              setQuickAddFrequentlyUsed(false);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleQuickAdd}
+            variant="contained"
+            disabled={!quickAddName.trim()}
+            startIcon={<AddIcon />}
+          >
+            Add Service
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
+
+// Optimized Price Field Component - Isolated to prevent re-renders of parent
+const ServicePriceField = React.memo(
+  function ServicePriceField({
+    unitPriceCents,
+    onPriceChange,
+  }: {
+    unitPriceCents: number;
+    onPriceChange: (cents: number) => void;
+  }) {
+    // Local state for immediate UI updates
+    const [localValue, setLocalValue] = useState('');
+    const [isFocused, setIsFocused] = useState(false);
+
+    // Debounced value for actual updates
+    const debouncedValue = useDebounce(localValue, 300);
+
+    // Update parent only when debounced value changes
+    useEffect(() => {
+      if (isFocused && debouncedValue !== '') {
+        const cents = dollarsToCents(parseFloatFromCurrency(debouncedValue));
+        onPriceChange(cents);
+      }
+    }, [debouncedValue, isFocused, onPriceChange]);
+
+    // Display value - local when focused, formatted from props when not
+    const displayValue = isFocused
+      ? localValue
+      : formatAsCurrency((unitPriceCents / 100).toFixed(2));
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const rawValue = e.target.value;
+      // Only format locally, don't update parent yet
+      setLocalValue(formatAsCurrency(rawValue));
+    };
+
+    const handleFocus = () => {
+      const currentValue = (unitPriceCents / 100).toFixed(2);
+      setLocalValue(currentValue === '0.00' ? '' : currentValue);
+      setIsFocused(true);
+    };
+
+    const handleBlur = () => {
+      const numericValue = parseFloatFromCurrency(localValue || '0');
+      const formatted = numericValue.toFixed(2);
+      setLocalValue(formatted);
+      setIsFocused(false);
+
+      // Update immediately on blur
+      const cents = dollarsToCents(numericValue);
+      onPriceChange(cents);
+    };
+
+    return (
+      <TextField
+        size="small"
+        label="Price"
+        value={displayValue}
+        onChange={handleChange}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        InputProps={{
+          startAdornment: <InputAdornment position="start">$</InputAdornment>,
+        }}
+      />
+    );
+  },
+  // Custom comparison - only re-render if unitPriceCents changes
+  (prevProps, nextProps) =>
+    prevProps.unitPriceCents === nextProps.unitPriceCents
+);

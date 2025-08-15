@@ -5,6 +5,8 @@ import {
 } from '@/lib/actions/shops';
 import { auth } from '@clerk/nextjs/server';
 import { createClient } from '@/lib/supabase/server';
+import { createMockUser, createMockShop } from '@/lib/testing/mock-factories';
+import { ensureUserAndShop } from '@/lib/actions/users';
 
 // Mock dependencies
 jest.mock('@clerk/nextjs/server');
@@ -12,6 +14,10 @@ jest.mock('@/lib/supabase/server');
 jest.mock('@/lib/actions/users', () => ({
   ensureUserAndShop: jest.fn(),
 }));
+
+const mockEnsureUserAndShop = ensureUserAndShop as jest.MockedFunction<
+  typeof ensureUserAndShop
+>;
 
 describe('Shop Actions', () => {
   const mockAuth = auth as unknown as jest.MockedFunction<typeof auth>;
@@ -29,7 +35,8 @@ describe('Shop Actions', () => {
 
   describe('getShopBusinessInfo', () => {
     it('should return shop business information successfully', async () => {
-      const mockShop = {
+      const mockUser = createMockUser({ id: 'user-123' });
+      const mockShop = createMockShop({
         id: 'shop-123',
         name: 'Test Shop',
         business_name: 'Test Business',
@@ -39,12 +46,11 @@ describe('Shop Actions', () => {
         location_type: 'shop_location',
         payment_preference: 'after_service',
         trial_countdown_enabled: false,
-      };
+      });
 
-      const { ensureUserAndShop } = await import('@/lib/actions/users');
-      (ensureUserAndShop as jest.Mock).mockResolvedValue({
-        user: { id: 'user-123' } as any,
-        shop: mockShop as any,
+      mockEnsureUserAndShop.mockResolvedValue({
+        user: mockUser,
+        shop: mockShop,
       });
 
       const result = await getShopBusinessInfo();
@@ -65,16 +71,22 @@ describe('Shop Actions', () => {
     });
 
     it('should use default values for missing fields', async () => {
-      const mockShop = {
+      const mockUser = createMockUser({ id: 'user-123' });
+      const mockShop = createMockShop({
         id: 'shop-123',
         name: 'Test Shop',
         trial_countdown_enabled: null,
-      };
+        business_name: null,
+        email: null,
+        phone_number: null,
+        mailing_address: null,
+        location_type: null,
+        payment_preference: null,
+      });
 
-      const { ensureUserAndShop } = await import('@/lib/actions/users');
-      (ensureUserAndShop as jest.Mock).mockResolvedValue({
-        user: { id: 'user-123' } as any,
-        shop: mockShop as any,
+      mockEnsureUserAndShop.mockResolvedValue({
+        user: mockUser,
+        shop: mockShop,
       });
 
       const result = await getShopBusinessInfo();
@@ -92,10 +104,7 @@ describe('Shop Actions', () => {
     });
 
     it('should handle errors gracefully', async () => {
-      const { ensureUserAndShop } = await import('@/lib/actions/users');
-      (ensureUserAndShop as jest.Mock).mockRejectedValue(
-        new Error('Unauthorized')
-      );
+      mockEnsureUserAndShop.mockRejectedValue(new Error('Unauthorized'));
 
       const result = await getShopBusinessInfo();
 
@@ -106,7 +115,8 @@ describe('Shop Actions', () => {
 
   describe('updateShopBusinessInfo', () => {
     it('should update shop business information successfully', async () => {
-      const mockShop = { id: 'shop-123' };
+      const mockUser = createMockUser({ id: 'user-123' });
+      const mockShop = createMockShop({ id: 'shop-123' });
       const updateData = {
         business_name: 'Updated Business',
         email: 'updated@example.com',
@@ -116,10 +126,9 @@ describe('Shop Actions', () => {
         payment_preference: 'upfront' as const,
       };
 
-      const { ensureUserAndShop } = await import('@/lib/actions/users');
-      (ensureUserAndShop as jest.Mock).mockResolvedValue({
-        user: { id: 'user-123' } as any,
-        shop: mockShop as any,
+      mockEnsureUserAndShop.mockResolvedValue({
+        user: mockUser,
+        shop: mockShop,
       });
 
       const mockUpdate = jest.fn().mockReturnValue({
@@ -154,17 +163,17 @@ describe('Shop Actions', () => {
     });
 
     it('should handle database errors', async () => {
-      const mockShop = { id: 'shop-123' };
+      const mockUser = createMockUser({ id: 'user-123' });
+      const mockShop = createMockShop({ id: 'shop-123' });
       const updateData = {
         business_name: 'Updated Business',
         email: 'updated@example.com',
         phone_number: '098-765-4321',
       };
 
-      const { ensureUserAndShop } = await import('@/lib/actions/users');
-      (ensureUserAndShop as jest.Mock).mockResolvedValue({
-        user: { id: 'user-123' } as any,
-        shop: mockShop as any,
+      mockEnsureUserAndShop.mockResolvedValue({
+        user: mockUser,
+        shop: mockShop,
       });
 
       const mockUpdate = jest.fn().mockReturnValue({

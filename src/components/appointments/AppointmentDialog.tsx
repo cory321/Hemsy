@@ -77,13 +77,13 @@ interface AppointmentDialogProps {
   selectedDate?: Date;
   selectedTime?: string | null;
   prefilledClient?: Client | null;
-  shopHours?: Array<{
+  shopHours?: ReadonlyArray<{
     day_of_week: number;
     open_time: string | null;
     close_time: string | null;
     is_closed: boolean;
   }>;
-  existingAppointments?: Appointment[];
+  existingAppointments?: ReadonlyArray<Appointment>;
   calendarSettings?: {
     buffer_time_minutes: number;
     default_appointment_duration: number;
@@ -369,6 +369,7 @@ export function AppointmentDialog({
                   client_id: newClient?.id || null,
                 }));
               }}
+              helperText="Select a client for this appointment"
             />
           )}
 

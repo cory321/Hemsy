@@ -86,6 +86,17 @@ You can view details in Threadfolio.
 Thank you,
 Threadfolio`,
     },
+    appointment_reminder: {
+      subject: 'Appointment reminder: {shop_name}',
+      body: `Hi {client_name},
+
+This is a reminder about your appointment with {shop_name} scheduled for {appointment_time}.
+
+If you need to reschedule or cancel, please contact us as soon as possible.
+
+Thank you,
+{shop_name}`,
+    },
     payment_link: {
       subject: 'Your payment link from {shop_name}',
       body: `Hi {client_name},
@@ -97,6 +108,37 @@ You can pay for your order using the link below:
 Amount due: {amount}
 
 If you have any questions, please contact us.
+
+Thank you,
+{shop_name}`,
+    },
+    payment_received: {
+      subject: 'Payment received - Thank you!',
+      body: `Hi {client_name},
+
+We have received your payment of {amount} for your order.
+
+Order details:
+{order_details}
+
+Thank you for your business!
+
+{shop_name}`,
+    },
+    invoice_sent: {
+      subject: 'Invoice from {shop_name}',
+      body: `Hi {client_name},
+
+Please find your invoice attached for the following services:
+
+{invoice_details}
+
+Total amount due: {amount}
+Due date: {due_date}
+
+You can pay using the following link: {payment_link}
+
+If you have any questions about this invoice, please contact us.
 
 Thank you,
 {shop_name}`,

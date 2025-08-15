@@ -12,24 +12,26 @@ export interface User {
 export interface Shop {
   id: string;
   owner_user_id: string;
-  business_name: string;
-  email: string;
-  phone_number: string;
+  name: string;
+  business_name?: string | null;
+  email?: string | null;
+  phone_number?: string | null;
   business_email?: string;
   business_phone?: string;
   business_address?: string;
-  location_type: 'home_based' | 'shop_location' | 'mobile_service';
-  mailing_address?: string;
-  working_hours: Record<
+  location_type?: 'home_based' | 'shop_location' | 'mobile_service' | null;
+  mailing_address?: string | null;
+  working_hours?: Record<
     string,
     { start: string; end: string; closed: boolean }
-  >;
-  buffer_time_minutes: number;
-  payment_preference: 'upfront' | 'after_service';
-  trial_countdown_enabled: boolean;
-  trial_end_date?: string;
-  created_at: string;
-  updated_at: string;
+  > | null;
+  buffer_time_minutes?: number | null;
+  payment_preference?: 'upfront' | 'after_service' | null;
+  tax_percent: number;
+  trial_countdown_enabled?: boolean | null;
+  trial_end_date?: string | null;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 export interface Client {
@@ -41,22 +43,28 @@ export interface Client {
   phone_number: string;
   accept_email: boolean;
   accept_sms: boolean;
-  notes?: string;
+  notes?: string | null;
   mailing_address?: string | null;
-  created_at: string;
-  updated_at: string;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 export interface Order {
   id: string;
   shop_id: string;
-  client_id: string;
-  status: 'draft' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
-  total: number;
-  notes?: string;
+  client_id?: string | null;
+  order_number: string;
+  status?: string | null;
+  subtotal_cents: number;
+  tax_cents: number;
+  discount_cents: number;
+  total_cents: number;
+  is_paid: boolean;
+  paid_at?: string | null;
+  notes?: string | null;
   order_due_date?: string | null;
-  created_at: string;
-  updated_at: string;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 export interface Garment {
@@ -77,11 +85,14 @@ export interface Service {
   id: string;
   shop_id: string;
   name: string;
-  unit_price: number;
-  unit: 'per_item' | 'per_hour' | 'flat_rate';
+  default_qty: number;
+  default_unit: string;
+  default_unit_price_cents: number;
   description?: string | null;
-  created_at: string;
-  updated_at: string;
+  frequently_used: boolean;
+  frequently_used_position?: number | null;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 export interface GarmentService {
@@ -120,22 +131,38 @@ export interface Appointment {
   id: string;
   shop_id: string;
   client_id: string;
-  order_id?: string;
+  order_id?: string | null;
   date: string;
   start_time: string;
   end_time: string;
-  type: 'consultation' | 'fitting' | 'pickup' | 'delivery' | 'other';
+  type: 'consultation' | 'fitting' | 'pickup' | 'delivery' | 'other' | string;
   status: 'pending' | 'declined' | 'confirmed' | 'canceled' | 'no_show';
-  notes?: string;
-  created_at: string;
-  updated_at: string;
+  notes?: string | null;
+  reminder_sent?: boolean | null;
+  created_at: string | null;
+  updated_at: string | null;
   // Joined data
   client?: Client;
 }
 
+// Additional types for better compatibility
+export type ServiceUnitType = 'per_item' | 'per_hour' | 'flat_rate';
+
+export interface OrderWithGarmentCount extends Order {
+  garment_count?: number;
+  garments?: Garment[];
+  total?: number;
+  client?: Client | null;
+}
+
 // UI/UX types
 export type GarmentStage = 'New' | 'In Progress' | 'Ready For Pickup' | 'Done';
-export type OrderStatus = Order['status'];
+export type OrderStatus =
+  | 'draft'
+  | 'confirmed'
+  | 'in_progress'
+  | 'completed'
+  | 'cancelled';
 export type InvoiceStatus = Invoice['status'];
 export type AppointmentType = Appointment['type'];
 export type AppointmentStatus = Appointment['status'];

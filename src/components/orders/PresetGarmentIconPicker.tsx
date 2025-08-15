@@ -43,12 +43,43 @@ export default function PresetGarmentIconPicker({
                 <Grid item xs={6} sm={4} md={3} key={item.key}>
                   <Card
                     variant="outlined"
-                    sx={{
+                    sx={(theme) => ({
                       borderColor: isSelected ? 'primary.main' : undefined,
                       bgcolor: isSelected ? 'action.selected' : undefined,
-                    }}
+                      transition: theme.transitions.create(
+                        [
+                          'transform',
+                          'box-shadow',
+                          'background-color',
+                          'border-color',
+                        ],
+                        {
+                          duration: 160,
+                          easing: theme.transitions.easing.easeOut,
+                        }
+                      ),
+                      '&:hover': {
+                        transform: 'translateY(-1px) scale(1.02)',
+                        boxShadow: 3,
+                        borderColor: 'primary.main',
+                        bgcolor: theme.palette.action.hover,
+                      },
+                      '@media (prefers-reduced-motion: reduce)': {
+                        transition:
+                          'border-color 160ms ease-out, background-color 160ms ease-out',
+                        '&:hover': { transform: 'none', boxShadow: 2 },
+                      },
+                    })}
                   >
-                    <CardActionArea onClick={() => onChange(item.key)}>
+                    <CardActionArea
+                      onClick={() => onChange(item.key)}
+                      sx={(theme) => ({
+                        '&:focus-visible': {
+                          outline: `3px solid ${theme.palette.primary.main}`,
+                          outlineOffset: 2,
+                        },
+                      })}
+                    >
                       <CardContent>
                         <Stack spacing={1} alignItems="center">
                           <Box

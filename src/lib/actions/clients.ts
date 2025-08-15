@@ -212,3 +212,19 @@ export async function getClientOrders(clientId: string) {
 
   return transformed;
 }
+
+export async function searchClients(
+  searchTerm: string
+): Promise<Tables<'clients'>[]> {
+  if (!searchTerm || searchTerm.trim().length === 0) {
+    return [];
+  }
+
+  try {
+    const result = await getClients(1, 10, { search: searchTerm });
+    return result.data;
+  } catch (error) {
+    console.error('Error searching clients:', error);
+    return [];
+  }
+}

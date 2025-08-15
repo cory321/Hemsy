@@ -98,8 +98,9 @@ describe('AppointmentDetailsDialog - Type Editing', () => {
 
     // Find and click the edit button for appointment type
     const editButtons = screen.getAllByRole('button', { name: /edit/i });
-    const typeEditButton = editButtons[0]; // First edit button is for type
-    fireEvent.click(typeEditButton);
+    const typeEditButton = editButtons[0];
+    expect(typeEditButton).toBeDefined();
+    fireEvent.click(typeEditButton!);
 
     // Check that the select dropdown is shown
     expect(screen.getByRole('combobox')).toBeInTheDocument();
@@ -119,7 +120,7 @@ describe('AppointmentDetailsDialog - Type Editing', () => {
 
     // Click edit button for type
     const editButtons = screen.getAllByRole('button', { name: /edit/i });
-    fireEvent.click(editButtons[0]);
+    fireEvent.click(editButtons[0]!);
 
     // Change type to fitting
     const select = screen.getByRole('combobox');
@@ -157,7 +158,7 @@ describe('AppointmentDetailsDialog - Type Editing', () => {
 
     // Click edit and change type
     const editButtons = screen.getAllByRole('button', { name: /edit/i });
-    fireEvent.click(editButtons[0]);
+    fireEvent.click(editButtons[0]!);
 
     const select = screen.getByRole('combobox');
     fireEvent.mouseDown(select);
@@ -309,7 +310,7 @@ describe('AppointmentDetailsDialog - Type Editing', () => {
 
     // Start a type update
     const editButtons = screen.getAllByRole('button', { name: /edit/i });
-    fireEvent.click(editButtons[0]);
+    fireEvent.click(editButtons[0]!);
     fireEvent.click(screen.getByRole('button', { name: /save type/i }));
 
     // Check that other buttons are disabled

@@ -48,6 +48,8 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+    // Prevent card click from triggering when opening the menu
+    event.stopPropagation();
     setAnchorEl(event.currentTarget);
   };
 
@@ -96,6 +98,15 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
           '&:hover': {
             boxShadow: 3,
           },
+        }}
+        onClick={(event) => {
+          // If the kebab menu is open, ignore card clicks so dismissing the menu
+          // doesn't also open the edit dialog.
+          if (open) {
+            event.stopPropagation();
+            return;
+          }
+          setIsEditing(true);
         }}
       >
         <CardContent>

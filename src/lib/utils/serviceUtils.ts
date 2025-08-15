@@ -23,6 +23,8 @@ export interface ServiceFormData {
   qty: string | number;
   unit: ServiceUnitType;
   unit_price: number;
+  frequently_used?: boolean;
+  frequently_used_position?: number | null;
 }
 
 export const handleChange = (
@@ -83,6 +85,8 @@ export const convertServiceForForm = (service: Service): ServiceFormData => {
     qty: service.default_qty,
     unit: service.default_unit,
     unit_price: centsToDollars(service.default_unit_price_cents),
+    frequently_used: service.frequently_used,
+    frequently_used_position: service.frequently_used_position,
   };
 };
 
@@ -98,5 +102,7 @@ export const convertServiceForDatabase = (
         : formData.qty,
     default_unit: formData.unit,
     default_unit_price_cents: dollarsToCents(formData.unit_price),
+    frequently_used: formData.frequently_used,
+    frequently_used_position: formData.frequently_used_position,
   };
 };
