@@ -77,6 +77,7 @@ export function useGarmentsPaginated(options: UseGarmentsPaginatedOptions) {
     return Array.from(map.values());
   })();
   const totalCount = result.data?.pages[0]?.totalCount;
+  const totalGarmentsCount = result.data?.pages[0]?.totalGarmentsCount;
   const stageCounts = (
     result.data?.pages?.[0] as PaginatedGarmentsResponse | undefined
   )?.stageCounts;
@@ -91,6 +92,7 @@ export function useGarmentsPaginated(options: UseGarmentsPaginatedOptions) {
   return {
     garments,
     totalCount,
+    totalGarmentsCount,
     stageCounts,
     isLoading: result.isLoading,
     isFetching: result.isFetching,

@@ -65,7 +65,8 @@ export interface PaginatedGarmentsResponse {
     lastDueDate?: string;
   } | null;
   hasMore: boolean;
-  totalCount?: number; // Only on first load
+  totalCount?: number; // Only on first load - filtered count
+  totalGarmentsCount?: number; // Total garments in shop (unfiltered)
   stageCounts?: Record<string, number>; // Totals per stage for the shop
 }
 
@@ -417,6 +418,12 @@ export async function getGarmentsPaginated(
         })
       );
       response.stageCounts = Object.fromEntries(counts);
+
+      // Calculate total garments count (sum of all stages)
+      response.totalGarmentsCount = counts.reduce(
+        (total, [, count]) => total + count,
+        0
+      );
     }
 
     return response;

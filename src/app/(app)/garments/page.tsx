@@ -72,6 +72,7 @@ export default function GarmentsPage() {
   const {
     garments,
     totalCount,
+    totalGarmentsCount,
     stageCounts,
     isLoading,
     isFetching,
@@ -180,7 +181,7 @@ export default function GarmentsPage() {
         >
           {/* "View All" Stage */}
           <StageBox
-            stage={{ name: 'View All', count: totalCount || 0 }}
+            stage={{ name: 'View All', count: totalGarmentsCount || 0 }}
             isSelected={!selectedStage}
             onClick={() => {
               setSelectedStage(null);
@@ -218,7 +219,9 @@ export default function GarmentsPage() {
             }}
             label="Stage"
           >
-            <MenuItem value="all">View All ({totalCount || 0})</MenuItem>
+            <MenuItem value="all">
+              View All ({totalGarmentsCount || 0})
+            </MenuItem>
             {GARMENT_STAGES.map((stage) => (
               <MenuItem key={stage.name} value={stage.name}>
                 {stage.displayName} ({garmentCounts[stage.name] || 0})
