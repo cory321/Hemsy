@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useAuth, useUser } from '@clerk/nextjs';
 import {
   Button,
@@ -16,157 +16,155 @@ import {
   Tooltip,
   useTheme,
   useMediaQuery,
+  TextField,
+  InputAdornment,
 } from '@mui/material';
 
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import SearchIcon from '@mui/icons-material/Search';
+import ClearIcon from '@mui/icons-material/Clear';
 
-import { getGarmentsAndStages } from '@/lib/actions/garment-stages';
 import { GARMENT_STAGES, getStageColor } from '@/constants/garmentStages';
 import { getCurrentUserShop } from '@/lib/actions/shops';
 import GarmentCard from '@/components/garments/GarmentCard';
 import { GarmentStage } from '@/types';
+import { InfiniteScrollTrigger } from '@/components/common/InfiniteScrollTrigger';
+import { useGarmentsSearch } from '@/lib/queries/garment-queries';
+import type { GetGarmentsPaginatedParams } from '@/lib/actions/garments-paginated';
+import { groupGarmentsByClientName } from '@/utils/garments-sort';
 
 import StageBox from '@/components/garments/StageBox';
-import {
-  getGarmentSortComparator,
-  groupGarmentsByClientName,
-} from '@/utils/garments-sort';
-
-type GarmentListItem = {
-  id: string;
-  name: string;
-  order_id: string;
-  stage: GarmentStage;
-  stage_name?: string;
-  client_name?: string;
-  photo_url?: string;
-  image_cloud_id?: string;
-  preset_icon_key?: string | null;
-  preset_fill_color?: string | null;
-  due_date?: string;
-  event_date?: string;
-  services?: any[];
-};
 
 export default function GarmentsPage() {
-  const [garmentsData, setGarmentsData] = useState<GarmentListItem[]>([]);
-
   const [selectedStage, setSelectedStage] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [sortField, setSortField] = useState<
-    'due_date' | 'created_at' | 'client_name' | 'name' | 'overdue' | 'due_soon'
-  >('due_date');
+  const [sortField, setSortField] =
+    useState<GetGarmentsPaginatedParams['sortField']>('due_date');
   const [shopId, setShopId] = useState<string | null>(null);
+  const [initialLoading, setInitialLoading] = useState(true);
   const { userId } = useAuth();
   const { user } = useUser();
 
-  const fetchGarmentsData = useCallback(async () => {
-    try {
-      setIsLoading(true);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-      // Get the current user's shop
-      const shop = await getCurrentUserShop();
-      if (!shop) {
-        console.error('No shop found for user');
-        return;
-      }
-
-      setShopId(shop.id);
-
-      const { garments } = await getGarmentsAndStages(shop.id);
-
-      console.log('Fetched garments:', garments);
-
-      setGarmentsData(
-        garments.map(
-          (garment): GarmentListItem => ({
-            id: garment.id as string,
-            name: garment.name as string,
-            order_id: garment.order_id as string,
-            stage: (garment.stage as GarmentStage) || 'New',
-            ...(garment.stage_name
-              ? { stage_name: garment.stage_name as string }
-              : {}),
-            client_name:
-              (garment.client_name as string | undefined) || 'Unknown Client',
-            ...(garment.photo_url
-              ? { photo_url: garment.photo_url as string }
-              : {}),
-            ...(garment.image_cloud_id
-              ? { image_cloud_id: garment.image_cloud_id as string }
-              : {}),
-            ...(garment.preset_icon_key
-              ? { preset_icon_key: garment.preset_icon_key as string }
-              : {}),
-            ...(garment.preset_fill_color
-              ? { preset_fill_color: garment.preset_fill_color as string }
-              : {}),
-            ...(garment.due_date
-              ? { due_date: garment.due_date as string }
-              : {}),
-            ...(garment.event_date
-              ? { event_date: garment.event_date as string }
-              : {}),
-            ...(garment.services
-              ? { services: garment.services as any[] }
-              : {}),
-          })
-        )
-      );
-    } catch (error) {
-      console.error('Failed to fetch garments data:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
+  // Initialize shop ID
   useEffect(() => {
+    const initShop = async () => {
+      try {
+        const shop = await getCurrentUserShop();
+        if (shop) {
+          setShopId(shop.id);
+        }
+      } catch (error) {
+        console.error('Failed to get shop:', error);
+      } finally {
+        setInitialLoading(false);
+      }
+    };
     if (userId) {
-      fetchGarmentsData();
+      initShop();
     }
-  }, [fetchGarmentsData, userId]);
+  }, [userId]);
+
+  // Use the paginated garments hook
+  const {
+    garments,
+    totalCount,
+    stageCounts,
+    isLoading,
+    isFetching,
+    isError,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    search,
+    setSearch,
+    filters,
+    setFilters,
+    prefetchNextPage,
+  } = useGarmentsSearch(shopId || '', {
+    sortField: sortField as GetGarmentsPaginatedParams['sortField'],
+    sortOrder,
+    stage: selectedStage as GarmentStage | undefined,
+  });
+
+  // Update filters when state changes
+  useEffect(() => {
+    setFilters((prev) => ({
+      ...prev,
+      sortField: sortField as GetGarmentsPaginatedParams['sortField'],
+      sortOrder,
+      stage: selectedStage as GarmentStage | undefined,
+    }));
+  }, [sortField, sortOrder, selectedStage, setFilters]);
+
+  // Prefetch next page when user scrolls
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPosition = window.innerHeight + window.scrollY;
+      const threshold = document.body.offsetHeight * 0.8;
+
+      if (scrollPosition > threshold) {
+        prefetchNextPage();
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [prefetchNextPage]);
 
   // Compute counts of garments per stage
   const garmentCounts = useMemo<Record<string, number>>(() => {
+    // Prefer server-provided totals from hook
+    if (stageCounts) return stageCounts as Record<string, number>;
+    // Fallback to counting loaded items
     const counts: Record<string, number> = {};
-
-    garmentsData.forEach((garment) => {
+    garments.forEach((garment) => {
       const stageName = garment.stage_name || 'New';
       counts[stageName] = (counts[stageName] || 0) + 1;
     });
-
     return counts;
-  }, [garmentsData]);
+  }, [garments, stageCounts]);
 
-  const totalGarments = garmentsData.length;
+  const handleClearSearch = useCallback(() => {
+    setSearch('');
+  }, [setSearch]);
 
-  const filteredGarments = useMemo<GarmentListItem[]>(() => {
-    let garments: GarmentListItem[] = garmentsData;
+  // All sorting is now handled server-side
+  const filteredGarments = garments;
 
-    if (selectedStage) {
-      garments = garments.filter(
-        (garment) => (garment.stage_name || 'New') === selectedStage
-      );
+  // Group garments by client name when sorting by client_name
+  const isGroupedByClient = sortField === 'client_name';
+  const groupedData = useMemo(() => {
+    if (isGroupedByClient) {
+      return groupGarmentsByClientName(filteredGarments, sortOrder);
     }
+    return null;
+  }, [filteredGarments, isGroupedByClient, sortOrder]);
 
-    // Sort the garments by the selected field, including special orders for overdue/due soon
-    const comparator = getGarmentSortComparator(sortField, sortOrder);
-    garments = garments.slice().sort(comparator);
+  if (initialLoading || (!shopId && !isError)) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
-    return garments;
-  }, [garmentsData, selectedStage, sortOrder, sortField]);
-
-  // Group garments by client name if sorting by client_name
-  const groupedGarments = useMemo(() => {
-    if (sortField !== 'client_name') return null;
-    return groupGarmentsByClientName(filteredGarments, sortOrder);
-  }, [filteredGarments, sortOrder, sortField]);
-
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  if (isError && !garments.length) {
+    return (
+      <Box sx={{ p: 3, textAlign: 'center' }}>
+        <Typography color="error" gutterBottom>
+          Failed to load garments
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          {error?.message || 'Please try again later'}
+        </Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ p: 3 }}>
@@ -182,9 +180,12 @@ export default function GarmentsPage() {
         >
           {/* "View All" Stage */}
           <StageBox
-            stage={{ name: 'View All', count: totalGarments }}
+            stage={{ name: 'View All', count: totalCount || 0 }}
             isSelected={!selectedStage}
-            onClick={() => setSelectedStage(null)}
+            onClick={() => {
+              setSelectedStage(null);
+              setSearch('');
+            }}
             isLast={false}
           />
           {GARMENT_STAGES.map((stage, index) => (
@@ -196,26 +197,28 @@ export default function GarmentsPage() {
                 count: garmentCounts[stage.name] || 0,
               }}
               isSelected={selectedStage === stage.name}
-              onClick={() => setSelectedStage(stage.name)}
+              onClick={() => {
+                setSelectedStage(stage.name);
+                setSearch('');
+              }}
               isLast={index === GARMENT_STAGES.length - 1}
             />
           ))}
         </Box>
       ) : (
         <FormControl fullWidth sx={{ mb: 3 }}>
-          <InputLabel id="stage-select-label">Select Stage</InputLabel>
+          <InputLabel>Stage</InputLabel>
           <Select
-            labelId="stage-select-label"
-            value={selectedStage || ''}
-            label="Select Stage"
+            value={selectedStage || 'all'}
             onChange={(e) => {
-              const stageName = e.target.value;
-              setSelectedStage(stageName || null);
+              setSelectedStage(
+                e.target.value === 'all' ? null : e.target.value
+              );
+              setSearch('');
             }}
+            label="Stage"
           >
-            <MenuItem value="">
-              <em>View All ({totalGarments})</em>
-            </MenuItem>
+            <MenuItem value="all">View All ({totalCount || 0})</MenuItem>
             {GARMENT_STAGES.map((stage) => (
               <MenuItem key={stage.name} value={stage.name}>
                 {stage.displayName} ({garmentCounts[stage.name] || 0})
@@ -225,95 +228,186 @@ export default function GarmentsPage() {
         </FormControl>
       )}
 
-      {/* Sorting Options */}
-      <Box
-        sx={{
-          mb: 3,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        {/* Sorting Controls */}
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <FormControl
-            variant="outlined"
-            size="small"
-            sx={{ mr: 2, minWidth: 200 }}
-          >
-            <InputLabel>Sort By</InputLabel>
-            <Select
-              value={sortField}
-              onChange={(e) => setSortField(e.target.value as typeof sortField)}
-              label="Sort By"
-            >
-              <MenuItem value="due_date">Due Date</MenuItem>
-              <MenuItem value="created_at">Date Created</MenuItem>
-              <MenuItem value="client_name">Client Name</MenuItem>
-              <MenuItem value="overdue">Overdue first</MenuItem>
-              <MenuItem value="due_soon">Due soon first</MenuItem>
-            </Select>
-          </FormControl>
-
-          <Tooltip title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}>
-            <IconButton
-              onClick={() =>
-                setSortOrder((prevOrder) =>
-                  prevOrder === 'asc' ? 'desc' : 'asc'
-                )
-              }
-            >
-              {sortOrder === 'asc' ? (
-                <ArrowUpwardIcon />
-              ) : (
-                <ArrowDownwardIcon />
-              )}
-            </IconButton>
-          </Tooltip>
-        </Box>
-      </Box>
-
-      {/* Garments Grid */}
-      {isLoading ? (
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '50vh',
-          }}
-        >
+      {isLoading && !garments.length ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
           <CircularProgress />
         </Box>
-      ) : filteredGarments.length === 0 ? (
-        <Typography>No garments found for this stage.</Typography>
-      ) : sortField === 'client_name' ? (
-        groupedGarments?.sortedClientNames.map((clientName) => (
-          <Box key={clientName} sx={{ mb: 4 }}>
-            {/* Styled Container for Client Name */}
-            <Box
-              sx={{
-                backgroundColor: '#e3e5f1',
-                p: 2, // Padding
-                borderRadius: 1,
-                mb: 2,
+      ) : (
+        <>
+          {/* Search Bar */}
+          <Box sx={{ mb: 2 }}>
+            <TextField
+              fullWidth
+              variant="outlined"
+              placeholder="Search garments by name, notes, or client name..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    {isFetching && !isFetchingNextPage && search && (
+                      <CircularProgress size={20} sx={{ mr: 1 }} />
+                    )}
+                    {search && (
+                      <IconButton
+                        aria-label="clear search"
+                        onClick={handleClearSearch}
+                        edge="end"
+                        size="small"
+                      >
+                        <ClearIcon />
+                      </IconButton>
+                    )}
+                  </InputAdornment>
+                ),
               }}
-            >
-              <Typography
-                variant="h5"
-                sx={{ color: (theme) => theme.palette.text.primary }}
-              >
-                {clientName}
-              </Typography>
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                },
+              }}
+            />
+          </Box>
+
+          {/* Controls */}
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              mb: 3,
+              flexWrap: 'wrap',
+              gap: 2,
+            }}
+          >
+            {/* Heading */}
+            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+              <Typography variant="h4">All Garments</Typography>
+              {totalCount !== undefined && (
+                <Typography variant="body2" color="text.secondary">
+                  ({totalCount} total)
+                </Typography>
+              )}
             </Box>
 
-            {/* Garments Grid for the Client */}
+            {/* Sort Controls */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <FormControl
+                variant="outlined"
+                size="small"
+                sx={{ minWidth: 150 }}
+              >
+                <InputLabel>Sort By</InputLabel>
+                <Select
+                  value={sortField}
+                  onChange={(e) =>
+                    setSortField(
+                      e.target.value as GetGarmentsPaginatedParams['sortField']
+                    )
+                  }
+                  label="Sort By"
+                  endAdornment={
+                    isFetching && !isFetchingNextPage && !isLoading ? (
+                      <CircularProgress
+                        size={16}
+                        sx={{
+                          position: 'absolute',
+                          right: 28,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          pointerEvents: 'none',
+                        }}
+                      />
+                    ) : null
+                  }
+                >
+                  <MenuItem value="due_date">Due Date</MenuItem>
+                  <MenuItem value="created_at">Created Date</MenuItem>
+                  <MenuItem value="client_name">Client Name</MenuItem>
+                  <MenuItem value="name">Garment Name</MenuItem>
+                </Select>
+              </FormControl>
+              <Tooltip title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}>
+                <IconButton
+                  onClick={() =>
+                    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+                  }
+                  size="small"
+                >
+                  {sortOrder === 'asc' ? (
+                    <ArrowUpwardIcon />
+                  ) : (
+                    <ArrowDownwardIcon />
+                  )}
+                </IconButton>
+              </Tooltip>
+            </Box>
+          </Box>
+
+          {/* Garments Grid */}
+          {isGroupedByClient && groupedData ? (
+            // Grouped view by client name
+            <Box>
+              {groupedData.sortedClientNames.map((clientName) => {
+                const clientGarments = groupedData.groups[clientName] || [];
+                return (
+                  <Box key={clientName} sx={{ mb: 4 }}>
+                    {/* Client Name Header */}
+                    <Box
+                      sx={{
+                        borderBottom: 2,
+                        borderColor: 'divider',
+                        pb: 1,
+                        mb: 2,
+                        display: 'flex',
+                        alignItems: 'baseline',
+                        gap: 1,
+                      }}
+                    >
+                      <Typography variant="h6" component="h2">
+                        {clientName}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        ({clientGarments.length} garment
+                        {clientGarments.length !== 1 ? 's' : ''})
+                      </Typography>
+                    </Box>
+
+                    {/* Garments for this client */}
+                    <Grid
+                      container
+                      spacing={3}
+                      columns={{ xs: 4, sm: 8, md: 12, lg: 20 }}
+                    >
+                      {clientGarments.map((garment) => (
+                        <Grid item xs={4} sm={4} md={4} lg={4} key={garment.id}>
+                          <GarmentCard
+                            garment={garment}
+                            orderId={garment.order_id}
+                            stageColor={getStageColor(
+                              (garment.stage_name || 'New') as any
+                            )}
+                          />
+                        </Grid>
+                      ))}
+                    </Grid>
+                  </Box>
+                );
+              })}
+            </Box>
+          ) : (
+            // Regular grid view
             <Grid
               container
               spacing={3}
               columns={{ xs: 4, sm: 8, md: 12, lg: 20 }}
             >
-              {groupedGarments.groups[clientName]?.map((garment) => (
+              {filteredGarments.map((garment) => (
                 <Grid item xs={4} sm={4} md={4} lg={4} key={garment.id}>
                   <GarmentCard
                     garment={garment}
@@ -325,20 +419,20 @@ export default function GarmentsPage() {
                 </Grid>
               ))}
             </Grid>
-          </Box>
-        ))
-      ) : (
-        <Grid container spacing={3} columns={{ xs: 4, sm: 8, md: 12, lg: 20 }}>
-          {filteredGarments.map((garment) => (
-            <Grid item xs={4} sm={4} md={4} lg={4} key={garment.id}>
-              <GarmentCard
-                garment={garment}
-                orderId={garment.order_id}
-                stageColor={getStageColor((garment.stage_name || 'New') as any)}
-              />
-            </Grid>
-          ))}
-        </Grid>
+          )}
+
+          {/* Infinite Scroll Trigger */}
+          <InfiniteScrollTrigger
+            onLoadMore={fetchNextPage}
+            hasMore={hasNextPage || false}
+            isLoading={isFetchingNextPage}
+            error={isError ? error : null}
+            loadMoreText="Load more garments"
+            loadingText="Loading more garments..."
+            endText={`All ${totalCount || filteredGarments.length} garments loaded`}
+            errorText="Failed to load more garments"
+          />
+        </>
       )}
     </Box>
   );

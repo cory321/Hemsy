@@ -28,7 +28,7 @@ interface GarmentCardProps {
     event_date?: string;
     services?: any[];
     stage?: GarmentStage;
-    stage_name?: string;
+    stage_name?: string | undefined;
   };
   orderId: string;
   stageColor?: string;
@@ -75,6 +75,7 @@ const GarmentCard: React.FC<GarmentCardProps> = ({
 
   return (
     <Card
+      data-testid="garment-card"
       sx={{
         height: '100%',
         display: 'flex',
@@ -178,7 +179,7 @@ const GarmentCard: React.FC<GarmentCardProps> = ({
 
       <CardContent sx={{ flexGrow: 1, p: 2 }}>
         {/* Garment Name */}
-        <Typography variant="h6" gutterBottom noWrap>
+        <Typography variant="h6" gutterBottom noWrap data-testid="garment-name">
           {garment.name}
         </Typography>
 

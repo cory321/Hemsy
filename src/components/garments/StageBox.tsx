@@ -22,6 +22,8 @@ const StageBox: React.FC<StageBoxProps> = ({
     <>
       <Box
         onClick={onClick}
+        data-testid="stage-box"
+        className={isSelected ? 'selected' : ''}
         sx={{
           backgroundColor: stage.color || '#f5f5f5',
           padding: '16px 24px',
