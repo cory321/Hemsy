@@ -49,6 +49,8 @@ export async function ensureUserAndShop(): Promise<UserWithShop> {
           clerk_user_id: userId,
           email: clerkUser.emailAddresses[0]?.emailAddress || '',
           role: 'user',
+          first_name: clerkUser.firstName || 'User',
+          last_name: clerkUser.lastName || '',
         },
         {
           onConflict: 'clerk_user_id',

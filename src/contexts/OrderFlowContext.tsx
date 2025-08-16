@@ -18,7 +18,7 @@ export interface ServiceLine {
   name: string;
   description?: string;
   quantity: number;
-  unit: 'item' | 'hour' | 'day' | 'week';
+  unit: 'item' | 'hour' | 'day';
   unitPriceCents: number;
   inline?: {
     name: string;

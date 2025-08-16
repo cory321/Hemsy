@@ -58,28 +58,28 @@ export function ClientSearchField({
       return;
     }
 
-    // Cancel previous search
+    // Cancel previous search and create a new controller for this request
     if (searchRef.current) {
       searchRef.current.abort();
     }
-
-    // Create new abort controller
-    searchRef.current = new AbortController();
+    const controller = new AbortController();
+    searchRef.current = controller;
 
     const performSearch = async () => {
       setLoading(true);
       try {
         const results = await searchClients(debouncedSearch);
-        if (!searchRef.current?.signal.aborted) {
+        // Only update if this is still the latest request
+        if (searchRef.current === controller && !controller.signal.aborted) {
           setOptions(results);
         }
       } catch (error) {
-        if (!searchRef.current?.signal.aborted) {
+        if (searchRef.current === controller && !controller.signal.aborted) {
           console.error('Failed to search clients:', error);
           setOptions([]);
         }
       } finally {
-        if (!searchRef.current?.signal.aborted) {
+        if (searchRef.current === controller && !controller.signal.aborted) {
           setLoading(false);
         }
       }

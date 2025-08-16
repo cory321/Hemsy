@@ -12,8 +12,6 @@ export function pluralizeUnit(unit: ServiceUnitType, quantity: number): string {
       return 'hours';
     case SERVICE_UNIT_TYPES.DAY:
       return 'days';
-    case SERVICE_UNIT_TYPES.WEEK:
-      return 'weeks';
     default:
       return unit;
   }

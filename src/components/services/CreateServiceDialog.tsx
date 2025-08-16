@@ -30,6 +30,7 @@ import {
 } from '@/lib/utils/currency';
 import { Service } from '@/lib/utils/serviceUtils';
 import { addService } from '@/lib/actions/services';
+import ServicePriceInput from '@/components/common/ServicePriceInput';
 
 interface CreateServiceDialogProps {
   open: boolean;
@@ -53,8 +54,7 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
   });
 
   const [isLoading, setIsLoading] = useState(false);
-  const [displayUnitPrice, setDisplayUnitPrice] = useState('0.00');
-  const [isUnitPriceFocused, setIsUnitPriceFocused] = useState(false);
+  const [price, setPrice] = useState('0.00');
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -69,28 +69,19 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
     }
   };
 
-  const handleUnitPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawValue = e.target.value;
-    const formattedValue = formatAsCurrency(rawValue);
-
-    setDisplayUnitPrice(formattedValue);
+  const handlePriceChange = (newPrice: string) => {
+    setPrice(newPrice);
     setNewService((prev) => ({
       ...prev,
-      unit_price: parseFloatFromCurrency(rawValue),
+      unit_price: parseFloatFromCurrency(newPrice),
     }));
   };
 
-  const handleUnitPriceFocus = () => {
-    setIsUnitPriceFocused(true);
-
-    if (displayUnitPrice === '0.00' || displayUnitPrice === '') {
-      setDisplayUnitPrice('');
-    }
-  };
-
-  const handleUnitPriceBlur = () => {
-    setIsUnitPriceFocused(false);
-    formatUnitPrice(displayUnitPrice, setDisplayUnitPrice, setNewService);
+  const handleUnitChange = (newUnit: 'item' | 'hour' | 'day') => {
+    setNewService((prev) => ({
+      ...prev,
+      unit: newUnit,
+    }));
   };
 
   const handleSubmit = async () => {
@@ -132,7 +123,7 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
         unit: SERVICE_UNIT_TYPES.ITEM,
         unit_price: 0,
       });
-      setDisplayUnitPrice('0.00');
+      setPrice('0.00');
 
       toast.success(
         `${newServiceItem.name} has been added to your service catalog.`
@@ -214,63 +205,12 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
             rows={2}
           />
 
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <TextField
-              label="Quantity"
-              type="number"
-              fullWidth
-              variant="outlined"
-              name="qty"
-              value={newService.qty}
-              onChange={handleChange}
-              disabled={isLoading}
-              inputProps={{ min: 1 }}
-            />
-
-            <TextField
-              select
-              label="Unit"
-              fullWidth
-              variant="outlined"
-              name="unit"
-              value={newService.unit}
-              onChange={(e) =>
-                setNewService((prev) => ({
-                  ...prev,
-                  unit: e.target.value as any,
-                }))
-              }
-              disabled={isLoading}
-            >
-              {Object.values(SERVICE_UNIT_TYPES).map((unit) => (
-                <MenuItem key={unit} value={unit}>
-                  {unit}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Box>
-
-          <TextField
-            label="Unit Price"
-            type="text"
-            fullWidth
-            variant="outlined"
-            name="unit_price"
-            value={
-              isUnitPriceFocused
-                ? displayUnitPrice
-                : formatAsCurrency(displayUnitPrice)
-            }
-            onChange={handleUnitPriceChange}
-            onFocus={handleUnitPriceFocus}
-            onBlur={handleUnitPriceBlur}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">$</InputAdornment>
-              ),
-            }}
+          <ServicePriceInput
+            price={price}
+            unit={newService.unit as 'item' | 'hour' | 'day'}
+            onPriceChange={handlePriceChange}
+            onUnitChange={handleUnitChange}
             disabled={isLoading}
-            required
           />
 
           <Typography variant="h6" sx={{ mt: 2 }}>

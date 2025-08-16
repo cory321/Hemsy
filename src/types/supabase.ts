@@ -323,6 +323,64 @@ export type Database = {
           },
         ];
       };
+      garment_history: {
+        Row: {
+          change_type: string;
+          changed_at: string;
+          changed_by: string;
+          field_name: string;
+          garment_id: string;
+          id: string;
+          new_value: Json | null;
+          old_value: Json | null;
+          related_service_id: string | null;
+        };
+        Insert: {
+          change_type: string;
+          changed_at?: string;
+          changed_by: string;
+          field_name: string;
+          garment_id: string;
+          id?: string;
+          new_value?: Json | null;
+          old_value?: Json | null;
+          related_service_id?: string | null;
+        };
+        Update: {
+          change_type?: string;
+          changed_at?: string;
+          changed_by?: string;
+          field_name?: string;
+          garment_id?: string;
+          id?: string;
+          new_value?: Json | null;
+          old_value?: Json | null;
+          related_service_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'garment_history_changed_by_fkey';
+            columns: ['changed_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'garment_history_garment_id_fkey';
+            columns: ['garment_id'];
+            isOneToOne: false;
+            referencedRelation: 'garments';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'garment_history_related_service_id_fkey';
+            columns: ['related_service_id'];
+            isOneToOne: false;
+            referencedRelation: 'garment_services';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       garment_service_time_entries: {
         Row: {
           created_by: string | null;
@@ -878,6 +936,10 @@ export type Database = {
         }[];
       };
       initialize_default_email_templates: {
+        Args: { user_id: string };
+        Returns: undefined;
+      };
+      set_current_user_id: {
         Args: { user_id: string };
         Returns: undefined;
       };

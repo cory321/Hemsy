@@ -10,13 +10,13 @@ import { ensureUserAndShop } from './users';
 const ServiceInlineSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
-  unit: z.enum(['item', 'hour', 'day', 'week']),
+  unit: z.enum(['item', 'hour', 'day']),
   unitPriceCents: z.number().int().min(0),
 });
 
 const ServiceLineSchema = z.object({
   quantity: z.number().int().min(1),
-  unit: z.enum(['item', 'hour', 'day', 'week']),
+  unit: z.enum(['item', 'hour', 'day']),
   unitPriceCents: z.number().int().min(0),
   serviceId: z.string().uuid().optional(),
   inline: ServiceInlineSchema.optional(),
@@ -89,7 +89,7 @@ export async function createOrder(
       presetFillColor?: string;
       services: {
         quantity: number;
-        unit: 'item' | 'hour' | 'day' | 'week';
+        unit: 'item' | 'hour' | 'day';
         unitPriceCents: number;
         serviceId?: string;
         inline?: { name: string; description?: string };
@@ -264,7 +264,7 @@ export async function searchServices(query: string): Promise<
 const AddServiceInputSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
-  defaultUnit: z.enum(['item', 'hour', 'day', 'week']).default('item'),
+  defaultUnit: z.enum(['item', 'hour', 'day']).default('item'),
   defaultQty: z.number().int().min(1).default(1),
   defaultUnitPriceCents: z.number().int().min(0).default(0),
   frequentlyUsed: z.boolean().optional(),

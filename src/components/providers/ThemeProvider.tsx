@@ -139,7 +139,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   return (
     <AppRouterCacheProvider>
       <MUIThemeProvider theme={theme}>
-        <CssBaseline />
+        <CssBaseline enableColorScheme={false} />
         {children}
       </MUIThemeProvider>
     </AppRouterCacheProvider>

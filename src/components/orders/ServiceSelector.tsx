@@ -71,9 +71,9 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
   const [quickAddName, setQuickAddName] = useState('');
   const [quickAddPrice, setQuickAddPrice] = useState('0.00');
   const [quickAddPriceFocused, setQuickAddPriceFocused] = useState(false);
-  const [quickAddUnit, setQuickAddUnit] = useState<
-    'item' | 'hour' | 'day' | 'week'
-  >('item');
+  const [quickAddUnit, setQuickAddUnit] = useState<'item' | 'hour' | 'day'>(
+    'item'
+  );
   const [quickAddToCatalog, setQuickAddToCatalog] = useState(true);
   const [quickAddFrequentlyUsed, setQuickAddFrequentlyUsed] = useState(false);
 
@@ -385,7 +385,6 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
                         <MenuItem value="item">item</MenuItem>
                         <MenuItem value="hour">hour</MenuItem>
                         <MenuItem value="day">day</MenuItem>
-                        <MenuItem value="week">week</MenuItem>
                       </Select>
                     </Grid>
                     <Grid item xs={4} sm={3}>
@@ -498,7 +497,6 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
                 <MenuItem value="item">per item</MenuItem>
                 <MenuItem value="hour">per hour</MenuItem>
                 <MenuItem value="day">per day</MenuItem>
-                <MenuItem value="week">per week</MenuItem>
               </Select>
             </Box>
             <FormControlLabel

@@ -1,9 +1,27 @@
 export const formatAsCurrency = (value: string | number): string => {
-  const numericValue = value.toString().replace(/[^0-9.]/g, '');
+  // Remove all non-numeric characters except periods
+  let numericValue = value.toString().replace(/[^0-9.]/g, '');
+
+  // If there are multiple periods, keep only the first one
+  const firstPeriodIndex = numericValue.indexOf('.');
+  if (firstPeriodIndex !== -1) {
+    numericValue =
+      numericValue.substring(0, firstPeriodIndex + 1) +
+      numericValue.substring(firstPeriodIndex + 1).replace(/\./g, '');
+  }
+
+  // Add leading zero if string starts with period
+  if (numericValue.startsWith('.')) {
+    numericValue = '0' + numericValue;
+  }
+
   const parts = numericValue.split('.');
 
   if (parts[0]) {
     parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  } else if (parts.length > 1) {
+    // If there's no whole number part but there is a decimal, add zero
+    parts[0] = '0';
   }
 
   if (parts[1]) {
@@ -14,7 +32,18 @@ export const formatAsCurrency = (value: string | number): string => {
 };
 
 export const parseFloatFromCurrency = (value: string | number): number => {
-  return parseFloat(value.toString().replace(/[^0-9.]/g, '')) || 0;
+  // Remove all non-numeric characters except periods
+  let numericValue = value.toString().replace(/[^0-9.]/g, '');
+
+  // If there are multiple periods, keep only the first one
+  const firstPeriodIndex = numericValue.indexOf('.');
+  if (firstPeriodIndex !== -1) {
+    numericValue =
+      numericValue.substring(0, firstPeriodIndex + 1) +
+      numericValue.substring(firstPeriodIndex + 1).replace(/\./g, '');
+  }
+
+  return parseFloat(numericValue) || 0;
 };
 
 export const formatCurrency = (value: number): string => {

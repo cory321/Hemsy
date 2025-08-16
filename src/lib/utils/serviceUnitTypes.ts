@@ -2,7 +2,6 @@ export const SERVICE_UNIT_TYPES = {
   ITEM: 'item',
   HOUR: 'hour',
   DAY: 'day',
-  WEEK: 'week',
 } as const;
 
 export type ServiceUnitType =

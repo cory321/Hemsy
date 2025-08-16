@@ -32,6 +32,7 @@ import {
   parseFloatFromCurrency,
   formatUnitPrice,
 } from '@/lib/utils/currency';
+import ServicePriceInput from '@/components/common/ServicePriceInput';
 
 interface EditServiceDialogProps {
   service: Service;
@@ -55,14 +56,13 @@ const EditServiceDialog: React.FC<EditServiceDialogProps> = ({
   const [isFrequentlyUsed, setIsFrequentlyUsed] = useState(
     service.frequently_used || false
   );
-  const [displayUnitPrice, setDisplayUnitPrice] = useState('0.00');
-  const [isUnitPriceFocused, setIsUnitPriceFocused] = useState(false);
+  const [price, setPrice] = useState('0.00');
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const formData = convertServiceForForm(service);
     setEditedService(formData);
-    setDisplayUnitPrice(formData.unit_price.toFixed(2));
+    setPrice(formData.unit_price.toFixed(2));
     setIsFrequentlyUsed(service.frequently_used || false);
   }, [service]);
 
@@ -79,27 +79,19 @@ const EditServiceDialog: React.FC<EditServiceDialogProps> = ({
     }
   };
 
-  const handleUnitPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawValue = e.target.value;
-    const formattedValue = formatAsCurrency(rawValue);
-
-    setDisplayUnitPrice(formattedValue);
+  const handlePriceChange = (newPrice: string) => {
+    setPrice(newPrice);
     setEditedService((prev) => ({
       ...prev,
-      unit_price: parseFloatFromCurrency(rawValue),
+      unit_price: parseFloatFromCurrency(newPrice),
     }));
   };
 
-  const handleUnitPriceFocus = () => {
-    setIsUnitPriceFocused(true);
-    if (displayUnitPrice === '0.00' || displayUnitPrice === '') {
-      setDisplayUnitPrice('');
-    }
-  };
-
-  const handleUnitPriceBlur = () => {
-    setIsUnitPriceFocused(false);
-    formatUnitPrice(displayUnitPrice, setDisplayUnitPrice, setEditedService);
+  const handleUnitChange = (newUnit: 'item' | 'hour' | 'day') => {
+    setEditedService((prev) => ({
+      ...prev,
+      unit: newUnit,
+    }));
   };
 
   const handleSave = async () => {
@@ -162,60 +154,12 @@ const EditServiceDialog: React.FC<EditServiceDialogProps> = ({
             fullWidth
           />
 
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <TextField
-              label="Default Quantity"
-              name="qty"
-              type="number"
-              value={editedService.qty}
-              onChange={handleChange}
-              disabled={isLoading}
-              inputProps={{ min: 1 }}
-              sx={{ flex: 1 }}
-            />
-
-            <TextField
-              select
-              label="Unit"
-              name="unit"
-              value={editedService.unit}
-              onChange={(e) =>
-                setEditedService((prev) => ({
-                  ...prev,
-                  unit: e.target.value as any,
-                }))
-              }
-              disabled={isLoading}
-              sx={{ flex: 1 }}
-            >
-              {Object.values(SERVICE_UNIT_TYPES).map((unit) => (
-                <MenuItem key={unit} value={unit}>
-                  {unit}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Box>
-
-          <TextField
-            label="Unit Price"
-            name="unit_price"
-            type="text"
-            value={
-              isUnitPriceFocused
-                ? displayUnitPrice
-                : formatAsCurrency(displayUnitPrice)
-            }
-            onChange={handleUnitPriceChange}
-            onFocus={handleUnitPriceFocus}
-            onBlur={handleUnitPriceBlur}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">$</InputAdornment>
-              ),
-            }}
+          <ServicePriceInput
+            price={price}
+            unit={editedService.unit as 'item' | 'hour' | 'day'}
+            onPriceChange={handlePriceChange}
+            onUnitChange={handleUnitChange}
             disabled={isLoading}
-            required
-            fullWidth
           />
 
           <FormControlLabel

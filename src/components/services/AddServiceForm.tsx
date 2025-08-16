@@ -27,6 +27,7 @@ import {
   formatUnitPrice,
 } from '@/lib/utils/currency';
 import { addService } from '@/lib/actions/services';
+import ServicePriceInput from '@/components/common/ServicePriceInput';
 
 interface AddServiceFormProps {
   setServices: React.Dispatch<React.SetStateAction<Service[]>>;
@@ -46,32 +47,22 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
   });
 
   const [isLoading, setIsLoading] = useState(false);
-  const [displayUnitPrice, setDisplayUnitPrice] = useState('0.00');
-  const [isUnitPriceFocused, setIsUnitPriceFocused] = useState(false);
+  const [price, setPrice] = useState('0.00');
   const [isFrequentlyUsed, setIsFrequentlyUsed] = useState(false);
 
-  const handleUnitPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawValue = e.target.value;
-    const formattedValue = formatAsCurrency(rawValue);
-
-    setDisplayUnitPrice(formattedValue);
+  const handlePriceChange = (newPrice: string) => {
+    setPrice(newPrice);
     setNewService((prev) => ({
       ...prev,
-      unit_price: parseFloatFromCurrency(rawValue),
+      unit_price: parseFloatFromCurrency(newPrice),
     }));
   };
 
-  const handleUnitPriceFocus = () => {
-    setIsUnitPriceFocused(true);
-
-    if (displayUnitPrice === '0.00' || displayUnitPrice === '') {
-      setDisplayUnitPrice('');
-    }
-  };
-
-  const handleUnitPriceBlur = () => {
-    setIsUnitPriceFocused(false);
-    formatUnitPrice(displayUnitPrice, setDisplayUnitPrice, setNewService);
+  const handleUnitChange = (newUnit: 'item' | 'hour' | 'day') => {
+    setNewService((prev) => ({
+      ...prev,
+      unit: newUnit,
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -105,7 +96,7 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
         unit: SERVICE_UNIT_TYPES.ITEM,
         unit_price: 0,
       });
-      setDisplayUnitPrice('0.00');
+      setPrice('0.00');
       setIsFrequentlyUsed(false);
       onClose();
       toast.success(
@@ -156,55 +147,12 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
         fullWidth
       />
 
-      <Box sx={{ display: 'flex', gap: 2 }}>
-        <TextField
-          label="Default Quantity"
-          name="qty"
-          type="number"
-          onChange={(e) => handleChange(e, setNewService)}
-          value={newService.qty.toString()}
-          disabled={isLoading}
-          inputProps={{ min: 1 }}
-          sx={{ flex: 1 }}
-        />
-
-        <TextField
-          select
-          label="Unit"
-          name="unit"
-          onChange={(e) =>
-            setNewService((prev) => ({ ...prev, unit: e.target.value as any }))
-          }
-          value={newService.unit}
-          disabled={isLoading}
-          sx={{ flex: 1 }}
-        >
-          {Object.values(SERVICE_UNIT_TYPES).map((unit) => (
-            <MenuItem key={unit} value={unit}>
-              {unit}
-            </MenuItem>
-          ))}
-        </TextField>
-      </Box>
-
-      <TextField
-        label="Unit Price"
-        name="unit_price"
-        type="text"
-        onChange={handleUnitPriceChange}
-        onFocus={handleUnitPriceFocus}
-        onBlur={handleUnitPriceBlur}
-        value={
-          isUnitPriceFocused
-            ? displayUnitPrice
-            : formatAsCurrency(displayUnitPrice)
-        }
+      <ServicePriceInput
+        price={price}
+        unit={newService.unit as 'item' | 'hour' | 'day'}
+        onPriceChange={handlePriceChange}
+        onUnitChange={handleUnitChange}
         disabled={isLoading}
-        InputProps={{
-          startAdornment: <InputAdornment position="start">$</InputAdornment>,
-        }}
-        required
-        fullWidth
       />
 
       <FormControlLabel

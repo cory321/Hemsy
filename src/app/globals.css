@@ -29,15 +29,22 @@ a {
 /* CSS Custom Properties for theming */
 :root {
   --foreground-rgb: 96, 81, 67; /* #605143 */
+  --foreground: rgb(96, 81, 67); /* #605143 */
   --background-start-rgb: 214, 219, 220;
   --background-end-rgb: 255, 255, 255;
+  /* Pin the app to light mode regardless of system preference */
+  color-scheme: light;
 }
 
+/* Removed dark mode styles as the app uses a consistent light theme via Material UI */
+
+/* Guard against global stylesheets injecting dark-mode backgrounds */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
+  html,
+  body {
+    background-color: #fff7ee !important;
+    background-image: none !important;
+    color: var(--foreground);
   }
 }
 

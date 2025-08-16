@@ -217,7 +217,8 @@ const GarmentCard: React.FC<GarmentCardProps> = ({
         {/* Event Date */}
         {garment.event_date && (
           <Typography variant="caption" color="text.secondary" display="block">
-            Event: {new Date(garment.event_date).toLocaleDateString()}
+            Event:{' '}
+            {new Date(garment.event_date + 'T12:00:00').toLocaleDateString()}
           </Typography>
         )}
 
