@@ -21,15 +21,20 @@ import {
   Alert,
   Divider,
   InputAdornment,
+  Chip,
+  LinearProgress,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import {
   addServiceToGarment,
   removeServiceFromGarment,
   updateGarmentService,
 } from '@/lib/actions/garments';
+import { toggleServiceCompletion } from '@/lib/actions/garment-services';
 import { searchServices } from '@/lib/actions/services';
 import { useRouter } from 'next/navigation';
 import { parseFloatFromCurrency } from '@/lib/utils/currency';
@@ -43,6 +48,7 @@ interface Service {
   unit_price_cents: number;
   line_total_cents: number;
   description?: string | null;
+  is_done?: boolean;
 }
 
 interface GarmentServicesManagerProps {
@@ -136,6 +142,32 @@ export default function GarmentServicesManager({
     }
   };
 
+  const handleToggleCompletion = async (
+    serviceId: string,
+    currentStatus: boolean
+  ) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await toggleServiceCompletion({
+        garmentServiceId: serviceId,
+        isDone: !currentStatus,
+      });
+
+      if (result.success) {
+        router.refresh();
+        onServiceChange?.();
+      } else {
+        setError(result.error || 'Failed to update service completion');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleRemoveService = async (serviceId: string) => {
     if (!confirm('Are you sure you want to remove this service?')) return;
 
@@ -197,6 +229,11 @@ export default function GarmentServicesManager({
     0
   );
 
+  const completedCount = services.filter((s) => s.is_done).length;
+  const totalCount = services.length;
+  const completionPercentage =
+    totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+
   return (
     <Card>
       <CardContent>
@@ -219,6 +256,27 @@ export default function GarmentServicesManager({
           </Button>
         </Box>
 
+        {/* Progress Indicator */}
+        {totalCount > 0 && (
+          <Box sx={{ mb: 2 }}>
+            <Box
+              sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                Progress
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {completedCount} of {totalCount} completed
+              </Typography>
+            </Box>
+            <LinearProgress
+              variant="determinate"
+              value={completionPercentage}
+              sx={{ height: 8, borderRadius: 4 }}
+            />
+          </Box>
+        )}
+
         {error && (
           <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
             {error}
@@ -232,8 +290,41 @@ export default function GarmentServicesManager({
                 <ListItem
                   key={service.id}
                   divider={index < services.length - 1}
+                  sx={{
+                    opacity: service.is_done ? 0.6 : 1,
+                    transition: 'opacity 0.3s ease',
+                  }}
                   secondaryAction={
-                    <Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {service.is_done && (
+                        <Chip
+                          label="Completed"
+                          size="small"
+                          color="success"
+                          sx={{ mr: 1 }}
+                        />
+                      )}
+                      <Button
+                        size="small"
+                        variant={service.is_done ? 'outlined' : 'contained'}
+                        onClick={() =>
+                          handleToggleCompletion(
+                            service.id,
+                            service.is_done || false
+                          )
+                        }
+                        disabled={loading}
+                        startIcon={
+                          service.is_done ? (
+                            <CheckCircleIcon />
+                          ) : (
+                            <RadioButtonUncheckedIcon />
+                          )
+                        }
+                        sx={{ minWidth: '140px' }}
+                      >
+                        {service.is_done ? 'Mark Incomplete' : 'Mark Complete'}
+                      </Button>
                       <IconButton
                         edge="end"
                         onClick={() => {
@@ -243,31 +334,36 @@ export default function GarmentServicesManager({
                           );
                         }}
                         disabled={loading}
+                        size="small"
                       >
-                        <EditIcon />
+                        <EditIcon fontSize="small" />
                       </IconButton>
                       <IconButton
                         edge="end"
                         onClick={() => handleRemoveService(service.id)}
                         disabled={loading}
+                        size="small"
                       >
-                        <DeleteIcon />
+                        <DeleteIcon fontSize="small" />
                       </IconButton>
                     </Box>
                   }
                 >
-                  <ListItemText
-                    primary={service.name}
-                    secondary={
-                      <>
-                        {service.quantity} {service.unit}
-                        {service.quantity > 1 ? 's' : ''} @ $
-                        {(service.unit_price_cents / 100).toFixed(2)}/
-                        {service.unit}
-                        {service.description && ` • ${service.description}`}
-                      </>
-                    }
-                  />
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {service.is_done && <CheckCircleIcon color="success" />}
+                    <ListItemText
+                      primary={service.name}
+                      secondary={
+                        <>
+                          {service.quantity} {service.unit}
+                          {service.quantity > 1 ? 's' : ''} @ $
+                          {(service.unit_price_cents / 100).toFixed(2)}/
+                          {service.unit}
+                          {service.description && ` • ${service.description}`}
+                        </>
+                      }
+                    />
+                  </Box>
                   <Typography variant="body1" sx={{ mr: 2 }}>
                     ${(service.line_total_cents / 100).toFixed(2)}
                   </Typography>

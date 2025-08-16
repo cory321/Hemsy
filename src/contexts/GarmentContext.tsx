@@ -8,6 +8,7 @@ import {
   removeServiceFromGarment,
   updateGarmentService,
 } from '@/lib/actions/garments';
+import { toggleServiceCompletion } from '@/lib/actions/garment-services';
 
 interface Service {
   id: string;
@@ -17,6 +18,7 @@ interface Service {
   unit_price_cents: number;
   line_total_cents: number;
   description?: string | null;
+  is_done?: boolean;
 }
 
 interface Garment {
@@ -62,6 +64,7 @@ interface GarmentContextType {
     serviceId: string,
     updates: Partial<Service>
   ) => Promise<void>;
+  toggleServiceComplete: (serviceId: string, isDone: boolean) => Promise<void>;
   refreshHistory: () => void;
   historyKey: number;
 }
@@ -334,6 +337,67 @@ export function GarmentProvider({
     [garment, refreshHistory]
   );
 
+  const toggleServiceComplete = useCallback(
+    async (serviceId: string, isDone: boolean) => {
+      // Find the service to update
+      const serviceIndex = garment.garment_services.findIndex(
+        (s) => s.id === serviceId
+      );
+      if (serviceIndex === -1) return;
+
+      // Optimistically update the UI
+      const previousGarment = garment;
+      const updatedServices = [...garment.garment_services];
+      updatedServices[serviceIndex] = {
+        ...updatedServices[serviceIndex],
+        is_done: isDone,
+      } as Service;
+
+      // Calculate new stage based on service completion
+      const completedCount = updatedServices.filter((s) => s.is_done).length;
+      const totalCount = updatedServices.length;
+      let newStage: string;
+      if (completedCount === 0) {
+        newStage = 'New';
+      } else if (completedCount === totalCount && totalCount > 0) {
+        newStage = 'Ready For Pickup';
+      } else {
+        newStage = 'In Progress';
+      }
+
+      setGarment((prev) => ({
+        ...prev,
+        garment_services: updatedServices,
+        stage: newStage,
+      }));
+
+      try {
+        const result = await toggleServiceCompletion({
+          garmentServiceId: serviceId,
+          isDone: isDone,
+        });
+
+        if (!result.success) {
+          // Rollback on failure
+          setGarment(previousGarment);
+          toast.error(result.error || 'Failed to update service completion');
+        } else {
+          refreshHistory();
+          toast.success(
+            isDone
+              ? 'Service marked as complete'
+              : 'Service marked as incomplete'
+          );
+        }
+      } catch (error) {
+        // Rollback on error
+        setGarment(previousGarment);
+        toast.error('An unexpected error occurred');
+      }
+    },
+    [garment, refreshHistory]
+  );
+
   return (
     <GarmentContext.Provider
       value={{
@@ -343,6 +407,7 @@ export function GarmentProvider({
         addService,
         removeService,
         updateService,
+        toggleServiceComplete,
         refreshHistory,
         historyKey,
       }}

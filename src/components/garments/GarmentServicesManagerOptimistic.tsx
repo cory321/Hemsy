@@ -26,10 +26,14 @@ import {
   FormControlLabel,
   Checkbox,
   InputAdornment,
+  Chip,
+  LinearProgress,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import { searchServices } from '@/lib/actions/services';
 import { useGarment } from '@/contexts/GarmentContext';
 import { SERVICE_UNIT_TYPES } from '@/lib/utils/serviceUnitTypes';
@@ -44,10 +48,17 @@ interface Service {
   unit_price_cents: number;
   line_total_cents: number;
   description?: string | null;
+  is_done?: boolean;
 }
 
 export default function GarmentServicesManagerOptimistic() {
-  const { garment, addService, removeService, updateService } = useGarment();
+  const {
+    garment,
+    addService,
+    removeService,
+    updateService,
+    toggleServiceComplete,
+  } = useGarment();
   const [loading, setLoading] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
@@ -179,6 +190,13 @@ export default function GarmentServicesManagerOptimistic() {
     0
   );
 
+  const completedCount = garment.garment_services.filter(
+    (s: Service) => s.is_done
+  ).length;
+  const totalCount = garment.garment_services.length;
+  const completionPercentage =
+    totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+
   return (
     <Card>
       <CardContent>
@@ -201,6 +219,27 @@ export default function GarmentServicesManagerOptimistic() {
           </Button>
         </Box>
 
+        {/* Progress Indicator */}
+        {totalCount > 0 && (
+          <Box sx={{ mb: 2 }}>
+            <Box
+              sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                Progress
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {completedCount} of {totalCount} completed
+              </Typography>
+            </Box>
+            <LinearProgress
+              variant="determinate"
+              value={completionPercentage}
+              sx={{ height: 8, borderRadius: 4 }}
+            />
+          </Box>
+        )}
+
         {garment.garment_services.length > 0 ? (
           <>
             <List>
@@ -209,8 +248,42 @@ export default function GarmentServicesManagerOptimistic() {
                   <ListItem
                     key={service.id}
                     divider={index < garment.garment_services.length - 1}
+                    sx={{
+                      opacity: service.is_done ? 0.6 : 1,
+                      transition: 'opacity 0.3s ease',
+                    }}
                     secondaryAction={
-                      <Box>
+                      <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                      >
+                        {service.is_done && (
+                          <Chip
+                            label="Completed"
+                            size="small"
+                            color="success"
+                            sx={{ mr: 1 }}
+                          />
+                        )}
+                        <Button
+                          size="small"
+                          variant={service.is_done ? 'outlined' : 'contained'}
+                          onClick={() =>
+                            toggleServiceComplete(service.id, !service.is_done)
+                          }
+                          disabled={loading}
+                          startIcon={
+                            service.is_done ? (
+                              <CheckCircleIcon />
+                            ) : (
+                              <RadioButtonUncheckedIcon />
+                            )
+                          }
+                          sx={{ minWidth: '140px' }}
+                        >
+                          {service.is_done
+                            ? 'Mark Incomplete'
+                            : 'Mark Complete'}
+                        </Button>
                         <IconButton
                           edge="end"
                           onClick={() => {
@@ -220,38 +293,43 @@ export default function GarmentServicesManagerOptimistic() {
                             );
                           }}
                           disabled={loading}
+                          size="small"
                         >
-                          <EditIcon />
+                          <EditIcon fontSize="small" />
                         </IconButton>
                         <IconButton
                           edge="end"
                           onClick={() => openDeleteConfirmation(service)}
                           disabled={loading}
+                          size="small"
                         >
-                          <DeleteIcon />
+                          <DeleteIcon fontSize="small" />
                         </IconButton>
                       </Box>
                     }
                   >
-                    <ListItemText
-                      primary={service.name}
-                      secondary={
-                        <>
-                          {service.quantity} {service.unit} × $
-                          {(service.unit_price_cents / 100).toFixed(2)} = $
-                          {(service.line_total_cents / 100).toFixed(2)}
-                          {service.description && (
-                            <Box
-                              component="span"
-                              display="block"
-                              sx={{ mt: 0.5 }}
-                            >
-                              {service.description}
-                            </Box>
-                          )}
-                        </>
-                      }
-                    />
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {service.is_done && <CheckCircleIcon color="success" />}
+                      <ListItemText
+                        primary={service.name}
+                        secondary={
+                          <>
+                            {service.quantity} {service.unit} × $
+                            {(service.unit_price_cents / 100).toFixed(2)} = $
+                            {(service.line_total_cents / 100).toFixed(2)}
+                            {service.description && (
+                              <Box
+                                component="span"
+                                display="block"
+                                sx={{ mt: 0.5 }}
+                              >
+                                {service.description}
+                              </Box>
+                            )}
+                          </>
+                        }
+                      />
+                    </Box>
                   </ListItem>
                 )
               )}

@@ -84,6 +84,8 @@ export default function GarmentHistory({ garmentId }: GarmentHistoryProps) {
       return { icon: <UpdateIcon />, color: '#2196F3' };
     if (fieldName === 'event_date')
       return { icon: <EventIcon />, color: '#2196F3' };
+    if (fieldName === 'stage')
+      return { icon: <UpdateIcon />, color: '#2196F3' };
 
     // Default for other field updates
     return { icon: <EditIcon />, color: '#FF9800' };
@@ -102,7 +104,15 @@ export default function GarmentHistory({ garmentId }: GarmentHistoryProps) {
       }
     }
 
-    const time = format(new Date(entry.changed_at), 'h:mm a');
+    // Safely format the time with validation
+    let time = 'Unknown time';
+    if (entry.changed_at) {
+      const date = new Date(entry.changed_at);
+      if (!isNaN(date.getTime())) {
+        time = format(date, 'h:mm a');
+      }
+    }
+
     const { icon, color } = getChangeIcon(entry.change_type, entry.field_name);
 
     let title = '';
@@ -117,6 +127,7 @@ export default function GarmentHistory({ garmentId }: GarmentHistoryProps) {
           icon: 'Icon',
           fill_color: 'Icon color',
           notes: 'Notes',
+          stage: 'Stage',
         };
 
         const fieldLabel = fieldLabels[entry.field_name] || entry.field_name;
@@ -126,22 +137,49 @@ export default function GarmentHistory({ garmentId }: GarmentHistoryProps) {
           detail = `"${entry.old_value || ''}" → "${entry.new_value || ''}"`;
         } else if (entry.field_name === 'due_date') {
           title = 'Due date';
-          const oldDate = entry.old_value
-            ? format(new Date(entry.old_value + 'T12:00:00'), 'M/d/yy')
-            : 'not set';
-          const newDate = entry.new_value
-            ? format(new Date(entry.new_value + 'T12:00:00'), 'M/d/yy')
-            : 'not set';
+          let oldDate = 'not set';
+          let newDate = 'not set';
+
+          if (entry.old_value) {
+            const oldDateObj = new Date(entry.old_value + 'T12:00:00');
+            if (!isNaN(oldDateObj.getTime())) {
+              oldDate = format(oldDateObj, 'M/d/yy');
+            }
+          }
+
+          if (entry.new_value) {
+            const newDateObj = new Date(entry.new_value + 'T12:00:00');
+            if (!isNaN(newDateObj.getTime())) {
+              newDate = format(newDateObj, 'M/d/yy');
+            }
+          }
+
           detail = `${oldDate} → ${newDate}`;
         } else if (entry.field_name === 'event_date') {
           title = 'Event date';
-          const oldDate = entry.old_value
-            ? format(new Date(entry.old_value + 'T12:00:00'), 'M/d/yy')
-            : 'not set';
-          const newDate = entry.new_value
-            ? format(new Date(entry.new_value + 'T12:00:00'), 'M/d/yy')
-            : 'not set';
+          let oldDate = 'not set';
+          let newDate = 'not set';
+
+          if (entry.old_value) {
+            const oldDateObj = new Date(entry.old_value + 'T12:00:00');
+            if (!isNaN(oldDateObj.getTime())) {
+              oldDate = format(oldDateObj, 'M/d/yy');
+            }
+          }
+
+          if (entry.new_value) {
+            const newDateObj = new Date(entry.new_value + 'T12:00:00');
+            if (!isNaN(newDateObj.getTime())) {
+              newDate = format(newDateObj, 'M/d/yy');
+            }
+          }
+
           detail = `${oldDate} → ${newDate}`;
+        } else if (entry.field_name === 'stage') {
+          title = 'Stage updated';
+          const oldVal = entry.old_value || 'not set';
+          const newVal = entry.new_value || 'not set';
+          detail = `${oldVal} → ${newVal}`;
         } else {
           title = `${fieldLabel} updated`;
           if (entry.old_value !== null || entry.new_value !== null) {
@@ -204,7 +242,11 @@ export default function GarmentHistory({ garmentId }: GarmentHistoryProps) {
     const groups: { [key: string]: { date: Date; entries: any[] } } = {};
 
     entries.forEach((entry) => {
+      if (!entry.changed_at) return; // Skip entries without a date
+
       const date = new Date(entry.changed_at);
+      if (isNaN(date.getTime())) return; // Skip invalid dates
+
       const dateKey = format(date, 'yyyy-MM-dd');
 
       if (!groups[dateKey]) {
