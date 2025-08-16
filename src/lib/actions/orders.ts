@@ -5,6 +5,88 @@ import { z } from 'zod';
 import { createClient as createSupabaseClient } from '@/lib/supabase/server';
 import { assignDefaultGarmentNames } from '@/lib/utils/order-normalization';
 import { ensureUserAndShop } from './users';
+import type { Tables } from '@/types/supabase';
+
+export interface PaginatedOrders {
+  data: Array<
+    Tables<'orders'> & {
+      client: Tables<'clients'> | null;
+      garments: Array<{ id: string }>;
+    }
+  >;
+  count: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface OrdersFilters {
+  search?: string;
+  status?: string;
+  sortBy?: 'created_at' | 'order_due_date' | 'total_cents' | 'status';
+  sortOrder?: 'asc' | 'desc';
+}
+
+export async function getOrdersPaginated(
+  page = 1,
+  pageSize = 10,
+  filters?: OrdersFilters
+): Promise<PaginatedOrders> {
+  const { shop } = await ensureUserAndShop();
+  const supabase = await createSupabaseClient();
+
+  // Build the base query
+  let query = supabase
+    .from('orders')
+    .select(
+      `
+      *,
+      client:clients(id, first_name, last_name),
+      garments(id)
+    `,
+      { count: 'exact' }
+    )
+    .eq('shop_id', shop.id);
+
+  // Apply search filter
+  if (filters?.search) {
+    const searchTerm = `%${filters.search.trim()}%`;
+
+    // Search in order number, client name, or notes
+    query = query.or(
+      `order_number.ilike.${searchTerm},notes.ilike.${searchTerm}`
+    );
+  }
+
+  // Apply status filter
+  if (filters?.status && filters.status !== 'all') {
+    query = query.eq('status', filters.status);
+  }
+
+  // Apply sorting
+  const sortBy = filters?.sortBy || 'created_at';
+  const sortOrder = filters?.sortOrder || 'desc';
+  query = query.order(sortBy, { ascending: sortOrder === 'asc' });
+
+  // Apply pagination
+  const start = (page - 1) * pageSize;
+  const end = start + pageSize - 1;
+  query = query.range(start, end);
+
+  const { data, error, count } = await query;
+
+  if (error) {
+    throw new Error(`Failed to fetch orders: ${error.message}`);
+  }
+
+  return {
+    data: data || [],
+    count: count || 0,
+    page,
+    pageSize,
+    totalPages: Math.ceil((count || 0) / pageSize),
+  };
+}
 
 // Schema definitions
 const ServiceInlineSchema = z.object({
