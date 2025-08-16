@@ -8,6 +8,7 @@ import {
   DialogActions,
   IconButton,
   Button,
+  CircularProgress,
   List,
   ListItem,
   ListItemText,
@@ -39,7 +40,9 @@ export default function TimeLogsDialog({
 }: TimeLogsDialogProps) {
   const [entries, setEntries] = useState<any[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [minutesInput, setMinutesInput] = useState<string>('');
+  const [editHoursInput, setEditHoursInput] = useState<string>('');
+  const [editMinutesInput, setEditMinutesInput] = useState<string>('');
+  const [isSaving, setIsSaving] = useState(false);
 
   async function refresh() {
     try {
@@ -60,21 +63,31 @@ export default function TimeLogsDialog({
 
   const startEdit = (entry: any) => {
     setEditingId(entry.id);
-    setMinutesInput(String(entry.minutes));
+    const hrs = Math.floor((entry.minutes || 0) / 60);
+    const mins = (entry.minutes || 0) % 60;
+    setEditHoursInput(String(hrs || ''));
+    setEditMinutesInput(String(mins || ''));
   };
 
   const saveEdit = async () => {
-    const mins = parseInt(minutesInput, 10);
+    const minsCombined =
+      (parseInt(editHoursInput || '0', 10) || 0) * 60 +
+      (parseInt(editMinutesInput || '0', 10) || 0);
+    const mins = isNaN(minsCombined) ? 0 : minsCombined;
     if (!editingId || !mins || mins <= 0) return;
 
     try {
+      setIsSaving(true);
       await updateTimeEntry(editingId, mins);
       setEditingId(null);
-      setMinutesInput('');
+      setEditHoursInput('');
+      setEditMinutesInput('');
       await refresh();
       onChanged?.();
     } catch (error) {
       console.error('Failed to update time entry:', error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -112,7 +125,7 @@ export default function TimeLogsDialog({
                 >
                   <ListItemText
                     primary={`${e.service_name}`}
-                    secondary={`${e.minutes} min • ${new Date(e.logged_at).toLocaleString()}`}
+                    secondary={`${formatMinutesHM(e.minutes)} • ${new Date(e.logged_at).toLocaleString()}`}
                   />
                   <Stack direction="row" gap={1}>
                     {editingId === e.id ? (
@@ -120,15 +133,31 @@ export default function TimeLogsDialog({
                         <TextField
                           size="small"
                           type="number"
+                          label="Hours"
+                          value={editHoursInput}
+                          onChange={(ev) => setEditHoursInput(ev.target.value)}
+                          inputProps={{ min: 0, style: { width: 90 } }}
+                        />
+                        <TextField
+                          size="small"
+                          type="number"
                           label="Minutes"
-                          value={minutesInput}
-                          onChange={(ev) => setMinutesInput(ev.target.value)}
-                          inputProps={{ min: 1, style: { width: 90 } }}
+                          value={editMinutesInput}
+                          onChange={(ev) =>
+                            setEditMinutesInput(ev.target.value)
+                          }
+                          inputProps={{ min: 0, max: 59, style: { width: 90 } }}
                         />
                         <Button
                           onClick={saveEdit}
                           variant="contained"
                           size="small"
+                          disabled={isSaving}
+                          startIcon={
+                            isSaving ? (
+                              <CircularProgress size={14} />
+                            ) : undefined
+                          }
                         >
                           Save
                         </Button>
@@ -164,4 +193,13 @@ export default function TimeLogsDialog({
       </DialogActions>
     </Dialog>
   );
+}
+
+function formatMinutesHM(totalMinutes: number): string {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  const parts = [] as string[];
+  if (hours > 0) parts.push(`${hours}h`);
+  parts.push(`${minutes}m`);
+  return parts.join(' ');
 }

@@ -4,8 +4,11 @@ import { useState } from 'react';
 import { Button } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import GarmentEditDialogOptimistic from '@/components/garments/GarmentEditDialogOptimistic';
+import { useGarment } from '@/contexts/GarmentContext';
 
 export default function GarmentDetailClientOptimistic() {
+  const { garment } = useGarment();
+  const isGarmentDone = garment?.stage === 'Done';
   const [showEditDialog, setShowEditDialog] = useState(false);
 
   const handleClose = () => {
@@ -18,6 +21,7 @@ export default function GarmentDetailClientOptimistic() {
         variant="outlined"
         startIcon={<EditIcon />}
         onClick={() => setShowEditDialog(true)}
+        disabled={isGarmentDone}
       >
         Edit
       </Button>

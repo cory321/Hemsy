@@ -6,6 +6,7 @@ import GarmentDetailClient from './GarmentDetailClient';
 import GarmentServicesManager from '@/components/garments/GarmentServicesManager';
 import GarmentHistory from '@/components/garments/GarmentHistory';
 import GarmentTimeTracker from '@/components/garments/GarmentTimeTracker';
+import Link from 'next/link';
 
 interface GarmentRightColumnProps {
   garment: any;
@@ -52,7 +53,14 @@ export default function GarmentRightColumn({
             {garment.name || 'Untitled Garment'}
           </Typography>
           <Typography color="text.secondary">
-            Order #{garment.order?.order_number || 'N/A'} • {clientName}
+            Order #{garment.order?.order_number || 'N/A'} •{' '}
+            {garment.order?.client?.id ? (
+              <Link href={`/clients/${garment.order.client.id}`}>
+                {clientName}
+              </Link>
+            ) : (
+              clientName
+            )}
           </Typography>
         </Box>
         <GarmentDetailClient garment={garment} onEdit={refreshHistory} />
@@ -102,54 +110,58 @@ export default function GarmentRightColumn({
         />
       </Box>
 
+      {/* Time Tracker */}
+      <Box sx={{ mb: 3 }}>
+        <GarmentTimeTracker
+          garmentId={garment.id}
+          services={(garment.garment_services || []).map((s: any) => ({
+            id: s.id,
+            name: s.name,
+          }))}
+        />
+      </Box>
+
       {/* Client Information */}
       {garment.order?.client && (
-        <>
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Client Information
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="text.secondary">
-                    Name
-                  </Typography>
-                  <Typography variant="body1">{clientName}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="text.secondary">
-                    Email
-                  </Typography>
-                  <Typography variant="body1">
-                    {garment.order.client.email}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="text.secondary">
-                    Phone
-                  </Typography>
-                  <Typography variant="body1">
-                    {garment.order.client.phone_number}
-                  </Typography>
-                </Grid>
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Client Information
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="body2" color="text.secondary">
+                  Name
+                </Typography>
+                <Typography variant="body1">
+                  {garment.order?.client?.id ? (
+                    <Link href={`/clients/${garment.order.client.id}`}>
+                      {clientName}
+                    </Link>
+                  ) : (
+                    clientName
+                  )}
+                </Typography>
               </Grid>
-            </CardContent>
-          </Card>
-
-          {/* Time Tracker */}
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <GarmentTimeTracker
-                garmentId={garment.id}
-                services={(garment.garment_services || []).map((s: any) => ({
-                  id: s.id,
-                  name: s.name,
-                }))}
-              />
-            </CardContent>
-          </Card>
-        </>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="body2" color="text.secondary">
+                  Email
+                </Typography>
+                <Typography variant="body1">
+                  {garment.order.client.email}
+                </Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="body2" color="text.secondary">
+                  Phone
+                </Typography>
+                <Typography variant="body1">
+                  {garment.order.client.phone_number}
+                </Typography>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
       )}
 
       {/* Notes */}

@@ -69,6 +69,8 @@ interface GarmentContextType {
   markAsPickedUp: () => Promise<void>;
   refreshHistory: () => void;
   historyKey: number;
+  optimisticHistoryEntry: any;
+  historyRefreshSignal: number;
 }
 
 const GarmentContext = createContext<GarmentContextType | null>(null);
@@ -92,16 +94,59 @@ export function GarmentProvider({
 }: GarmentProviderProps) {
   const [garment, setGarment] = useState<Garment>(initialGarment);
   const [historyKey, setHistoryKey] = useState(0);
+  const [optimisticHistoryEntry, setOptimisticHistoryEntry] =
+    useState<any>(null);
+  const [historyRefreshSignal, setHistoryRefreshSignal] = useState(0);
 
   const refreshHistory = useCallback(() => {
     setHistoryKey((prev) => prev + 1);
+    setHistoryRefreshSignal((prev) => prev + 1);
   }, []);
+
+  // Helper to create optimistic history entries
+  const createOptimisticHistoryEntry = (
+    changeType: string,
+    fieldName: string,
+    oldValue: any,
+    newValue: any
+  ) => {
+    const entry = {
+      id: `optimistic-${Date.now()}-${Math.random()}`,
+      garment_id: garment.id,
+      changed_by: 'current-user', // This would come from auth context
+      changed_at: new Date().toISOString(),
+      field_name: fieldName,
+      old_value: oldValue,
+      new_value: newValue,
+      change_type: changeType,
+      changed_by_user: {
+        first_name: 'Current',
+        last_name: 'User',
+        email: 'user@example.com',
+      },
+      isOptimistic: true,
+    };
+    setOptimisticHistoryEntry(entry);
+    return entry;
+  };
 
   const updateGarmentOptimistic = useCallback(
     async (updates: Partial<Garment>) => {
       // Optimistically update the UI
       const previousGarment = garment;
       setGarment((prev) => ({ ...prev, ...updates }));
+
+      // Create optimistic history entries for each updated field
+      Object.entries(updates).forEach(([key, value]) => {
+        if (key in garment && garment[key as keyof Garment] !== value) {
+          createOptimisticHistoryEntry(
+            'field_update',
+            key,
+            garment[key as keyof Garment],
+            value
+          );
+        }
+      });
 
       try {
         // Call the server action
@@ -201,6 +246,13 @@ export function GarmentProvider({
         totalPriceCents: prev.totalPriceCents + tempService.line_total_cents,
       }));
 
+      // Create optimistic history entry
+      createOptimisticHistoryEntry('service_added', 'service', null, {
+        name: tempService.name,
+        quantity: tempService.quantity,
+        unit_price_cents: tempService.unit_price_cents,
+      });
+
       try {
         const result = await addServiceToGarment({
           garmentId: garment.id,
@@ -249,6 +301,18 @@ export function GarmentProvider({
         totalPriceCents:
           prev.totalPriceCents - serviceToRemove.line_total_cents,
       }));
+
+      // Create optimistic history entry
+      createOptimisticHistoryEntry(
+        'service_removed',
+        'service',
+        {
+          name: serviceToRemove.name,
+          quantity: serviceToRemove.quantity,
+          unit_price_cents: serviceToRemove.unit_price_cents,
+        },
+        null
+      );
 
       try {
         const result = await removeServiceFromGarment({
@@ -444,6 +508,8 @@ export function GarmentProvider({
         markAsPickedUp,
         refreshHistory,
         historyKey,
+        optimisticHistoryEntry,
+        historyRefreshSignal,
       }}
     >
       {children}

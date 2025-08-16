@@ -59,6 +59,7 @@ export default function GarmentServicesManagerOptimistic() {
     updateService,
     toggleServiceComplete,
   } = useGarment();
+  const isGarmentDone = garment?.stage === 'Done';
   const [loading, setLoading] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
@@ -185,15 +186,17 @@ export default function GarmentServicesManagerOptimistic() {
     setLoading(false);
   };
 
-  const totalPrice = garment.garment_services.reduce(
+  const garmentServices = garment?.garment_services || [];
+
+  const totalPrice = garmentServices.reduce(
     (sum: number, service: Service) => sum + service.line_total_cents,
     0
   );
 
-  const completedCount = garment.garment_services.filter(
+  const completedCount = garmentServices.filter(
     (s: Service) => s.is_done
   ).length;
-  const totalCount = garment.garment_services.length;
+  const totalCount = garmentServices.length;
   const completionPercentage =
     totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
@@ -214,6 +217,7 @@ export default function GarmentServicesManagerOptimistic() {
             variant="outlined"
             size="small"
             onClick={() => setShowAddDialog(true)}
+            disabled={isGarmentDone}
           >
             Add Service
           </Button>
@@ -240,99 +244,93 @@ export default function GarmentServicesManagerOptimistic() {
           </Box>
         )}
 
-        {garment.garment_services.length > 0 ? (
+        {garmentServices.length > 0 ? (
           <>
             <List>
-              {garment.garment_services.map(
-                (service: Service, index: number) => (
-                  <ListItem
-                    key={service.id}
-                    divider={index < garment.garment_services.length - 1}
-                    sx={{
-                      opacity: service.is_done ? 0.6 : 1,
-                      transition: 'opacity 0.3s ease',
-                    }}
-                    secondaryAction={
-                      <Box
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                      >
-                        {service.is_done && (
-                          <Chip
-                            label="Completed"
-                            size="small"
-                            color="success"
-                            sx={{ mr: 1 }}
-                          />
-                        )}
-                        <Button
-                          size="small"
-                          variant={service.is_done ? 'outlined' : 'contained'}
-                          onClick={() =>
-                            toggleServiceComplete(service.id, !service.is_done)
-                          }
-                          disabled={loading}
-                          startIcon={
-                            service.is_done ? (
-                              <CheckCircleIcon />
-                            ) : (
-                              <RadioButtonUncheckedIcon />
-                            )
-                          }
-                          sx={{ minWidth: '140px' }}
-                        >
-                          {service.is_done
-                            ? 'Mark Incomplete'
-                            : 'Mark Complete'}
-                        </Button>
-                        <IconButton
-                          edge="end"
-                          onClick={() => {
-                            setEditingService(service);
-                            setEditPrice(
-                              (service.unit_price_cents / 100).toFixed(2)
-                            );
-                          }}
-                          disabled={loading}
-                          size="small"
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          edge="end"
-                          onClick={() => openDeleteConfirmation(service)}
-                          disabled={loading}
-                          size="small"
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Box>
-                    }
-                  >
+              {garmentServices.map((service: Service, index: number) => (
+                <ListItem
+                  key={service.id}
+                  divider={index < garmentServices.length - 1}
+                  sx={{
+                    opacity: service.is_done ? 0.6 : 1,
+                    transition: 'opacity 0.3s ease',
+                  }}
+                  secondaryAction={
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      {service.is_done && <CheckCircleIcon color="success" />}
-                      <ListItemText
-                        primary={service.name}
-                        secondary={
-                          <>
-                            {service.quantity} {service.unit} × $
-                            {(service.unit_price_cents / 100).toFixed(2)} = $
-                            {(service.line_total_cents / 100).toFixed(2)}
-                            {service.description && (
-                              <Box
-                                component="span"
-                                display="block"
-                                sx={{ mt: 0.5 }}
-                              >
-                                {service.description}
-                              </Box>
-                            )}
-                          </>
+                      {service.is_done && (
+                        <Chip
+                          label="Completed"
+                          size="small"
+                          color="success"
+                          sx={{ mr: 1 }}
+                        />
+                      )}
+                      <Button
+                        size="small"
+                        variant={service.is_done ? 'outlined' : 'contained'}
+                        onClick={() =>
+                          toggleServiceComplete(service.id, !service.is_done)
                         }
-                      />
+                        disabled={loading || isGarmentDone}
+                        startIcon={
+                          service.is_done ? (
+                            <CheckCircleIcon />
+                          ) : (
+                            <RadioButtonUncheckedIcon />
+                          )
+                        }
+                        sx={{ minWidth: '140px' }}
+                      >
+                        {service.is_done ? 'Mark Incomplete' : 'Mark Complete'}
+                      </Button>
+                      <IconButton
+                        edge="end"
+                        onClick={() => {
+                          setEditingService(service);
+                          setEditPrice(
+                            (service.unit_price_cents / 100).toFixed(2)
+                          );
+                        }}
+                        disabled={loading || isGarmentDone}
+                        size="small"
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                      <IconButton
+                        edge="end"
+                        onClick={() => openDeleteConfirmation(service)}
+                        disabled={loading || isGarmentDone}
+                        size="small"
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
                     </Box>
-                  </ListItem>
-                )
-              )}
+                  }
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {service.is_done && <CheckCircleIcon color="success" />}
+                    <ListItemText
+                      primary={service.name}
+                      secondary={
+                        <>
+                          {service.quantity} {service.unit} × $
+                          {(service.unit_price_cents / 100).toFixed(2)} = $
+                          {(service.line_total_cents / 100).toFixed(2)}
+                          {service.description && (
+                            <Box
+                              component="span"
+                              display="block"
+                              sx={{ mt: 0.5 }}
+                            >
+                              {service.description}
+                            </Box>
+                          )}
+                        </>
+                      }
+                    />
+                  </Box>
+                </ListItem>
+              ))}
             </List>
             <Divider sx={{ my: 2 }} />
             <Box sx={{ textAlign: 'right' }}>
@@ -346,7 +344,9 @@ export default function GarmentServicesManagerOptimistic() {
             color="text.secondary"
             sx={{ textAlign: 'center', py: 4 }}
           >
-            No services added yet
+            {isGarmentDone
+              ? 'Service management is disabled for completed garments.'
+              : 'No services added yet'}
           </Typography>
         )}
       </CardContent>

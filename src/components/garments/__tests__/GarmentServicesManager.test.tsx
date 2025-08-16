@@ -189,9 +189,15 @@ describe('GarmentServicesManager', () => {
       />
     );
 
-    // Progress should be 33.33% (1 out of 3 completed)
+    // Progress should be rounded in aria-valuenow (MUI rounds the value)
     const progressBar = screen.getByRole('progressbar');
-    expect(progressBar).toHaveAttribute('aria-valuenow', '33.333333333333336');
+    const completedCount = mockServices.filter((s) => s.is_done).length;
+    const totalCount = mockServices.length;
+    const expectedRounded = Math.round((completedCount / totalCount) * 100);
+    expect(progressBar).toHaveAttribute(
+      'aria-valuenow',
+      String(expectedRounded)
+    );
   });
 
   it('should apply visual styling to completed services', () => {

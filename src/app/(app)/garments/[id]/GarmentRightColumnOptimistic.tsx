@@ -3,9 +3,10 @@
 import { Card, CardContent, Typography, Box, Grid } from '@mui/material';
 import GarmentDetailClientOptimistic from './GarmentDetailClientOptimistic';
 import GarmentServicesManagerOptimistic from '@/components/garments/GarmentServicesManagerOptimistic';
-import GarmentHistory from '@/components/garments/GarmentHistory';
+import GarmentHistoryOptimistic from '@/components/garments/GarmentHistoryOptimistic';
 import GarmentTimeTracker from '@/components/garments/GarmentTimeTracker';
 import { useGarment } from '@/contexts/GarmentContext';
+import Link from 'next/link';
 
 interface GarmentRightColumnOptimisticProps {
   clientName: string;
@@ -45,7 +46,14 @@ export default function GarmentRightColumnOptimistic({
             {garment.name || 'Untitled Garment'}
           </Typography>
           <Typography color="text.secondary">
-            Order #{garment.order?.order_number || 'N/A'} • {clientName}
+            Order #{garment.order?.order_number || 'N/A'} •{' '}
+            {garment.order?.client?.id ? (
+              <Link href={`/clients/${garment.order.client.id}`}>
+                {clientName}
+              </Link>
+            ) : (
+              clientName
+            )}
           </Typography>
         </Box>
         <GarmentDetailClientOptimistic />
@@ -92,19 +100,15 @@ export default function GarmentRightColumnOptimistic({
       </Box>
 
       {/* Time Tracker */}
-      {garment.order?.client && (
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <GarmentTimeTracker
-              garmentId={garment.id}
-              services={garment.garment_services.map((s: any) => ({
-                id: s.id,
-                name: s.name,
-              }))}
-            />
-          </CardContent>
-        </Card>
-      )}
+      <Box sx={{ mb: 3 }}>
+        <GarmentTimeTracker
+          garmentId={garment.id}
+          services={garment.garment_services.map((s: any) => ({
+            id: s.id,
+            name: s.name,
+          }))}
+        />
+      </Box>
 
       {/* Notes */}
       {garment.notes && (
@@ -120,8 +124,8 @@ export default function GarmentRightColumnOptimistic({
         </Card>
       )}
 
-      {/* Change History - key prop forces re-mount on changes */}
-      <GarmentHistory key={historyKey} garmentId={garment.id} />
+      {/* Change History with optimistic updates */}
+      <GarmentHistoryOptimistic garmentId={garment.id} />
     </>
   );
 }

@@ -6,6 +6,7 @@ import {
   Button,
   Card,
   CardContent,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -32,6 +33,7 @@ import {
   updateTimeEntry,
   deleteTimeEntry,
 } from '@/lib/actions/garment-time-entries';
+import { useGarment } from '@/contexts/GarmentContext';
 
 interface GarmentTimeTrackerProps {
   garmentId: string;
@@ -42,16 +44,22 @@ export default function GarmentTimeTracker({
   garmentId,
   services,
 }: GarmentTimeTrackerProps) {
+  const { garment } = useGarment();
+  const isGarmentDone = garment?.stage === 'Done';
+
   const [entries, setEntries] = useState<any[]>([]);
   const [totalMinutes, setTotalMinutes] = useState(0);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedServiceId, setSelectedServiceId] = useState<string>('');
-  const [minutes, setMinutes] = useState<string>('');
   const [hoursInput, setHoursInput] = useState<string>('');
   const [minutesInput, setMinutesInput] = useState<string>('');
+  const [editHoursInput, setEditHoursInput] = useState<string>('');
+  const [editMinutesInput, setEditMinutesInput] = useState<string>('');
   const [editingEntry, setEditingEntry] = useState<any>(null);
   const [logsOpen, setLogsOpen] = useState(false);
+  const [isSavingAdd, setIsSavingAdd] = useState(false);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   async function refresh() {
     try {
@@ -73,10 +81,7 @@ export default function GarmentTimeTracker({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [garmentId]);
 
-  const totalHours = useMemo(
-    () => (totalMinutes / 60).toFixed(2),
-    [totalMinutes]
-  );
+  // Total time will be displayed in hours and minutes via formatMinutesHM
 
   const handleAdd = async () => {
     const minsCombined =
@@ -86,6 +91,7 @@ export default function GarmentTimeTracker({
     if (!selectedServiceId || !mins || mins <= 0) return;
 
     try {
+      setIsSavingAdd(true);
       await addTimeEntry(selectedServiceId, mins);
       setIsAddOpen(false);
       setSelectedServiceId('');
@@ -94,21 +100,30 @@ export default function GarmentTimeTracker({
       await refresh();
     } catch (error) {
       console.error('Failed to add time entry:', error);
+    } finally {
+      setIsSavingAdd(false);
     }
   };
 
   const handleEdit = async () => {
-    const mins = parseInt(minutes, 10);
+    const minsCombined =
+      (parseInt(editHoursInput || '0', 10) || 0) * 60 +
+      (parseInt(editMinutesInput || '0', 10) || 0);
+    const mins = isNaN(minsCombined) ? 0 : minsCombined;
     if (!editingEntry?.id || !mins || mins <= 0) return;
 
     try {
+      setIsSavingEdit(true);
       await updateTimeEntry(editingEntry.id, mins);
       setIsEditOpen(false);
       setEditingEntry(null);
-      setMinutes('');
+      setEditHoursInput('');
+      setEditMinutesInput('');
       await refresh();
     } catch (error) {
       console.error('Failed to update time entry:', error);
+    } finally {
+      setIsSavingEdit(false);
     }
   };
 
@@ -136,7 +151,7 @@ export default function GarmentTimeTracker({
           </Stack>
           <Stack direction="row" alignItems="center" gap={2}>
             <Typography variant="body2">
-              Total: {totalMinutes} min ({totalHours} h)
+              Total: {formatMinutesHM(totalMinutes)}
             </Typography>
             <Button
               startIcon={<ReceiptLongIcon />}
@@ -148,13 +163,18 @@ export default function GarmentTimeTracker({
               startIcon={<AddIcon />}
               variant="outlined"
               onClick={() => setIsAddOpen(true)}
+              disabled={isGarmentDone}
             >
               Add Time
             </Button>
           </Stack>
         </Stack>
 
-        {entries.length === 0 ? (
+        {isGarmentDone ? (
+          <Typography color="text.secondary">
+            Time tracking is disabled for completed garments.
+          </Typography>
+        ) : entries.length === 0 ? (
           <Typography color="text.secondary">No time entries yet.</Typography>
         ) : (
           <List dense>
@@ -165,9 +185,13 @@ export default function GarmentTimeTracker({
                   <Stack direction="row" gap={1}>
                     <IconButton
                       aria-label="edit"
+                      disabled={isGarmentDone}
                       onClick={() => {
                         setEditingEntry(e);
-                        setMinutes(String(e.minutes));
+                        const hrs = Math.floor((e.minutes || 0) / 60);
+                        const mins = (e.minutes || 0) % 60;
+                        setEditHoursInput(String(hrs || ''));
+                        setEditMinutesInput(String(mins || ''));
                         setIsEditOpen(true);
                       }}
                     >
@@ -175,6 +199,7 @@ export default function GarmentTimeTracker({
                     </IconButton>
                     <IconButton
                       aria-label="delete"
+                      disabled={isGarmentDone}
                       onClick={() => handleDelete(e.id)}
                     >
                       <DeleteIcon />
@@ -184,7 +209,7 @@ export default function GarmentTimeTracker({
               >
                 <ListItemText
                   primary={`${e.service_name}`}
-                  secondary={`${e.minutes} min • ${new Date(e.logged_at).toLocaleString()}`}
+                  secondary={`${formatMinutesHM(e.minutes)} • ${new Date(e.logged_at).toLocaleString()}`}
                 />
               </ListItem>
             ))}
@@ -252,7 +277,12 @@ export default function GarmentTimeTracker({
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setIsAddOpen(false)}>Cancel</Button>
-          <Button onClick={handleAdd} variant="contained">
+          <Button
+            onClick={handleAdd}
+            variant="contained"
+            disabled={isSavingAdd}
+            startIcon={isSavingAdd ? <CircularProgress size={16} /> : undefined}
+          >
             Save
           </Button>
         </DialogActions>
@@ -281,19 +311,35 @@ export default function GarmentTimeTracker({
           </IconButton>
         </DialogTitle>
         <DialogContent>
-          <TextField
-            fullWidth
-            type="number"
-            label="Minutes"
-            value={minutes}
-            onChange={(e) => setMinutes(e.target.value)}
-            sx={{ mt: 1 }}
-            inputProps={{ min: 1 }}
-          />
+          <Stack direction="row" gap={2} sx={{ mt: 1 }}>
+            <TextField
+              type="number"
+              label="Hours"
+              value={editHoursInput}
+              onChange={(e) => setEditHoursInput(e.target.value)}
+              inputProps={{ min: 0 }}
+              fullWidth
+            />
+            <TextField
+              type="number"
+              label="Minutes"
+              value={editMinutesInput}
+              onChange={(e) => setEditMinutesInput(e.target.value)}
+              inputProps={{ min: 0, max: 59 }}
+              fullWidth
+            />
+          </Stack>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setIsEditOpen(false)}>Cancel</Button>
-          <Button onClick={handleEdit} variant="contained">
+          <Button
+            onClick={handleEdit}
+            variant="contained"
+            disabled={isSavingEdit}
+            startIcon={
+              isSavingEdit ? <CircularProgress size={16} /> : undefined
+            }
+          >
             Save
           </Button>
         </DialogActions>
@@ -308,4 +354,13 @@ export default function GarmentTimeTracker({
       />
     </Card>
   );
+}
+
+function formatMinutesHM(totalMinutes: number): string {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  const parts = [] as string[];
+  if (hours > 0) parts.push(`${hours}h`);
+  parts.push(`${minutes}m`);
+  return parts.join(' ');
 }
