@@ -73,6 +73,32 @@ export async function updateGarmentStage(
 ) {
   const supabase = await createClient();
 
+  // Get the current user ID (this function doesn't use ensureUserAndShop)
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+
+  if (userError || !userData?.user?.id) {
+    throw new Error('User not authenticated');
+  }
+
+  // Get current stage for history tracking
+  const { data: currentGarment, error: fetchError } = await supabase
+    .from('garments')
+    .select('stage')
+    .eq('shop_id', shopId)
+    .eq('id', garmentId)
+    .single();
+
+  if (fetchError || !currentGarment) {
+    throw new Error(
+      'Failed to fetch garment: ' + (fetchError?.message || 'Not found')
+    );
+  }
+
+  // Only update if the stage is actually changing
+  if (currentGarment.stage === newStage) {
+    return;
+  }
+
   const { error } = await supabase
     .from('garments')
     .update({ stage: newStage })
@@ -81,6 +107,23 @@ export async function updateGarmentStage(
 
   if (error) {
     throw new Error('Failed to update garment stage: ' + error.message);
+  }
+
+  // Track the stage change in history
+  const { error: historyError } = await supabase
+    .from('garment_history')
+    .insert({
+      garment_id: garmentId,
+      changed_by: userData.user.id,
+      field_name: 'stage',
+      old_value: currentGarment.stage,
+      new_value: newStage,
+      change_type: 'field_update',
+    });
+
+  if (historyError) {
+    console.error('Error tracking stage change in history:', historyError);
+    // Don't fail the update if history tracking fails
   }
 }
 

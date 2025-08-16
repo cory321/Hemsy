@@ -1,12 +1,9 @@
 'use client';
 
 import { GarmentProvider } from '@/contexts/GarmentContext';
-import { Container, Box, Button, Grid } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import Link from 'next/link';
-import GarmentImageSection from './GarmentImageSection';
-import GarmentRightColumnOptimistic from './GarmentRightColumnOptimistic';
+import { Container, Box } from '@mui/material';
 import { Toaster } from 'sonner';
+import GarmentDetailContent from './GarmentDetailContent';
 
 interface GarmentDetailPageClientProps {
   garment: any;
@@ -28,31 +25,11 @@ export default function GarmentDetailPageClient({
     <GarmentProvider initialGarment={garment}>
       <Container maxWidth="lg">
         <Box sx={{ mt: 4, mb: 4 }}>
-          {from === 'order' && orderId ? (
-            <Box sx={{ mb: 2 }}>
-              <Button
-                component={Link}
-                href={`/orders/${orderId}`}
-                variant="text"
-                startIcon={<ArrowBackIcon />}
-                aria-label={`Back to Order ${orderId}`}
-              >
-                Back to Order
-              </Button>
-            </Box>
-          ) : null}
-
-          <Grid container spacing={3}>
-            {/* Left Column - Image and Stage */}
-            <Grid item xs={12} md={4}>
-              <GarmentImageSection clientName={clientName} />
-            </Grid>
-
-            {/* Right Column - Details */}
-            <Grid item xs={12} md={8}>
-              <GarmentRightColumnOptimistic clientName={clientName} />
-            </Grid>
-          </Grid>
+          <GarmentDetailContent
+            clientName={clientName}
+            from={from}
+            orderId={orderId}
+          />
         </Box>
       </Container>
       <Toaster position="bottom-center" richColors />

@@ -2,18 +2,20 @@ import { toggleServiceCompletion } from '../garment-services';
 import { createClient } from '@/lib/supabase/server';
 import { ensureUserAndShop } from '@/lib/auth/user-shop';
 import { revalidatePath } from 'next/cache';
+import * as garmentStageHelpers from '../garment-stage-helpers';
 
 // Mock dependencies
 jest.mock('@/lib/supabase/server');
 jest.mock('@/lib/auth/user-shop');
 jest.mock('next/cache');
+jest.mock('../garment-stage-helpers');
 
 const mockSupabase = {
   from: jest.fn().mockReturnThis(),
   update: jest.fn().mockReturnThis(),
   select: jest.fn().mockReturnThis(),
   eq: jest.fn().mockReturnThis(),
-  single: jest.fn(),
+  single: jest.fn().mockReturnThis(),
 };
 
 describe('toggleServiceCompletion', () => {
@@ -28,29 +30,28 @@ describe('toggleServiceCompletion', () => {
     const mockGarmentId = 'garment-456';
 
     // Mock successful update
-    mockSupabase.eq.mockReturnValueOnce({
-      error: null,
+    mockSupabase.update.mockReturnValueOnce({
+      eq: jest.fn().mockResolvedValueOnce({
+        error: null,
+      }),
     });
 
     // Mock fetching service details
-    mockSupabase.single.mockResolvedValueOnce({
-      data: { garment_id: mockGarmentId },
-      error: null,
-    });
-
-    // Mock fetching all services for the garment
     mockSupabase.select.mockReturnValueOnce({
-      data: [
-        { id: 'service-123', is_done: true },
-        { id: 'service-456', is_done: false },
-        { id: 'service-789', is_done: false },
-      ],
-      error: null,
+      eq: jest.fn().mockReturnValueOnce({
+        single: jest.fn().mockResolvedValueOnce({
+          data: { garment_id: mockGarmentId },
+          error: null,
+        }),
+      }),
     });
 
-    // Mock updating garment stage
-    mockSupabase.eq.mockReturnValueOnce({
-      error: null,
+    // Mock recalculateAndUpdateGarmentStage
+    (
+      garmentStageHelpers.recalculateAndUpdateGarmentStage as jest.Mock
+    ).mockResolvedValueOnce({
+      success: true,
+      stage: 'In Progress',
     });
 
     const result = await toggleServiceCompletion({
@@ -65,8 +66,9 @@ describe('toggleServiceCompletion', () => {
 
     expect(mockSupabase.from).toHaveBeenCalledWith('garment_services');
     expect(mockSupabase.update).toHaveBeenCalledWith({ is_done: true });
-    expect(mockSupabase.from).toHaveBeenCalledWith('garments');
-    expect(mockSupabase.update).toHaveBeenCalledWith({ stage: 'In Progress' });
+    expect(
+      garmentStageHelpers.recalculateAndUpdateGarmentStage
+    ).toHaveBeenCalledWith(mockGarmentId);
     expect(revalidatePath).toHaveBeenCalledWith(`/garments/${mockGarmentId}`);
   });
 
@@ -75,29 +77,28 @@ describe('toggleServiceCompletion', () => {
     const mockGarmentId = 'garment-456';
 
     // Mock successful update
-    mockSupabase.eq.mockReturnValueOnce({
-      error: null,
+    mockSupabase.update.mockReturnValueOnce({
+      eq: jest.fn().mockResolvedValueOnce({
+        error: null,
+      }),
     });
 
     // Mock fetching service details
-    mockSupabase.single.mockResolvedValueOnce({
-      data: { garment_id: mockGarmentId },
-      error: null,
-    });
-
-    // Mock fetching all services (all marked as done)
     mockSupabase.select.mockReturnValueOnce({
-      data: [
-        { id: 'service-123', is_done: true },
-        { id: 'service-456', is_done: true },
-        { id: 'service-789', is_done: true },
-      ],
-      error: null,
+      eq: jest.fn().mockReturnValueOnce({
+        single: jest.fn().mockResolvedValueOnce({
+          data: { garment_id: mockGarmentId },
+          error: null,
+        }),
+      }),
     });
 
-    // Mock updating garment stage
-    mockSupabase.eq.mockReturnValueOnce({
-      error: null,
+    // Mock recalculateAndUpdateGarmentStage
+    (
+      garmentStageHelpers.recalculateAndUpdateGarmentStage as jest.Mock
+    ).mockResolvedValueOnce({
+      success: true,
+      stage: 'Ready For Pickup',
     });
 
     const result = await toggleServiceCompletion({
@@ -109,10 +110,6 @@ describe('toggleServiceCompletion', () => {
       success: true,
       updatedStage: 'Ready For Pickup',
     });
-
-    expect(mockSupabase.update).toHaveBeenCalledWith({
-      stage: 'Ready For Pickup',
-    });
   });
 
   it('should update garment stage to "New" when no services are complete', async () => {
@@ -120,29 +117,28 @@ describe('toggleServiceCompletion', () => {
     const mockGarmentId = 'garment-456';
 
     // Mock successful update
-    mockSupabase.eq.mockReturnValueOnce({
-      error: null,
+    mockSupabase.update.mockReturnValueOnce({
+      eq: jest.fn().mockResolvedValueOnce({
+        error: null,
+      }),
     });
 
     // Mock fetching service details
-    mockSupabase.single.mockResolvedValueOnce({
-      data: { garment_id: mockGarmentId },
-      error: null,
-    });
-
-    // Mock fetching all services (none marked as done)
     mockSupabase.select.mockReturnValueOnce({
-      data: [
-        { id: 'service-123', is_done: false },
-        { id: 'service-456', is_done: false },
-        { id: 'service-789', is_done: false },
-      ],
-      error: null,
+      eq: jest.fn().mockReturnValueOnce({
+        single: jest.fn().mockResolvedValueOnce({
+          data: { garment_id: mockGarmentId },
+          error: null,
+        }),
+      }),
     });
 
-    // Mock updating garment stage
-    mockSupabase.eq.mockReturnValueOnce({
-      error: null,
+    // Mock recalculateAndUpdateGarmentStage
+    (
+      garmentStageHelpers.recalculateAndUpdateGarmentStage as jest.Mock
+    ).mockResolvedValueOnce({
+      success: true,
+      stage: 'New',
     });
 
     const result = await toggleServiceCompletion({
@@ -154,16 +150,16 @@ describe('toggleServiceCompletion', () => {
       success: true,
       updatedStage: 'New',
     });
-
-    expect(mockSupabase.update).toHaveBeenCalledWith({ stage: 'New' });
   });
 
   it('should handle service update failure', async () => {
     const mockGarmentServiceId = 'service-123';
 
-    // Mock failed update
-    mockSupabase.eq.mockReturnValueOnce({
-      error: { message: 'Update failed' },
+    // Mock update failure
+    mockSupabase.update.mockReturnValueOnce({
+      eq: jest.fn().mockResolvedValueOnce({
+        error: { message: 'Update failed' },
+      }),
     });
 
     const result = await toggleServiceCompletion({
@@ -181,26 +177,28 @@ describe('toggleServiceCompletion', () => {
     const mockGarmentServiceId = 'service-123';
     const mockGarmentId = 'garment-456';
 
-    // Mock successful service update
-    mockSupabase.eq.mockReturnValueOnce({
-      error: null,
+    // Mock successful update
+    mockSupabase.update.mockReturnValueOnce({
+      eq: jest.fn().mockResolvedValueOnce({
+        error: null,
+      }),
     });
 
     // Mock fetching service details
-    mockSupabase.single.mockResolvedValueOnce({
-      data: { garment_id: mockGarmentId },
-      error: null,
-    });
-
-    // Mock fetching all services
     mockSupabase.select.mockReturnValueOnce({
-      data: [{ id: 'service-123', is_done: true }],
-      error: null,
+      eq: jest.fn().mockReturnValueOnce({
+        single: jest.fn().mockResolvedValueOnce({
+          data: { garment_id: mockGarmentId },
+          error: null,
+        }),
+      }),
     });
 
-    // Mock failed garment update
-    mockSupabase.eq.mockReturnValueOnce({
-      error: { message: 'Garment update failed' },
+    // Mock recalculateAndUpdateGarmentStage failure
+    (
+      garmentStageHelpers.recalculateAndUpdateGarmentStage as jest.Mock
+    ).mockResolvedValueOnce({
+      success: false,
     });
 
     const result = await toggleServiceCompletion({
@@ -218,9 +216,9 @@ describe('toggleServiceCompletion', () => {
     const mockGarmentServiceId = 'service-123';
 
     // Mock an unexpected error
-    (createClient as jest.Mock).mockRejectedValue(
-      new Error('Unexpected error')
-    );
+    mockSupabase.from.mockImplementationOnce(() => {
+      throw new Error('Unexpected error');
+    });
 
     const result = await toggleServiceCompletion({
       garmentServiceId: mockGarmentServiceId,

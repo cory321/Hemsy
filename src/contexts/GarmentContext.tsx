@@ -9,6 +9,7 @@ import {
   updateGarmentService,
 } from '@/lib/actions/garments';
 import { toggleServiceCompletion } from '@/lib/actions/garment-services';
+import { markGarmentAsPickedUp } from '@/lib/actions/garment-pickup';
 
 interface Service {
   id: string;
@@ -65,6 +66,7 @@ interface GarmentContextType {
     updates: Partial<Service>
   ) => Promise<void>;
   toggleServiceComplete: (serviceId: string, isDone: boolean) => Promise<void>;
+  markAsPickedUp: () => Promise<void>;
   refreshHistory: () => void;
   historyKey: number;
 }
@@ -398,6 +400,37 @@ export function GarmentProvider({
     [garment, refreshHistory]
   );
 
+  const markAsPickedUp = useCallback(async () => {
+    // Check if the garment is in "Ready For Pickup" stage
+    if (garment.stage !== 'Ready For Pickup') {
+      toast.error(
+        'Garment must be in "Ready For Pickup" stage to mark as picked up'
+      );
+      return;
+    }
+
+    // Optimistically update the UI
+    const previousGarment = garment;
+    setGarment((prev) => ({ ...prev, stage: 'Done' }));
+
+    try {
+      const result = await markGarmentAsPickedUp({ garmentId: garment.id });
+
+      if (!result.success) {
+        // Rollback on failure
+        setGarment(previousGarment);
+        toast.error(result.error || 'Failed to mark garment as picked up');
+      } else {
+        refreshHistory();
+        toast.success(`${garment.name || 'Garment'} marked as picked up`);
+      }
+    } catch (error) {
+      // Rollback on error
+      setGarment(previousGarment);
+      toast.error('An unexpected error occurred');
+    }
+  }, [garment, refreshHistory]);
+
   return (
     <GarmentContext.Provider
       value={{
@@ -408,6 +441,7 @@ export function GarmentProvider({
         removeService,
         updateService,
         toggleServiceComplete,
+        markAsPickedUp,
         refreshHistory,
         historyKey,
       }}

@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { ensureUserAndShop } from '@/lib/auth/user-shop';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { recalculateAndUpdateGarmentStage } from './garment-stage-helpers';
 
 // Schema for updating garment
 const UpdateGarmentSchema = z.object({
@@ -285,6 +286,9 @@ export async function addServiceToGarment(
       related_service_id: newService.id,
     });
 
+    // Recalculate and update garment stage after adding service
+    await recalculateAndUpdateGarmentStage(input.garmentId);
+
     revalidatePath(`/garments/${input.garmentId}`);
     return { success: true, serviceId: newService.id };
   } catch (error) {
@@ -341,6 +345,9 @@ export async function removeServiceFromGarment(input: {
       .eq('id', input.garmentServiceId);
 
     if (error) throw error;
+
+    // Recalculate and update garment stage after removing service
+    await recalculateAndUpdateGarmentStage(input.garmentId);
 
     revalidatePath(`/garments/${input.garmentId}`);
     return { success: true };
