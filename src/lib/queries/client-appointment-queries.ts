@@ -2,7 +2,7 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import {
   getClientAppointments,
   getClientAppointmentsPage,
-} from '@/lib/actions/appointments-refactored';
+} from '@/lib/actions/appointments';
 import type { Appointment, AppointmentStatus } from '@/types';
 
 export const clientAppointmentKeys = {

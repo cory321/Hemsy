@@ -136,7 +136,9 @@ describe('GarmentsPage - Search Clear on Stage Change', () => {
     // Find and click the stage select dropdown (first combobox)
     const selectDropdowns = screen.getAllByRole('combobox');
     const stageDropdown = selectDropdowns[0]; // First is stage, second is sort
-    await user.click(stageDropdown);
+    if (stageDropdown) {
+      await user.click(stageDropdown);
+    }
 
     // Wait for dropdown menu to open and click the New option
     const listbox = await screen.findByRole('listbox');

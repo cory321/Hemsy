@@ -9,7 +9,7 @@ describe('getGarmentsPaginated - Client Name Sorting', () => {
   const mockShopId = '123e4567-e89b-12d3-a456-426614174000';
 
   // Mock supabase client for view queries
-  const mockViewQuery = {
+  const mockViewQuery: any = {
     from: jest.fn(() => mockViewQuery),
     select: jest.fn(() => mockViewQuery),
     eq: jest.fn(() => mockViewQuery),
@@ -19,7 +19,7 @@ describe('getGarmentsPaginated - Client Name Sorting', () => {
   };
 
   // Mock supabase client for regular queries
-  const mockRegularQuery = {
+  const mockRegularQuery: any = {
     from: jest.fn(() => mockRegularQuery),
     select: jest.fn(() => mockRegularQuery),
     eq: jest.fn(() => mockRegularQuery),
@@ -84,6 +84,7 @@ describe('getGarmentsPaginated - Client Name Sorting', () => {
       shopId: mockShopId,
       sortField: 'client_name',
       sortOrder: 'asc',
+      limit: 20,
     });
 
     // Verify it used the view
@@ -99,8 +100,8 @@ describe('getGarmentsPaginated - Client Name Sorting', () => {
 
     // Check the results
     expect(result.garments).toHaveLength(2);
-    expect(result.garments[0].client_name).toBe('Alice Smith');
-    expect(result.garments[1].client_name).toBe('Bob Jones');
+    expect(result.garments[0]?.client_name).toBe('Alice Smith');
+    expect(result.garments[1]?.client_name).toBe('Bob Jones');
   });
 
   it('should include client name in cursor when sorting by client_name', async () => {
@@ -163,6 +164,7 @@ describe('getGarmentsPaginated - Client Name Sorting', () => {
         lastCreatedAt: '2024-01-01T00:00:00Z',
         lastClientName: 'Alice Smith',
       },
+      limit: 20,
     });
 
     // Verify cursor filter was applied

@@ -51,7 +51,7 @@ import {
 import type { Appointment, AppointmentType } from '@/types';
 import { useMutation } from '@tanstack/react-query';
 import { appointmentKeys } from '@/lib/queries/appointment-keys';
-import { updateAppointment as updateAppointmentRefactored } from '@/lib/actions/appointments-refactored';
+import { updateAppointment as updateAppointmentRefactored } from '@/lib/actions/appointments';
 import { useAppointments } from '@/providers/AppointmentProvider';
 import { AppointmentActionType } from '@/lib/reducers/appointments-reducer';
 import { toast } from 'react-hot-toast';

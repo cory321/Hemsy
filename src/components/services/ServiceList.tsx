@@ -34,8 +34,22 @@ export default function ServiceList({
       const serviceData = convertServiceForDatabase(updatedService);
       const updated = await editService(id, serviceData as any);
 
+      // Map database result to Service type from serviceUtils
+      const updatedForState: Service = {
+        id: updated.id,
+        name: updated.name,
+        description: updated.description,
+        default_qty: updated.default_qty,
+        default_unit: updated.default_unit,
+        default_unit_price_cents: updated.default_unit_price_cents,
+        frequently_used: updated.frequently_used,
+        frequently_used_position: updated.frequently_used_position,
+      };
+
       setServices((prevServices) =>
-        prevServices.map((service) => (service.id === id ? updated : service))
+        prevServices.map((service) =>
+          service.id === id ? updatedForState : service
+        )
       );
 
       toast.success('Service updated successfully');
@@ -71,7 +85,20 @@ export default function ServiceList({
 
     try {
       const duplicated = await duplicateService(id);
-      setServices((prevServices) => [...prevServices, duplicated]);
+
+      // Map database result to Service type from serviceUtils
+      const duplicatedForState: Service = {
+        id: duplicated.id,
+        name: duplicated.name,
+        description: duplicated.description,
+        default_qty: duplicated.default_qty,
+        default_unit: duplicated.default_unit,
+        default_unit_price_cents: duplicated.default_unit_price_cents,
+        frequently_used: duplicated.frequently_used,
+        frequently_used_position: duplicated.frequently_used_position,
+      };
+
+      setServices((prevServices) => [...prevServices, duplicatedForState]);
       toast.success('Service duplicated successfully');
     } catch (error) {
       toast.error(

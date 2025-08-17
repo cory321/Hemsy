@@ -87,18 +87,15 @@ export function createMockClient(overrides?: Partial<Client>): Client {
 export function createMockAppointment(
   overrides?: Partial<Appointment>
 ): Appointment {
-  const date = generateDateOnly();
-  const startTime = generateTime(10, 0);
-  const endTime = generateTime(11, 0);
+  const date = overrides?.date || generateDateOnly();
+  const startTime = overrides?.start_time || generateTime(10, 0);
+  const endTime = overrides?.end_time || generateTime(11, 0);
 
   return {
     id: generateId(),
     shop_id: generateId(),
     client_id: generateId(),
     order_id: null,
-    date,
-    start_time: startTime,
-    end_time: endTime,
     type: 'consultation',
     status: 'confirmed',
     notes: null,
@@ -106,6 +103,10 @@ export function createMockAppointment(
     created_at: generateDate(),
     updated_at: generateDate(),
     ...overrides,
+    // Ensure required fields are never undefined
+    date: overrides?.date || date,
+    start_time: overrides?.start_time || startTime,
+    end_time: overrides?.end_time || endTime,
   };
 }
 
@@ -151,18 +152,22 @@ export function createMockService(overrides?: Partial<Service>): Service {
 
 // Garment factory
 export function createMockGarment(overrides?: Partial<Garment>): Garment {
-  return {
+  const garment: Garment = {
     id: generateId(),
     order_id: generateId(),
     title: 'Dress - Blue',
-    description: "Customer's blue dress for hemming",
-    photo_url: null,
-    due_date: null,
-    event_date: null,
     stage: 'New',
-    notes: null,
     created_at: generateDate(),
     updated_at: generateDate(),
+  };
+
+  // Only add optional properties if they're not undefined
+  if (overrides?.description !== undefined || !overrides) {
+    garment.description = "Customer's blue dress for hemming";
+  }
+
+  return {
+    ...garment,
     ...overrides,
   };
 }

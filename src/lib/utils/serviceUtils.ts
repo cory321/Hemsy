@@ -9,7 +9,7 @@ import { ServiceUnitType } from './serviceUnitTypes';
 export interface Service {
   id?: string;
   name: string;
-  description?: string;
+  description?: string | null;
   default_qty: number;
   default_unit: ServiceUnitType;
   default_unit_price_cents: number;
@@ -85,24 +85,35 @@ export const convertServiceForForm = (service: Service): ServiceFormData => {
     qty: service.default_qty,
     unit: service.default_unit,
     unit_price: centsToDollars(service.default_unit_price_cents),
-    frequently_used: service.frequently_used,
-    frequently_used_position: service.frequently_used_position,
+    frequently_used: service.frequently_used ?? false,
+    frequently_used_position: service.frequently_used_position ?? null,
   };
 };
 
 export const convertServiceForDatabase = (
   formData: ServiceFormData
 ): Partial<Service> => {
-  return {
+  const result: Partial<Service> = {
     name: formData.name,
-    description: formData.description || undefined,
     default_qty:
       typeof formData.qty === 'string'
         ? parseInt(formData.qty, 10) || 1
         : formData.qty,
     default_unit: formData.unit,
     default_unit_price_cents: dollarsToCents(formData.unit_price),
-    frequently_used: formData.frequently_used,
-    frequently_used_position: formData.frequently_used_position,
   };
+
+  if (formData.description) {
+    result.description = formData.description;
+  }
+
+  if (formData.frequently_used !== undefined) {
+    result.frequently_used = formData.frequently_used;
+  }
+
+  if (formData.frequently_used_position !== undefined) {
+    result.frequently_used_position = formData.frequently_used_position;
+  }
+
+  return result;
 };

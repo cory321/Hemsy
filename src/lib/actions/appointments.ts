@@ -1,48 +1,62 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
-import { revalidatePath } from 'next/cache';
 import { auth } from '@clerk/nextjs/server';
 import { z } from 'zod';
-import type { Appointment } from '@/types';
+import { revalidatePath } from 'next/cache';
+import { createClient } from '@/lib/supabase/server';
+import type { Appointment, AppointmentStatus } from '@/types';
 import { EmailService } from '@/lib/services/email/email-service';
 
 // Validation schemas
-const appointmentSchema = z.object({
-  client_id: z.string().uuid(),
+const createAppointmentSchema = z.object({
+  shopId: z.string().uuid(),
+  clientId: z.string().uuid().optional(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format'),
-  start_time: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format'),
-  end_time: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format'),
+  startTime: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format'),
+  endTime: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format'),
   type: z.enum(['consultation', 'fitting', 'pickup', 'delivery', 'other']),
-  notes: z.string().optional().nullable(),
+  notes: z.string().optional(),
+  // Per-appointment email preference (default: true if client accepts email)
+  sendEmail: z.boolean().optional(),
 });
 
-const updateAppointmentSchema = appointmentSchema.partial().extend({
-  id: z.string().uuid(),
-  status: z
-    .enum([
-      'pending',
-      'declined',
-      'confirmed',
-      'canceled',
-      'no_show',
-      'completed',
-    ])
-    .optional(),
-});
+const updateAppointmentSchema = createAppointmentSchema
+  .extend({
+    id: z.string().uuid(),
+    status: z
+      .enum(['pending', 'declined', 'confirmed', 'canceled', 'no_show'])
+      .optional(),
+    originalDate: z.string().optional(), // For tracking date changes
+    // Per-operation flag to control whether to send notification emails
+    sendEmail: z.boolean().optional(),
+  })
+  .partial()
+  .required({ id: true });
 
-// Get appointments for a date range
-export async function getAppointments(
+export type CreateAppointmentData = z.infer<typeof createAppointmentSchema>;
+export type UpdateAppointmentData = z.infer<typeof updateAppointmentSchema>;
+
+/**
+ * Get appointments for a specific time range
+ * Optimized for calendar views with proper indexes
+ */
+export async function getAppointmentsByTimeRange(
+  shopId: string,
   startDate: string,
-  endDate: string,
-  view: 'month' | 'week' | 'day' | 'list' = 'month'
-) {
+  endDate: string
+): Promise<Appointment[]> {
+  console.log('🚀 getAppointmentsByTimeRange called:', {
+    shopId,
+    startDate,
+    endDate,
+  });
+
   const { userId } = await auth();
   if (!userId) throw new Error('Unauthorized');
 
   const supabase = await createClient();
 
-  // Get user's shop
+  // Verify shop ownership
   const { data: userData, error: userError } = await supabase
     .from('users')
     .select('id')
@@ -54,90 +68,77 @@ export async function getAppointments(
   const { data: shopData, error: shopError } = await supabase
     .from('shops')
     .select('id')
+    .eq('id', shopId)
     .eq('owner_user_id', userData.id)
     .single();
 
-  if (shopError) throw new Error('Failed to fetch shop');
+  if (shopError || !shopData) throw new Error('Unauthorized access to shop');
 
-  // Fetch appointments with client info
-  let query = supabase
+  // Fetch appointments with client data directly
+  const { data: appointments, error } = await supabase
     .from('appointments')
     .select(
       `
       *,
       client:clients(
         id,
+        shop_id,
         first_name,
         last_name,
         email,
         phone_number,
         accept_email,
-        accept_sms
+        accept_sms,
+        created_at,
+        updated_at
       )
     `
     )
-    .eq('shop_id', shopData.id)
+    .eq('shop_id', shopId)
     .gte('date', startDate)
     .lte('date', endDate)
+    .not('status', 'in', '(canceled,no_show)')
     .order('date', { ascending: true })
     .order('start_time', { ascending: true });
 
-  // Apply pagination for list view
-  if (view === 'list') {
-    query = query.limit(50);
+  if (error) {
+    console.error('Failed to fetch appointments:', error);
+    throw new Error('Failed to fetch appointments');
   }
 
-  const { data: appointments, error } = await query;
-
-  if (error) throw new Error('Failed to fetch appointments');
-
-  return appointments;
+  // Transform the response to match our Appointment type
+  return appointments.map((apt) => ({
+    id: apt.id,
+    shop_id: apt.shop_id,
+    client_id: apt.client_id,
+    order_id: apt.order_id,
+    date: apt.date,
+    start_time: apt.start_time,
+    end_time: apt.end_time,
+    type: apt.type,
+    status: apt.status,
+    notes: apt.notes,
+    reminder_sent: apt.reminder_sent,
+    created_at: apt.created_at,
+    updated_at: apt.updated_at,
+    client: apt.client || null,
+  }));
 }
 
-// Get single appointment
-export async function getAppointment(id: string) {
+/**
+ * Get appointment counts by date for month view indicators
+ */
+export async function getAppointmentCounts(
+  shopId: string,
+  startDate: string,
+  endDate: string
+): Promise<Record<string, number>> {
   const { userId } = await auth();
   if (!userId) throw new Error('Unauthorized');
 
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from('appointments')
-    .select(
-      `
-      *,
-      client:clients(
-        id,
-        first_name,
-        last_name,
-        email,
-        phone_number,
-        accept_email,
-        accept_sms
-      )
-    `
-    )
-    .eq('id', id)
-    .single();
-
-  if (error) throw new Error('Failed to fetch appointment');
-
-  return data;
-}
-
-// Create appointment
-export async function createAppointment(
-  values: z.infer<typeof appointmentSchema>
-) {
-  const { userId } = await auth();
-  if (!userId) throw new Error('Unauthorized');
-
-  // Validate input
-  const validatedData = appointmentSchema.parse(values);
-
-  const supabase = await createClient();
-
-  // Get user's shop
+  // Verify shop ownership (reuse logic from above)
   const { data: userData, error: userError } = await supabase
     .from('users')
     .select('id')
@@ -149,177 +150,296 @@ export async function createAppointment(
   const { data: shopData, error: shopError } = await supabase
     .from('shops')
     .select('id')
+    .eq('id', shopId)
     .eq('owner_user_id', userData.id)
     .single();
 
-  if (shopError) throw new Error('Failed to fetch shop');
+  if (shopError || !shopData) throw new Error('Unauthorized access to shop');
 
-  // Check for conflicts
-  const { data: conflictCheck, error: conflictError } = await supabase.rpc(
-    'check_appointment_conflict',
+  // Use the optimized function for counts
+  const { data: counts, error } = await supabase.rpc(
+    'get_appointment_counts_by_date',
     {
-      p_shop_id: shopData.id,
-      p_date: validatedData.date,
-      p_start_time: validatedData.start_time,
-      p_end_time: validatedData.end_time,
+      p_shop_id: shopId,
+      p_start_date: startDate,
+      p_end_date: endDate,
     }
   );
 
-  if (conflictError) throw new Error('Failed to check conflicts');
-  if (conflictCheck)
-    throw new Error('This time slot conflicts with another appointment');
-
-  // Check working hours
-  const { data: hoursCheck, error: hoursError } = await supabase.rpc(
-    'check_within_working_hours',
-    {
-      p_shop_id: shopData.id,
-      p_date: validatedData.date,
-      p_start_time: validatedData.start_time,
-      p_end_time: validatedData.end_time,
-    }
-  );
-
-  if (hoursError) throw new Error('Failed to check working hours');
-  if (!hoursCheck) throw new Error('Appointment must be within working hours');
-
-  // Create appointment with pending status
-  const insertData = {
-    shop_id: shopData.id,
-    ...validatedData,
-    status: 'pending' as string, // New appointments start as pending
-    notes: validatedData.notes || null, // Ensure notes is null if undefined
-  };
-
-  const { data, error } = await supabase
-    .from('appointments')
-    .insert(insertData)
-    .select()
-    .single();
-
-  if (error) throw new Error('Failed to create appointment');
-
-  // Send appointment scheduled email (includes confirmation link when pending)
-  try {
-    console.log(
-      '🚀 Attempting to send appointment scheduled email for appointment:',
-      data.id
-    );
-    const emailService = new EmailService(supabase, userData.id);
-    console.log('📧 EmailService created, sending email...');
-    const result = await emailService.sendAppointmentEmail(
-      data.id,
-      'appointment_scheduled'
-    );
-    console.log('✅ Email sent successfully:', result);
-  } catch (e) {
-    console.error('❌ Failed to send scheduled email:', e);
-    // Log the full error details
-    if (e instanceof Error) {
-      console.error('Error details:', {
-        message: e.message,
-        stack: e.stack,
-        name: e.name,
-      });
-    }
+  if (error) {
+    console.error('Failed to fetch appointment counts:', error);
+    throw new Error('Failed to fetch appointment counts');
   }
 
-  revalidatePath('/appointments');
-  return data;
+  // Convert to a map for easy lookup
+  const countsMap: Record<string, number> = {};
+  counts.forEach((row) => {
+    countsMap[row.date] = row.total_count;
+  });
+
+  return countsMap;
 }
 
-// Update appointment
-export async function updateAppointment(
-  values: z.infer<typeof updateAppointmentSchema>
-) {
+/**
+ * Create a new appointment using atomic database function
+ */
+export async function createAppointment(
+  data: CreateAppointmentData
+): Promise<Appointment> {
   const { userId } = await auth();
   if (!userId) throw new Error('Unauthorized');
 
-  // Validate input
-  const validatedData = updateAppointmentSchema.parse(values);
-  const { id, ...updateData } = validatedData;
-
-  // Remove undefined values from updateData to match Supabase types
-  const cleanUpdateData = Object.entries(updateData).reduce(
-    (acc, [key, value]) => {
-      if (value !== undefined) {
-        acc[key] = value === null ? null : value;
-      }
-      return acc;
-    },
-    {} as Record<string, any>
-  );
-
+  const validated = createAppointmentSchema.parse(data);
   const supabase = await createClient();
 
-  // Get current appointment to check ownership
-  const { data: currentAppointment, error: fetchError } = await supabase
-    .from('appointments')
-    .select('shop_id, date, start_time, end_time')
-    .eq('id', id)
-    .single();
-
-  if (fetchError) throw new Error('Failed to fetch appointment');
-
-  // If time/date is being updated, check conflicts
-  if (
-    cleanUpdateData.date ||
-    cleanUpdateData.start_time ||
-    cleanUpdateData.end_time
-  ) {
-    const checkDate = cleanUpdateData.date || currentAppointment.date;
-    const checkStartTime =
-      cleanUpdateData.start_time || currentAppointment.start_time;
-    const checkEndTime =
-      cleanUpdateData.end_time || currentAppointment.end_time;
-
-    const { data: conflictCheck, error: conflictError } = await supabase.rpc(
-      'check_appointment_conflict',
-      {
-        p_shop_id: currentAppointment.shop_id,
-        p_date: checkDate,
-        p_start_time: checkStartTime,
-        p_end_time: checkEndTime,
-        p_appointment_id: id,
-      }
-    );
-
-    if (conflictError) throw new Error('Failed to check conflicts');
-    if (conflictCheck)
-      throw new Error('This time slot conflicts with another appointment');
-
-    // Check working hours
-    const { data: hoursCheck, error: hoursError } = await supabase.rpc(
-      'check_within_working_hours',
-      {
-        p_shop_id: currentAppointment.shop_id,
-        p_date: checkDate,
-        p_start_time: checkStartTime,
-        p_end_time: checkEndTime,
-      }
-    );
-
-    if (hoursError) throw new Error('Failed to check working hours');
-    if (!hoursCheck)
-      throw new Error('Appointment must be within working hours');
+  // Prevent creating appointments in the past (date + startTime before now)
+  const startDateTime = new Date(`${validated.date} ${validated.startTime}`);
+  if (startDateTime.getTime() < Date.now()) {
+    throw new Error('Cannot create appointments in the past');
   }
 
-  // Update appointment
-  const { data, error } = await supabase
-    .from('appointments')
-    .update(cleanUpdateData)
-    .eq('id', id)
-    .select()
+  // Verify shop ownership
+  const { data: userData, error: userError } = await supabase
+    .from('users')
+    .select('id')
+    .eq('clerk_user_id', userId)
     .single();
 
-  if (error) throw new Error('Failed to update appointment');
+  if (userError) throw new Error('Failed to fetch user');
 
-  // Send rescheduled or canceled emails when appropriate
+  const { data: shopData, error: shopError } = await supabase
+    .from('shops')
+    .select('id')
+    .eq('id', validated.shopId)
+    .eq('owner_user_id', userData.id)
+    .single();
+
+  if (shopError || !shopData) throw new Error('Unauthorized access to shop');
+
+  // Insert appointment
+  const insertData: any = {
+    shop_id: validated.shopId,
+    date: validated.date,
+    start_time: validated.startTime,
+    end_time: validated.endTime,
+    type: validated.type,
+    notes: validated.notes || null,
+  };
+
+  // Only add client_id if provided (it's required in the database)
+  if (validated.clientId) {
+    insertData.client_id = validated.clientId;
+  }
+
+  const { data: appointment, error } = await supabase
+    .from('appointments')
+    .insert(insertData)
+    .select('*, client:clients(*)')
+    .single();
+
+  if (error) {
+    if (error.code === 'P0001') {
+      throw new Error(
+        'This time slot is already booked. Please choose another time.'
+      );
+    }
+    if (error.code === 'P0002') {
+      throw new Error('The appointment is outside of working hours.');
+    }
+    console.error('Failed to create appointment:', error);
+    throw new Error('Failed to create appointment');
+  }
+
+  // Fetch the complete appointment with client data
+  const { data: completeAppointment, error: fetchError } = await supabase
+    .from('appointments')
+    .select(
+      `
+      *,
+      client:clients(
+        id,
+        shop_id,
+        first_name,
+        last_name,
+        email,
+        phone_number,
+        accept_email,
+        accept_sms,
+        created_at,
+        updated_at
+      )
+    `
+    )
+    .eq('id', appointment.id)
+    .single();
+
+  if (fetchError || !completeAppointment) {
+    throw new Error('Failed to fetch created appointment');
+  }
+
+  // Conditionally send initial scheduled email to the client only
   try {
-    console.log('🔔 updateAppointment: evaluating notification send...', {
-      id,
-      cleanUpdateData,
-    });
+    const clientAcceptsEmail =
+      completeAppointment.client?.accept_email !== false;
+    const shouldSend = validated.sendEmail !== false; // default to true when undefined
+
+    if (clientAcceptsEmail && shouldSend) {
+      console.log(
+        '🚀 [appointments-refactored] Attempting to send scheduled email for appointment:',
+        appointment.id
+      );
+      const emailService = new EmailService(supabase, userData.id);
+      const result = await emailService.sendAppointmentEmail(
+        appointment.id,
+        'appointment_scheduled'
+      );
+      console.log('✅ [appointments-refactored] Email send result:', result);
+    } else {
+      console.log(
+        'ℹ️ [appointments-refactored] Skipping email send. clientAcceptsEmail:',
+        clientAcceptsEmail,
+        'shouldSend:',
+        shouldSend
+      );
+    }
+  } catch (e) {
+    console.error(
+      '❌ [appointments-refactored] Failed to send scheduled email:',
+      e
+    );
+  }
+
+  // Revalidate the appointments page
+  revalidatePath('/appointments');
+
+  return completeAppointment as Appointment;
+}
+
+/**
+ * Update an existing appointment
+ */
+export async function updateAppointment(
+  data: UpdateAppointmentData
+): Promise<Appointment> {
+  const { userId } = await auth();
+  if (!userId) throw new Error('Unauthorized');
+
+  const validated = updateAppointmentSchema.parse(data);
+  const supabase = await createClient();
+
+  // Get current appointment to verify ownership
+  const { data: currentApt, error: fetchError } = await supabase
+    .from('appointments')
+    .select('*, shops!inner(owner_user_id, users!inner(clerk_user_id))')
+    .eq('id', validated.id)
+    .eq('shops.users.clerk_user_id', userId)
+    .single();
+  // Prevent reschedule/cancel for past appointments
+  const currentAptEnd = new Date(`${currentApt.date} ${currentApt.end_time}`);
+  const isPast = currentAptEnd < new Date();
+  if (
+    isPast &&
+    (validated.status === 'canceled' ||
+      validated.date ||
+      validated.startTime ||
+      validated.endTime)
+  ) {
+    throw new Error('Cannot modify past appointments');
+  }
+
+  if (fetchError || !currentApt) {
+    throw new Error('Appointment not found or unauthorized');
+  }
+
+  // If date/time is changing, check for conflicts
+  if (validated.date || validated.startTime || validated.endTime) {
+    const date = validated.date || currentApt.date;
+    const startTime = validated.startTime || currentApt.start_time;
+    const endTime = validated.endTime || currentApt.end_time;
+
+    // Prevent moving appointment to a past time
+    const newStartDateTime = new Date(`${date} ${startTime}`);
+    if (newStartDateTime.getTime() < Date.now()) {
+      throw new Error('Cannot schedule appointments in the past');
+    }
+
+    const { data: hasConflict, error: conflictError } = await supabase.rpc(
+      'check_appointment_conflict',
+      {
+        p_shop_id: currentApt.shop_id,
+        p_date: date,
+        p_start_time: startTime,
+        p_end_time: endTime,
+        p_appointment_id: validated.id,
+      }
+    );
+
+    if (conflictError) {
+      throw new Error('Failed to check for conflicts');
+    }
+
+    if (hasConflict) {
+      throw new Error(
+        'This time slot is already booked. Please choose another time.'
+      );
+    }
+  }
+
+  // Capture previous time before update for email context
+  const previousDateTime = `${currentApt.date} ${currentApt.start_time}`;
+
+  // Update the appointment
+  const updateData: any = {};
+  if (validated.date !== undefined) updateData.date = validated.date;
+  if (validated.startTime !== undefined)
+    updateData.start_time = validated.startTime;
+  if (validated.endTime !== undefined) updateData.end_time = validated.endTime;
+  if (validated.type !== undefined) updateData.type = validated.type;
+  if (validated.status !== undefined) updateData.status = validated.status;
+  if (validated.notes !== undefined) updateData.notes = validated.notes;
+  if (validated.clientId !== undefined)
+    updateData.client_id = validated.clientId;
+
+  const { data: updatedApt, error: updateError } = await supabase
+    .from('appointments')
+    .update(updateData)
+    .eq('id', validated.id)
+    .select(
+      `
+      *,
+      client:clients(
+        id,
+        shop_id,
+        first_name,
+        last_name,
+        email,
+        phone_number,
+        accept_email,
+        accept_sms,
+        created_at,
+        updated_at
+      )
+    `
+    )
+    .single();
+
+  if (updateError || !updatedApt) {
+    throw new Error('Failed to update appointment');
+  }
+
+  // Conditionally send notification emails for reschedule/cancel
+  try {
+    console.log(
+      '[appointments-refactored.updateAppointment] evaluating notification send...',
+      {
+        id: validated.id,
+        status: validated.status,
+        dateChanged: validated.date !== undefined,
+        startChanged: validated.startTime !== undefined,
+        endChanged: validated.endTime !== undefined,
+        previousDateTime,
+      }
+    );
     const { data: currentUserRow } = await supabase
       .from('users')
       .select('id')
@@ -328,75 +448,82 @@ export async function updateAppointment(
     const ownerUserId = currentUserRow?.id || userId;
     const emailService = new EmailService(supabase, ownerUserId);
 
-    if (cleanUpdateData.status === 'canceled') {
-      // include previous_time when available
-      console.log('📧 Sending appointment_canceled email...', {
-        id,
-        previous_time: `${currentAppointment.date} ${currentAppointment.start_time}`,
-      });
-      await emailService.sendAppointmentEmail(id, 'appointment_canceled', {
-        previous_time: `${currentAppointment.date} ${currentAppointment.start_time}`,
-      });
-    } else if (
-      cleanUpdateData.date ||
-      cleanUpdateData.start_time ||
-      cleanUpdateData.end_time
-    ) {
-      console.log('📧 Sending appointment_rescheduled email...', {
-        id,
-        previous_time: `${currentAppointment.date} ${currentAppointment.start_time}`,
-      });
-      await emailService.sendAppointmentEmail(id, 'appointment_rescheduled', {
-        previous_time: `${currentAppointment.date} ${currentAppointment.start_time}`,
-      });
+    const sendEmailFlag = validated.sendEmail !== false; // default to true
+
+    if (sendEmailFlag) {
+      if (validated.status === 'canceled') {
+        console.log(
+          '[appointments-refactored] sending appointment_canceled email',
+          {
+            appointmentId: validated.id,
+            previousDateTime,
+          }
+        );
+        await emailService.sendAppointmentEmail(
+          validated.id,
+          'appointment_canceled',
+          { previous_time: previousDateTime }
+        );
+      } else if (validated.status === 'no_show') {
+        console.log(
+          '[appointments-refactored] sending appointment_no_show email',
+          {
+            appointmentId: validated.id,
+          }
+        );
+        await emailService.sendAppointmentEmail(
+          validated.id,
+          'appointment_no_show'
+        );
+      } else {
+        const timeChanged =
+          validated.date !== undefined ||
+          validated.startTime !== undefined ||
+          validated.endTime !== undefined;
+
+        if (timeChanged) {
+          console.log(
+            '[appointments-refactored] sending appointment_rescheduled email',
+            {
+              appointmentId: validated.id,
+              previousDateTime,
+            }
+          );
+          await emailService.sendAppointmentEmail(
+            validated.id,
+            'appointment_rescheduled',
+            { previous_time: previousDateTime }
+          );
+        }
+      }
     }
   } catch (e) {
-    console.warn('⚠️ Failed to send update email:', e);
+    console.warn('[updateAppointment] Failed to send notification email:', e);
   }
 
+  // Revalidate the appointments page
   revalidatePath('/appointments');
-  return data;
+
+  return updatedApt as Appointment;
 }
 
-// Cancel appointment
-export async function cancelAppointment(id: string) {
-  return updateAppointment({ id, status: 'canceled' });
-}
-
-// Complete appointment - REMOVED
-// Appointments no longer have a 'completed' status
-// They are considered complete when their end time has passed
-
-// Confirm appointment
-export async function confirmAppointment(id: string) {
-  return updateAppointment({ id, status: 'confirmed' });
-}
-
-// Decline appointment
-export async function declineAppointment(id: string) {
-  return updateAppointment({ id, status: 'declined' });
-}
-
-// Mark appointment as no-show
-export async function markNoShowAppointment(id: string) {
-  return updateAppointment({ id, status: 'no_show' });
-}
-
-// Get shop hours
-export async function getShopHours() {
+/**
+ * Delete an appointment
+ */
+export async function deleteAppointment(appointmentId: string): Promise<void> {
   const { userId } = await auth();
   if (!userId) throw new Error('Unauthorized');
 
   const supabase = await createClient();
 
-  // Get user's shop
+  // First get the user's shop
   const { data: userData, error: userError } = await supabase
     .from('users')
     .select('id')
     .eq('clerk_user_id', userId)
     .single();
 
-  if (userError) throw new Error('Failed to fetch user');
+  if (userError || !userData) throw new Error('User not found');
 
   const { data: shopData, error: shopError } = await supabase
     .from('shops')
@@ -404,103 +531,38 @@ export async function getShopHours() {
     .eq('owner_user_id', userData.id)
     .single();
 
-  if (shopError) throw new Error('Failed to fetch shop');
+  if (shopError || !shopData) throw new Error('Unauthorized access to shop');
 
-  const { data, error } = await supabase
-    .from('shop_hours')
-    .select('*')
-    .eq('shop_id', shopData.id)
-    .order('day_of_week');
+  // Delete the appointment
+  const { error } = await supabase
+    .from('appointments')
+    .delete()
+    .eq('id', appointmentId)
+    .eq('shop_id', shopData.id);
 
-  if (error) throw new Error('Failed to fetch shop hours');
-
-  // If no shop hours exist, return default hours
-  if (!data || data.length === 0) {
-    return getDefaultShopHours();
+  if (error) {
+    console.error('Failed to delete appointment:', error);
+    throw new Error('Failed to delete appointment');
   }
 
-  return data;
-}
-
-// Get default shop hours (Mon-Fri 9-5, Sat-Sun closed)
-function getDefaultShopHours() {
-  const defaultHours = [];
-  for (let day = 0; day <= 6; day++) {
-    if (day === 0 || day === 6) {
-      // Sunday or Saturday - closed
-      defaultHours.push({
-        day_of_week: day,
-        open_time: null,
-        close_time: null,
-        is_closed: true,
-      });
-    } else {
-      // Monday to Friday - 9 AM to 5 PM
-      defaultHours.push({
-        day_of_week: day,
-        open_time: '09:00',
-        close_time: '17:00',
-        is_closed: false,
-      });
-    }
-  }
-  return defaultHours;
-}
-
-// Update shop hours
-export async function updateShopHours(
-  hours: Array<{
-    day_of_week: number;
-    open_time: string | null;
-    close_time: string | null;
-    is_closed: boolean;
-  }>
-) {
-  const { userId } = await auth();
-  if (!userId) throw new Error('Unauthorized');
-
-  const supabase = await createClient();
-
-  // Get user's shop
-  const { data: userData, error: userError } = await supabase
-    .from('users')
-    .select('id')
-    .eq('clerk_user_id', userId)
-    .single();
-
-  if (userError) throw new Error('Failed to fetch user');
-
-  const { data: shopData, error: shopError } = await supabase
-    .from('shops')
-    .select('id')
-    .eq('owner_user_id', userData.id)
-    .single();
-
-  if (shopError) throw new Error('Failed to fetch shop');
-
-  // Upsert shop hours
-  const { error } = await supabase.from('shop_hours').upsert(
-    hours.map((hour) => ({
-      shop_id: shopData.id,
-      ...hour,
-    })),
-    { onConflict: 'shop_id,day_of_week' }
-  );
-
-  if (error) throw new Error('Failed to update shop hours');
-
-  revalidatePath('/settings');
+  // Revalidate the appointments page
   revalidatePath('/appointments');
 }
 
-// Get calendar settings
-export async function getCalendarSettings() {
+/**
+ * Get appointments for a specific client
+ */
+export async function getClientAppointments(
+  shopId: string,
+  clientId: string,
+  includeCompleted: boolean = false
+): Promise<Appointment[]> {
   const { userId } = await auth();
   if (!userId) throw new Error('Unauthorized');
 
   const supabase = await createClient();
 
-  // Get user's shop
+  // Verify shop ownership
   const { data: userData, error: userError } = await supabase
     .from('users')
     .select('id')
@@ -512,71 +574,174 @@ export async function getCalendarSettings() {
   const { data: shopData, error: shopError } = await supabase
     .from('shops')
     .select('id')
+    .eq('id', shopId)
     .eq('owner_user_id', userData.id)
     .single();
 
-  if (shopError) throw new Error('Failed to fetch shop');
+  if (shopError || !shopData) throw new Error('Unauthorized access to shop');
 
-  const { data, error } = await supabase
-    .from('calendar_settings')
-    .select('*')
-    .eq('shop_id', shopData.id)
-    .single();
+  // Query appointments for the client
+  let query = supabase
+    .from('appointments')
+    .select(
+      `
+      *,
+      client:clients(
+        id,
+        shop_id,
+        first_name,
+        last_name,
+        email,
+        phone_number,
+        accept_email,
+        accept_sms,
+        created_at,
+        updated_at
+      )
+    `
+    )
+    .eq('shop_id', shopId)
+    .eq('client_id', clientId)
+    .order('date', { ascending: false })
+    .order('start_time', { ascending: false });
 
-  if (error && error.code !== 'PGRST116') {
-    throw new Error('Failed to fetch calendar settings');
+  if (!includeCompleted) {
+    query = query.in('status', ['pending', 'confirmed']);
   }
 
-  // Return default settings if none exist
-  return (
-    data || {
-      buffer_time_minutes: 0,
-      default_appointment_duration: 30,
-      send_reminders: true,
-      reminder_hours_before: 24,
-    }
-  );
+  const { data: appointments, error } = await query;
+
+  if (error) {
+    console.error('Failed to fetch client appointments:', error);
+    throw new Error('Failed to fetch client appointments');
+  }
+
+  return appointments as Appointment[];
 }
 
-// Update calendar settings
-export async function updateCalendarSettings(settings: {
-  buffer_time_minutes: number;
-  default_appointment_duration: number;
-  send_reminders: boolean;
-  reminder_hours_before: number;
-}) {
+/**
+ * Paginated client appointments with filtering and timeframe support
+ */
+export async function getClientAppointmentsPage(
+  shopId: string,
+  clientId: string,
+  options?: {
+    includeCompleted?: boolean;
+    statuses?: AppointmentStatus[];
+    timeframe?: 'upcoming' | 'past' | 'all';
+    dateRange?: { start: string; end: string };
+    limit?: number;
+    offset?: number;
+  }
+): Promise<{
+  appointments: Appointment[];
+  total: number;
+  hasMore: boolean;
+  nextOffset: number;
+}> {
   const { userId } = await auth();
   if (!userId) throw new Error('Unauthorized');
 
   const supabase = await createClient();
 
-  // Get user's shop
+  // Verify shop ownership
   const { data: userData, error: userError } = await supabase
     .from('users')
     .select('id')
     .eq('clerk_user_id', userId)
     .single();
-
-  if (userError) throw new Error('Failed to fetch user');
+  if (userError || !userData) throw new Error('Failed to fetch user');
 
   const { data: shopData, error: shopError } = await supabase
     .from('shops')
     .select('id')
+    .eq('id', shopId)
     .eq('owner_user_id', userData.id)
     .single();
+  if (shopError || !shopData) throw new Error('Unauthorized access to shop');
 
-  if (shopError) throw new Error('Failed to fetch shop');
+  const { includeCompleted, statuses, timeframe, dateRange } = options || {};
 
-  const { error } = await supabase.from('calendar_settings').upsert(
-    {
-      shop_id: shopData.id,
-      ...settings,
-    },
-    { onConflict: 'shop_id' }
-  );
+  // Build base query
+  let query = supabase
+    .from('appointments')
+    .select(
+      `
+      *,
+      client:clients(
+        id,
+        shop_id,
+        first_name,
+        last_name,
+        email,
+        phone_number,
+        accept_email,
+        accept_sms,
+        created_at,
+        updated_at
+      )
+    `,
+      { count: 'exact' }
+    )
+    .eq('shop_id', shopId)
+    .eq('client_id', clientId);
 
-  if (error) throw new Error('Failed to update calendar settings');
+  // Status filter
+  if (statuses && statuses.length > 0) {
+    query = query.in('status', statuses);
+  } else if (!includeCompleted) {
+    query = query.in('status', ['pending', 'confirmed']);
+  }
 
-  revalidatePath('/settings');
-  revalidatePath('/appointments');
+  // Timeframe filter
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  const todayStr = `${yyyy}-${mm}-${dd}`;
+
+  if (dateRange) {
+    query = query.gte('date', dateRange.start).lte('date', dateRange.end);
+  } else if (timeframe === 'upcoming') {
+    query = query.gte('date', todayStr);
+  } else if (timeframe === 'past') {
+    query = query.lt('date', todayStr);
+  }
+
+  // Sorting based on timeframe
+  if (timeframe === 'upcoming') {
+    query = query
+      .order('date', { ascending: true })
+      .order('start_time', { ascending: true });
+  } else if (timeframe === 'past') {
+    query = query
+      .order('date', { ascending: false })
+      .order('start_time', { ascending: false });
+  } else {
+    query = query
+      .order('date', { ascending: false })
+      .order('start_time', { ascending: false });
+  }
+
+  // Pagination
+  const limit = options?.limit ?? 10;
+  const offset = options?.offset ?? 0;
+  query = query.range(offset, offset + limit - 1);
+
+  const { data: rows, error, count } = await query;
+  if (error) {
+    console.error('Failed to fetch client appointments (paginated):', error);
+    throw new Error('Failed to fetch client appointments');
+  }
+
+  const total = count || 0;
+  const hasMore = total > offset + limit;
+  const nextOffset = offset + limit;
+
+  return {
+    appointments: (rows || []) as unknown as Appointment[],
+    total,
+    hasMore,
+    nextOffset,
+  };
 }

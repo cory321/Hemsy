@@ -107,11 +107,8 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
 
       const newServiceItem = await addService(payload);
 
-      // Convert null description to undefined for the Service type
-      const serviceForSelect: Service = {
-        ...newServiceItem,
-        description: newServiceItem.description || undefined,
-      };
+      // Use the service as-is since description can be string | null
+      const serviceForSelect: Service = newServiceItem;
 
       onServiceSelect(serviceForSelect);
 

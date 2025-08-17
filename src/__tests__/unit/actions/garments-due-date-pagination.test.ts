@@ -42,6 +42,7 @@ describe('getGarmentsPaginated - due_date sorting', () => {
       cursor,
       sortField: 'due_date',
       sortOrder: 'asc',
+      limit: 20,
     });
 
     // Verify the query is built correctly

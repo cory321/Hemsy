@@ -150,36 +150,46 @@ export const EMAIL_VARIABLES: EmailVariableConfig[] = [
         description: 'Client full name',
         example: 'Jane Smith',
       },
+    ],
+  },
+  {
+    email_type: 'appointment_no_show',
+    variables: [
       {
-        email_type: 'appointment_no_show',
-        variables: [
-          {
-            key: 'client_name',
-            description: 'Client full name',
-            example: 'Jane Smith',
-          },
-          {
-            key: 'appointment_time',
-            description: 'Missed appointment time',
-            example: 'Monday, Jan 15 at 2:00 PM',
-          },
-          {
-            key: 'shop_name',
-            description: 'Business name',
-            example: "Sarah's Alterations",
-          },
-          {
-            key: 'seamstress_name',
-            description: 'Seamstress name',
-            example: 'Sarah',
-          },
-        ],
-        sample_data: {
-          client_name: 'Jane Smith',
-          appointment_time: 'Monday, Jan 15 at 2:00 PM',
-          shop_name: "Sarah's Alterations",
-          seamstress_name: 'Sarah',
-        },
+        key: 'client_name',
+        description: 'Client full name',
+        example: 'Jane Smith',
+      },
+      {
+        key: 'appointment_time',
+        description: 'Missed appointment time',
+        example: 'Monday, Jan 15 at 2:00 PM',
+      },
+      {
+        key: 'shop_name',
+        description: 'Business name',
+        example: "Sarah's Alterations",
+      },
+      {
+        key: 'seamstress_name',
+        description: 'Seamstress name',
+        example: 'Sarah',
+      },
+    ],
+    sample_data: {
+      client_name: 'Jane Smith',
+      appointment_time: 'Monday, Jan 15 at 2:00 PM',
+      shop_name: "Sarah's Alterations",
+      seamstress_name: 'Sarah',
+    },
+  },
+  {
+    email_type: 'appointment_rescheduled_seamstress',
+    variables: [
+      {
+        key: 'client_name',
+        description: 'Client full name',
+        example: 'Jane Smith',
       },
       {
         key: 'previous_time',

@@ -23,12 +23,10 @@ import {
   updateAppointment as updateAppointmentAction,
   CreateAppointmentData,
   UpdateAppointmentData,
-} from '@/lib/actions/appointments-refactored';
+} from '@/lib/actions/appointments';
 import { Appointment } from '@/types';
-import {
-  calculateDateRange,
-  CalendarView,
-} from '@/lib/queries/appointment-keys';
+import { CalendarView } from '@/lib/queries/appointment-keys';
+import { calculateDateRange } from '@/lib/queries/appointment-queries';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'react-hot-toast';
 
@@ -149,6 +147,10 @@ export function AppointmentProvider({
   const createAppointment = useCallback(
     async (shopId: string, data: CreateAppointmentData) => {
       const tempId = `temp-${uuidv4()}`;
+      if (!data.clientId) {
+        throw new Error('Client ID is required to create an appointment');
+      }
+
       const optimisticAppointment: Appointment = {
         id: tempId,
         shop_id: shopId,
@@ -161,7 +163,7 @@ export function AppointmentProvider({
         notes: data.notes || null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        client: null, // Will be populated by the server
+        // client will be populated by the server
       };
 
       // Optimistic update

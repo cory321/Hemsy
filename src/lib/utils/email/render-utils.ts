@@ -91,10 +91,10 @@ export function validateTemplateSyntax(template: string): {
     let match;
     while ((match = variableRegex.exec(template)) !== null) {
       const varName = match[1];
-      if (!/^[a-zA-Z_]\w*$/.test(varName)) {
+      if (!varName || !/^[a-zA-Z_]\w*$/.test(varName)) {
         return {
           valid: false,
-          error: `Invalid variable name: ${varName}`,
+          error: `Invalid variable name: ${varName || 'undefined'}`,
         };
       }
     }

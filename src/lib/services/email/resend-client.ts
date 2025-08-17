@@ -57,15 +57,21 @@ export class ResendClient {
           ? payload.to
           : [payload.to];
 
-      const { data, error } = await this.client.emails.send({
+      const emailOptions: any = {
         from:
           payload.from ||
           `${emailConfig.sender.name} <${emailConfig.sender.address}>`,
         to: finalTo,
         subject: payload.subject,
         text: payload.text + EMAIL_FOOTER,
-        reply_to: payload.replyTo || emailConfig.sender.replyTo,
-      });
+      };
+
+      const replyToAddress = payload.replyTo || emailConfig.sender.replyTo;
+      if (replyToAddress) {
+        emailOptions.replyTo = replyToAddress;
+      }
+
+      const { data, error } = await this.client.emails.send(emailOptions);
 
       if (error) {
         console.error('❌ Resend API error:', error);

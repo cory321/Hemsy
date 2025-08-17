@@ -16,7 +16,7 @@ import { AppointmentDetailsDialog } from './AppointmentDetailsDialog';
 import {
   CreateAppointmentData,
   UpdateAppointmentData,
-} from '@/lib/actions/appointments-refactored';
+} from '@/lib/actions/appointments';
 import { toast } from 'react-hot-toast';
 import { format } from 'date-fns';
 

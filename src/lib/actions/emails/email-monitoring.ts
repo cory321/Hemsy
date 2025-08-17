@@ -31,7 +31,13 @@ export async function getEmailLogs(
     const supabase = await createClient();
     const repository = new EmailRepository(supabase, user.id);
 
-    const result = await repository.getEmailLogs(validatedParams);
+    // Convert string emailType to EmailType
+    const repositoryParams = {
+      ...validatedParams,
+      emailType: validatedParams.emailType as EmailType | undefined,
+    };
+
+    const result = await repository.getEmailLogs(repositoryParams);
 
     return { success: true, data: result };
   } catch (error) {
@@ -85,7 +91,13 @@ export async function getEmailStatistics(params: {
         appointment_scheduled: 0,
         appointment_rescheduled: 0,
         appointment_canceled: 0,
+        appointment_no_show: 0,
+        appointment_rescheduled_seamstress: 0,
+        appointment_canceled_seamstress: 0,
+        appointment_reminder: 0,
         payment_link: 0,
+        payment_received: 0,
+        invoice_sent: 0,
         appointment_confirmation_request: 0,
         appointment_confirmed: 0,
       },
@@ -93,14 +105,20 @@ export async function getEmailStatistics(params: {
     };
 
     // Count by type
-    const emailTypes = [
+    const emailTypes: EmailType[] = [
       'appointment_scheduled',
       'appointment_rescheduled',
       'appointment_canceled',
+      'appointment_no_show',
+      'appointment_rescheduled_seamstress',
+      'appointment_canceled_seamstress',
+      'appointment_reminder',
       'payment_link',
+      'payment_received',
+      'invoice_sent',
       'appointment_confirmation_request',
       'appointment_confirmed',
-    ] as const;
+    ];
 
     emailTypes.forEach((type) => {
       statistics.byType[type] = logs.filter(
@@ -163,7 +181,13 @@ export async function getEmailLog(emailLogId: string): Promise<{
       return { success: false, error: 'Email log not found' };
     }
 
-    return { success: true, data };
+    // Ensure email_type is typed correctly
+    const emailLog: EmailLog = {
+      ...data,
+      email_type: data.email_type as EmailType,
+    };
+
+    return { success: true, data: emailLog };
   } catch (error) {
     console.error('Failed to get email log:', error);
     return {

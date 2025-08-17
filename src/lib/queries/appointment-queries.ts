@@ -34,7 +34,7 @@ import {
   deleteAppointment,
   type CreateAppointmentData,
   type UpdateAppointmentData,
-} from '@/lib/actions/appointments-refactored';
+} from '@/lib/actions/appointments';
 import type { Appointment } from '@/types';
 
 // Configuration for different view types

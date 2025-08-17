@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { auth } from '@clerk/nextjs/server';
 import { createClient } from '@/lib/supabase/server';
 import { getClient } from '@/lib/actions/clients';
-import { getClientAppointmentsPage } from '@/lib/actions/appointments-refactored';
+import { getClientAppointmentsPage } from '@/lib/actions/appointments';
 import {
   Box,
   Button,

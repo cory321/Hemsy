@@ -20,7 +20,7 @@ import {
 import {
   getCalendarSettings,
   updateCalendarSettings,
-} from '@/lib/actions/appointments';
+} from '@/lib/actions/calendar-settings';
 
 interface CalendarSettingsProps {
   onSave?: () => void;

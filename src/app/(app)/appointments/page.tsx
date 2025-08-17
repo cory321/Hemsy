@@ -7,7 +7,8 @@ export const revalidate = 0;
 import { auth } from '@clerk/nextjs/server';
 import { CircularProgress, Box } from '@mui/material';
 import { AppointmentsClient } from './AppointmentsClient';
-import { getShopHours, getCalendarSettings } from '@/lib/actions/appointments';
+import { getShopHours } from '@/lib/actions/shop-hours';
+import { getCalendarSettings } from '@/lib/actions/calendar-settings';
 
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';

@@ -75,7 +75,15 @@ export async function updateUserEmailSettings(
     const supabase = await createClient();
     const repository = new EmailRepository(supabase, user.id);
 
-    await repository.updateUserEmailSettings(validatedData);
+    // Convert validated data to the format expected by repository
+    const updates: Partial<UserEmailSettings> = {
+      receive_appointment_notifications:
+        validatedData.receive_appointment_notifications,
+      email_signature: validatedData.email_signature ?? null,
+      reply_to_email: validatedData.reply_to_email ?? null,
+    };
+
+    await repository.updateUserEmailSettings(updates);
 
     // Revalidate the settings page
     revalidatePath('/settings');
@@ -132,7 +140,10 @@ export async function testEmailDelivery(testEmail?: string): Promise<{
     });
 
     if (!result.success) {
-      return { success: false, error: result.error };
+      return {
+        success: false,
+        error: result.error || 'Failed to send test email',
+      };
     }
 
     return { success: true };
@@ -209,7 +220,7 @@ export async function testEmailTemplate(
     }
 
     // Create sample data for the template
-    const sampleData = getSampleDataForEmailType(emailType, shop);
+    const sampleData = getSampleDataForEmailType(emailType, shop as Shop);
 
     // Render the template
     const renderer = new TemplateRenderer();
@@ -224,12 +235,14 @@ export async function testEmailTemplate(
     const result = await resendClient.send({
       to: recipientEmail,
       subject: `[TEST] ${rendered.subject}`,
-      html: rendered.body,
       text: rendered.body.replace(/<[^>]*>/g, ''), // Strip HTML for text version
     });
 
     if (!result.success) {
-      return { success: false, error: result.error };
+      return {
+        success: false,
+        error: result.error || 'Failed to send test email',
+      };
     }
 
     // Log the test email
@@ -242,7 +255,7 @@ export async function testEmailTemplate(
       body: rendered.body,
       status: 'sent',
       attempts: 1,
-      resend_id: result.messageId,
+      resend_id: result.messageId || null,
       sent_at: new Date().toISOString(),
       metadata: { is_test: true },
     });

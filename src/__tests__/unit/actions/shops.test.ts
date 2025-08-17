@@ -131,7 +131,7 @@ describe('Shop Actions', () => {
       });
 
       const mockUpdate = jest.fn().mockReturnValue({
-        eq: jest.fn().mockResolvedValue({ error: null }),
+        eq: jest.fn().mockResolvedValue({ error: null } as any),
       });
 
       mockSupabase.from.mockReturnValue({
@@ -178,7 +178,7 @@ describe('Shop Actions', () => {
       const mockUpdate = jest.fn().mockReturnValue({
         eq: jest.fn().mockResolvedValue({
           error: { message: 'Database error' },
-        }),
+        } as any),
       });
 
       mockSupabase.from.mockReturnValue({

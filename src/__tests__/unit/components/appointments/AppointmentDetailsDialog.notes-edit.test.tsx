@@ -3,12 +3,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppointmentProvider } from '@/providers/AppointmentProvider';
 import userEvent from '@testing-library/user-event';
 import { AppointmentDetailsDialog } from '@/components/appointments/AppointmentDetailsDialog';
-import { updateAppointment as updateAppointmentRefactored } from '@/lib/actions/appointments-refactored';
+import { updateAppointment as updateAppointmentRefactored } from '@/lib/actions/appointments';
 import { useRouter } from 'next/navigation';
 import type { Appointment } from '@/types';
 
 // Mock the new refactored action used by the component
-jest.mock('@/lib/actions/appointments-refactored', () => ({
+jest.mock('@/lib/actions/appointments', () => ({
   updateAppointment: jest.fn(),
 }));
 

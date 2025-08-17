@@ -141,7 +141,7 @@ async function sendAppointmentEmail(
 
     return {
       success: result.success,
-      error: result.error,
+      ...(result.error && { error: result.error }),
     };
   } catch (error) {
     console.error('Failed to send appointment email:', error);
@@ -179,7 +179,7 @@ export async function resendEmail(
 
     return {
       success: result.success,
-      error: result.error,
+      ...(result.error && { error: result.error }),
     };
   } catch (error) {
     console.error('Failed to resend email:', error);

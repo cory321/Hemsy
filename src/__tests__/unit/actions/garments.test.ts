@@ -252,7 +252,7 @@ describe('Garment Actions', () => {
       // Verify no garment_history table was accessed
       const fromCalls = mockSupabase.from.mock.calls;
       const historyTableAccessed = fromCalls.some(
-        (call) => call[0] === 'garment_history'
+        (call: any[]) => call[0] === 'garment_history'
       );
       expect(historyTableAccessed).toBe(false);
     });

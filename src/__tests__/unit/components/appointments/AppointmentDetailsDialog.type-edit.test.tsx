@@ -4,11 +4,10 @@ import { AppointmentDetailsDialog } from '@/components/appointments/AppointmentD
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppointmentProvider } from '@/providers/AppointmentProvider';
 import { Appointment } from '@/types';
-import { updateAppointment as updateAppointmentRefactored } from '@/lib/actions/appointments-refactored';
+import { updateAppointment as updateAppointmentRefactored } from '@/lib/actions/appointments';
 import { toast } from 'react-hot-toast';
 
 // Mock dependencies
-jest.mock('@/lib/actions/appointments-refactored');
 jest.mock('@/lib/actions/appointments');
 jest.mock('react-hot-toast');
 jest.mock('next/navigation', () => ({

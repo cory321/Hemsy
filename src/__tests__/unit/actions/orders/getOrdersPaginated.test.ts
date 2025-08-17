@@ -6,7 +6,7 @@ import { ensureUserAndShop } from '@/lib/actions/users';
 jest.mock('@/lib/supabase/server');
 jest.mock('@/lib/actions/users');
 
-const mockSupabase = {
+const mockSupabase: any = {
   from: jest.fn(() => mockSupabase),
   select: jest.fn(() => mockSupabase),
   eq: jest.fn(() => mockSupabase),

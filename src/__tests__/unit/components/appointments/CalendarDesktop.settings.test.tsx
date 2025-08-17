@@ -2,11 +2,14 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CalendarDesktop } from '@/components/appointments/CalendarDesktop';
 import { Calendar } from '@/components/appointments/Calendar';
-import { getCalendarSettings } from '@/lib/actions/appointments';
+import { getCalendarSettings } from '@/lib/actions/calendar-settings';
 import {
   createMockAppointmentWithClient,
   createMockShopHours,
 } from '@/lib/testing/mock-factories';
+
+// Mock the calendar settings module
+jest.mock('@/lib/actions/calendar-settings');
 
 // Mock the CalendarSettings component
 jest.mock('@/components/appointments/CalendarSettings', () => ({

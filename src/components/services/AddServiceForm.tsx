@@ -86,8 +86,20 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
         frequently_used: isFrequentlyUsed,
       });
 
+      // Map database result to Service type from serviceUtils
+      const serviceForState: Service = {
+        id: newServiceItem.id,
+        name: newServiceItem.name,
+        description: newServiceItem.description,
+        default_qty: newServiceItem.default_qty,
+        default_unit: newServiceItem.default_unit,
+        default_unit_price_cents: newServiceItem.default_unit_price_cents,
+        frequently_used: newServiceItem.frequently_used,
+        frequently_used_position: newServiceItem.frequently_used_position,
+      };
+
       // Update the services state in ServicePage
-      setServices((prevServices) => [...prevServices, newServiceItem]);
+      setServices((prevServices) => [...prevServices, serviceForState]);
 
       setNewService({
         name: '',

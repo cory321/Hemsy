@@ -25,12 +25,12 @@ export async function searchServices(query: string) {
 
 export async function addService(service: {
   name: string;
-  description?: string;
+  description?: string | null;
   default_qty: number;
   default_unit: string;
   default_unit_price_cents: number;
   frequently_used?: boolean;
-  frequently_used_position?: number;
+  frequently_used_position?: number | null;
 }) {
   const { shop } = await ensureUserAndShop();
   const supabase = await createSupabaseClient();
@@ -62,12 +62,12 @@ export async function editService(
   id: string,
   updatedService: {
     name: string;
-    description?: string;
+    description?: string | null;
     default_qty: number;
     default_unit: string;
     default_unit_price_cents: number;
     frequently_used?: boolean;
-    frequently_used_position?: number;
+    frequently_used_position?: number | null;
   }
 ) {
   const { shop } = await ensureUserAndShop();
