@@ -1065,6 +1065,7 @@ export type Database = {
           location_type: string | null;
           mailing_address: string | null;
           name: string;
+          onboarding_completed: boolean | null;
           owner_user_id: string;
           payment_preference: string | null;
           phone_number: string | null;
@@ -1083,6 +1084,7 @@ export type Database = {
           location_type?: string | null;
           mailing_address?: string | null;
           name: string;
+          onboarding_completed?: boolean | null;
           owner_user_id: string;
           payment_preference?: string | null;
           phone_number?: string | null;
@@ -1101,6 +1103,7 @@ export type Database = {
           location_type?: string | null;
           mailing_address?: string | null;
           name?: string;
+          onboarding_completed?: boolean | null;
           owner_user_id?: string;
           payment_preference?: string | null;
           phone_number?: string | null;

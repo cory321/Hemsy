@@ -15,20 +15,30 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { completeOnboarding } from '@/lib/actions/onboarding';
 
 export default function OnboardingPage() {
   const router = useRouter();
   const [activeStep, setActiveStep] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     businessName: '',
     businessType: '',
     address: '',
     phone: '',
+    email: '',
+    locationType: 'shop_location' as
+      | 'home_based'
+      | 'shop_location'
+      | 'mobile_service',
     workingHours: {},
-    paymentPreference: 'after',
+    paymentPreference: 'after_service' as 'upfront' | 'after_service',
   });
 
   const steps = [
@@ -38,10 +48,39 @@ export default function OnboardingPage() {
     'Get Started',
   ];
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (activeStep === steps.length - 1) {
-      // TODO: Save onboarding data
-      router.push('/dashboard');
+      // Save onboarding data
+      setLoading(true);
+      setError(null);
+
+      try {
+        const onboardingData = {
+          businessName: formData.businessName,
+          locationType: formData.locationType,
+          workingHours: formData.workingHours,
+          paymentPreference: formData.paymentPreference as
+            | 'upfront'
+            | 'after_service',
+          ...(formData.businessType && { businessType: formData.businessType }),
+          ...(formData.email && { email: formData.email }),
+          ...(formData.phone && { phoneNumber: formData.phone }),
+          ...(formData.address && { mailingAddress: formData.address }),
+        };
+
+        const result = await completeOnboarding(onboardingData);
+
+        if (result.error) {
+          setError(result.error);
+          setLoading(false);
+        } else {
+          // Redirect to dashboard on success
+          router.push('/dashboard');
+        }
+      } catch (err) {
+        setError('An unexpected error occurred. Please try again.');
+        setLoading(false);
+      }
     } else {
       setActiveStep((prevStep) => prevStep + 1);
     }
@@ -68,22 +107,23 @@ export default function OnboardingPage() {
               }
               sx={{ mb: 3 }}
               required
+              error={!formData.businessName && activeStep > 0}
+              helperText={
+                !formData.businessName && activeStep > 0
+                  ? 'Business name is required'
+                  : ''
+              }
             />
-            <FormControl fullWidth sx={{ mb: 3 }}>
-              <InputLabel>Business Type</InputLabel>
-              <Select
-                value={formData.businessType}
-                label="Business Type"
-                onChange={(e) =>
-                  setFormData({ ...formData, businessType: e.target.value })
-                }
-              >
-                <MenuItem value="alterations">Alterations Shop</MenuItem>
-                <MenuItem value="tailor">Custom Tailoring</MenuItem>
-                <MenuItem value="both">Both Alterations & Tailoring</MenuItem>
-                <MenuItem value="mobile">Mobile/Home Service</MenuItem>
-              </Select>
-            </FormControl>
+            <TextField
+              fullWidth
+              label="Email"
+              value={formData.email}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
+              type="email"
+              sx={{ mb: 3 }}
+            />
             <TextField
               fullWidth
               label="Phone Number"
@@ -92,7 +132,27 @@ export default function OnboardingPage() {
                 setFormData({ ...formData, phone: e.target.value })
               }
               type="tel"
+              sx={{ mb: 3 }}
             />
+            <FormControl fullWidth>
+              <InputLabel>Location Type</InputLabel>
+              <Select
+                value={formData.locationType}
+                label="Location Type"
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    locationType: e.target.value as any,
+                  })
+                }
+              >
+                <MenuItem value="shop_location">
+                  Physical Shop Location
+                </MenuItem>
+                <MenuItem value="home_based">Home-Based Business</MenuItem>
+                <MenuItem value="mobile_service">Mobile Service</MenuItem>
+              </Select>
+            </FormControl>
           </Box>
         );
       case 1:
@@ -149,11 +209,13 @@ export default function OnboardingPage() {
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    paymentPreference: e.target.value,
+                    paymentPreference: e.target.value as
+                      | 'upfront'
+                      | 'after_service',
                   })
                 }
               >
-                <MenuItem value="before">
+                <MenuItem value="upfront">
                   <Box>
                     <Typography>Payment before service</Typography>
                     <Typography variant="body2" color="text.secondary">
@@ -161,19 +223,11 @@ export default function OnboardingPage() {
                     </Typography>
                   </Box>
                 </MenuItem>
-                <MenuItem value="after">
+                <MenuItem value="after_service">
                   <Box>
                     <Typography>Payment after service</Typography>
                     <Typography variant="body2" color="text.secondary">
                       Customers pay when picking up completed items
-                    </Typography>
-                  </Box>
-                </MenuItem>
-                <MenuItem value="mixed">
-                  <Box>
-                    <Typography>Flexible payment</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Decide payment timing per order
                     </Typography>
                   </Box>
                 </MenuItem>
@@ -249,12 +303,29 @@ export default function OnboardingPage() {
           </CardContent>
         </Card>
 
+        {error && (
+          <Alert severity="error" sx={{ mt: 2 }}>
+            {error}
+          </Alert>
+        )}
+
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
-          <Button disabled={activeStep === 0} onClick={handleBack}>
+          <Button disabled={activeStep === 0 || loading} onClick={handleBack}>
             Back
           </Button>
-          <Button variant="contained" onClick={handleNext} size="large">
-            {activeStep === steps.length - 1 ? 'Go to Dashboard' : 'Next'}
+          <Button
+            variant="contained"
+            onClick={handleNext}
+            size="large"
+            disabled={loading || (activeStep === 0 && !formData.businessName)}
+          >
+            {loading ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : activeStep === steps.length - 1 ? (
+              'Go to Dashboard'
+            ) : (
+              'Next'
+            )}
           </Button>
         </Box>
       </Box>

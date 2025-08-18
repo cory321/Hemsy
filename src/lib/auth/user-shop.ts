@@ -102,6 +102,7 @@ export async function ensureUserAndShop(): Promise<UserWithShop> {
           owner_user_id: userData!.id,
           name: shopName,
           trial_countdown_enabled: false,
+          onboarding_completed: false,
         },
         {
           onConflict: 'owner_user_id',
