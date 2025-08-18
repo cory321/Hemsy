@@ -86,11 +86,17 @@ export default function GarmentsPage() {
     filters,
     setFilters,
     prefetchNextPage,
-  } = useGarmentsSearch(shopId || '', {
-    sortField: sortField as GetGarmentsPaginatedParams['sortField'],
-    sortOrder,
-    stage: selectedStage as GarmentStage | undefined,
-  });
+  } = useGarmentsSearch(
+    shopId!,
+    {
+      sortField: sortField as GetGarmentsPaginatedParams['sortField'],
+      sortOrder,
+      stage: selectedStage as GarmentStage | undefined,
+    },
+    {
+      enabled: !!shopId, // Only enable the query when we have a valid shopId
+    }
+  );
 
   // Update filters when state changes
   useEffect(() => {
@@ -146,10 +152,24 @@ export default function GarmentsPage() {
     return null;
   }, [filteredGarments, isGroupedByClient, sortOrder]);
 
-  if (initialLoading || (!shopId && !isError)) {
+  if (initialLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
         <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (!shopId) {
+    return (
+      <Box sx={{ p: 3, textAlign: 'center' }}>
+        <Typography color="error" gutterBottom>
+          Unable to load shop information
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Please try refreshing the page or contact support if the issue
+          persists.
+        </Typography>
       </Box>
     );
   }

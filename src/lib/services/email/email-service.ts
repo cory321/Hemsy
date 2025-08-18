@@ -6,6 +6,7 @@ import { ResendClient, getResendClient } from './resend-client';
 import { emailConfig } from '../../config/email.config';
 import { EMAIL_CONSTRAINTS } from '../../utils/email/constants';
 import { format } from 'date-fns';
+import { getShopDisplayName } from '@/lib/auth/user-shop';
 
 export class EmailService {
   private repository: EmailRepository;
@@ -352,7 +353,7 @@ export class EmailService {
       appointment_time: this.formatAppointmentTime(
         `${appointment.date} ${appointment.start_time}`
       ),
-      shop_name: appointment.shop.name,
+      shop_name: getShopDisplayName(appointment.shop),
       seamstress_name: appointment.shop.seamstress_name,
       ...additionalData,
     };

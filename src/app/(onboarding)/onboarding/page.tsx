@@ -18,12 +18,14 @@ import {
   CircularProgress,
   Alert,
 } from '@mui/material';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { completeOnboarding } from '@/lib/actions/onboarding';
+import { useUser } from '@clerk/nextjs';
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { user } = useUser();
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,6 +49,19 @@ export default function OnboardingPage() {
     'Payment Preferences',
     'Get Started',
   ];
+
+  // Prefill email from Clerk when available, but allow user override
+  useEffect(() => {
+    if (!formData.email && user) {
+      const clerkEmail =
+        (user as any).primaryEmailAddress?.emailAddress ||
+        user.emailAddresses?.[0]?.emailAddress ||
+        '';
+      if (clerkEmail) {
+        setFormData((prev) => ({ ...prev, email: clerkEmail }));
+      }
+    }
+  }, [user, formData.email]);
 
   const handleNext = async () => {
     if (activeStep === steps.length - 1) {
@@ -123,6 +138,11 @@ export default function OnboardingPage() {
               }
               type="email"
               sx={{ mb: 3 }}
+              required
+              error={!formData.email && activeStep > 0}
+              helperText={
+                !formData.email && activeStep > 0 ? 'Email is required' : ''
+              }
             />
             <TextField
               fullWidth
@@ -317,7 +337,10 @@ export default function OnboardingPage() {
             variant="contained"
             onClick={handleNext}
             size="large"
-            disabled={loading || (activeStep === 0 && !formData.businessName)}
+            disabled={
+              loading ||
+              (activeStep === 0 && (!formData.businessName || !formData.email))
+            }
           >
             {loading ? (
               <CircularProgress size={24} color="inherit" />

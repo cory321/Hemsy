@@ -20,6 +20,7 @@ import { createPaymentIntent } from '@/lib/actions/payments';
 import { formatCurrency, formatDate } from '@/lib/utils/formatting';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
+import { getShopDisplayName } from '@/lib/auth/user-shop';
 
 // NOTE: This component requires @stripe/react-stripe-js and @stripe/stripe-js
 // import { loadStripe } from '@stripe/stripe-js';
@@ -227,7 +228,7 @@ export default function PublicPaymentClient({
         {/* Business Header */}
         <Box sx={{ textAlign: 'center', mb: 4 }}>
           <Typography variant="h4" component="h1" gutterBottom>
-            {shop.name}
+            {getShopDisplayName(shop)}
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Secure Payment Portal
@@ -351,7 +352,7 @@ export default function PublicPaymentClient({
                 <Elements stripe={stripePromise} options={{ clientSecret: paymentIntent }}>
                   <PublicPaymentForm 
                     amountCents={amountDue}
-                    shopName={shop.name}
+                    shopName={getShopDisplayName(shop)}
                   />
                 </Elements>
                 */}

@@ -7,7 +7,7 @@ import { redirect } from 'next/navigation';
 export interface OnboardingData {
   businessName: string;
   businessType?: string;
-  email?: string;
+  email: string;
   phoneNumber?: string;
   mailingAddress?: string;
   locationType?: 'home_based' | 'shop_location' | 'mobile_service';
@@ -26,12 +26,12 @@ export async function completeOnboarding(data: OnboardingData) {
 
     const supabase = await createClient();
 
-    // Update shop with onboarding data
+    // Update shop with onboarding data (email required from onboarding form)
     const { error } = await supabase
       .from('shops')
       .update({
-        business_name: data.businessName,
-        email: data.email || null,
+        business_name: data.businessName, // This will be used as the primary display name
+        email: data.email,
         phone_number: data.phoneNumber || null,
         mailing_address: data.mailingAddress || null,
         location_type: data.locationType || 'shop_location',

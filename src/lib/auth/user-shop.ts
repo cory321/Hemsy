@@ -12,19 +12,25 @@ export interface UserWithShop {
 /**
  * Ensures that a user and their shop exist in the database.
  * Creates them if they don't exist.
+ * This function is idempotent and handles race conditions.
  */
 export async function ensureUserAndShop(): Promise<UserWithShop> {
   const { userId } = await auth();
   if (!userId) {
-    throw new Error('Unauthorized');
+    throw new Error('Unauthorized - no Clerk user ID found');
   }
 
   const clerkUser = await currentUser();
   if (!clerkUser) {
-    throw new Error('Could not fetch user details');
+    throw new Error('Could not fetch user details from Clerk');
   }
 
   const supabase = await createSupabaseClient();
+
+  // Log the attempt for debugging
+  console.log(
+    `[ensureUserAndShop] Processing user: ${userId}, email: ${clerkUser.emailAddresses[0]?.emailAddress}`
+  );
 
   // First, try to get the user
   let userData: Tables<'users'> | null;
@@ -89,11 +95,28 @@ export async function ensureUserAndShop(): Promise<UserWithShop> {
 
   // If shop doesn't exist, create it
   if (!shopData) {
-    // Create a default shop for the user
-    const shopName =
-      clerkUser.firstName && clerkUser.lastName
-        ? `${clerkUser.firstName} ${clerkUser.lastName}'s Shop`
-        : `${clerkUser.username || 'My'} Shop`;
+    // Generate a proper shop name based on user data
+    let shopName: string;
+
+    if (clerkUser.firstName && clerkUser.lastName) {
+      // Ideal case: we have both first and last name
+      shopName = `${clerkUser.firstName} ${clerkUser.lastName}'s Shop`;
+    } else if (clerkUser.firstName) {
+      // Only first name available
+      shopName = `${clerkUser.firstName}'s Shop`;
+    } else if (clerkUser.username) {
+      // Fall back to username
+      shopName = `${clerkUser.username}'s Shop`;
+    } else {
+      // Last resort: use email prefix
+      const emailPrefix =
+        clerkUser.emailAddresses[0]?.emailAddress?.split('@')[0] || 'User';
+      shopName = `${emailPrefix}'s Shop`;
+    }
+
+    console.log(
+      `[ensureUserAndShop] Creating shop for user ${userData!.id} with name: ${shopName}`
+    );
 
     const { data: newShop, error: createShopError } = await supabase
       .from('shops')
@@ -101,8 +124,14 @@ export async function ensureUserAndShop(): Promise<UserWithShop> {
         {
           owner_user_id: userData!.id,
           name: shopName,
+          // Initialize with user's email for communication
+          email: clerkUser.emailAddresses[0]?.emailAddress || '',
           trial_countdown_enabled: false,
           onboarding_completed: false,
+          // Set a default trial end date (14 days from now)
+          trial_end_date: new Date(
+            Date.now() + 14 * 24 * 60 * 60 * 1000
+          ).toISOString(),
         },
         {
           onConflict: 'owner_user_id',
@@ -112,7 +141,10 @@ export async function ensureUserAndShop(): Promise<UserWithShop> {
       .single();
 
     if (createShopError) {
-      console.error('Error creating shop:', createShopError);
+      console.error(
+        '[ensureUserAndShop] Error creating shop:',
+        createShopError
+      );
       throw new Error(`Failed to create shop: ${createShopError.message}`);
     }
 
@@ -120,9 +152,12 @@ export async function ensureUserAndShop(): Promise<UserWithShop> {
       throw new Error('Failed to create shop - no data returned');
     }
 
+    console.log(
+      `[ensureUserAndShop] Successfully created shop ${newShop.id} for user ${userData!.id}`
+    );
     shopData = newShop;
   } else if (shopError) {
-    console.error('Error fetching shop:', shopError);
+    console.error('[ensureUserAndShop] Error fetching shop:', shopError);
     throw new Error(`Failed to fetch shop: ${shopError.message}`);
   }
 
@@ -130,4 +165,13 @@ export async function ensureUserAndShop(): Promise<UserWithShop> {
     user: userData!,
     shop: shopData!,
   };
+}
+
+/**
+ * Gets the display name for a shop, preferring business_name over name
+ */
+export function getShopDisplayName(shop: Tables<'shops'>): string {
+  // If shop has a business_name (set during onboarding), use that
+  // Otherwise fall back to the default name
+  return (shop as any).business_name || shop.name;
 }

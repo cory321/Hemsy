@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { Resend } from 'resend';
 import { createClient as createSupabaseClient } from '@/lib/supabase/server';
 import { ensureUserAndShop } from '../users';
+import { getShopDisplayName } from '@/lib/auth/user-shop';
 import type { Tables } from '@/types/supabase';
 
 // Initialize Resend
@@ -192,7 +193,7 @@ function buildEmailVariables(
     client_phone: invoice.client.phone_number as any,
 
     // Shop info
-    shop_name: invoice.shop.name as any,
+    shop_name: getShopDisplayName(invoice.shop),
     shop_email: invoice.shop.email as any,
     shop_phone: invoice.shop.phone_number as any,
     shop_address: invoice.shop.mailing_address as any,
@@ -289,7 +290,7 @@ export async function sendInvoiceEmail(
 
     // Send email via Resend
     const emailOptions: any = {
-      from: `${shop.name} <${process.env.RESEND_FROM_EMAIL || 'noreply@threadfolio.com'}>`,
+      from: `${getShopDisplayName(shop)} <${process.env.RESEND_FROM_EMAIL || 'noreply@threadfolio.com'}>`,
       to: invoice.client.email,
       subject,
       html: htmlBody,

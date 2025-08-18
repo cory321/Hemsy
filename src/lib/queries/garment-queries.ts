@@ -112,7 +112,8 @@ import { useState } from 'react';
 
 export function useGarmentsSearch(
   shopId: string,
-  initialFilters?: Partial<GetGarmentsPaginatedParams>
+  initialFilters?: Partial<GetGarmentsPaginatedParams>,
+  options?: { enabled?: boolean }
 ) {
   const [search, setSearch] = useState(initialFilters?.search || '');
   const [filters, setFilters] = useState(initialFilters || {});
@@ -125,6 +126,7 @@ export function useGarmentsSearch(
     ...filters,
     search:
       debouncedSearch && debouncedSearch.length >= 2 ? debouncedSearch : '',
+    enabled: options?.enabled ?? true,
   });
 
   return {
