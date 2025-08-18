@@ -1,5 +1,13 @@
-import Image from 'next/image';
+'use client';
+
 import { Box } from '@mui/material';
+import { Poppins } from 'next/font/google';
+
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['400'],
+  display: 'swap',
+});
 
 interface LogoProps {
   height?: number;
@@ -8,24 +16,22 @@ interface LogoProps {
 }
 
 export function Logo({ height = 32, width, variant = 'light' }: LogoProps) {
-  // Calculate width based on SVG aspect ratio (345.79:95.32 ≈ 3.63:1)
-  const calculatedWidth = width || Math.round(height * 3.63);
-
   return (
     <Box
+      component="span"
+      className={poppins.className}
       sx={{
-        display: 'flex',
+        display: 'inline-flex',
         alignItems: 'center',
-        filter: variant === 'dark' ? 'invert(1)' : 'none',
+        fontSize: `${height}px`,
+        lineHeight: 1,
+        fontWeight: 400,
+        letterSpacing: '0.02em',
+        color: variant === 'dark' ? '#fff' : 'inherit',
+        userSelect: 'none',
       }}
     >
-      <Image
-        src="/hemsy.svg"
-        alt="Hemsy"
-        width={calculatedWidth}
-        height={height}
-        priority
-      />
+      hemsy
     </Box>
   );
 }

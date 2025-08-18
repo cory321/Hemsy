@@ -1,34 +1,50 @@
 import { Container, Typography, Button, Box, Grid } from '@mui/material';
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { auth } from '@clerk/nextjs/server';
 
 export const metadata: Metadata = {
-  title: 'Threadfolio - Seamstress Business Management',
+  title: 'Hemsy - Seamstress Business Management',
   description:
     'The mobile-first business management app for seamstresses and tailoring professionals',
 };
 
-export default function HomePage() {
+export default async function HomePage() {
+  const { userId } = await auth();
+  const isSignedIn = Boolean(userId);
+
   return (
     <Container maxWidth="lg">
       <Box sx={{ my: 8, textAlign: 'center' }}>
         <Typography variant="h2" component="h1" gutterBottom>
-          Welcome to Threadfolio
+          Welcome to Hemsy
         </Typography>
         <Typography variant="h5" color="text.secondary" paragraph>
           The mobile-first business management app for seamstresses and
           tailoring professionals
         </Typography>
         <Box sx={{ mt: 4 }}>
-          <Button
-            variant="contained"
-            size="large"
-            component={Link}
-            href="/sign-up"
-            sx={{ mr: 2 }}
-          >
-            Start Free Trial
-          </Button>
+          {isSignedIn ? (
+            <Button
+              variant="contained"
+              size="large"
+              component={Link}
+              href="/dashboard"
+              sx={{ mr: 2 }}
+            >
+              Go to Dashboard
+            </Button>
+          ) : (
+            <Button
+              variant="contained"
+              size="large"
+              component={Link}
+              href="/sign-up"
+              sx={{ mr: 2 }}
+            >
+              Start Free Trial
+            </Button>
+          )}
           <Button
             variant="outlined"
             size="large"

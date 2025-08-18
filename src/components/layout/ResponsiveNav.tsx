@@ -243,15 +243,15 @@ function DesktopTopNav() {
                     py: 1,
                     borderRadius: 1,
                     backgroundColor: isActive
-                      ? 'rgba(255, 255, 255, 0.15)'
+                      ? 'rgba(0, 0, 0, 0.08)'
                       : 'transparent',
                     borderBottom: isActive
-                      ? '2px solid white'
+                      ? '2px solid #3A1619'
                       : '2px solid transparent',
                     '&:hover': {
                       backgroundColor: isActive
-                        ? 'rgba(255, 255, 255, 0.2)'
-                        : 'rgba(255, 255, 255, 0.08)',
+                        ? 'rgba(0, 0, 0, 0.12)'
+                        : 'rgba(0, 0, 0, 0.06)',
                     },
                     transition: 'all 0.2s ease',
                   }}

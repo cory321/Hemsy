@@ -17,7 +17,6 @@ html {
 
 body {
   font-family: inherit;
-  background-color: #fff9f2; /* Warm cream background */
   color: var(--foreground);
 }
 
@@ -49,7 +48,7 @@ a:hover {
 @media (prefers-color-scheme: dark) {
   html,
   body {
-    background-color: #fff9f2 !important; /* Warm cream background */
+    background-color: #fffefc !important; /* Warm cream background */
     background-image: none !important;
     color: var(--foreground);
   }
