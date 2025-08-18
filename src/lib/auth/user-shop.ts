@@ -170,8 +170,4 @@ export async function ensureUserAndShop(): Promise<UserWithShop> {
 /**
  * Gets the display name for a shop, preferring business_name over name
  */
-export function getShopDisplayName(shop: Tables<'shops'>): string {
-  // If shop has a business_name (set during onboarding), use that
-  // Otherwise fall back to the default name
-  return (shop as any).business_name || shop.name;
-}
+// Removed display helper; use '@/lib/utils/shop' instead to avoid mixing with server actions

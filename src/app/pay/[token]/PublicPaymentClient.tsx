@@ -20,7 +20,7 @@ import { createPaymentIntent } from '@/lib/actions/payments';
 import { formatCurrency, formatDate } from '@/lib/utils/formatting';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
-import { getShopDisplayName } from '@/lib/auth/user-shop';
+import { getShopDisplayName } from '@/lib/utils/shop';
 
 // NOTE: This component requires @stripe/react-stripe-js and @stripe/stripe-js
 // import { loadStripe } from '@stripe/stripe-js';

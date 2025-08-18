@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { Resend } from 'resend';
 import { createClient as createSupabaseClient } from '@/lib/supabase/server';
 import { ensureUserAndShop } from '../users';
-import { getShopDisplayName } from '@/lib/auth/user-shop';
+import { getShopDisplayName } from '@/lib/utils/shop';
 import type { Tables } from '@/types/supabase';
 
 // Initialize Resend

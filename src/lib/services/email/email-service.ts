@@ -6,7 +6,7 @@ import { ResendClient, getResendClient } from './resend-client';
 import { emailConfig } from '../../config/email.config';
 import { EMAIL_CONSTRAINTS } from '../../utils/email/constants';
 import { format } from 'date-fns';
-import { getShopDisplayName } from '@/lib/auth/user-shop';
+import { getShopDisplayName } from '@/lib/utils/shop';
 
 export class EmailService {
   private repository: EmailRepository;
