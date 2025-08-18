@@ -54,6 +54,7 @@ describe('getOrdersPaginated', () => {
         tax_percent: 0,
         trial_end_date: null,
         working_hours: null,
+        onboarding_completed: true,
       },
     });
   });
