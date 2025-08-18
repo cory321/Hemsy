@@ -19,6 +19,7 @@ import { createClient as createSupabaseClient } from '@/lib/supabase/server';
 import InlinePresetSvg from '@/components/ui/InlinePresetSvg';
 import { getPresetIconUrl } from '@/utils/presetIcons';
 import { ensureUserAndShop } from '@/lib/actions/users';
+import OrderDetailClient from './OrderDetailClient';
 import type { Database } from '@/types/supabase';
 
 function formatUSD(cents: number) {
@@ -33,7 +34,7 @@ export default async function OrderDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await ensureUserAndShop();
+  const { shop } = await ensureUserAndShop();
   const supabase = await createSupabaseClient();
   const { id } = await params;
 
@@ -66,6 +67,20 @@ export default async function OrderDetailPage({
     )
     .eq('order_id', id)
     .order('created_at', { ascending: true });
+
+  // Get invoice if exists
+  const { data: invoice } = await supabase
+    .from('invoices')
+    .select('*')
+    .eq('order_id', id)
+    .single();
+
+  // Get shop settings
+  const { data: shopSettings } = await supabase
+    .from('shop_settings')
+    .select('payment_required_before_service, invoice_prefix')
+    .eq('shop_id', shop.id)
+    .single();
 
   const garmentIds = (garments || []).map((g: any) => g.id);
   const { data: lines } = garmentIds.length
@@ -124,18 +139,21 @@ export default async function OrderDetailPage({
                 : ''}
             </Typography>
           </Box>
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
             <Button variant="outlined" startIcon={<EditIcon />}>
               Edit
             </Button>
-            <Button
-              variant="contained"
-              startIcon={<ReceiptIcon />}
-              component={Link}
-              href={`/invoices/new?order=${order?.id}`}
-            >
-              Create Invoice
-            </Button>
+            {order && (
+              <OrderDetailClient
+                order={order}
+                invoice={invoice}
+                shopSettings={{
+                  payment_required_before_service:
+                    shopSettings?.payment_required_before_service ?? true,
+                  invoice_prefix: shopSettings?.invoice_prefix ?? 'INV',
+                }}
+              />
+            )}
           </Box>
         </Box>
 

@@ -212,12 +212,19 @@ export function AppointmentProvider({
         return;
       }
 
-      // Optimistic update
+      // Optimistic update - filter out undefined values for exactOptionalPropertyTypes
+      const updates: Partial<Appointment> = {};
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== undefined) {
+          (updates as any)[key] = value;
+        }
+      });
+
       dispatch({
         type: AppointmentActionType.UPDATE_APPOINTMENT_OPTIMISTIC,
         payload: {
           id,
-          updates: data,
+          updates,
           previousData: currentAppointment,
         },
       });
@@ -392,7 +399,7 @@ export function AppointmentProvider({
           if (data) {
             dispatch({
               type: AppointmentActionType.APPOINTMENT_CREATED_REMOTE,
-              payload: { appointment: data },
+              payload: { appointment: data as Appointment },
             });
           }
         }
@@ -431,7 +438,7 @@ export function AppointmentProvider({
           if (data) {
             dispatch({
               type: AppointmentActionType.APPOINTMENT_UPDATED_REMOTE,
-              payload: { appointment: data },
+              payload: { appointment: data as Appointment },
             });
           }
         }

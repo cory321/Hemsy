@@ -81,6 +81,7 @@ export default function GarmentHistoryOptimistic({
 
       return () => clearTimeout(timer);
     }
+    return; // Explicit return for else case
   }, [optimisticHistoryEntry]);
 
   const fetchHistory = async () => {

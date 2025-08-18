@@ -17,21 +17,28 @@ html {
 
 body {
   font-family: inherit;
-  background-color: #fff7ee;
+  background-color: #fff9f2; /* Warm cream background */
   color: var(--foreground);
 }
 
 a {
-  color: inherit;
+  color: #b85563; /* Primary color for links */
   text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: #8b3a42; /* Darker on hover */
 }
 
 /* CSS Custom Properties for theming */
 :root {
-  --foreground-rgb: 96, 81, 67; /* #605143 */
-  --foreground: rgb(96, 81, 67); /* #605143 */
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+  --foreground-rgb: 58, 22, 25; /* #3A1619 - Very dark burgundy */
+  --foreground: rgb(58, 22, 25); /* #3A1619 */
+  --background-rgb: 255, 249, 242; /* #fff9f2 - Warm cream */
+  --background: rgb(255, 249, 242); /* #fff9f2 */
+  --primary-rgb: 184, 85, 99; /* #B85563 - Rose red */
+  --primary: rgb(184, 85, 99); /* #B85563 */
   /* Pin the app to light mode regardless of system preference */
   color-scheme: light;
 }
@@ -42,7 +49,7 @@ a {
 @media (prefers-color-scheme: dark) {
   html,
   body {
-    background-color: #fff7ee !important;
+    background-color: #fff9f2 !important; /* Warm cream background */
     background-image: none !important;
     color: var(--foreground);
   }

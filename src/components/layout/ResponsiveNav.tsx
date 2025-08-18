@@ -23,6 +23,8 @@ import Link from 'next/link';
 import { useResponsive } from '@/hooks/useResponsive';
 import { UserButton, useUser } from '@clerk/nextjs';
 import { Breadcrumbs } from './Breadcrumbs';
+import Image from 'next/image';
+import { Logo } from './Logo';
 
 // Icons
 import { useState } from 'react';
@@ -101,25 +103,40 @@ function MobileHeader() {
   const { user } = useUser();
 
   // Find the current page title based on the pathname
-  const currentPageTitle = (() => {
+  const currentPage = (() => {
     const allItems = [...navItems, ...desktopOnlyItems];
     const currentItem = allItems.find((item) => pathname.startsWith(item.href));
-    return currentItem?.label || 'Hemsy';
+    return currentItem;
   })();
+
+  const showLogo = !currentPage || pathname === '/dashboard';
 
   return (
     <AppBar
       position="fixed"
       sx={{
-        backgroundColor: 'background.paper',
-        color: 'text.primary',
         boxShadow: 1,
       }}
     >
       <Toolbar sx={{ minHeight: '56px !important' }}>
-        <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-          {currentPageTitle}
-        </Typography>
+        {showLogo ? (
+          <Box
+            component={Link}
+            href="/dashboard"
+            sx={{
+              flexGrow: 1,
+              display: 'flex',
+              alignItems: 'center',
+              textDecoration: 'none',
+            }}
+          >
+            <Logo height={24} />
+          </Box>
+        ) : (
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+            {currentPage?.label}
+          </Typography>
+        )}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {user && (
             <Typography
@@ -199,13 +216,18 @@ function DesktopTopNav() {
             alignItems: 'center',
           }}
         >
-          <Typography
-            variant="h6"
-            component="div"
-            sx={{ mr: 4, color: 'common.white' }}
+          <Box
+            component={Link}
+            href="/dashboard"
+            sx={{
+              mr: 4,
+              display: 'flex',
+              alignItems: 'center',
+              textDecoration: 'none',
+            }}
           >
-            Hemsy
-          </Typography>
+            <Logo height={28} />
+          </Box>
           <Box sx={{ display: 'flex', flexGrow: 1, alignItems: 'center' }}>
             {allDesktopItems.map((item) => {
               const isActive = pathname.startsWith(item.href);
@@ -216,7 +238,6 @@ function DesktopTopNav() {
                   href={item.href}
                   startIcon={item.icon}
                   sx={{
-                    color: 'white',
                     mx: 0.5,
                     px: 2,
                     py: 1,
@@ -308,14 +329,18 @@ function TabletNav() {
                 style={{ fontSize: 22 }}
               />
             </IconButton>
-            <Typography
-              variant="h6"
-              noWrap
-              component="div"
-              sx={{ flexGrow: 1, color: 'common.white' }}
+            <Box
+              component={Link}
+              href="/dashboard"
+              sx={{
+                flexGrow: 1,
+                display: 'flex',
+                alignItems: 'center',
+                textDecoration: 'none',
+              }}
             >
-              Hemsy
-            </Typography>
+              <Logo height={28} />
+            </Box>
             <Box>
               <UserButton
                 appearance={{

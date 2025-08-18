@@ -33,7 +33,7 @@ async function loadMigrationFiles(): Promise<MigrationFile[]> {
       path.join(migrationsDir, filename),
       'utf-8'
     );
-    const version = filename.split('_')[0]; // Extract version number
+    const version = filename.split('_')[0] || ''; // Extract version number
     return { filename, version, content };
   });
 }

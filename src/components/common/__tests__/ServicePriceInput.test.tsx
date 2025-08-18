@@ -14,21 +14,21 @@ describe('ServicePriceInput', () => {
     render(
       <ServicePriceInput
         price="10.00"
-        unit="item"
+        unit="flat_rate"
         onPriceChange={mockOnPriceChange}
         onUnitChange={mockOnUnitChange}
       />
     );
 
     expect(screen.getByLabelText('Price')).toBeInTheDocument();
-    expect(screen.getByText('per item')).toBeInTheDocument();
+    expect(screen.getByText('flat rate')).toBeInTheDocument();
   });
 
   it('calls onPriceChange when price is changed', () => {
     render(
       <ServicePriceInput
         price="10.00"
-        unit="item"
+        unit="flat_rate"
         onPriceChange={mockOnPriceChange}
         onUnitChange={mockOnUnitChange}
       />
@@ -44,7 +44,7 @@ describe('ServicePriceInput', () => {
     render(
       <ServicePriceInput
         price="10.00"
-        unit="item"
+        unit="flat_rate"
         onPriceChange={mockOnPriceChange}
         onUnitChange={mockOnUnitChange}
       />
@@ -63,7 +63,7 @@ describe('ServicePriceInput', () => {
     const { rerender } = render(
       <ServicePriceInput
         price="0.00"
-        unit="item"
+        unit="flat_rate"
         onPriceChange={mockOnPriceChange}
         onUnitChange={mockOnUnitChange}
       />
@@ -76,7 +76,7 @@ describe('ServicePriceInput', () => {
     rerender(
       <ServicePriceInput
         price=""
-        unit="item"
+        unit="flat_rate"
         onPriceChange={mockOnPriceChange}
         onUnitChange={mockOnUnitChange}
       />
@@ -88,7 +88,7 @@ describe('ServicePriceInput', () => {
     rerender(
       <ServicePriceInput
         price="25.5"
-        unit="item"
+        unit="flat_rate"
         onPriceChange={mockOnPriceChange}
         onUnitChange={mockOnUnitChange}
       />
@@ -103,7 +103,7 @@ describe('ServicePriceInput', () => {
     render(
       <ServicePriceInput
         price="0.00"
-        unit="item"
+        unit="flat_rate"
         onPriceChange={mockOnPriceChange}
         onUnitChange={mockOnUnitChange}
       />
@@ -119,7 +119,7 @@ describe('ServicePriceInput', () => {
     render(
       <ServicePriceInput
         price="10.00"
-        unit="item"
+        unit="flat_rate"
         onPriceChange={mockOnPriceChange}
         onUnitChange={mockOnUnitChange}
         disabled
@@ -137,7 +137,7 @@ describe('ServicePriceInput', () => {
     render(
       <ServicePriceInput
         price="10.00"
-        unit="item"
+        unit="flat_rate"
         onPriceChange={mockOnPriceChange}
         onUnitChange={mockOnUnitChange}
       />
@@ -147,7 +147,7 @@ describe('ServicePriceInput', () => {
     fireEvent.mouseDown(unitSelect);
 
     // Use getAllByText since the text appears both in the select and in the dropdown
-    const itemOptions = screen.getAllByText('per item');
+    const itemOptions = screen.getAllByText('flat rate');
     const hourOptions = screen.getAllByText('per hour');
     const dayOptions = screen.getAllByText('per day');
 

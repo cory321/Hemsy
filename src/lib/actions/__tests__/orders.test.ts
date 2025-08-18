@@ -60,10 +60,10 @@ describe('getOrdersByClient', () => {
 
     expect(result.success).toBe(true);
     expect(result.orders).toHaveLength(2);
-    expect(result.orders[0].garment_count).toBe(2);
-    expect(result.orders[1].garment_count).toBe(1);
-    expect(result.orders[0].garments).toBeUndefined();
-    expect(result.orders[1].garments).toBeUndefined();
+    expect(result.orders[0]?.garment_count).toBe(2);
+    expect(result.orders[1]?.garment_count).toBe(1);
+    expect(result.orders[0]?.garments).toBeUndefined();
+    expect(result.orders[1]?.garments).toBeUndefined();
   });
 
   it('should handle errors gracefully', async () => {

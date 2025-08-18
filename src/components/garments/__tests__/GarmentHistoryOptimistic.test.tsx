@@ -94,7 +94,7 @@ describe('GarmentHistoryOptimistic', () => {
     mockGetGarmentHistory.mockResolvedValue({
       success: true,
       history: mockHistory,
-    });
+    } as any);
 
     render(<GarmentHistoryOptimistic garmentId="test-garment-id" />);
 
@@ -248,11 +248,11 @@ describe('GarmentHistoryOptimistic', () => {
       .mockResolvedValueOnce({
         success: true,
         history: initialHistory,
-      })
+      } as any)
       .mockResolvedValueOnce({
         success: true,
         history: updatedHistory,
-      });
+      } as any);
 
     const { rerender } = render(
       <GarmentHistoryOptimistic garmentId="test-garment-id" />
@@ -333,7 +333,7 @@ describe('GarmentHistoryOptimistic', () => {
     mockGetGarmentHistory.mockResolvedValue({
       success: true,
       history: mockHistory,
-    });
+    } as any);
 
     render(<GarmentHistoryOptimistic garmentId="test-garment-id" />);
 

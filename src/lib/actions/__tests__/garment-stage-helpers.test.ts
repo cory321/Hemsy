@@ -60,6 +60,7 @@ describe('Garment Stage Helpers', () => {
             insert: insertMock,
           };
         }
+        return {} as any;
       });
 
       selectMock.mockReturnValue({ eq: eqMock });
@@ -210,6 +211,7 @@ describe('Garment Stage Helpers', () => {
             insert: insertMock,
           };
         }
+        return {} as any;
       });
 
       selectMock.mockReturnValue({ eq: eqMock });
@@ -278,6 +280,7 @@ describe('Garment Stage Helpers', () => {
             insert: insertMock,
           };
         }
+        return {} as any;
       });
 
       // First call for services

@@ -54,7 +54,9 @@ export class TemplateRenderer {
     let match;
 
     while ((match = regex.exec(template)) !== null) {
-      variables.add(match[1]);
+      if (match[1]) {
+        variables.add(match[1]);
+      }
     }
 
     return Array.from(variables);
@@ -193,7 +195,7 @@ export class TemplateRenderer {
       '"': '&quot;',
       "'": '&#x27;',
     };
-    return text.replace(/[&<>"']/g, (char) => map[char]);
+    return text.replace(/[&<>"']/g, (char) => map[char] || char);
   }
 }
 

@@ -5,23 +5,33 @@ import { TextEncoder, TextDecoder } from 'util';
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder;
 
-// Polyfill Request/Response for Node.js environment
-if (typeof global.Request === 'undefined') {
-  global.Request = class Request {
-    constructor(input, init) {
-      this.url = input;
-      this.init = init;
-    }
-  };
-}
+// Ensure Fetch API globals exist for Next.js route handlers and libraries
+try {
+  const {
+    fetch: undiciFetch,
+    Headers: UndiciHeaders,
+    Request: UndiciRequest,
+    Response: UndiciResponse,
+    FormData: UndiciFormData,
+    File: UndiciFile,
+  } = require('undici');
 
-if (typeof global.Response === 'undefined') {
-  global.Response = class Response {
-    constructor(body, init) {
-      this.body = body;
-      this.init = init;
-    }
-  };
+  if (typeof global.fetch === 'undefined') global.fetch = undiciFetch;
+  if (typeof global.Headers === 'undefined') global.Headers = UndiciHeaders;
+  if (typeof global.Request === 'undefined') global.Request = UndiciRequest;
+  if (typeof global.Response === 'undefined') global.Response = UndiciResponse;
+  if (typeof global.FormData === 'undefined') global.FormData = UndiciFormData;
+  if (typeof global.File === 'undefined') global.File = UndiciFile;
+} catch (_e) {
+  // Fallback minimal fetch stub if undici isn't available
+  if (typeof global.fetch === 'undefined') {
+    global.fetch = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({}),
+      text: async () => '',
+    }));
+  }
 }
 
 // Mock Clerk for tests
@@ -177,3 +187,23 @@ jest.mock('@/lib/supabase/server', () => {
     })),
   };
 });
+
+// Mock Next.js server-side utilities and cache
+jest.mock('next/cache', () => ({
+  unstable_cache: jest.fn((fn) => fn),
+  revalidateTag: jest.fn(),
+  revalidatePath: jest.fn(),
+}));
+
+// Mock next/headers for server components
+jest.mock('next/headers', () => ({
+  cookies: jest.fn(() => ({
+    get: jest.fn(),
+    set: jest.fn(),
+    delete: jest.fn(),
+  })),
+  headers: jest.fn(() => ({
+    get: jest.fn(),
+    set: jest.fn(),
+  })),
+}));

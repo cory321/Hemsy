@@ -79,15 +79,23 @@ export const calculateTotalPrice = (service: {
 };
 
 export const convertServiceForForm = (service: Service): ServiceFormData => {
-  return {
+  const result: ServiceFormData = {
     name: service.name,
     description: service.description || '',
     qty: service.default_qty,
     unit: service.default_unit,
     unit_price: centsToDollars(service.default_unit_price_cents),
-    frequently_used: service.frequently_used ?? false,
-    frequently_used_position: service.frequently_used_position ?? null,
   };
+
+  if (service.frequently_used !== undefined) {
+    result.frequently_used = service.frequently_used;
+  }
+
+  if (service.frequently_used_position !== undefined) {
+    result.frequently_used_position = service.frequently_used_position;
+  }
+
+  return result;
 };
 
 export const convertServiceForDatabase = (

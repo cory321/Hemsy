@@ -49,9 +49,13 @@ describe('createOrder persists garment preset icon and colors', () => {
           services: [
             {
               quantity: 1,
-              unit: 'item',
+              unit: 'flat_rate',
               unitPriceCents: 1000,
-              inline: { name: 'Hemming', unit: 'item', unitPriceCents: 1000 },
+              inline: {
+                name: 'Hemming',
+                unit: 'flat_rate',
+                unitPriceCents: 1000,
+              },
             },
           ],
         },

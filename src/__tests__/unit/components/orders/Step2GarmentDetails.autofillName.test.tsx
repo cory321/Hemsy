@@ -33,7 +33,7 @@ jest.mock('@/components/orders/GarmentImageUpload', () => {
   };
 });
 
-import { useOrderFlow } from '@/contexts/OrderFlowContext';
+import { useOrderFlow, GarmentDraft } from '@/contexts/OrderFlowContext';
 import Step2GarmentDetails from '@/components/orders/steps/Step2GarmentDetails';
 
 describe('Step2GarmentDetails - preset icon autofill name behavior', () => {
@@ -161,14 +161,13 @@ describe('Step2GarmentDetails - preset icon autofill name behavior', () => {
             id: 'g1',
             name: 'Blouse',
             isNameUserEdited: false,
-
             notes: '',
             dueDate: undefined,
             eventDate: undefined,
             specialEvent: false,
             services: [],
           },
-        ],
+        ] as any,
         discountCents: 0,
         notes: '',
       },

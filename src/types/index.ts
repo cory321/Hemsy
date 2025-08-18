@@ -146,7 +146,6 @@ export interface Appointment {
 }
 
 // Additional types for better compatibility
-export type ServiceUnitType = 'per_item' | 'per_hour' | 'flat_rate';
 
 export interface OrderWithGarmentCount extends Order {
   garment_count?: number;

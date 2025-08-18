@@ -20,7 +20,9 @@ import {
   ServiceFormData,
   convertServiceForDatabase,
 } from '@/lib/utils/serviceUtils';
-import SERVICE_UNIT_TYPES from '@/lib/utils/serviceUnitTypes';
+import SERVICE_UNIT_TYPES, {
+  ServiceUnitType,
+} from '@/lib/utils/serviceUnitTypes';
 import {
   formatAsCurrency,
   parseFloatFromCurrency,
@@ -42,7 +44,7 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
     name: '',
     description: '',
     qty: 1,
-    unit: SERVICE_UNIT_TYPES.ITEM,
+    unit: SERVICE_UNIT_TYPES.FLAT_RATE,
     unit_price: 0,
   });
 
@@ -58,7 +60,7 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
     }));
   };
 
-  const handleUnitChange = (newUnit: 'item' | 'hour' | 'day') => {
+  const handleUnitChange = (newUnit: 'flat_rate' | 'hour' | 'day') => {
     setNewService((prev) => ({
       ...prev,
       unit: newUnit,
@@ -79,9 +81,11 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
       const serviceData = convertServiceForDatabase(newService);
       const newServiceItem = await addService({
         name: serviceData.name!,
-        description: serviceData.description,
+        ...(serviceData.description !== undefined && {
+          description: serviceData.description,
+        }),
         default_qty: serviceData.default_qty!,
-        default_unit: serviceData.default_unit!,
+        default_unit: serviceData.default_unit! as string,
         default_unit_price_cents: serviceData.default_unit_price_cents!,
         frequently_used: isFrequentlyUsed,
       });
@@ -92,7 +96,7 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
         name: newServiceItem.name,
         description: newServiceItem.description,
         default_qty: newServiceItem.default_qty,
-        default_unit: newServiceItem.default_unit,
+        default_unit: newServiceItem.default_unit as ServiceUnitType,
         default_unit_price_cents: newServiceItem.default_unit_price_cents,
         frequently_used: newServiceItem.frequently_used,
         frequently_used_position: newServiceItem.frequently_used_position,
@@ -105,7 +109,7 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
         name: '',
         description: '',
         qty: 1,
-        unit: SERVICE_UNIT_TYPES.ITEM,
+        unit: SERVICE_UNIT_TYPES.FLAT_RATE,
         unit_price: 0,
       });
       setPrice('0.00');
@@ -161,7 +165,7 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
 
       <ServicePriceInput
         price={price}
-        unit={newService.unit as 'item' | 'hour' | 'day'}
+        unit={newService.unit as 'flat_rate' | 'hour' | 'day'}
         onPriceChange={handlePriceChange}
         onUnitChange={handleUnitChange}
         disabled={isLoading}

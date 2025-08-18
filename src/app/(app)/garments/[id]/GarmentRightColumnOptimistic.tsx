@@ -46,14 +46,7 @@ export default function GarmentRightColumnOptimistic({
             {garment.name || 'Untitled Garment'}
           </Typography>
           <Typography color="text.secondary">
-            Order #{garment.order?.order_number || 'N/A'} •{' '}
-            {garment.order?.client?.id ? (
-              <Link href={`/clients/${garment.order.client.id}`}>
-                {clientName}
-              </Link>
-            ) : (
-              clientName
-            )}
+            Order #{garment.order?.order_number || 'N/A'} • {clientName}
           </Typography>
         </Box>
         <GarmentDetailClientOptimistic />

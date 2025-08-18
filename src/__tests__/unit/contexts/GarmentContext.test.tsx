@@ -26,7 +26,7 @@ const mockGarment = {
       id: 'service-1',
       name: 'Hemming',
       quantity: 1,
-      unit: 'item',
+      unit: 'flat_rate',
       unit_price_cents: 2000,
       line_total_cents: 2000,
       description: 'Basic hem',
@@ -145,7 +145,7 @@ describe('GarmentContext', () => {
         customService: {
           name: 'New Service',
           quantity: 2,
-          unit: 'item',
+          unit: 'flat_rate',
           unitPriceCents: 1500,
         },
       });

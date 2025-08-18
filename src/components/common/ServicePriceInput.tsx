@@ -12,9 +12,9 @@ import { formatAsCurrency, parseFloatFromCurrency } from '@/lib/utils/currency';
 
 interface ServicePriceInputProps {
   price: string;
-  unit: 'item' | 'hour' | 'day';
+  unit: 'flat_rate' | 'hour' | 'day';
   onPriceChange: (price: string) => void;
-  onUnitChange: (unit: 'item' | 'hour' | 'day') => void;
+  onUnitChange: (unit: 'flat_rate' | 'hour' | 'day') => void;
   disabled?: boolean;
 }
 
@@ -63,12 +63,12 @@ export default function ServicePriceInput({
       <Select
         value={unit}
         onChange={(e) =>
-          onUnitChange(e.target.value as 'item' | 'hour' | 'day')
+          onUnitChange(e.target.value as 'flat_rate' | 'hour' | 'day')
         }
         disabled={disabled}
         sx={{ minWidth: 120 }}
       >
-        <MenuItem value="item">per item</MenuItem>
+        <MenuItem value="flat_rate">flat rate</MenuItem>
         <MenuItem value="hour">per hour</MenuItem>
         <MenuItem value="day">per day</MenuItem>
       </Select>

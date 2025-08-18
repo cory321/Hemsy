@@ -570,6 +570,174 @@ export type Database = {
           },
         ];
       };
+      invoice_email_templates: {
+        Row: {
+          body_html: string;
+          body_text: string;
+          created_at: string | null;
+          id: string;
+          is_active: boolean | null;
+          shop_id: string;
+          subject: string;
+          template_type: string;
+          updated_at: string | null;
+          variables_used: Json | null;
+        };
+        Insert: {
+          body_html: string;
+          body_text: string;
+          created_at?: string | null;
+          id?: string;
+          is_active?: boolean | null;
+          shop_id: string;
+          subject: string;
+          template_type: string;
+          updated_at?: string | null;
+          variables_used?: Json | null;
+        };
+        Update: {
+          body_html?: string;
+          body_text?: string;
+          created_at?: string | null;
+          id?: string;
+          is_active?: boolean | null;
+          shop_id?: string;
+          subject?: string;
+          template_type?: string;
+          updated_at?: string | null;
+          variables_used?: Json | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'invoice_email_templates_shop_id_fkey';
+            columns: ['shop_id'];
+            isOneToOne: false;
+            referencedRelation: 'shops';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      invoice_status_history: {
+        Row: {
+          changed_by: string;
+          created_at: string | null;
+          id: string;
+          invoice_id: string;
+          metadata: Json | null;
+          new_status: string;
+          previous_status: string | null;
+          reason: string | null;
+        };
+        Insert: {
+          changed_by: string;
+          created_at?: string | null;
+          id?: string;
+          invoice_id: string;
+          metadata?: Json | null;
+          new_status: string;
+          previous_status?: string | null;
+          reason?: string | null;
+        };
+        Update: {
+          changed_by?: string;
+          created_at?: string | null;
+          id?: string;
+          invoice_id?: string;
+          metadata?: Json | null;
+          new_status?: string;
+          previous_status?: string | null;
+          reason?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'invoice_status_history_invoice_id_fkey';
+            columns: ['invoice_id'];
+            isOneToOne: false;
+            referencedRelation: 'invoices';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      invoices: {
+        Row: {
+          amount_cents: number;
+          client_id: string;
+          created_at: string | null;
+          deposit_amount_cents: number | null;
+          description: string | null;
+          due_date: string | null;
+          id: string;
+          invoice_number: string;
+          line_items: Json;
+          metadata: Json | null;
+          order_id: string;
+          shop_id: string;
+          status: string;
+          updated_at: string | null;
+        };
+        Insert: {
+          amount_cents: number;
+          client_id: string;
+          created_at?: string | null;
+          deposit_amount_cents?: number | null;
+          description?: string | null;
+          due_date?: string | null;
+          id?: string;
+          invoice_number: string;
+          line_items?: Json;
+          metadata?: Json | null;
+          order_id: string;
+          shop_id: string;
+          status?: string;
+          updated_at?: string | null;
+        };
+        Update: {
+          amount_cents?: number;
+          client_id?: string;
+          created_at?: string | null;
+          deposit_amount_cents?: number | null;
+          description?: string | null;
+          due_date?: string | null;
+          id?: string;
+          invoice_number?: string;
+          line_items?: Json;
+          metadata?: Json | null;
+          order_id?: string;
+          shop_id?: string;
+          status?: string;
+          updated_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'invoices_client_id_fkey';
+            columns: ['client_id'];
+            isOneToOne: false;
+            referencedRelation: 'clients';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'invoices_client_id_fkey';
+            columns: ['client_id'];
+            isOneToOne: false;
+            referencedRelation: 'garments_with_clients';
+            referencedColumns: ['client_id'];
+          },
+          {
+            foreignKeyName: 'invoices_order_id_fkey';
+            columns: ['order_id'];
+            isOneToOne: true;
+            referencedRelation: 'orders';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'invoices_shop_id_fkey';
+            columns: ['shop_id'];
+            isOneToOne: false;
+            referencedRelation: 'shops';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       orders: {
         Row: {
           client_id: string | null;
@@ -642,6 +810,106 @@ export type Database = {
             columns: ['shop_id'];
             isOneToOne: false;
             referencedRelation: 'shops';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      payment_links: {
+        Row: {
+          created_at: string | null;
+          expires_at: string;
+          id: string;
+          invoice_id: string;
+          status: string;
+          stripe_checkout_session_id: string | null;
+          stripe_payment_link_id: string | null;
+          token: string;
+          url: string;
+          used_at: string | null;
+        };
+        Insert: {
+          created_at?: string | null;
+          expires_at: string;
+          id?: string;
+          invoice_id: string;
+          status?: string;
+          stripe_checkout_session_id?: string | null;
+          stripe_payment_link_id?: string | null;
+          token?: string;
+          url: string;
+          used_at?: string | null;
+        };
+        Update: {
+          created_at?: string | null;
+          expires_at?: string;
+          id?: string;
+          invoice_id?: string;
+          status?: string;
+          stripe_checkout_session_id?: string | null;
+          stripe_payment_link_id?: string | null;
+          token?: string;
+          url?: string;
+          used_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'payment_links_invoice_id_fkey';
+            columns: ['invoice_id'];
+            isOneToOne: false;
+            referencedRelation: 'invoices';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      payments: {
+        Row: {
+          amount_cents: number;
+          created_at: string | null;
+          external_reference: string | null;
+          id: string;
+          invoice_id: string;
+          notes: string | null;
+          payment_method: string;
+          payment_type: string;
+          processed_at: string | null;
+          status: string;
+          stripe_metadata: Json | null;
+          stripe_payment_intent_id: string | null;
+        };
+        Insert: {
+          amount_cents: number;
+          created_at?: string | null;
+          external_reference?: string | null;
+          id?: string;
+          invoice_id: string;
+          notes?: string | null;
+          payment_method: string;
+          payment_type?: string;
+          processed_at?: string | null;
+          status?: string;
+          stripe_metadata?: Json | null;
+          stripe_payment_intent_id?: string | null;
+        };
+        Update: {
+          amount_cents?: number;
+          created_at?: string | null;
+          external_reference?: string | null;
+          id?: string;
+          invoice_id?: string;
+          notes?: string | null;
+          payment_method?: string;
+          payment_type?: string;
+          processed_at?: string | null;
+          status?: string;
+          stripe_metadata?: Json | null;
+          stripe_payment_intent_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'payments_invoice_id_fkey';
+            columns: ['invoice_id'];
+            isOneToOne: false;
+            referencedRelation: 'invoices';
             referencedColumns: ['id'];
           },
         ];
@@ -737,6 +1005,56 @@ export type Database = {
           },
         ];
       };
+      shop_settings: {
+        Row: {
+          cash_enabled: boolean | null;
+          created_at: string | null;
+          external_pos_enabled: boolean | null;
+          id: string;
+          invoice_prefix: string | null;
+          last_invoice_number: number | null;
+          payment_required_before_service: boolean | null;
+          payment_settings: Json | null;
+          shop_id: string;
+          stripe_enabled: boolean | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          cash_enabled?: boolean | null;
+          created_at?: string | null;
+          external_pos_enabled?: boolean | null;
+          id?: string;
+          invoice_prefix?: string | null;
+          last_invoice_number?: number | null;
+          payment_required_before_service?: boolean | null;
+          payment_settings?: Json | null;
+          shop_id: string;
+          stripe_enabled?: boolean | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          cash_enabled?: boolean | null;
+          created_at?: string | null;
+          external_pos_enabled?: boolean | null;
+          id?: string;
+          invoice_prefix?: string | null;
+          last_invoice_number?: number | null;
+          payment_required_before_service?: boolean | null;
+          payment_settings?: Json | null;
+          shop_id?: string;
+          stripe_enabled?: boolean | null;
+          updated_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'shop_settings_shop_id_fkey';
+            columns: ['shop_id'];
+            isOneToOne: true;
+            referencedRelation: 'shops';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       shops: {
         Row: {
           buffer_time_minutes: number | null;
@@ -801,6 +1119,27 @@ export type Database = {
             referencedColumns: ['id'];
           },
         ];
+      };
+      stripe_webhook_events: {
+        Row: {
+          event_id: string;
+          event_type: string;
+          id: string;
+          processed_at: string | null;
+        };
+        Insert: {
+          event_id: string;
+          event_type: string;
+          id?: string;
+          processed_at?: string | null;
+        };
+        Update: {
+          event_id?: string;
+          event_type?: string;
+          id?: string;
+          processed_at?: string | null;
+        };
+        Relationships: [];
       };
       user_email_settings: {
         Row: {
@@ -959,6 +1298,33 @@ export type Database = {
           updated_at: string | null;
         };
       };
+      create_invoice_with_number: {
+        Args: {
+          p_amount_cents: number;
+          p_client_id: string;
+          p_deposit_amount_cents?: number;
+          p_description?: string;
+          p_line_items?: Json;
+          p_order_id: string;
+          p_shop_id: string;
+        };
+        Returns: {
+          amount_cents: number;
+          client_id: string;
+          created_at: string | null;
+          deposit_amount_cents: number | null;
+          description: string | null;
+          due_date: string | null;
+          id: string;
+          invoice_number: string;
+          line_items: Json;
+          metadata: Json | null;
+          order_id: string;
+          shop_id: string;
+          status: string;
+          updated_at: string | null;
+        };
+      };
       generate_order_number: {
         Args: { p_shop_id: string };
         Returns: string;
@@ -1029,6 +1395,18 @@ export type Database = {
       };
       initialize_default_email_templates: {
         Args: { user_id: string };
+        Returns: undefined;
+      };
+      process_manual_payment: {
+        Args: {
+          p_amount_cents: number;
+          p_external_reference?: string;
+          p_invoice_id: string;
+          p_notes?: string;
+          p_payment_method: string;
+          p_payment_type: string;
+          p_user_id?: string;
+        };
         Returns: undefined;
       };
       set_current_user_id: {

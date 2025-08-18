@@ -87,9 +87,9 @@ export function createMockClient(overrides?: Partial<Client>): Client {
 export function createMockAppointment(
   overrides?: Partial<Appointment>
 ): Appointment {
-  const date = overrides?.date || generateDateOnly();
-  const startTime = overrides?.start_time || generateTime(10, 0);
-  const endTime = overrides?.end_time || generateTime(11, 0);
+  const date: string = (overrides?.date || generateDateOnly()) as string;
+  const startTime: string = overrides?.start_time || generateTime(10, 0);
+  const endTime: string = overrides?.end_time || generateTime(11, 0);
 
   return {
     id: generateId(),
@@ -104,9 +104,9 @@ export function createMockAppointment(
     updated_at: generateDate(),
     ...overrides,
     // Ensure required fields are never undefined
-    date: overrides?.date || date,
-    start_time: overrides?.start_time || startTime,
-    end_time: overrides?.end_time || endTime,
+    date: overrides?.date ?? date,
+    start_time: overrides?.start_time ?? startTime,
+    end_time: overrides?.end_time ?? endTime,
   };
 }
 
@@ -139,7 +139,7 @@ export function createMockService(overrides?: Partial<Service>): Service {
     shop_id: generateId(),
     name: 'Basic Hemming',
     default_qty: 1,
-    default_unit: 'per_item',
+    default_unit: 'flat_rate',
     default_unit_price_cents: 2500,
     description: null,
     frequently_used: true,

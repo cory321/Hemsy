@@ -144,11 +144,11 @@ export function formatDuration(minutes: number): string {
 // Get appointment color based on type
 export function getAppointmentColor(type: string): string {
   const colors = {
-    consultation: '#FF9800', // Orange
-    fitting: '#2196F3', // Blue
-    pickup: '#4CAF50', // Green
-    delivery: '#9C27B0', // Purple
-    other: '#757575', // Grey
+    consultation: '#A08DA9', // Orange
+    fitting: '#8da88e', // Blue
+    pickup: '#994D65', // Green
+    delivery: '#E1A98F', // Purple
+    other: '#7c99ad', // Grey
   };
 
   return colors[type as keyof typeof colors] || colors.other;

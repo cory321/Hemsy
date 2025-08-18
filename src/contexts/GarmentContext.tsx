@@ -230,7 +230,7 @@ export function GarmentProvider({
         id: `temp-${Date.now()}`,
         name: input.customService?.name || 'New Service',
         quantity: input.customService?.quantity || 1,
-        unit: input.customService?.unit || 'item',
+        unit: input.customService?.unit || 'flat_rate',
         unit_price_cents: input.customService?.unitPriceCents || 0,
         line_total_cents:
           (input.customService?.quantity || 1) *
@@ -382,7 +382,7 @@ export function GarmentProvider({
             unitPriceCents: updates.unit_price_cents,
             description:
               updates.description === null ? undefined : updates.description,
-            unit: updates.unit as 'item' | 'hour' | 'day' | undefined,
+            unit: updates.unit as 'flat_rate' | 'hour' | 'day' | undefined,
           },
         });
 

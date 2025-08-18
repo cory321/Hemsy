@@ -35,7 +35,7 @@ export function InfiniteScrollTrigger({
   onPageChange,
 }: InfiniteScrollTriggerProps) {
   const triggerRef = useRef<HTMLDivElement>(null);
-  const { isInView } = useInView(triggerRef, {
+  const { isInView } = useInView(triggerRef as React.RefObject<Element>, {
     threshold: 0.1,
     rootMargin: '100px',
   });

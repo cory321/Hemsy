@@ -368,7 +368,7 @@ const UpdateGarmentServiceSchema = z.object({
     quantity: z.number().int().min(1).optional(),
     unitPriceCents: z.number().int().min(0).optional(),
     description: z.string().optional(),
-    unit: z.enum(['item', 'hour', 'day']).optional(),
+    unit: z.enum(['flat_rate', 'hour', 'day']).optional(),
   }),
 });
 

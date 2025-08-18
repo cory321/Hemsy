@@ -184,7 +184,7 @@ describe('GarmentServicesManagerOptimistic', () => {
           customService: {
             name: 'Zipper Repair',
             description: undefined,
-            unit: 'item',
+            unit: 'flat_rate',
             unitPriceCents: 2500,
             quantity: 1,
           },
@@ -218,8 +218,8 @@ describe('GarmentServicesManagerOptimistic', () => {
 
       // Click edit button on first service
       const editIcons = screen.getAllByTestId('EditIcon');
-      const editButton = editIcons[0].closest('button');
-      await user.click(editButton!);
+      const editButton = editIcons[0]?.closest('button');
+      if (editButton) await user.click(editButton);
 
       // Dialog should open
       expect(screen.getByRole('dialog')).toBeInTheDocument();
@@ -251,8 +251,8 @@ describe('GarmentServicesManagerOptimistic', () => {
 
       // Click delete button on first service
       const deleteIcons = screen.getAllByTestId('DeleteIcon');
-      const deleteButton = deleteIcons[0].closest('button');
-      await user.click(deleteButton!);
+      const deleteButton = deleteIcons[0]?.closest('button');
+      if (deleteButton) await user.click(deleteButton);
 
       // Confirmation dialog should open
       expect(screen.getByText('Remove Service')).toBeInTheDocument();

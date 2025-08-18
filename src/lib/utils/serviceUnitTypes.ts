@@ -1,5 +1,5 @@
 export const SERVICE_UNIT_TYPES = {
-  ITEM: 'item',
+  FLAT_RATE: 'flat_rate',
   HOUR: 'hour',
   DAY: 'day',
 } as const;

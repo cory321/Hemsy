@@ -27,8 +27,8 @@ export default function GarmentDetailPageClient({
         <Box sx={{ mt: 4, mb: 4 }}>
           <GarmentDetailContent
             clientName={clientName}
-            from={from}
-            orderId={orderId}
+            {...(from !== undefined && { from })}
+            {...(orderId !== undefined && { orderId })}
           />
         </Box>
       </Container>

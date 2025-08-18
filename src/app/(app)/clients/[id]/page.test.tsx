@@ -15,29 +15,31 @@ jest.mock('@/lib/actions/clients', () => ({
 }));
 
 jest.mock('@clerk/nextjs/server', () => ({
-  auth: jest.fn().mockResolvedValue({ userId: 'clerk-user-1' }),
+  auth: jest.fn().mockReturnValue(Promise.resolve({ userId: 'clerk-user-1' })),
 }));
 
 jest.mock('@/lib/supabase/server', () => ({
-  createClient: jest.fn().mockResolvedValue({
-    from(table: string) {
-      const api = {
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({ data: null }),
-      } as any;
-      if (table === 'users') {
-        api.single = jest.fn().mockResolvedValue({ data: { id: 'user-1' } });
-      }
-      if (table === 'shops') {
-        api.single = jest.fn().mockResolvedValue({ data: { id: 'shop-1' } });
-      }
-      return api;
-    },
-  }),
+  createClient: jest.fn().mockReturnValue(
+    Promise.resolve({
+      from(table: string) {
+        const api = {
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          single: jest.fn().mockResolvedValue({ data: null }),
+        } as any;
+        if (table === 'users') {
+          api.single = jest.fn().mockResolvedValue({ data: { id: 'user-1' } });
+        }
+        if (table === 'shops') {
+          api.single = jest.fn().mockResolvedValue({ data: { id: 'shop-1' } });
+        }
+        return api;
+      },
+    })
+  ),
 }));
 
-jest.mock('@/lib/actions/appointments', () => ({
+jest.mock('@/lib/actions/shop-hours', () => ({
   getShopHours: jest.fn().mockResolvedValue([
     {
       day_of_week: 1,
@@ -46,6 +48,9 @@ jest.mock('@/lib/actions/appointments', () => ({
       is_closed: false,
     },
   ]),
+}));
+
+jest.mock('@/lib/actions/calendar-settings', () => ({
   getCalendarSettings: jest.fn().mockResolvedValue({
     buffer_time_minutes: 0,
     default_appointment_duration: 30,
@@ -78,6 +83,12 @@ jest.mock('@/components/clients/ClientAppointmentsSection', () => {
   };
 });
 
+jest.mock('@/components/clients/ClientOrdersSection', () => {
+  return function MockClientOrdersSection() {
+    return <div data-testid="orders-section" />;
+  };
+});
+
 describe('ClientDetailPage', () => {
   const mockGetClient = getClient as jest.MockedFunction<typeof getClient>;
   const mockNotFound = notFound as jest.MockedFunction<typeof notFound>;
@@ -105,7 +116,8 @@ describe('ClientDetailPage', () => {
     mockGetClient.mockResolvedValueOnce(mockClient);
 
     const params = Promise.resolve({ id: 'client1' });
-    render(await ClientDetailPage({ params }));
+    const Component = await ClientDetailPage({ params });
+    render(Component);
 
     expect(screen.getByText('John Doe')).toBeInTheDocument();
     expect(screen.getByText('john@example.com')).toBeInTheDocument();
@@ -122,7 +134,8 @@ describe('ClientDetailPage', () => {
     mockGetClient.mockResolvedValueOnce(mockClient);
 
     const params = Promise.resolve({ id: 'client1' });
-    render(await ClientDetailPage({ params }));
+    const Component = await ClientDetailPage({ params });
+    render(Component);
 
     // Find the Communication Preferences section
     const preferencesSection = screen
@@ -156,7 +169,8 @@ describe('ClientDetailPage', () => {
     mockGetClient.mockResolvedValueOnce(mockClient);
 
     const params = Promise.resolve({ id: 'client1' });
-    render(await ClientDetailPage({ params }));
+    const Component = await ClientDetailPage({ params });
+    render(Component);
 
     expect(screen.getByText('(555) 123-4567')).toBeInTheDocument();
   });
@@ -165,7 +179,8 @@ describe('ClientDetailPage', () => {
     mockGetClient.mockResolvedValueOnce(mockClient);
 
     const params = Promise.resolve({ id: 'client1' });
-    render(await ClientDetailPage({ params }));
+    const Component = await ClientDetailPage({ params });
+    render(Component);
 
     // Find the Record Information section
     const recordSection = screen
@@ -188,7 +203,8 @@ describe('ClientDetailPage', () => {
     mockGetClient.mockResolvedValueOnce(mockClient);
 
     const params = Promise.resolve({ id: 'client1' });
-    render(await ClientDetailPage({ params }));
+    const Component = await ClientDetailPage({ params });
+    render(Component);
 
     expect(screen.getByTestId('edit-dialog')).toBeInTheDocument();
     expect(screen.getByTestId('delete-dialog')).toBeInTheDocument();
@@ -213,7 +229,8 @@ describe('ClientDetailPage', () => {
     mockGetClient.mockResolvedValueOnce(minimalClient);
 
     const params = Promise.resolve({ id: 'client2' });
-    render(await ClientDetailPage({ params }));
+    const Component = await ClientDetailPage({ params });
+    render(Component);
 
     expect(screen.getByText('Jane Smith')).toBeInTheDocument();
     expect(screen.getByText('jane@example.com')).toBeInTheDocument();
@@ -268,7 +285,8 @@ describe('ClientDetailPage', () => {
     mockGetClient.mockResolvedValueOnce(mockClient);
 
     const params = Promise.resolve({ id: 'test-client-id' });
-    render(await ClientDetailPage({ params }));
+    const Component = await ClientDetailPage({ params });
+    render(Component);
 
     expect(mockGetClient).toHaveBeenCalledWith('test-client-id');
   });
@@ -277,7 +295,8 @@ describe('ClientDetailPage', () => {
     mockGetClient.mockResolvedValueOnce(mockClient);
 
     const params = Promise.resolve({ id: 'client1' });
-    render(await ClientDetailPage({ params }));
+    const Component = await ClientDetailPage({ params });
+    render(Component);
 
     expect(screen.getByText('Contact Information')).toBeInTheDocument();
     expect(screen.getByText('Communication Preferences')).toBeInTheDocument();
@@ -296,7 +315,8 @@ describe('ClientDetailPage', () => {
     mockGetClient.mockResolvedValueOnce(clientWithMultilineData);
 
     const params = Promise.resolve({ id: 'client1' });
-    render(await ClientDetailPage({ params }));
+    const Component = await ClientDetailPage({ params });
+    render(Component);
 
     // Find the Notes section
     const notesSection = screen.getByText('Notes').closest('.MuiCard-root');

@@ -84,10 +84,8 @@ describe('AppointmentDetailsDialog - Client link', () => {
   });
 
   it('shows fallback text when no client selected', () => {
-    const noClientAppointment = createMockAppointment({
-      ...mockAppointment,
-      client: undefined,
-    });
+    const { client, ...appointmentWithoutClient } = mockAppointment;
+    const noClientAppointment = createMockAppointment(appointmentWithoutClient);
 
     render(
       <AppointmentDetailsDialog

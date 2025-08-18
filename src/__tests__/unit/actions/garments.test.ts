@@ -317,7 +317,7 @@ describe('Garment Actions', () => {
       const mockService = {
         id: 'service-123',
         name: 'Hemming',
-        default_unit: 'item',
+        default_unit: 'flat_rate',
         default_unit_price_cents: 1500,
         default_qty: 1,
       };

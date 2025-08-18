@@ -30,7 +30,7 @@ const mockGarment = {
       id: 'service-1',
       name: 'Hemming',
       quantity: 1,
-      unit: 'item',
+      unit: 'flat_rate',
       unit_price_cents: 2000,
       line_total_cents: 2000,
       description: 'Basic hem',
@@ -85,7 +85,9 @@ describe('GarmentServicesManagerOptimistic', () => {
 
     // Find and click the first delete button
     const deleteButtons = screen.getAllByTestId('DeleteIcon');
-    fireEvent.click(deleteButtons[0]);
+    if (deleteButtons[0]) {
+      fireEvent.click(deleteButtons[0]);
+    }
 
     // Confirmation dialog should appear
     await waitFor(() => {
@@ -107,7 +109,9 @@ describe('GarmentServicesManagerOptimistic', () => {
 
     // Click delete
     const deleteButtons = screen.getAllByTestId('DeleteIcon');
-    fireEvent.click(deleteButtons[0]);
+    if (deleteButtons[0]) {
+      fireEvent.click(deleteButtons[0]);
+    }
 
     // Wait for dialog
     await waitFor(() => {
@@ -130,7 +134,9 @@ describe('GarmentServicesManagerOptimistic', () => {
 
     // Click delete
     const deleteButtons = screen.getAllByTestId('DeleteIcon');
-    fireEvent.click(deleteButtons[0]);
+    if (deleteButtons[0]) {
+      fireEvent.click(deleteButtons[0]);
+    }
 
     // Wait for dialog
     await waitFor(() => {
@@ -163,7 +169,7 @@ describe('GarmentServicesManagerOptimistic', () => {
 
     // Verify the component is using the correct service unit types
     // The component imports SERVICE_UNIT_TYPES which has the correct enum values
-    expect(SERVICE_UNIT_TYPES.ITEM).toBe('item');
+    expect(SERVICE_UNIT_TYPES.FLAT_RATE).toBe('flat_rate');
     expect(SERVICE_UNIT_TYPES.HOUR).toBe('hour');
     expect(SERVICE_UNIT_TYPES.DAY).toBe('day');
   });

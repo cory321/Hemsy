@@ -88,8 +88,8 @@ export function OrderListItem({ order, garmentCount }: OrderListItemProps) {
               Order #{(order as any).order_number ?? order.id.slice(0, 8)}
             </Typography>
             <Chip
-              label={getStatusLabel(order.status)}
-              color={getStatusColor(order.status)}
+              label={getStatusLabel(order.status || 'pending')}
+              color={getStatusColor(order.status || 'pending')}
               size="small"
             />
             {(order as any).is_paid && (
@@ -117,7 +117,7 @@ export function OrderListItem({ order, garmentCount }: OrderListItemProps) {
                 sx={{ fontSize: 16, color: 'text.secondary' }}
               />
               <Typography variant="body2" color="text.secondary">
-                {formatDate(order.created_at)}
+                {formatDate(order.created_at || new Date().toISOString())}
               </Typography>
             </Box>
 

@@ -30,7 +30,7 @@ describe('PastelColorPicker', () => {
   test('highlights selected color with check icon and border', () => {
     const handleChange = jest.fn();
     const color = pastelPalette[2];
-    render(<PastelColorPicker value={color} onChange={handleChange} />);
+    render(<PastelColorPicker value={color || ''} onChange={handleChange} />);
     const swatch = screen.getByTestId(`pastel-swatch-${color}`);
     expect(swatch).toHaveAttribute(
       'aria-label',

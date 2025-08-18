@@ -1,5 +1,6 @@
 // Export all responsive layout components and utilities
 export { ResponsiveNav } from './ResponsiveNav';
+export { Logo } from './Logo';
 export {
   ResponsiveContainer,
   ResponsiveBox,

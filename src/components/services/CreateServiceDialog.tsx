@@ -49,7 +49,7 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
     name: '',
     description: '',
     qty: 1,
-    unit: SERVICE_UNIT_TYPES.ITEM,
+    unit: SERVICE_UNIT_TYPES.FLAT_RATE,
     unit_price: 0,
   });
 
@@ -77,7 +77,7 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
     }));
   };
 
-  const handleUnitChange = (newUnit: 'item' | 'hour' | 'day') => {
+  const handleUnitChange = (newUnit: 'flat_rate' | 'hour' | 'day') => {
     setNewService((prev) => ({
       ...prev,
       unit: newUnit,
@@ -107,8 +107,11 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
 
       const newServiceItem = await addService(payload);
 
-      // Use the service as-is since description can be string | null
-      const serviceForSelect: Service = newServiceItem;
+      // Cast default_unit to ServiceUnitType for Service compatibility
+      const serviceForSelect: Service = {
+        ...newServiceItem,
+        default_unit: newServiceItem.default_unit as any,
+      };
 
       onServiceSelect(serviceForSelect);
 
@@ -117,7 +120,7 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
         name: '',
         description: '',
         qty: 1,
-        unit: SERVICE_UNIT_TYPES.ITEM,
+        unit: SERVICE_UNIT_TYPES.FLAT_RATE,
         unit_price: 0,
       });
       setPrice('0.00');
@@ -204,7 +207,7 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
 
           <ServicePriceInput
             price={price}
-            unit={newService.unit as 'item' | 'hour' | 'day'}
+            unit={newService.unit as 'flat_rate' | 'hour' | 'day'}
             onPriceChange={handlePriceChange}
             onUnitChange={handleUnitChange}
             disabled={isLoading}

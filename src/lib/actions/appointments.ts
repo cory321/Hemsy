@@ -334,6 +334,11 @@ export async function updateAppointment(
     .eq('id', validated.id)
     .eq('shops.users.clerk_user_id', userId)
     .single();
+
+  if (fetchError || !currentApt) {
+    throw new Error('Appointment not found or unauthorized');
+  }
+
   // Prevent reschedule/cancel for past appointments
   const currentAptEnd = new Date(`${currentApt.date} ${currentApt.end_time}`);
   const isPast = currentAptEnd < new Date();

@@ -9,7 +9,7 @@ describe('EditServiceDialog', () => {
     name: 'Test Service',
     description: 'Test Description',
     default_qty: 1,
-    default_unit: 'item',
+    default_unit: 'flat_rate',
     default_unit_price_cents: 1000,
     frequently_used: false,
     frequently_used_position: null,
@@ -35,7 +35,7 @@ describe('EditServiceDialog', () => {
     expect(screen.getByDisplayValue('Test Service')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Test Description')).toBeInTheDocument();
     expect(screen.getByLabelText('Price')).toBeInTheDocument();
-    expect(screen.getByText('per item')).toBeInTheDocument();
+    expect(screen.getByText('flat rate')).toBeInTheDocument();
   });
 
   it('uses ServicePriceInput for price and unit', () => {
