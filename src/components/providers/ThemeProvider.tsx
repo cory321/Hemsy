@@ -45,7 +45,7 @@ const theme = createTheme({
       dark: '#5A7061',
     },
     background: {
-      default: '#fff9f2', // Warm cream background
+      default: '#fffefc', // Warm cream background
       paper: '#FFFFFF', // White for cards/surfaces
     },
     grey: {
@@ -151,26 +151,26 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-          backgroundColor: '#A34357',
-          color: '#FFFFFF',
+          backgroundColor: '#fffefc',
+          color: '#3A1619',
           borderBottom: 'none',
           '& .MuiToolbar-root': {
             backgroundColor: 'transparent',
           },
           '& .MuiButton-root': {
-            color: '#FFFFFF',
+            color: '#3A1619',
             '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.15)',
+              backgroundColor: 'rgba(0, 0, 0, 0.06)',
             },
           },
           '& .MuiIconButton-root': {
-            color: '#FFFFFF',
+            color: '#3A1619',
             '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.15)',
+              backgroundColor: 'rgba(0, 0, 0, 0.06)',
             },
           },
           '& .MuiTypography-root': {
-            color: '#FFFFFF',
+            color: '#3A1619',
           },
         },
       },
