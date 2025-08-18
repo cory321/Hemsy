@@ -1,0 +1,32 @@
+# Ignore test files
+__tests__
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+
+# Ignore documentation
+docs/
+*.md
+!README.md
+
+# Ignore scripts that aren't needed for build
+scripts/test-*.ts
+scripts/test-*.js
+
+# Ignore development files
+.env.local
+.env.development
+
+# Ignore playwright files
+playwright/
+playwright-report/
+test-results/
+
+# Ignore Jest config
+jest.config.js
+jest.setup.js
+
+# Ignore any cache directories
+.cache/
+*.cache
