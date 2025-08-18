@@ -10,6 +10,7 @@ import {
   Box,
 } from '@mui/material';
 import Link from 'next/link';
+import { SignedIn, SignedOut } from '@clerk/nextjs';
 
 export default function MarketingLayout({ children }: { children: ReactNode }) {
   return (
@@ -27,17 +28,47 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
           <Button color="inherit" component={Link} href="/pricing">
             Pricing
           </Button>
-          <Button color="inherit" component={Link} href="/sign-in">
-            Sign In
-          </Button>
-          <Button
-            variant="contained"
-            color="secondary"
-            component={Link}
-            href="/sign-up"
-          >
-            Get Started
-          </Button>
+          {process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ? (
+            <>
+              <SignedIn>
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  component={Link}
+                  href="/dashboard"
+                >
+                  Go to Dashboard
+                </Button>
+              </SignedIn>
+              <SignedOut>
+                <Button color="inherit" component={Link} href="/sign-in">
+                  Sign In
+                </Button>
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  component={Link}
+                  href="/sign-up"
+                >
+                  Get Started
+                </Button>
+              </SignedOut>
+            </>
+          ) : (
+            <>
+              <Button color="inherit" component={Link} href="/sign-in">
+                Sign In
+              </Button>
+              <Button
+                variant="contained"
+                color="secondary"
+                component={Link}
+                href="/sign-up"
+              >
+                Get Started
+              </Button>
+            </>
+          )}
         </Toolbar>
       </AppBar>
       <Box component="main" sx={{ minHeight: '100vh' }}>
