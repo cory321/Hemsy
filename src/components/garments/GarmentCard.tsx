@@ -138,18 +138,29 @@ const GarmentCard: React.FC<GarmentCardProps> = ({
                   left: 0,
                   width: '100%',
                   height: '100%',
-                  display: 'grid',
-                  placeItems: 'center',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   bgcolor: '#f5f5f5',
                   p: 2,
                   overflow: 'hidden',
                 }}
               >
-                <InlinePresetSvg
-                  src={resolved.src as string}
-                  fillColor={(garment.preset_fill_color ?? undefined) as any}
-                  style={{ height: '88%', width: 'auto', maxWidth: '90%' }}
-                />
+                <Box
+                  sx={{
+                    height: '88%',
+                    width: '88%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <InlinePresetSvg
+                    src={resolved.src as string}
+                    fillColor={(garment.preset_fill_color ?? undefined) as any}
+                    style={{ height: '100%', width: '100%', maxWidth: '100%' }}
+                  />
+                </Box>
               </Box>
             );
           }

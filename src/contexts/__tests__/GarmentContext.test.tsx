@@ -28,7 +28,7 @@ const mockGarment = {
       id: 'service-1',
       name: 'Hemming',
       quantity: 1,
-      unit: 'item',
+      unit: 'flat_rate',
       unit_price_cents: 5000,
       line_total_cents: 5000,
       description: null,
@@ -144,7 +144,7 @@ describe('GarmentContext - toggleServiceComplete', () => {
         { ...mockGarment.garment_services[0], is_done: true },
         mockGarment.garment_services[1],
       ],
-    };
+    } as any;
 
     render(
       <GarmentProvider initialGarment={garmentWithOneComplete}>
@@ -176,7 +176,7 @@ describe('GarmentContext - toggleServiceComplete', () => {
         { ...mockGarment.garment_services[0], is_done: true },
         mockGarment.garment_services[1],
       ],
-    };
+    } as any;
 
     render(
       <GarmentProvider initialGarment={garmentWithOneComplete}>
@@ -260,7 +260,7 @@ describe('GarmentContext - toggleServiceComplete', () => {
         { ...mockGarment.garment_services[0], is_done: true },
         mockGarment.garment_services[1],
       ],
-    };
+    } as any;
 
     render(
       <GarmentProvider initialGarment={garmentWithCompleteService}>

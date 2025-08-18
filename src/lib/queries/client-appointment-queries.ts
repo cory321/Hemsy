@@ -55,10 +55,19 @@ export function useInfiniteClientAppointments(
   const pageSize = options?.pageSize ?? 10;
   return useInfiniteQuery({
     queryKey: [
-      ...clientAppointmentKeys.list(clientId, {
-        includeCompleted: options?.includeCompleted,
-        statuses: options?.statuses,
-      }),
+      ...clientAppointmentKeys.list(
+        clientId,
+        options
+          ? {
+              ...(options.includeCompleted !== undefined && {
+                includeCompleted: options.includeCompleted,
+              }),
+              ...(options.statuses !== undefined && {
+                statuses: options.statuses,
+              }),
+            }
+          : undefined
+      ),
       'infinite',
       options?.timeframe ?? 'all',
       pageSize,
@@ -66,9 +75,13 @@ export function useInfiniteClientAppointments(
     initialPageParam: 0,
     queryFn: async ({ pageParam }) => {
       const page = await getClientAppointmentsPage(shopId, clientId, {
-        includeCompleted: options?.includeCompleted,
-        statuses: options?.statuses,
-        timeframe: options?.timeframe,
+        ...(options?.includeCompleted !== undefined && {
+          includeCompleted: options.includeCompleted,
+        }),
+        ...(options?.statuses !== undefined && { statuses: options.statuses }),
+        ...(options?.timeframe !== undefined && {
+          timeframe: options.timeframe,
+        }),
         limit: pageSize,
         offset: Number(pageParam) || 0,
       });

@@ -75,7 +75,7 @@ export default function GarmentServicesManager({
     isCustom: false,
     serviceId: '',
     name: '',
-    unit: 'item' as 'item' | 'hour' | 'day',
+    unit: 'flat_rate' as 'flat_rate' | 'hour' | 'day',
     price: '0.00',
     description: '',
   });
@@ -126,7 +126,7 @@ export default function GarmentServicesManager({
           isCustom: false,
           serviceId: '',
           name: '',
-          unit: 'item' as 'item' | 'hour' | 'day',
+          unit: 'flat_rate' as 'flat_rate' | 'hour' | 'day',
           price: '0.00',
           description: '',
         });
@@ -205,7 +205,7 @@ export default function GarmentServicesManager({
         updates: {
           quantity: 1, // Always set quantity to 1 for garment services
           unitPriceCents: editingService.unit_price_cents,
-          unit: editingService.unit as 'item' | 'hour' | 'day',
+          unit: editingService.unit as 'flat_rate' | 'hour' | 'day',
           description: editingService.description || undefined,
         },
       });
@@ -508,7 +508,7 @@ export default function GarmentServicesManager({
               <Typography variant="h6">{editingService.name}</Typography>
               <ServicePriceInput
                 price={editPrice}
-                unit={editingService.unit as 'item' | 'hour' | 'day'}
+                unit={editingService.unit as 'flat_rate' | 'hour' | 'day'}
                 onPriceChange={(price) => {
                   setEditPrice(price);
                   const cents = Math.round(parseFloat(price || '0') * 100);

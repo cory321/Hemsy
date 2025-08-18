@@ -21,7 +21,7 @@ describe('ServiceList', () => {
       name: 'Hem Pants',
       description: 'Basic hem alteration',
       default_qty: 1,
-      default_unit: 'item',
+      default_unit: 'flat_rate',
       default_unit_price_cents: 2500,
       frequently_used: false,
       frequently_used_position: null,
@@ -31,7 +31,7 @@ describe('ServiceList', () => {
       name: 'Take In Waist',
       description: 'Waist adjustment',
       default_qty: 1,
-      default_unit: 'item',
+      default_unit: 'flat_rate',
       default_unit_price_cents: 3500,
       frequently_used: true,
       frequently_used_position: 1,
@@ -45,9 +45,17 @@ describe('ServiceList', () => {
   describe('frequently used updates', () => {
     it('should update service state when marking as frequently used', async () => {
       const updatedService = {
-        ...mockServices[0],
+        id: '1',
+        shop_id: 'shop_123',
+        name: 'Hem Pants',
+        description: 'Basic hem alteration',
+        default_qty: 1,
+        default_unit: 'flat_rate',
+        default_unit_price_cents: 2500,
         frequently_used: true,
         frequently_used_position: 2,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
       };
 
       mockEditService.mockResolvedValue(updatedService);
@@ -58,7 +66,10 @@ describe('ServiceList', () => {
 
       // Find and click the menu button for the first service
       const menuButtons = screen.getAllByTestId('MoreVertIcon');
-      fireEvent.click(menuButtons[0].closest('button')!);
+      expect(menuButtons[0]).toBeDefined();
+      const menuButton = menuButtons[0]?.closest('button');
+      expect(menuButton).not.toBeNull();
+      fireEvent.click(menuButton!);
 
       // Click edit
       const editButton = screen.getByText('Edit service');
@@ -99,9 +110,17 @@ describe('ServiceList', () => {
 
     it('should update service state when unmarking as frequently used', async () => {
       const updatedService = {
-        ...mockServices[1],
+        id: '2',
+        shop_id: 'shop_123',
+        name: 'Take In Waist',
+        description: 'Waist adjustment',
+        default_qty: 1,
+        default_unit: 'flat_rate',
+        default_unit_price_cents: 3500,
         frequently_used: false,
         frequently_used_position: null,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
       };
 
       mockEditService.mockResolvedValue(updatedService);
@@ -112,7 +131,10 @@ describe('ServiceList', () => {
 
       // Find and click the menu button for the second service (which is frequently used)
       const menuButtons = screen.getAllByTestId('MoreVertIcon');
-      fireEvent.click(menuButtons[1].closest('button')!);
+      expect(menuButtons[1]).toBeDefined();
+      const menuButton = menuButtons[1]?.closest('button');
+      expect(menuButton).not.toBeNull();
+      fireEvent.click(menuButton!);
 
       // Click edit
       const editButton = screen.getByText('Edit service');

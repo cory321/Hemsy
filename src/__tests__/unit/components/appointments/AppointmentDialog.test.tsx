@@ -293,10 +293,11 @@ describe('AppointmentDialog', () => {
   it('clears the client field when opening for a new appointment', async () => {
     const user = userEvent.setup();
     // Render dialog with a pre-selected client (simulate editing)
+    const firstClient = mockClients[0];
     const appointment = createMockAppointment({
       id: 'apt1',
-      client_id: mockClients[0]?.id || '',
-      client: mockClients[0],
+      client_id: firstClient?.id || '',
+      ...(firstClient && { client: firstClient }),
       date: '2024-06-01',
       start_time: '10:00',
       end_time: '10:30',
@@ -320,11 +321,7 @@ describe('AppointmentDialog', () => {
 
     // Now rerender as if opening for a new appointment
     rerender(
-      <AppointmentDialog
-        {...defaultProps}
-        open={true}
-        appointment={undefined}
-      />
+      <AppointmentDialog {...defaultProps} open={true} appointment={null} />
     );
     // Wait for the effect to clear the client (re-query input after rerender)
     await waitFor(() => {

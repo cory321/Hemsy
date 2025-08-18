@@ -4,7 +4,12 @@ import { auth } from '@clerk/nextjs/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { EmailRepository } from '@/lib/services/email/email-repository';
-import { EmailLog, EmailStatistics } from '@/types/email';
+import {
+  EmailLog,
+  EmailStatistics,
+  EmailType,
+  EmailStatus,
+} from '@/types/email';
 import { EmailLogQuerySchema } from '@/lib/validations/email';
 import { startOfDay, endOfDay, eachDayOfInterval, format } from 'date-fns';
 import { ensureUserAndShop } from '../users';
@@ -31,10 +36,18 @@ export async function getEmailLogs(
     const supabase = await createClient();
     const repository = new EmailRepository(supabase, user.id);
 
-    // Convert string emailType to EmailType
+    // Convert string emailType to EmailType with proper filtering
     const repositoryParams = {
-      ...validatedParams,
-      emailType: validatedParams.emailType as EmailType | undefined,
+      limit: validatedParams.limit,
+      offset: validatedParams.offset,
+      ...(validatedParams.status && { status: validatedParams.status }),
+      ...(validatedParams.emailType && {
+        emailType: validatedParams.emailType as EmailType,
+      }),
+      ...(validatedParams.startDate && {
+        startDate: validatedParams.startDate,
+      }),
+      ...(validatedParams.endDate && { endDate: validatedParams.endDate }),
     };
 
     const result = await repository.getEmailLogs(repositoryParams);
@@ -181,11 +194,8 @@ export async function getEmailLog(emailLogId: string): Promise<{
       return { success: false, error: 'Email log not found' };
     }
 
-    // Ensure email_type is typed correctly
-    const emailLog: EmailLog = {
-      ...data,
-      email_type: data.email_type as EmailType,
-    };
+    // Ensure email_type and status are typed correctly
+    const emailLog: EmailLog = data as EmailLog;
 
     return { success: true, data: emailLog };
   } catch (error) {

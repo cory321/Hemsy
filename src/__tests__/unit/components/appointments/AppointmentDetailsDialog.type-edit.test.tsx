@@ -275,7 +275,9 @@ describe('AppointmentDetailsDialog - Type Editing', () => {
     // Click edit button for notes
     const editButtons = screen.getAllByRole('button', { name: /edit/i });
     const notesEditButton = editButtons[1] || editButtons[0];
-    fireEvent.click(notesEditButton);
+    if (notesEditButton) {
+      fireEvent.click(notesEditButton);
+    }
 
     // Change notes
     const notesInput = screen.getByPlaceholderText(/add notes/i);

@@ -141,7 +141,7 @@ describe('Calendar Settings Modal', () => {
       // Click outside the dialog (on the backdrop)
       const backdrops = screen.getAllByRole('presentation');
       // Find the backdrop (it has aria-hidden and class MuiBackdrop-root)
-      const backdropElement = backdrops[0].querySelector(
+      const backdropElement = backdrops[0]?.querySelector(
         '.MuiBackdrop-root'
       ) as HTMLElement;
       await user.click(backdropElement);

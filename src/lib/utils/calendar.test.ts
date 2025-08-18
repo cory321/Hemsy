@@ -119,12 +119,12 @@ describe('Calendar Utilities', () => {
 
   describe('getAppointmentColor', () => {
     it('should return correct color for appointment type', () => {
-      expect(getAppointmentColor('consultation')).toBe('#FF9800');
-      expect(getAppointmentColor('fitting')).toBe('#2196F3');
-      expect(getAppointmentColor('pickup')).toBe('#4CAF50');
-      expect(getAppointmentColor('delivery')).toBe('#9C27B0');
-      expect(getAppointmentColor('other')).toBe('#757575');
-      expect(getAppointmentColor('unknown')).toBe('#757575');
+      expect(getAppointmentColor('consultation')).toBe('#A08DA9');
+      expect(getAppointmentColor('fitting')).toBe('#8da88e');
+      expect(getAppointmentColor('pickup')).toBe('#994D65');
+      expect(getAppointmentColor('delivery')).toBe('#E1A98F');
+      expect(getAppointmentColor('other')).toBe('#7c99ad');
+      expect(getAppointmentColor('unknown')).toBe('#7c99ad');
     });
   });
 

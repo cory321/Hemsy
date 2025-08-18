@@ -141,8 +141,8 @@ describe('GarmentTimeTracker', () => {
 
       // Click edit button on first entry
       const editIcons = screen.getAllByTestId('EditIcon');
-      const editButton = editIcons[0].closest('button');
-      await user.click(editButton!);
+      const editButton = editIcons[0]?.closest('button');
+      if (editButton) await user.click(editButton);
 
       // Wait for dialog to open
       await waitFor(() => {
@@ -181,8 +181,8 @@ describe('GarmentTimeTracker', () => {
 
       // Click delete button on first entry
       const deleteIcons = screen.getAllByTestId('DeleteIcon');
-      const deleteButton = deleteIcons[0].closest('button');
-      await user.click(deleteButton!);
+      const deleteButton = deleteIcons[0]?.closest('button');
+      if (deleteButton) await user.click(deleteButton);
 
       await waitFor(() => {
         expect(deleteTimeEntry).toHaveBeenCalledWith('entry-1');

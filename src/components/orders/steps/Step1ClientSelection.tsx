@@ -15,19 +15,20 @@ import { ClientSearchField } from '@/components/appointments/ClientSearchField';
 import ClientCreateDialog from '@/components/clients/ClientCreateDialog';
 import { useOrderFlow } from '@/contexts/OrderFlowContext';
 import type { Tables } from '@/types/supabase';
+import type { Client } from '@/types';
 
 export default function Step1ClientSelection() {
   const { orderDraft, updateOrderDraft } = useOrderFlow();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
-  const handleClientSelect = (client: Tables<'clients'> | null) => {
+  const handleClientSelect = (client: Client | null) => {
     updateOrderDraft({
       clientId: client?.id || '',
-      client: client || undefined,
+      client: (client as any) || undefined,
     });
   };
 
-  const handleClientCreated = (client: Tables<'clients'>) => {
+  const handleClientCreated = (client: Client) => {
     handleClientSelect(client);
     setCreateDialogOpen(false);
   };

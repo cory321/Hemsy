@@ -298,7 +298,7 @@ export function useCreateAppointment(
       return { previousAppointments, queryKey };
     },
 
-    onError: (err, newAppointment, context) => {
+    onError: (err, newAppointment, context: any) => {
       // Revert optimistic update on error
       if (context?.previousAppointments) {
         queryClient.setQueryData(

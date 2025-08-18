@@ -76,7 +76,7 @@ export default function GarmentServicesManagerOptimistic() {
     isCustom: false,
     serviceId: '',
     name: '',
-    unit: 'item' as 'item' | 'hour' | 'day',
+    unit: 'flat_rate' as 'flat_rate' | 'hour' | 'day',
     price: '0.00',
     description: '',
     addToCatalog: false,
@@ -135,7 +135,7 @@ export default function GarmentServicesManagerOptimistic() {
       isCustom: false,
       serviceId: '',
       name: '',
-      unit: 'item' as 'item' | 'hour' | 'day',
+      unit: 'flat_rate' as 'flat_rate' | 'hour' | 'day',
       price: '0.00',
       description: '',
       addToCatalog: false,
@@ -466,7 +466,7 @@ export default function GarmentServicesManagerOptimistic() {
                       ...newService,
                       serviceId: value.id,
                       name: value.name,
-                      unit: value.default_unit as 'item' | 'hour' | 'day',
+                      unit: value.default_unit as 'flat_rate' | 'hour' | 'day',
                       price: (
                         (value.default_unit_price_cents || 0) / 100
                       ).toFixed(2),
@@ -545,7 +545,7 @@ export default function GarmentServicesManagerOptimistic() {
               />
               <ServicePriceInput
                 price={editPrice}
-                unit={editingService.unit as 'item' | 'hour' | 'day'}
+                unit={editingService.unit as 'flat_rate' | 'hour' | 'day'}
                 onPriceChange={(price) => {
                   setEditPrice(price);
                   const cents = Math.round(parseFloat(price || '0') * 100);

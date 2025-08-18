@@ -33,7 +33,7 @@ export default function ServicesPage() {
           name: s.name,
           description: s.description ?? undefined,
           default_qty: s.default_qty ?? 1,
-          default_unit: (s.default_unit as ServiceUnitType) ?? 'item',
+          default_unit: (s.default_unit as ServiceUnitType) ?? 'flat_rate',
           default_unit_price_cents: s.default_unit_price_cents ?? 0,
           frequently_used: !!s.frequently_used,
           frequently_used_position: s.frequently_used_position ?? null,

@@ -71,9 +71,9 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
   const [quickAddName, setQuickAddName] = useState('');
   const [quickAddPrice, setQuickAddPrice] = useState('0.00');
   const [quickAddPriceFocused, setQuickAddPriceFocused] = useState(false);
-  const [quickAddUnit, setQuickAddUnit] = useState<'item' | 'hour' | 'day'>(
-    'item'
-  );
+  const [quickAddUnit, setQuickAddUnit] = useState<
+    'flat_rate' | 'hour' | 'day'
+  >('flat_rate');
   const [quickAddToCatalog, setQuickAddToCatalog] = useState(true);
   const [quickAddFrequentlyUsed, setQuickAddFrequentlyUsed] = useState(false);
 
@@ -198,7 +198,7 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
     setQuickAddName('');
     setQuickAddPrice('0.00');
     setQuickAddPriceFocused(false);
-    setQuickAddUnit('item');
+    setQuickAddUnit('flat_rate');
     setQuickAddFrequentlyUsed(false);
     setShowQuickAdd(false);
   };
@@ -382,7 +382,7 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
                         }
                         fullWidth
                       >
-                        <MenuItem value="item">item</MenuItem>
+                        <MenuItem value="flat_rate">flat rate</MenuItem>
                         <MenuItem value="hour">hour</MenuItem>
                         <MenuItem value="day">day</MenuItem>
                       </Select>
@@ -426,7 +426,7 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
           setQuickAddName('');
           setQuickAddPrice('0.00');
           setQuickAddPriceFocused(false);
-          setQuickAddUnit('item');
+          setQuickAddUnit('flat_rate');
           setQuickAddFrequentlyUsed(false);
         }}
         maxWidth="sm"
@@ -494,7 +494,7 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
                 value={quickAddUnit}
                 onChange={(e) => setQuickAddUnit(e.target.value as any)}
               >
-                <MenuItem value="item">per item</MenuItem>
+                <MenuItem value="flat_rate">flat rate</MenuItem>
                 <MenuItem value="hour">per hour</MenuItem>
                 <MenuItem value="day">per day</MenuItem>
               </Select>
@@ -538,7 +538,7 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
               setQuickAddName('');
               setQuickAddPrice('0.00');
               setQuickAddPriceFocused(false);
-              setQuickAddUnit('item');
+              setQuickAddUnit('flat_rate');
               setQuickAddFrequentlyUsed(false);
             }}
           >

@@ -10,7 +10,7 @@ import type { Tables } from '@/types/supabase';
 export interface PaginatedOrders {
   data: Array<
     Tables<'orders'> & {
-      client: Tables<'clients'> | null;
+      client: { id: string; first_name: string; last_name: string } | null;
       garments: Array<{ id: string }>;
     }
   >;
@@ -92,13 +92,13 @@ export async function getOrdersPaginated(
 const ServiceInlineSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
-  unit: z.enum(['item', 'hour', 'day']),
+  unit: z.enum(['flat_rate', 'hour', 'day']),
   unitPriceCents: z.number().int().min(0),
 });
 
 const ServiceLineSchema = z.object({
   quantity: z.number().int().min(1),
-  unit: z.enum(['item', 'hour', 'day']),
+  unit: z.enum(['flat_rate', 'hour', 'day']),
   unitPriceCents: z.number().int().min(0),
   serviceId: z.string().uuid().optional(),
   inline: ServiceInlineSchema.optional(),
@@ -171,7 +171,7 @@ export async function createOrder(
       presetFillColor?: string;
       services: {
         quantity: number;
-        unit: 'item' | 'hour' | 'day';
+        unit: 'flat_rate' | 'hour' | 'day';
         unitPriceCents: number;
         serviceId?: string;
         inline?: { name: string; description?: string };

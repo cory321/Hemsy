@@ -27,9 +27,9 @@ export default function GarmentImageSection({
 
   // Resolve display image with fallbacks
   const resolved = resolveGarmentDisplayImage({
-    photoUrl: garment.photo_url || undefined,
-    cloudPublicId: garment.image_cloud_id || undefined,
-    presetIconKey: garment.preset_icon_key || undefined,
+    photoUrl: garment.photo_url || '',
+    cloudPublicId: garment.image_cloud_id || '',
+    presetIconKey: garment.preset_icon_key || '',
   });
 
   return (
@@ -41,7 +41,7 @@ export default function GarmentImageSection({
           mb: 2,
           p: 2,
           borderRadius: 1,
-          backgroundColor: getStageColor(garment.stage),
+          backgroundColor: getStageColor(garment.stage as any),
           textAlign: 'center',
         }}
       >
@@ -50,7 +50,7 @@ export default function GarmentImageSection({
         </Typography>
       </Box>
 
-      <Card sx={{ mb: 3 }}>
+      <Card sx={{ mb: 3 }} data-testid="garment-image-section">
         {resolved.kind === 'photo' || resolved.kind === 'cloud' ? (
           <CardMedia
             component="img"
@@ -62,8 +62,9 @@ export default function GarmentImageSection({
           <Box
             sx={{
               height: 400,
-              display: 'grid',
-              placeItems: 'center',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               bgcolor: 'grey.100',
               position: 'relative',
               aspectRatio: '1 / 1',
@@ -72,18 +73,29 @@ export default function GarmentImageSection({
               overflow: 'hidden',
               p: 3,
             }}
+            data-testid="garment-svg-container"
           >
             {typeof resolved.src === 'string' ? (
-              <InlinePresetSvg
-                src={resolved.src}
-                outlineColor={garment.preset_outline_color || undefined}
-                fillColor={garment.preset_fill_color || undefined}
-                style={{
+              <Box
+                sx={{
                   height: '88%',
-                  width: 'auto',
-                  maxWidth: '100%',
+                  width: '88%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
-              />
+              >
+                <InlinePresetSvg
+                  src={resolved.src}
+                  outlineColor={garment.preset_outline_color || ''}
+                  fillColor={garment.preset_fill_color || ''}
+                  style={{
+                    height: '100%',
+                    width: '100%',
+                    maxWidth: '100%',
+                  }}
+                />
+              </Box>
             ) : null}
           </Box>
         ) : (
@@ -96,13 +108,26 @@ export default function GarmentImageSection({
               bgcolor: 'grey.100',
               flexDirection: 'column',
               gap: 1,
+              p: 3,
             }}
           >
-            <InlinePresetSvg
-              src={'/presets/garments/select-garment.svg'}
-              style={{ height: '88%', width: 'auto', maxWidth: '100%' }}
-            />
-            <Typography color="text.secondary">Preset selected</Typography>
+            <Box
+              sx={{
+                height: '88%',
+                width: '88%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexDirection: 'column',
+                gap: 1,
+              }}
+            >
+              <InlinePresetSvg
+                src={'/presets/garments/select-garment.svg'}
+                style={{ height: '90%', width: '100%', maxWidth: '100%' }}
+              />
+              <Typography color="text.secondary">Preset selected</Typography>
+            </Box>
           </Box>
         )}
         <Box sx={{ p: 2 }}>

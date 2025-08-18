@@ -68,9 +68,13 @@ describe('createOrder with default garment names', () => {
           services: [
             {
               quantity: 1,
-              unit: 'item',
+              unit: 'flat_rate',
               unitPriceCents: 1000,
-              inline: { name: 'Hemming', unit: 'item', unitPriceCents: 1000 },
+              inline: {
+                name: 'Hemming',
+                unit: 'flat_rate',
+                unitPriceCents: 1000,
+              },
             },
           ],
         },

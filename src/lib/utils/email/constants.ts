@@ -151,6 +151,9 @@ export const EMAIL_VARIABLES: EmailVariableConfig[] = [
         example: 'Jane Smith',
       },
     ],
+    sample_data: {
+      client_name: 'Jane Smith',
+    },
   },
   {
     email_type: 'appointment_no_show',

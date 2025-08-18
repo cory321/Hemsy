@@ -172,13 +172,13 @@ describe('DayView', () => {
   it('handles appointments with different durations correctly', () => {
     const appointmentsWithDurations: Appointment[] = [
       {
-        ...mockAppointments[0],
+        ...mockAppointments[0]!,
         id: '3',
         start_time: '10:00',
         end_time: '10:30', // 30 minute appointment
       },
       {
-        ...mockAppointments[0],
+        ...mockAppointments[0]!,
         id: '4',
         start_time: '11:00',
         end_time: '13:00', // 2 hour appointment

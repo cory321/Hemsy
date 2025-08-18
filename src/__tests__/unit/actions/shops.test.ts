@@ -23,13 +23,13 @@ describe('Shop Actions', () => {
   const mockCreateClient = createClient as unknown as jest.MockedFunction<
     typeof createClient
   >;
-  const mockSupabase = {
+  const mockSupabase: any = {
     from: jest.fn(),
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockCreateClient.mockResolvedValue(mockSupabase as any);
+    mockCreateClient.mockResolvedValue(mockSupabase);
   });
 
   describe('getShopBusinessInfo', () => {
@@ -130,9 +130,10 @@ describe('Shop Actions', () => {
         shop: mockShop,
       });
 
-      const mockUpdate = jest.fn().mockReturnValue({
-        eq: jest.fn().mockResolvedValue({ error: null } as any),
-      });
+      const mockEq = jest.fn(() =>
+        Promise.resolve({ error: null, data: null } as any)
+      );
+      const mockUpdate = jest.fn().mockReturnValue({ eq: mockEq });
 
       mockSupabase.from.mockReturnValue({
         update: mockUpdate,
@@ -175,11 +176,13 @@ describe('Shop Actions', () => {
         shop: mockShop,
       });
 
-      const mockUpdate = jest.fn().mockReturnValue({
-        eq: jest.fn().mockResolvedValue({
+      const mockEq = jest.fn(() =>
+        Promise.resolve({
           error: { message: 'Database error' },
-        } as any),
-      });
+          data: null,
+        } as any)
+      );
+      const mockUpdate = jest.fn().mockReturnValue({ eq: mockEq });
 
       mockSupabase.from.mockReturnValue({
         update: mockUpdate,

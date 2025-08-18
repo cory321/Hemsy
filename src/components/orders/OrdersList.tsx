@@ -100,9 +100,10 @@ export default function OrdersList({
       setLoading(true);
       setError(null);
       try {
+        const status = statusFilter === 'all' ? undefined : statusFilter;
         const filters: OrdersFilters = {
           search: debouncedSearch,
-          status: statusFilter === 'all' ? undefined : statusFilter,
+          ...(status && { status }),
           sortBy: 'created_at',
           sortOrder: 'desc',
         };

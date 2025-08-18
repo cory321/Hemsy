@@ -87,7 +87,7 @@ const EditServiceDialog: React.FC<EditServiceDialogProps> = ({
     }));
   };
 
-  const handleUnitChange = (newUnit: 'item' | 'hour' | 'day') => {
+  const handleUnitChange = (newUnit: 'flat_rate' | 'hour' | 'day') => {
     setEditedService((prev) => ({
       ...prev,
       unit: newUnit,
@@ -156,7 +156,7 @@ const EditServiceDialog: React.FC<EditServiceDialogProps> = ({
 
           <ServicePriceInput
             price={price}
-            unit={editedService.unit as 'item' | 'hour' | 'day'}
+            unit={editedService.unit as 'flat_rate' | 'hour' | 'day'}
             onPriceChange={handlePriceChange}
             onUnitChange={handleUnitChange}
             disabled={isLoading}

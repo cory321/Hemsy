@@ -9,31 +9,31 @@ export interface StageConfig {
 export const GARMENT_STAGES: StageConfig[] = [
   {
     name: 'New',
-    color: '#49D4B7',
+    color: '#a3b5aa',
     displayName: 'New',
   },
   {
     name: 'In Progress',
-    color: '#FFD052',
+    color: '#EEBA8C',
     displayName: 'In Progress',
   },
   {
     name: 'Ready For Pickup',
-    color: '#AA99EC',
+    color: '#BD8699',
     displayName: 'Ready For Pickup',
   },
   {
     name: 'Done',
-    color: '#D2D9E5',
+    color: '#c3b3d1',
     displayName: 'Done',
   },
 ];
 
 export const STAGE_COLORS: Record<GarmentStage, string> = {
-  New: '#B8E1C6',
-  'In Progress': '#FFF5BA',
-  'Ready For Pickup': '#E4C1F9',
-  Done: '#D2D9E5',
+  New: '#a3b5aa',
+  'In Progress': '#EEBA8C',
+  'Ready For Pickup': '#BD8699',
+  Done: '#c3b3d1',
 };
 
 export const getStageColor = (stage: GarmentStage): string => {

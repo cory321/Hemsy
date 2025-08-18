@@ -78,12 +78,20 @@ export async function updateShopBusinessInfo(
     const { shop } = await ensureUserAndShop();
     const supabase = await createSupabaseClient();
 
+    // Filter out undefined values for exactOptionalPropertyTypes compliance
+    const updateData: Record<string, any> = {
+      updated_at: new Date().toISOString(),
+    };
+
+    Object.entries(validatedData).forEach(([key, value]) => {
+      if (value !== undefined) {
+        updateData[key] = value;
+      }
+    });
+
     const { error } = await supabase
       .from('shops')
-      .update({
-        ...validatedData,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq('id', shop.id);
 
     if (error) {

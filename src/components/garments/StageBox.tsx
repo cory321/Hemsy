@@ -25,14 +25,14 @@ const StageBox: React.FC<StageBoxProps> = ({
         data-testid="stage-box"
         className={isSelected ? 'selected' : ''}
         sx={{
-          backgroundColor: stage.color || '#f5f5f5',
+          backgroundColor: stage.name === 'View All' ? '#f5f5f5' : '#fff',
           padding: '16px 24px',
           cursor: 'pointer',
           textAlign: 'center',
           minWidth: '150px',
           borderRadius: '8px',
           transition: 'all 0.3s ease',
-          border: isSelected ? '3px solid #1976d2' : '3px solid transparent',
+          border: `3px solid ${stage.color || '#e0e0e0'}`,
           boxShadow: isSelected ? '0 4px 8px rgba(0,0,0,0.1)' : 'none',
           '&:hover': {
             transform: 'translateY(-2px)',
@@ -44,8 +44,7 @@ const StageBox: React.FC<StageBoxProps> = ({
           variant="h6"
           sx={{
             fontWeight: isSelected ? 700 : 500,
-            color: (theme) =>
-              stage.name === 'View All' ? theme.palette.text.primary : '#fff',
+            color: (theme) => theme.palette.text.primary,
           }}
         >
           {stage.name}
@@ -54,8 +53,7 @@ const StageBox: React.FC<StageBoxProps> = ({
           variant="h5"
           sx={{
             fontWeight: 700,
-            color: (theme) =>
-              stage.name === 'View All' ? theme.palette.text.primary : '#fff',
+            color: stage.color || undefined,
           }}
         >
           {stage.count}

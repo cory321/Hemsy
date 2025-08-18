@@ -6,8 +6,8 @@ export function pluralizeUnit(unit: ServiceUnitType, quantity: number): string {
   }
 
   switch (unit) {
-    case SERVICE_UNIT_TYPES.ITEM:
-      return 'items';
+    case SERVICE_UNIT_TYPES.FLAT_RATE:
+      return 'flat rate'; // flat rate doesn't pluralize
     case SERVICE_UNIT_TYPES.HOUR:
       return 'hours';
     case SERVICE_UNIT_TYPES.DAY:

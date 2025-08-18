@@ -319,7 +319,7 @@ export function AppointmentDialog({
     formData.date && dayjs.isDayjs(formData.date)
       ? getAvailableTimeSlots(
           formData.date.toDate(),
-          shopHours,
+          [...shopHours],
           existingAppointments.filter(
             (apt) =>
               apt.date === formData.date.format('YYYY-MM-DD') &&

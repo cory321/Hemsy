@@ -8,26 +8,61 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v14-appRouter';
 import { ReactNode } from 'react';
 
-// Mobile-first theme configuration
+// Mobile-first theme configuration with warm, crafted color palette
 const theme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#FF7C4D',
-      light: '#FDC5AF',
-      dark: '#9e472a',
+      main: '#B85563', // Rose red - main actions
+      light: '#D99A9E', // Light dusty rose
+      dark: '#8B3A42', // Deep burgundy
+      contrastText: '#ffffff',
     },
     secondary: {
-      main: '#dc004e',
-      light: '#ff5983',
-      dark: '#9a0036',
+      main: '#CC8B70', // Terracotta - secondary actions
+      light: '#E4A896', // Light salmon
+      dark: '#B8765A', // Burnt sienna
+      contrastText: '#ffffff',
+    },
+    error: {
+      main: '#8B3A42', // Deep burgundy for errors
+      light: '#BC6B6B',
+      dark: '#5C252A',
+    },
+    warning: {
+      main: '#CC8B70', // Terracotta for warnings
+      light: '#FFDCC4',
+      dark: '#B8765A',
+    },
+    info: {
+      main: '#D08585', // Salmon pink for info
+      light: '#F2BCA6',
+      dark: '#BC6B6B',
+    },
+    success: {
+      main: '#5A7061', // Muted sage green for success
+      light: '#A3B5AA',
+      dark: '#5A7061',
     },
     background: {
-      default: '#faf5ed',
-      paper: '#ffffff',
+      default: '#fff9f2', // Warm cream background
+      paper: '#FFFFFF', // White for cards/surfaces
+    },
+    grey: {
+      50: '#FFF4E8', // Cream
+      100: '#FFE9D6', // Pale peach
+      200: '#F4D5D3', // Blush pink
+      300: '#E8CDB0', // Warm beige
+      400: '#D99A9E', // Light dusty rose
+      500: '#BC6B6B', // Terra cotta red
+      600: '#8B3A42', // Deep burgundy
+      700: '#5C252A', // Darker burgundy
+      800: '#3A1619', // Very dark
+      900: '#1F0A0C', // Almost black
     },
     text: {
-      primary: '#605143',
+      primary: '#3A1619', // Very dark burgundy for main text
+      secondary: '#8B3A42', // Deep burgundy for secondary text
     },
   },
   typography: {
@@ -115,8 +150,28 @@ const theme = createTheme({
     MuiAppBar: {
       styleOverrides: {
         root: {
-          boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
-          backgroundColor: '#615244',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          backgroundColor: '#A34357',
+          color: '#FFFFFF',
+          borderBottom: 'none',
+          '& .MuiToolbar-root': {
+            backgroundColor: 'transparent',
+          },
+          '& .MuiButton-root': {
+            color: '#FFFFFF',
+            '&:hover': {
+              backgroundColor: 'rgba(255, 255, 255, 0.15)',
+            },
+          },
+          '& .MuiIconButton-root': {
+            color: '#FFFFFF',
+            '&:hover': {
+              backgroundColor: 'rgba(255, 255, 255, 0.15)',
+            },
+          },
+          '& .MuiTypography-root': {
+            color: '#FFFFFF',
+          },
         },
       },
     },
@@ -124,7 +179,17 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           height: 64, // Larger for mobile
-          boxShadow: '0 -1px 3px rgba(0,0,0,0.12)',
+          boxShadow: '0 -2px 4px rgba(0,0,0,0.1)',
+          backgroundColor: '#A34357',
+          '& .MuiBottomNavigationAction-root': {
+            color: 'rgba(255, 255, 255, 0.7)',
+            '&.Mui-selected': {
+              color: '#FFFFFF',
+            },
+            '&:hover': {
+              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+            },
+          },
         },
       },
     },
