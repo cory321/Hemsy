@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 import { auth } from '@clerk/nextjs/server';
 
 export const metadata: Metadata = {
-  title: 'Threadfolio - Seamstress Business Management',
+  title: 'Hemsy - Seamstress Business Management',
   description:
     'The mobile-first business management app for seamstresses and tailoring professionals',
 };
@@ -17,7 +17,7 @@ export default async function HomePage() {
     <Container maxWidth="lg">
       <Box sx={{ my: 8, textAlign: 'center' }}>
         <Typography variant="h2" component="h1" gutterBottom>
-          Welcome to Threadfolio
+          Welcome to Hemsy
         </Typography>
         <Typography variant="h5" color="text.secondary" paragraph>
           The mobile-first business management app for seamstresses and

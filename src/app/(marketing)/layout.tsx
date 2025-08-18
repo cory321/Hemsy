@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import Link from 'next/link';
 import { SignedIn, SignedOut } from '@clerk/nextjs';
+import { Logo } from '@/components/layout/Logo';
 
 export default function MarketingLayout({ children }: { children: ReactNode }) {
   return (
@@ -18,8 +19,16 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
       <AppBar position="sticky">
         <Toolbar>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-              Threadfolio
+            <Link
+              href="/"
+              style={{
+                textDecoration: 'none',
+                color: 'inherit',
+                display: 'inline-flex',
+                alignItems: 'center',
+              }}
+            >
+              <Logo height={24} />
             </Link>
           </Typography>
           <Button color="inherit" component={Link} href="/features">
@@ -80,7 +89,7 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
       >
         <Container maxWidth="lg">
           <Typography variant="body2" color="text.secondary" align="center">
-            © {new Date().getFullYear()} Threadfolio. All rights reserved.
+            © {new Date().getFullYear()} Hemsy. All rights reserved.
             {' | '}
             <Link href="/privacy">Privacy Policy</Link>
             {' | '}
