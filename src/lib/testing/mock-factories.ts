@@ -87,27 +87,44 @@ export function createMockClient(overrides?: Partial<Client>): Client {
 export function createMockAppointment(
   overrides?: Partial<Appointment>
 ): Appointment {
-  const date: string = (overrides?.date || generateDateOnly()) as string;
-  const startTime: string = overrides?.start_time || generateTime(10, 0);
-  const endTime: string = overrides?.end_time || generateTime(11, 0);
+  const defaultDate = generateDateOnly();
+  const defaultStartTime = generateTime(10, 0);
+  const defaultEndTime = generateTime(11, 0);
 
-  return {
+  const baseAppointment = {
     id: generateId(),
     shop_id: generateId(),
     client_id: generateId(),
     order_id: null,
-    type: 'consultation',
-    status: 'confirmed',
+    type: 'consultation' as const,
+    status: 'confirmed' as const,
     notes: null,
     reminder_sent: false,
     created_at: generateDate(),
     updated_at: generateDate(),
-    ...overrides,
-    // Ensure required fields are never undefined
-    date: overrides?.date ?? date,
-    start_time: overrides?.start_time ?? startTime,
-    end_time: overrides?.end_time ?? endTime,
+    date: defaultDate,
+    start_time: defaultStartTime,
+    end_time: defaultEndTime,
   };
+
+  // Apply overrides, ensuring required fields remain defined
+  const appointment: Appointment = {
+    ...baseAppointment,
+    ...overrides,
+    // Override these fields last to ensure they're never undefined
+    date: (overrides?.date !== undefined && overrides.date !== null
+      ? overrides.date
+      : defaultDate) as string,
+    start_time: (overrides?.start_time !== undefined &&
+    overrides.start_time !== null
+      ? overrides.start_time
+      : defaultStartTime) as string,
+    end_time: (overrides?.end_time !== undefined && overrides.end_time !== null
+      ? overrides.end_time
+      : defaultEndTime) as string,
+  };
+
+  return appointment;
 }
 
 // Order factory
@@ -139,7 +156,7 @@ export function createMockService(overrides?: Partial<Service>): Service {
     shop_id: generateId(),
     name: 'Basic Hemming',
     default_qty: 1,
-    default_unit: 'flat_rate',
+    default_unit: 'per_item',
     default_unit_price_cents: 2500,
     description: null,
     frequently_used: true,
