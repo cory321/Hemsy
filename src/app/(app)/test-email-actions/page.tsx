@@ -5,6 +5,9 @@ import {
   getTemplateVariables,
 } from '@/lib/actions/emails';
 
+// Force dynamic rendering since this page uses authentication
+export const dynamic = 'force-dynamic';
+
 async function TestEmailForm() {
   const handleTestEmail = async () => {
     'use server';

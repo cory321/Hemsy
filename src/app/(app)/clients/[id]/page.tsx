@@ -27,6 +27,9 @@ import ClientOrdersSection from '@/components/clients/ClientOrdersSection';
 import { createClient } from '@/lib/supabase/server';
 import { auth } from '@clerk/nextjs/server';
 
+// Force dynamic rendering since this page uses authentication
+export const dynamic = 'force-dynamic';
+
 interface ClientDetailPageProps {
   params: Promise<{ id: string }>;
 }

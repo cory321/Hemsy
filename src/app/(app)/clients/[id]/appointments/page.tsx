@@ -14,6 +14,9 @@ import {
   Typography,
 } from '@mui/material';
 
+// Force dynamic rendering since this page uses authentication
+export const dynamic = 'force-dynamic';
+
 interface ClientAppointmentsPaginatedPageProps {
   params: Promise<{ id: string }>;
   searchParams?: Promise<{ page?: string; pageSize?: string }>;

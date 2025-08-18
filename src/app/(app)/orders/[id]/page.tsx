@@ -22,6 +22,9 @@ import { ensureUserAndShop } from '@/lib/actions/users';
 import OrderDetailClient from './OrderDetailClient';
 import type { Database } from '@/types/supabase';
 
+// Force dynamic rendering since this page uses authentication
+export const dynamic = 'force-dynamic';
+
 function formatUSD(cents: number) {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',

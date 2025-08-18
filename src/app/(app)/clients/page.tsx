@@ -4,6 +4,9 @@ import Link from 'next/link';
 import ClientsList from '@/components/clients/ClientsList';
 import { getClients } from '@/lib/actions/clients';
 
+// Force dynamic rendering since this page uses authentication
+export const dynamic = 'force-dynamic';
+
 export default async function ClientsPage() {
   // Fetch initial data server-side
   const initialData = await getClients(1, 10);

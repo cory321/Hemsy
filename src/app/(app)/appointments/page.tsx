@@ -4,6 +4,9 @@ import type { ShopHours } from '@/types';
 
 // Always fetch fresh data for calendar settings and hours to ensure buffer changes apply immediately
 export const revalidate = 0;
+// Force dynamic rendering since this page uses authentication
+export const dynamic = 'force-dynamic';
+
 import { auth } from '@clerk/nextjs/server';
 import { CircularProgress, Box } from '@mui/material';
 import { AppointmentsClient } from './AppointmentsClient';

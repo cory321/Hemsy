@@ -4,6 +4,9 @@ import Link from 'next/link';
 import OrdersList from '@/components/orders/OrdersList';
 import { getOrdersPaginated } from '@/lib/actions/orders';
 
+// Force dynamic rendering since this page uses authentication
+export const dynamic = 'force-dynamic';
+
 export default async function OrdersPage() {
   // Fetch initial data server-side
   const initialData = await getOrdersPaginated(1, 10);

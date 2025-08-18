@@ -4,6 +4,9 @@ import { createClient } from '@/lib/supabase/server';
 import { TestAppointmentQuery } from '@/components/test-appointment-query';
 import { TestAppointmentPrefetch } from '@/components/test-appointment-prefetch';
 
+// Force dynamic rendering since this page uses authentication
+export const dynamic = 'force-dynamic';
+
 export default async function TestQueriesPage() {
   const { userId } = await auth();
   if (!userId) redirect('/sign-in');
