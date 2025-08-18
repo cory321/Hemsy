@@ -77,8 +77,8 @@ export default function OnboardingPage() {
           paymentPreference: formData.paymentPreference as
             | 'upfront'
             | 'after_service',
+          email: formData.email,
           ...(formData.businessType && { businessType: formData.businessType }),
-          ...(formData.email && { email: formData.email }),
           ...(formData.phone && { phoneNumber: formData.phone }),
           ...(formData.address && { mailingAddress: formData.address }),
         };
