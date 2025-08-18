@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "next dev --turbo",
+    "dev:host": "next dev --turbo -p 3001 -H ::",
     "build": "next build",
     "build:clean": "rm -rf .next && next build",
     "start": "next start",
