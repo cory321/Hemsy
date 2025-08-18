@@ -18,7 +18,7 @@ import {
   CircularProgress,
   Alert,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { completeOnboarding } from '@/lib/actions/onboarding';
 import { useUser } from '@clerk/nextjs';
@@ -50,18 +50,48 @@ export default function OnboardingPage() {
     'Get Started',
   ];
 
-  // Prefill email from Clerk when available, but allow user override
+  // Prefill flags so user edits are not overwritten after initial prefill
+  const didPrefillEmailRef = useRef(false);
+  const didPrefillBusinessRef = useRef(false);
+
+  // Prefill email from Clerk once when available; allow user to edit/delete afterwards
   useEffect(() => {
-    if (!formData.email && user) {
-      const clerkEmail =
-        (user as any).primaryEmailAddress?.emailAddress ||
-        user.emailAddresses?.[0]?.emailAddress ||
-        '';
-      if (clerkEmail) {
-        setFormData((prev) => ({ ...prev, email: clerkEmail }));
-      }
+    if (didPrefillEmailRef.current) return;
+    if (!user) return;
+
+    const clerkEmail =
+      (user as any).primaryEmailAddress?.emailAddress ||
+      user.emailAddresses?.[0]?.emailAddress ||
+      '';
+
+    if (clerkEmail && !formData.email) {
+      setFormData((prev) => ({ ...prev, email: clerkEmail }));
+      didPrefillEmailRef.current = true;
     }
-  }, [user, formData.email]);
+  }, [user]);
+
+  // Prefill business name from Clerk name once; allow user to edit/delete afterwards
+  useEffect(() => {
+    if (didPrefillBusinessRef.current) return;
+    if (!user) return;
+
+    const firstName = (user as any).firstName as string | undefined;
+    const lastName = (user as any).lastName as string | undefined;
+
+    let suggestedName = '';
+    if (firstName && lastName) {
+      suggestedName = `${firstName} ${lastName}'s Shop`;
+    } else if (firstName) {
+      suggestedName = `${firstName}'s Shop`;
+    } else if (lastName) {
+      suggestedName = `${lastName}'s Shop`;
+    }
+
+    if (suggestedName && !formData.businessName) {
+      setFormData((prev) => ({ ...prev, businessName: suggestedName }));
+      didPrefillBusinessRef.current = true;
+    }
+  }, [user]);
 
   const handleNext = async () => {
     if (activeStep === steps.length - 1) {
