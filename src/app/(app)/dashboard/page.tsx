@@ -1,5 +1,5 @@
-import { ResponsiveDashboardExample } from '@/components/examples/ResponsiveDashboardExample';
+import { SeamstressDashboardRefined } from '@/components/SeamstressDashboardRefined';
 
 export default function DashboardPage() {
-  return <ResponsiveDashboardExample />;
+  return <SeamstressDashboardRefined />;
 }

@@ -14,5 +14,10 @@
   "ri-arrow-right-s-line",
   "ri-menu-line",
   "ri-question-line",
-  "ri-logout-box-r-line"
+  "ri-logout-box-r-line",
+  "ri-file-add-line",
+  "ri-user-add-line",
+  "ri-calendar-line",
+  "ri-service-line",
+  "ri-file-list-line"
 ]

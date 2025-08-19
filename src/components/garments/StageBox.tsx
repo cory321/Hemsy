@@ -1,5 +1,15 @@
 import React from 'react';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, Paper, alpha } from '@mui/material';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+
+// Refined color palette (matching dashboard)
+const refinedColors = {
+  text: {
+    primary: '#1a1a1a',
+    secondary: '#666666',
+    tertiary: '#999999',
+  },
+};
 
 interface StageBoxProps {
   stage: {
@@ -18,56 +28,68 @@ const StageBox: React.FC<StageBoxProps> = ({
   onClick,
   isLast,
 }) => {
+  const stageColor = stage.color || '#e0e0e0';
+
   return (
     <>
-      <Box
+      <Paper
         onClick={onClick}
         data-testid="stage-box"
         className={isSelected ? 'selected' : ''}
         sx={{
-          backgroundColor: stage.name === 'View All' ? '#f5f5f5' : '#fff',
-          padding: '16px 24px',
-          cursor: 'pointer',
+          p: 2,
           textAlign: 'center',
-          minWidth: '150px',
-          borderRadius: '8px',
-          transition: 'all 0.3s ease',
-          border: `3px solid ${stage.color || '#e0e0e0'}`,
-          boxShadow: isSelected ? '0 4px 8px rgba(0,0,0,0.1)' : 'none',
+          bgcolor: alpha(stageColor, 0.08),
+          border: `2px solid ${alpha(stageColor, isSelected ? 1 : 0.3)}`,
+          borderRadius: 2,
+          cursor: 'pointer',
+          transition: 'all 0.2s',
+          minWidth: '120px',
+          boxShadow: isSelected
+            ? `0 4px 12px ${alpha(stageColor, 0.2)}`
+            : 'none',
           '&:hover': {
             transform: 'translateY(-2px)',
-            boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+            boxShadow: `0 4px 12px ${alpha(stageColor, 0.2)}`,
+            borderColor: stageColor,
           },
         }}
       >
         <Typography
-          variant="h6"
+          variant="h4"
           sx={{
-            fontWeight: isSelected ? 700 : 500,
-            color: (theme) => theme.palette.text.primary,
-          }}
-        >
-          {stage.name}
-        </Typography>
-        <Typography
-          variant="h5"
-          sx={{
+            color: stageColor,
             fontWeight: 700,
-            color: stage.color || undefined,
+            mb: 0.5,
           }}
         >
           {stage.count}
         </Typography>
-      </Box>
+        <Typography
+          variant="body2"
+          sx={{
+            fontWeight: 500,
+            color: refinedColors.text.primary,
+          }}
+        >
+          {stage.name}
+        </Typography>
+      </Paper>
       {!isLast && (
         <Box
           sx={{
-            width: '24px',
-            height: '2px',
-            backgroundColor: '#e0e0e0',
-            alignSelf: 'center',
+            display: 'flex',
+            justifyContent: 'center',
+            mt: 1,
           }}
-        />
+        >
+          <ArrowForwardIcon
+            sx={{
+              color: refinedColors.text.tertiary,
+              fontSize: 20,
+            }}
+          />
+        </Box>
       )}
     </>
   );

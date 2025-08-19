@@ -6,6 +6,7 @@ import { DateLocalizationProvider } from '@/providers/DateLocalizationProvider';
 import { ClerkProvider } from '@clerk/nextjs';
 import { Toaster } from 'react-hot-toast';
 import './globals.css';
+import '../../public/icons/generated-icons.css';
 
 const nunito = Nunito({
   subsets: ['latin'],
@@ -45,9 +46,6 @@ export default function RootLayout({
 
   return (
     <html lang="en">
-      <head>
-        <link href="/icons/generated-icons.css" rel="stylesheet" />
-      </head>
       <body className={`${nunito.variable} ${nunito.className}`}>
         <DateLocalizationProvider>
           {hasClerkKey ? (
