@@ -105,7 +105,7 @@ export function ClientOrdersSection({
             size="small"
             startIcon={<AddIcon />}
           >
-            New Order
+            Create New Order
           </Button>
         </Box>
 

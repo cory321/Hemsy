@@ -1,5 +1,11 @@
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import {
+  render,
+  screen,
+  waitFor,
+  fireEvent,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AppointmentDialog } from '@/components/appointments/AppointmentDialog';
 import { searchClients } from '@/lib/actions/clients';
@@ -14,6 +20,7 @@ import {
 // Mock the actions
 jest.mock('@/lib/actions/clients', () => ({
   searchClients: jest.fn(),
+  createClient: jest.fn(),
 }));
 jest.mock('@/lib/actions/appointments', () => ({
   createAppointment: jest.fn(),
@@ -328,6 +335,60 @@ describe('AppointmentDialog', () => {
       expect(
         screen.getByPlaceholderText('Search by name, email, or phone...')
       ).toHaveValue('');
+    });
+  });
+
+  it('opens quick-add, creates a client, and populates the client field', async () => {
+    const user = userEvent.setup();
+    const { createClient } = jest.requireMock('@/lib/actions/clients');
+
+    const created = {
+      id: 'new1',
+      shop_id: 'shop1',
+      first_name: 'Alice',
+      last_name: 'Wonder',
+      email: 'alice@example.com',
+      phone_number: '5554443333',
+      accept_email: true,
+      accept_sms: false,
+      notes: null,
+      mailing_address: null,
+      created_at: '2024-01-01T00:00:00Z',
+      updated_at: '2024-01-01T00:00:00Z',
+    };
+
+    (createClient as jest.Mock).mockResolvedValue(created);
+
+    renderWithLocalization(<AppointmentDialog {...defaultProps} />);
+
+    // Open quick-add dialog
+    const addLink = await screen.findByTestId('add-new-client-link');
+    await user.click(addLink);
+
+    // Wait for the dialog and scope queries within it
+    const quickAddDialog = await screen.findByRole('dialog', {
+      name: /add new client/i,
+    });
+    const inDialog = within(quickAddDialog);
+
+    // Fill minimal required fields
+    await user.type(inDialog.getByLabelText(/First Name/i), 'Alice');
+    await user.type(inDialog.getByLabelText(/Last Name/i), 'Wonder');
+    await user.type(
+      inDialog.getByLabelText(/Email Address/i),
+      'alice@example.com'
+    );
+    await user.type(inDialog.getByLabelText(/Phone Number/i), '5554443333');
+
+    // Submit
+    await user.click(inDialog.getByRole('button', { name: /add client/i }));
+
+    // Client field should now have the new client's name
+    await waitFor(() => {
+      const clientInput = screen.getByPlaceholderText(
+        'Search by name, email, or phone...'
+      );
+      expect(clientInput).toHaveValue('Alice Wonder');
     });
   });
 });

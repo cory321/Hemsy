@@ -57,7 +57,7 @@ describe('NewClientPage', () => {
     render(<NewClientPage />);
 
     // Try to submit the form without filling any fields
-    const submitButton = screen.getByRole('button', { name: /create client/i });
+    const submitButton = screen.getByRole('button', { name: /add client/i });
     await user.click(submitButton);
 
     // Since the form uses react-hook-form, it won't submit if validation fails
@@ -98,7 +98,7 @@ describe('NewClientPage', () => {
     await user.type(screen.getByLabelText(/email address/i), 'invalid-email');
     await user.type(screen.getByLabelText(/phone number/i), '5551234567');
 
-    const submitButton = screen.getByRole('button', { name: /create client/i });
+    const submitButton = screen.getByRole('button', { name: /add client/i });
     await user.click(submitButton);
 
     // The form should not submit with invalid email
@@ -154,7 +154,7 @@ describe('NewClientPage', () => {
     const smsSwitch = screen.getByRole('checkbox', { name: /accept sms/i });
     await user.click(smsSwitch);
 
-    const submitButton = screen.getByText('Create Client');
+    const submitButton = screen.getByText('Add client');
     await user.click(submitButton);
 
     await waitFor(() => {
@@ -203,7 +203,7 @@ describe('NewClientPage', () => {
     );
     await user.type(screen.getByLabelText(/phone number/i), '5551234567');
 
-    const submitButton = screen.getByText('Create Client');
+    const submitButton = screen.getByText('Add client');
     await user.click(submitButton);
 
     await waitFor(() => {
@@ -235,7 +235,7 @@ describe('NewClientPage', () => {
     );
     await user.type(screen.getByLabelText(/phone number/i), '5551234567');
 
-    const submitButton = screen.getByText('Create Client');
+    const submitButton = screen.getByText('Add client');
     await user.click(submitButton);
 
     await waitFor(() => {
@@ -281,11 +281,11 @@ describe('NewClientPage', () => {
     );
     await user.type(screen.getByLabelText(/phone number/i), '5551234567');
 
-    const submitButton = screen.getByText('Create Client');
+    const submitButton = screen.getByText('Add client');
     await user.click(submitButton);
 
     // Check loading state
-    expect(screen.getByText('Creating Client...')).toBeInTheDocument();
+    expect(screen.getByText('Adding...')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /cancel/i })).toBeDisabled();
 
     // Resolve the promise

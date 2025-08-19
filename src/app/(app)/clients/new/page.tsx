@@ -326,7 +326,7 @@ export default function NewClientPage() {
                       }
                       size="large"
                     >
-                      {loading ? 'Creating Client...' : 'Create Client'}
+                      {loading ? 'Adding...' : 'Add client'}
                     </Button>
                   </Box>
                 </Grid>

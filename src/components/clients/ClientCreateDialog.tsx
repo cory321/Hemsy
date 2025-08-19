@@ -17,6 +17,7 @@ import {
   Typography,
   IconButton,
 } from '@mui/material';
+import type { DialogProps } from '@mui/material/Dialog';
 import CloseIcon from '@mui/icons-material/Close';
 import { z } from 'zod';
 import { useForm, Controller } from 'react-hook-form';
@@ -41,12 +42,14 @@ export interface ClientCreateDialogProps {
   open: boolean;
   onClose: () => void;
   onCreated: (client: Tables<'clients'>) => void;
+  maxWidth?: DialogProps['maxWidth'];
 }
 
 export default function ClientCreateDialog({
   open,
   onClose,
   onCreated,
+  maxWidth = 'md',
 }: ClientCreateDialogProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -99,7 +102,7 @@ export default function ClientCreateDialog({
     <Dialog
       open={open}
       onClose={internalClose}
-      maxWidth="md"
+      maxWidth={maxWidth}
       fullWidth
       PaperProps={{ component: 'form', onSubmit: handleSubmit(onSubmit) }}
     >
@@ -305,7 +308,7 @@ export default function ClientCreateDialog({
           disabled={loading}
           startIcon={loading ? <CircularProgress size={20} /> : undefined}
         >
-          {loading ? 'Creating...' : 'Create Client'}
+          {loading ? 'Adding...' : 'Add client'}
         </Button>
       </DialogActions>
       {/* spacing to prevent content jump during loading */}

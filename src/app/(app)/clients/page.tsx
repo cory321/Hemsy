@@ -1,8 +1,7 @@
-import { Container, Typography, Box, Fab, Button } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import Link from 'next/link';
+import { Container, Typography, Box } from '@mui/material';
 import ClientsList from '@/components/clients/ClientsList';
 import { getClients } from '@/lib/actions/clients';
+import AddClientCtas from '@/components/clients/AddClientCtas';
 
 // Force dynamic rendering since this page uses authentication
 export const dynamic = 'force-dynamic';
@@ -26,35 +25,13 @@ export default async function ClientsPage() {
           <Typography variant="h4" component="h1">
             Clients
           </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            component={Link}
-            href="/clients/new"
-            sx={{ display: { xs: 'none', sm: 'flex' } }}
-          >
-            Add Client
-          </Button>
+          <AddClientCtas />
         </Box>
 
         {/* Clients List with pagination */}
         <ClientsList initialData={initialData} getClientsAction={getClients} />
 
-        {/* Floating Action Button */}
-        <Fab
-          color="primary"
-          aria-label="add client"
-          component={Link}
-          href="/clients/new"
-          sx={{
-            position: 'fixed',
-            bottom: 80,
-            right: 16,
-            display: { xs: 'flex', sm: 'none' },
-          }}
-        >
-          <AddIcon />
-        </Fab>
+        {/* Mobile FAB is rendered inside AddClientCtas */}
       </Box>
     </Container>
   );

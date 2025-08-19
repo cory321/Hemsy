@@ -20,10 +20,17 @@ import PersonIcon from '@mui/icons-material/Person';
 import { getClient } from '@/lib/actions/clients';
 import { getShopHours } from '@/lib/actions/shop-hours';
 import { getCalendarSettings } from '@/lib/actions/calendar-settings';
+import {
+  getNextClientAppointment,
+  getClientReadyForPickupCount,
+} from '@/lib/actions/appointments';
 import ClientEditDialog from '@/components/clients/ClientEditDialog';
 import ClientDeleteDialog from '@/components/clients/ClientDeleteDialog';
-import ClientAppointmentsSection from '@/components/clients/ClientAppointmentsSection';
 import ClientOrdersSection from '@/components/clients/ClientOrdersSection';
+import ClientDetailTabs from '@/components/clients/ClientDetailTabs';
+import ClientProfileCard, {
+  ClientStatsCards,
+} from '@/components/clients/ClientProfileCard';
 import { createClient } from '@/lib/supabase/server';
 import { auth } from '@clerk/nextjs/server';
 
@@ -69,11 +76,18 @@ export default async function ClientDetailPage({
       .eq('owner_user_id', userData.id)
       .single();
 
-    // Fetch shop hours and calendar settings
-    const [shopHours, calendarSettings] = await Promise.all([
-      getShopHours(),
-      getCalendarSettings(),
-    ]);
+    // Fetch shop hours, calendar settings, next appointment, and ready for pickup count
+    const [shopHours, calendarSettings, nextAppointment, readyForPickupCount] =
+      await Promise.all([
+        getShopHours(),
+        getCalendarSettings(),
+        shopData?.id
+          ? getNextClientAppointment(shopData.id, client.id).catch(() => null)
+          : Promise.resolve(null),
+        shopData?.id
+          ? getClientReadyForPickupCount(shopData.id, client.id).catch(() => 0)
+          : Promise.resolve(0),
+      ]);
 
     const formatPhoneNumber = (phone: string) => {
       return phone.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
@@ -101,9 +115,8 @@ export default async function ClientDetailPage({
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <PersonIcon sx={{ fontSize: 32, color: 'primary.main' }} />
               <Typography variant="h4" component="h1">
-                {client.first_name} {client.last_name}
+                Client Details
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', gap: 1 }}>
@@ -123,128 +136,134 @@ export default async function ClientDetailPage({
             </Box>
           </Box>
 
-          {/* Client Information */}
+          {/* Two-column layout: Left - client info, Right - tabs (Orders/Appointments) */}
           <Grid container spacing={3}>
-            {/* Contact Information */}
-            <Grid item xs={12} md={6}>
-              <Card elevation={2}>
-                <CardContent>
-                  <Typography
-                    variant="h6"
-                    gutterBottom
-                    sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                  >
-                    <EmailIcon color="primary" />
-                    Contact Information
-                  </Typography>
-                  <Divider sx={{ mb: 2 }} />
+            {/* Left column */}
+            <Grid item xs={12} md={4}>
+              <ClientProfileCard client={client} />
 
-                  <Box
-                    sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <EmailIcon sx={{ color: 'text.secondary' }} />
-                      <Box>
-                        <Typography variant="body2" color="text.secondary">
-                          Email
-                        </Typography>
-                        <Typography variant="body1">{client.email}</Typography>
-                      </Box>
+              {/* Preferences */}
+              <Box sx={{ mt: 3 }}>
+                <Card elevation={2}>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Communication Preferences
+                    </Typography>
+                    <Divider sx={{ mb: 2 }} />
+
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                      <Chip
+                        label="Email"
+                        color={client.accept_email ? 'success' : 'default'}
+                        variant={client.accept_email ? 'filled' : 'outlined'}
+                        icon={<EmailIcon />}
+                      />
+                      <Chip
+                        label="SMS"
+                        color={client.accept_sms ? 'success' : 'default'}
+                        variant={client.accept_sms ? 'filled' : 'outlined'}
+                        icon={<PhoneIcon />}
+                      />
                     </Box>
+                  </CardContent>
+                </Card>
+              </Box>
 
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <PhoneIcon sx={{ color: 'text.secondary' }} />
-                      <Box>
+              {/* Mailing Address */}
+              {client.mailing_address && (
+                <Box sx={{ mt: 3 }}>
+                  <Card elevation={2}>
+                    <CardContent>
+                      <Typography
+                        variant="h6"
+                        gutterBottom
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                      >
+                        <LocationOnIcon color="primary" />
+                        Mailing Address
+                      </Typography>
+                      <Divider sx={{ mb: 2 }} />
+
+                      <Typography
+                        variant="body1"
+                        sx={{ whiteSpace: 'pre-line' }}
+                      >
+                        {client.mailing_address}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Box>
+              )}
+
+              {/* Notes */}
+              {client.notes && (
+                <Box sx={{ mt: 3 }}>
+                  <Card elevation={2}>
+                    <CardContent>
+                      <Typography
+                        variant="h6"
+                        gutterBottom
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                      >
+                        <NotesIcon color="primary" />
+                        Notes
+                      </Typography>
+                      <Divider sx={{ mb: 2 }} />
+
+                      <Typography
+                        variant="body1"
+                        sx={{ whiteSpace: 'pre-line' }}
+                      >
+                        {client.notes}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Box>
+              )}
+
+              {/* Timestamps */}
+              <Box sx={{ mt: 3 }}>
+                <Card elevation={1} sx={{ bgcolor: 'grey.50' }}>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Record Information
+                    </Typography>
+                    <Divider sx={{ mb: 2 }} />
+
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} sm={6}>
                         <Typography variant="body2" color="text.secondary">
-                          Phone
+                          Created
                         </Typography>
                         <Typography variant="body1">
-                          {formatPhoneNumber(client.phone_number)}
+                          {formatDate(client.created_at)}
                         </Typography>
-                      </Box>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Preferences */}
-            <Grid item xs={12} md={6}>
-              <Card elevation={2}>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Communication Preferences
-                  </Typography>
-                  <Divider sx={{ mb: 2 }} />
-
-                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                    <Chip
-                      label="Email"
-                      color={client.accept_email ? 'success' : 'default'}
-                      variant={client.accept_email ? 'filled' : 'outlined'}
-                      icon={<EmailIcon />}
-                    />
-                    <Chip
-                      label="SMS"
-                      color={client.accept_sms ? 'success' : 'default'}
-                      variant={client.accept_sms ? 'filled' : 'outlined'}
-                      icon={<PhoneIcon />}
-                    />
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Mailing Address */}
-            {client.mailing_address && (
-              <Grid item xs={12} md={6}>
-                <Card elevation={2}>
-                  <CardContent>
-                    <Typography
-                      variant="h6"
-                      gutterBottom
-                      sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                    >
-                      <LocationOnIcon color="primary" />
-                      Mailing Address
-                    </Typography>
-                    <Divider sx={{ mb: 2 }} />
-
-                    <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
-                      {client.mailing_address}
-                    </Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="body2" color="text.secondary">
+                          Last Updated
+                        </Typography>
+                        <Typography variant="body1">
+                          {formatDate(client.updated_at)}
+                        </Typography>
+                      </Grid>
+                    </Grid>
                   </CardContent>
                 </Card>
-              </Grid>
-            )}
+              </Box>
+            </Grid>
 
-            {/* Notes */}
-            {client.notes && (
-              <Grid item xs={12} md={client.mailing_address ? 6 : 12}>
-                <Card elevation={2}>
-                  <CardContent>
-                    <Typography
-                      variant="h6"
-                      gutterBottom
-                      sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                    >
-                      <NotesIcon color="primary" />
-                      Notes
-                    </Typography>
-                    <Divider sx={{ mb: 2 }} />
+            {/* Right column */}
+            <Grid item xs={12} md={8}>
+              {/* Client Stats Cards - positioned above tabs */}
+              <ClientStatsCards
+                client={client}
+                nextAppointment={nextAppointment}
+                readyForPickupCount={readyForPickupCount}
+              />
 
-                    <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
-                      {client.notes}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-            )}
-
-            {/* Appointments Section */}
-            {shopData?.id && (
-              <Grid item xs={12}>
-                <ClientAppointmentsSection
+              {shopData?.id ? (
+                <ClientDetailTabs
                   clientId={client.id}
                   clientName={`${client.first_name} ${client.last_name}`}
                   clientEmail={client.email}
@@ -265,46 +284,12 @@ export default async function ClientDetailPage({
                       calendarSettings.default_appointment_duration ?? 30,
                   }}
                 />
-              </Grid>
-            )}
-
-            {/* Orders Section */}
-            <Grid item xs={12}>
-              <ClientOrdersSection
-                clientId={client.id}
-                clientName={`${client.first_name} ${client.last_name}`}
-              />
-            </Grid>
-
-            {/* Timestamps */}
-            <Grid item xs={12}>
-              <Card elevation={1} sx={{ bgcolor: 'grey.50' }}>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Record Information
-                  </Typography>
-                  <Divider sx={{ mb: 2 }} />
-
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
-                      <Typography variant="body2" color="text.secondary">
-                        Created
-                      </Typography>
-                      <Typography variant="body1">
-                        {formatDate(client.created_at)}
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <Typography variant="body2" color="text.secondary">
-                        Last Updated
-                      </Typography>
-                      <Typography variant="body1">
-                        {formatDate(client.updated_at)}
-                      </Typography>
-                    </Grid>
-                  </Grid>
-                </CardContent>
-              </Card>
+              ) : (
+                <ClientOrdersSection
+                  clientId={client.id}
+                  clientName={`${client.first_name} ${client.last_name}`}
+                />
+              )}
             </Grid>
           </Grid>
         </Box>

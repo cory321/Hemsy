@@ -10,6 +10,13 @@ jest.mock('@/components/clients/ClientsList', () => {
   return MockClientsList;
 });
 
+// Mock AddClientCtas to render a deterministic button for test
+jest.mock('@/components/clients/AddClientCtas', () => {
+  const MockAddClientCtas = () => <button type="button">Add Client</button>;
+  MockAddClientCtas.displayName = 'MockAddClientCtas';
+  return MockAddClientCtas;
+});
+
 // Mock next/link for SSR component rendering in tests
 jest.mock('next/link', () => {
   const MockNextLink = ({
@@ -38,14 +45,11 @@ describe('ClientsPage header actions', () => {
     });
   });
 
-  it('renders desktop Add Client link', async () => {
+  it('renders desktop Add Client action', async () => {
     render(await ClientsPage());
 
-    // Desktop link should be present in the DOM
-    const desktopLink = screen.getByRole('link', { name: /add client/i });
-    expect(desktopLink).toBeInTheDocument();
-
-    // Verify it links to the new client page
-    expect(desktopLink).toHaveAttribute('href', '/clients/new');
+    // Desktop action button should be present in the DOM
+    const desktopButton = screen.getByRole('button', { name: /add client/i });
+    expect(desktopButton).toBeInTheDocument();
   });
 });

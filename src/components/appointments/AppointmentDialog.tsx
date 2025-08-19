@@ -30,6 +30,7 @@ import { addMinutes, format, parse, isValid } from 'date-fns';
 import dayjs from 'dayjs';
 import { getAvailableTimeSlots, to12HourFormat } from '@/lib/utils/calendar';
 import { ClientSearchField } from './ClientSearchField';
+import ClientCreateDialog from '@/components/clients/ClientCreateDialog';
 import type { Appointment, Client } from '@/types';
 
 // Helper function to safely parse time strings from database
@@ -133,6 +134,7 @@ export function AppointmentDialog({
   const [error, setError] = useState<string | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [sendEmail, setSendEmail] = useState<boolean>(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState(() => {
@@ -374,17 +376,31 @@ export function AppointmentDialog({
               </Typography>
             </Box>
           ) : (
-            <ClientSearchField
-              value={selectedClient as any}
-              onChange={(newClient) => {
-                setSelectedClient(newClient as Client | null);
-                setFormData((prev) => ({
-                  ...prev,
-                  client_id: newClient?.id || null,
-                }));
-              }}
-              helperText="Select a client for this appointment"
-            />
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ flexGrow: 1 }}>
+                  <ClientSearchField
+                    value={selectedClient as any}
+                    onChange={(newClient) => {
+                      setSelectedClient(newClient as Client | null);
+                      setFormData((prev) => ({
+                        ...prev,
+                        client_id: newClient?.id || null,
+                      }));
+                    }}
+                  />
+                </Box>
+                <Button
+                  size="small"
+                  variant="text"
+                  onClick={() => setCreateDialogOpen(true)}
+                  data-testid="add-new-client-link"
+                  sx={{ whiteSpace: 'nowrap' }}
+                >
+                  Add client
+                </Button>
+              </Box>
+            </Box>
           )}
 
           {/* Date and Time */}
@@ -707,6 +723,35 @@ export function AppointmentDialog({
           )}
         </Button>
       </DialogActions>
+
+      {!isReschedule && (
+        <ClientCreateDialog
+          open={createDialogOpen}
+          onClose={() => setCreateDialogOpen(false)}
+          maxWidth="sm"
+          onCreated={(client) => {
+            // Convert to `Client` shape if needed and set as selected
+            const populated = {
+              id: client.id,
+              shop_id: client.shop_id,
+              first_name: client.first_name,
+              last_name: client.last_name,
+              email: client.email,
+              phone_number: client.phone_number,
+              accept_email: client.accept_email,
+              accept_sms: client.accept_sms,
+              notes: client.notes ?? null,
+              mailing_address: client.mailing_address ?? null,
+              created_at: client.created_at ?? null,
+              updated_at: client.updated_at ?? null,
+            } as Client;
+
+            setSelectedClient(populated);
+            setFormData((prev) => ({ ...prev, client_id: populated.id }));
+            setCreateDialogOpen(false);
+          }}
+        />
+      )}
     </Dialog>
   );
 }

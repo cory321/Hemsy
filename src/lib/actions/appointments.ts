@@ -625,6 +625,130 @@ export async function getClientAppointments(
 }
 
 /**
+ * Get the count of garments ready for pickup for a specific client
+ */
+export async function getClientReadyForPickupCount(
+  shopId: string,
+  clientId: string
+): Promise<number> {
+  const { userId } = await auth();
+  if (!userId) throw new Error('Unauthorized');
+
+  const supabase = await createClient();
+
+  // Verify shop ownership
+  const { data: userData, error: userError } = await supabase
+    .from('users')
+    .select('id')
+    .eq('clerk_user_id', userId)
+    .single();
+
+  if (userError) throw new Error('Failed to fetch user');
+
+  const { data: shopData, error: shopError } = await supabase
+    .from('shops')
+    .select('id')
+    .eq('id', shopId)
+    .eq('owner_user_id', userData.id)
+    .single();
+
+  if (shopError || !shopData) throw new Error('Unauthorized access to shop');
+
+  // Query garments using the garments_with_clients view for easier filtering
+  const { count, error } = await supabase
+    .from('garments_with_clients')
+    .select('id', { count: 'exact', head: true })
+    .eq('shop_id', shopId)
+    .eq('client_id', clientId)
+    .eq('stage', 'Ready For Pickup');
+
+  if (error) {
+    console.error('Failed to fetch ready for pickup count:', error);
+    throw new Error('Failed to fetch ready for pickup count');
+  }
+
+  return count || 0;
+}
+
+/**
+ * Get the next upcoming appointment for a specific client
+ */
+export async function getNextClientAppointment(
+  shopId: string,
+  clientId: string
+): Promise<Appointment | null> {
+  const { userId } = await auth();
+  if (!userId) throw new Error('Unauthorized');
+
+  const supabase = await createClient();
+
+  // Verify shop ownership
+  const { data: userData, error: userError } = await supabase
+    .from('users')
+    .select('id')
+    .eq('clerk_user_id', userId)
+    .single();
+
+  if (userError) throw new Error('Failed to fetch user');
+
+  const { data: shopData, error: shopError } = await supabase
+    .from('shops')
+    .select('id')
+    .eq('id', shopId)
+    .eq('owner_user_id', userData.id)
+    .single();
+
+  if (shopError || !shopData) throw new Error('Unauthorized access to shop');
+
+  // Get today's date for filtering upcoming appointments
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  const todayStr = `${yyyy}-${mm}-${dd}`;
+
+  // Get current time for same-day appointments
+  const currentTime = `${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
+
+  // Query for the next upcoming appointment
+  const { data: appointments, error } = await supabase
+    .from('appointments')
+    .select(
+      `
+      *,
+      client:clients(
+        id,
+        shop_id,
+        first_name,
+        last_name,
+        email,
+        phone_number,
+        accept_email,
+        accept_sms,
+        created_at,
+        updated_at
+      )
+    `
+    )
+    .eq('shop_id', shopId)
+    .eq('client_id', clientId)
+    .in('status', ['pending', 'confirmed'])
+    .or(
+      `date.gt.${todayStr},and(date.eq.${todayStr},start_time.gt.${currentTime})`
+    )
+    .order('date', { ascending: true })
+    .order('start_time', { ascending: true })
+    .limit(1);
+
+  if (error) {
+    console.error('Failed to fetch next client appointment:', error);
+    throw new Error('Failed to fetch next client appointment');
+  }
+
+  return appointments?.[0] || null;
+}
+
+/**
  * Paginated client appointments with filtering and timeframe support
  */
 export async function getClientAppointmentsPage(

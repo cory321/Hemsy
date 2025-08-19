@@ -121,6 +121,7 @@ describe('ClientDetailPage', () => {
 
     expect(screen.getByText('John Doe')).toBeInTheDocument();
     expect(screen.getByText('john@example.com')).toBeInTheDocument();
+    // Phone now rendered within the profile card
     expect(screen.getByText('(555) 123-4567')).toBeInTheDocument();
     expect(
       screen.getByText('Regular customer with specific preferences')
@@ -206,7 +207,10 @@ describe('ClientDetailPage', () => {
     const Component = await ClientDetailPage({ params });
     render(Component);
 
-    expect(screen.getByTestId('edit-dialog')).toBeInTheDocument();
+    // There are two edit triggers (header pencil and card button)
+    expect(screen.getAllByTestId('edit-dialog').length).toBeGreaterThanOrEqual(
+      1
+    );
     expect(screen.getByTestId('delete-dialog')).toBeInTheDocument();
   });
 
@@ -298,6 +302,7 @@ describe('ClientDetailPage', () => {
     const Component = await ClientDetailPage({ params });
     render(Component);
 
+    // Contact heading moved into the profile card
     expect(screen.getByText('Contact Information')).toBeInTheDocument();
     expect(screen.getByText('Communication Preferences')).toBeInTheDocument();
     expect(screen.getByText('Mailing Address')).toBeInTheDocument();

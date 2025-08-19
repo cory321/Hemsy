@@ -201,14 +201,14 @@ export function ClientAppointmentsSection({
               Appointments ({totalCount})
             </Typography>
 
-            <IconButton
-              color="primary"
+            <Button
+              variant="contained"
               size="small"
-              aria-label="new appointment"
+              startIcon={<AddIcon />}
               onClick={handleOpenAppointmentDialog}
             >
-              <AddIcon />
-            </IconButton>
+              Add Appointment
+            </Button>
           </Box>
 
           <Divider sx={{ mb: 2 }} />
