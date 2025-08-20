@@ -14,6 +14,7 @@ import {
   useTheme,
   useMediaQuery,
   Container,
+  CircularProgress,
 } from '@mui/material';
 import { toast } from 'react-hot-toast';
 import { useOrderFlow } from '@/contexts/OrderFlowContext';
@@ -31,6 +32,7 @@ export default function OrderFlowStepper() {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   const { currentStep, setCurrentStep, orderDraft, resetOrder } =
     useOrderFlow();
@@ -87,8 +89,12 @@ export default function OrderFlowStepper() {
 
       if (result.success) {
         toast.success('Order created successfully!');
+        // Hide the stepper during navigation to prevent flash
+        setIsNavigating(true);
+        // Use router.replace to prevent going back to the form
+        router.replace(`/orders/${result.orderId}`);
+        // Reset order state after navigation
         resetOrder();
-        router.push(`/orders/${result.orderId}`);
       } else {
         console.error('Order creation failed:', result.errors);
         // Show specific error message if available
@@ -137,6 +143,31 @@ export default function OrderFlowStepper() {
     }
   };
 
+  // Show loading state during navigation to prevent step flash
+  if (isNavigating) {
+    return (
+      <Container maxWidth="lg">
+        <Box
+          sx={{
+            width: '100%',
+            mt: 4,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: '400px',
+          }}
+        >
+          <Box sx={{ textAlign: 'center' }}>
+            <CircularProgress size={40} />
+            <Typography variant="body1" sx={{ mt: 2 }}>
+              Creating new order...
+            </Typography>
+          </Box>
+        </Box>
+      </Container>
+    );
+  }
+
   return (
     <Container maxWidth="lg">
       <Box sx={{ width: '100%', mt: 4 }}>
@@ -170,6 +201,11 @@ export default function OrderFlowStepper() {
               variant="contained"
               onClick={handleSubmit}
               disabled={isSubmitting || !canProceed()}
+              startIcon={
+                isSubmitting ? (
+                  <CircularProgress size={16} color="inherit" />
+                ) : undefined
+              }
             >
               {isSubmitting ? 'Creating Order...' : 'Create Order'}
             </Button>
