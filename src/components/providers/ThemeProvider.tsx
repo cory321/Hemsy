@@ -49,16 +49,16 @@ const theme = createTheme({
       paper: '#FFFFFF', // White for cards/surfaces
     },
     grey: {
-      50: '#FFF4E8', // Cream
-      100: '#FFE9D6', // Pale peach
-      200: '#F4D5D3', // Blush pink
-      300: '#E8CDB0', // Warm beige
-      400: '#D99A9E', // Light dusty rose
-      500: '#BC6B6B', // Terra cotta red
-      600: '#8B3A42', // Deep burgundy
-      700: '#5C252A', // Darker burgundy
-      800: '#3A1619', // Very dark
-      900: '#1F0A0C', // Almost black
+      50: '#fafafa', // Very light grey
+      100: '#f5f5f5', // Light grey
+      200: '#eeeeee', // Light grey
+      300: '#e0e0e0', // Medium light grey
+      400: '#bdbdbd', // Medium grey
+      500: '#9e9e9e', // Medium grey
+      600: '#757575', // Medium dark grey
+      700: '#616161', // Dark grey
+      800: '#424242', // Very dark grey
+      900: '#212121', // Almost black grey
     },
     text: {
       primary: '#3A1619', // Very dark burgundy for main text
