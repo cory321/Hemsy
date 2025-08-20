@@ -7,7 +7,6 @@ import {
   Box,
   CardContent,
   TextField,
-  Grid,
   FormControlLabel,
   Switch,
   Button,
@@ -15,6 +14,7 @@ import {
   Alert,
   Paper,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useForm, Controller } from 'react-hook-form';
@@ -128,13 +128,13 @@ export default function NewClientPage() {
             <Box component="form" onSubmit={handleSubmit(onSubmit)}>
               <Grid container spacing={3}>
                 {/* Basic Information */}
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <Typography variant="h6" gutterBottom>
                     Basic Information
                   </Typography>
                 </Grid>
 
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Controller
                     name="first_name"
                     control={control}
@@ -151,7 +151,7 @@ export default function NewClientPage() {
                   />
                 </Grid>
 
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Controller
                     name="last_name"
                     control={control}
@@ -169,13 +169,13 @@ export default function NewClientPage() {
                 </Grid>
 
                 {/* Contact Information */}
-                <Grid item xs={12} sx={{ mt: 2 }}>
+                <Grid size={12} sx={{ mt: 2 }}>
                   <Typography variant="h6" gutterBottom>
                     Contact Information
                   </Typography>
                 </Grid>
 
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <Controller
                     name="email"
                     control={control}
@@ -193,7 +193,7 @@ export default function NewClientPage() {
                   />
                 </Grid>
 
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <Controller
                     name="phone_number"
                     control={control}
@@ -211,7 +211,7 @@ export default function NewClientPage() {
                   />
                 </Grid>
 
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <Controller
                     name="mailing_address"
                     control={control}
@@ -231,13 +231,13 @@ export default function NewClientPage() {
                 </Grid>
 
                 {/* Communication Preferences */}
-                <Grid item xs={12} sx={{ mt: 2 }}>
+                <Grid size={12} sx={{ mt: 2 }}>
                   <Typography variant="h6" gutterBottom>
                     Communication Preferences
                   </Typography>
                 </Grid>
 
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <Controller
                     name="accept_email"
                     control={control}
@@ -256,7 +256,7 @@ export default function NewClientPage() {
                   />
                 </Grid>
 
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <Controller
                     name="accept_sms"
                     control={control}
@@ -276,13 +276,13 @@ export default function NewClientPage() {
                 </Grid>
 
                 {/* Additional Information */}
-                <Grid item xs={12} sx={{ mt: 2 }}>
+                <Grid size={12} sx={{ mt: 2 }}>
                   <Typography variant="h6" gutterBottom>
                     Additional Information
                   </Typography>
                 </Grid>
 
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <Controller
                     name="notes"
                     control={control}
@@ -302,7 +302,7 @@ export default function NewClientPage() {
                 </Grid>
 
                 {/* Actions */}
-                <Grid item xs={12} sx={{ mt: 3 }}>
+                <Grid size={12} sx={{ mt: 3 }}>
                   <Box
                     sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}
                   >

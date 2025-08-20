@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Box, Grid } from '@mui/material';
+import { Box } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import { toast } from 'react-hot-toast';
 
 import ServiceItem from '@/components/services/ServiceItem';
@@ -113,7 +114,7 @@ export default function ServiceList({
     <Box>
       <Grid container spacing={2}>
         {services.map((service) => (
-          <Grid item xs={12} key={service.id}>
+          <Grid size={12} key={service.id}>
             <ServiceItem
               service={service}
               onEdit={handleEdit}

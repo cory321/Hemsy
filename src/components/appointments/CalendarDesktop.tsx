@@ -10,7 +10,6 @@ import {
   Typography,
   Button,
   useTheme,
-  Grid,
   Stack,
   Tooltip,
   FormControl,
@@ -21,6 +20,7 @@ import {
   DialogContent,
   DialogTitle,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import CloseIcon from '@mui/icons-material/Close';
 import CalendarViewMonthIcon from '@mui/icons-material/CalendarViewMonth';
 import ViewWeekIcon from '@mui/icons-material/ViewWeek';
@@ -253,7 +253,7 @@ export function CalendarDesktop({
             flexWrap: { xs: 'wrap', lg: 'nowrap' },
           }}
         >
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             {/* Navigation */}
             <Stack
               direction="row"
@@ -289,7 +289,7 @@ export function CalendarDesktop({
             </Stack>
           </Grid>
 
-          <Grid item xs={12} md={4} sx={{ textAlign: 'center' }}>
+          <Grid size={{ xs: 12, md: 4 }} sx={{ textAlign: 'center' }}>
             {/* View Toggle */}
             <ToggleButtonGroup
               value={view}
@@ -333,7 +333,7 @@ export function CalendarDesktop({
             </ToggleButtonGroup>
           </Grid>
 
-          <Grid item xs={12} md={4} sx={{ textAlign: 'right' }}>
+          <Grid size={{ xs: 12, md: 4 }} sx={{ textAlign: 'right' }}>
             {/* Action Buttons */}
             <Stack
               direction="row"
@@ -383,7 +383,7 @@ export function CalendarDesktop({
       >
         <Grid container spacing={2} alignItems="center">
           {/* Filter Section */}
-          <Grid item xs={12}>
+          <Grid size={12}>
             <Box
               sx={{
                 display: 'flex',

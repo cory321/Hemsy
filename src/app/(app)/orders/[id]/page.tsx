@@ -10,8 +10,8 @@ import {
   Button,
   Chip,
   Divider,
-  Grid,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import EditIcon from '@mui/icons-material/Edit';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import Link from 'next/link';
@@ -162,7 +162,7 @@ export default async function OrderDetailPage({
 
         {/* Order Info */}
         <Grid container spacing={3}>
-          <Grid item xs={12} md={8}>
+          <Grid size={{ xs: 12, md: 8 }}>
             {/* Client Info */}
             <Card sx={{ mb: 3 }}>
               <CardContent>
@@ -362,7 +362,7 @@ export default async function OrderDetailPage({
             </Card>
           </Grid>
 
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             {/* Order Summary */}
             <Card>
               <CardContent>

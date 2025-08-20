@@ -3,12 +3,12 @@
 import {
   Box,
   Typography,
-  Grid,
   Paper,
   useTheme,
   alpha,
   useMediaQuery,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import { useState, useEffect } from 'react';
 import { format, isSameDay, isToday } from 'date-fns';
 import {
@@ -115,8 +115,7 @@ export function WeekView({
       <Grid container sx={{ minWidth: { xs: 700, md: 'auto' } }}>
         {/* Time column */}
         <Grid
-          item
-          xs={1}
+          size={1}
           sx={{ borderRight: `1px solid ${theme.palette.divider}` }}
         >
           <Box
@@ -155,8 +154,7 @@ export function WeekView({
 
           return (
             <Grid
-              item
-              xs
+              size="grow"
               key={dayIndex}
               sx={{
                 borderRight:

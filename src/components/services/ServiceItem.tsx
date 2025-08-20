@@ -5,7 +5,6 @@ import {
   Box,
   Card,
   CardContent,
-  Grid,
   Typography,
   IconButton,
   Menu,
@@ -14,6 +13,7 @@ import {
   ListItemText,
   Chip,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -111,7 +111,7 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
       >
         <CardContent>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Box display="flex" alignItems="center" gap={1}>
                 <Typography variant="h6">{service.name}</Typography>
                 {service.frequently_used && (
@@ -135,20 +135,20 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
               )}
             </Grid>
 
-            <Grid item xs={12} sm={3}>
+            <Grid size={{ xs: 12, sm: 3 }}>
               <Typography variant="body2" color="text.secondary">
                 Default: {service.default_qty}{' '}
                 {pluralizeUnit(service.default_unit, service.default_qty)}
               </Typography>
             </Grid>
 
-            <Grid item xs={12} sm={2}>
+            <Grid size={{ xs: 12, sm: 2 }}>
               <Typography variant="h6" align="right">
                 {calculateTotalPrice(service)}
               </Typography>
             </Grid>
 
-            <Grid item xs={12} sm={1}>
+            <Grid size={{ xs: 12, sm: 1 }}>
               <Box display="flex" justifyContent="flex-end">
                 <IconButton onClick={handleMenuClick} disabled={isLoading}>
                   <MoreVertIcon />

@@ -8,11 +8,11 @@ import {
   CardActions,
   Button,
   Typography,
-  Grid,
   Chip,
   CircularProgress,
   Alert,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import { Edit as EditIcon, RestartAlt as ResetIcon } from '@mui/icons-material';
 
 import { getEmailTemplates, resetEmailTemplate } from '@/lib/actions/emails';
@@ -130,7 +130,7 @@ export function EmailTemplateManager() {
 
       <Grid container spacing={3}>
         {templates.map((template) => (
-          <Grid item xs={12} md={6} key={template.id}>
+          <Grid size={{ xs: 12, md: 6 }} key={template.id}>
             <Card>
               <CardContent>
                 <Box display="flex" alignItems="center" gap={1} mb={1}>

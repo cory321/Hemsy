@@ -7,8 +7,8 @@ import {
   CardContent,
   Typography,
   Button,
-  Grid,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import { getStageColor } from '@/constants/garmentStages';
 import InlinePresetSvg from '@/components/ui/InlinePresetSvg';
@@ -150,13 +150,13 @@ export default function GarmentImageSection({
               Client Information
             </Typography>
             <Grid container spacing={2}>
-              <Grid item xs={12}>
+              <Grid size={12}>
                 <Typography variant="body2" color="text.secondary">
                   Name
                 </Typography>
                 <Typography variant="body1">{clientName}</Typography>
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={12}>
                 <Typography variant="body2" color="text.secondary">
                   Email
                 </Typography>
@@ -164,7 +164,7 @@ export default function GarmentImageSection({
                   {garment.order.client.email}
                 </Typography>
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={12}>
                 <Typography variant="body2" color="text.secondary">
                   Phone
                 </Typography>

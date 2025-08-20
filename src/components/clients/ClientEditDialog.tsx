@@ -8,7 +8,6 @@ import {
   DialogActions,
   Button,
   TextField,
-  Grid,
   FormControlLabel,
   Switch,
   CircularProgress,
@@ -16,6 +15,7 @@ import {
   Box,
   IconButton,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import CloseIcon from '@mui/icons-material/Close';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -151,7 +151,7 @@ export default function ClientEditDialog({
           )}
 
           <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
                 name="first_name"
                 control={control}
@@ -168,7 +168,7 @@ export default function ClientEditDialog({
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
                 name="last_name"
                 control={control}
@@ -185,7 +185,7 @@ export default function ClientEditDialog({
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Controller
                 name="email"
                 control={control}
@@ -203,7 +203,7 @@ export default function ClientEditDialog({
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Controller
                 name="phone_number"
                 control={control}
@@ -220,7 +220,7 @@ export default function ClientEditDialog({
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Controller
                 name="mailing_address"
                 control={control}
@@ -238,7 +238,7 @@ export default function ClientEditDialog({
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Controller
                 name="notes"
                 control={control}
@@ -256,7 +256,7 @@ export default function ClientEditDialog({
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Controller
                 name="accept_email"
                 control={control}
@@ -274,7 +274,7 @@ export default function ClientEditDialog({
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Controller
                 name="accept_sms"
                 control={control}

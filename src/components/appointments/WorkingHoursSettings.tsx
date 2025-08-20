@@ -11,8 +11,9 @@ import {
   Button,
   Alert,
   CircularProgress,
-  Grid,
+  Skeleton,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -142,8 +143,49 @@ export function WorkingHoursSettings({ onSave }: WorkingHoursSettingsProps) {
   if (loading) {
     return (
       <Card>
-        <CardContent sx={{ textAlign: 'center', py: 4 }}>
-          <CircularProgress />
+        <CardContent>
+          <Skeleton variant="text" width={150} height={28} sx={{ mb: 2 }} />
+          {Array.from({ length: 7 }).map((_, index) => (
+            <Box
+              key={index}
+              sx={{
+                py: 2,
+                borderBottom: index < 6 ? '1px solid' : 'none',
+                borderColor: 'divider',
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Skeleton
+                  variant="rectangular"
+                  width={60}
+                  height={24}
+                  sx={{ borderRadius: 12 }}
+                />
+                <Skeleton variant="text" width={80} />
+                <Skeleton
+                  variant="rectangular"
+                  width={100}
+                  height={40}
+                  sx={{ borderRadius: 1 }}
+                />
+                <Skeleton variant="text" width={20} />
+                <Skeleton
+                  variant="rectangular"
+                  width={100}
+                  height={40}
+                  sx={{ borderRadius: 1 }}
+                />
+              </Box>
+            </Box>
+          ))}
+          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
+            <Skeleton
+              variant="rectangular"
+              width={120}
+              height={36}
+              sx={{ borderRadius: 1 }}
+            />
+          </Box>
         </CardContent>
       </Card>
     );
@@ -179,7 +221,7 @@ export function WorkingHoursSettings({ onSave }: WorkingHoursSettingsProps) {
                 }}
               >
                 <Grid container alignItems="center" spacing={2}>
-                  <Grid item xs={12} sm={3}>
+                  <Grid size={{ xs: 12, sm: 3 }}>
                     <FormControlLabel
                       control={
                         <Switch
@@ -193,7 +235,7 @@ export function WorkingHoursSettings({ onSave }: WorkingHoursSettingsProps) {
 
                   {!dayHours.is_closed && (
                     <>
-                      <Grid item xs={5} sm={3}>
+                      <Grid size={{ xs: 5, sm: 3 }}>
                         <TimePicker
                           label="Opens"
                           value={
@@ -217,7 +259,7 @@ export function WorkingHoursSettings({ onSave }: WorkingHoursSettingsProps) {
                         />
                       </Grid>
 
-                      <Grid item xs={5} sm={3}>
+                      <Grid size={{ xs: 5, sm: 3 }}>
                         <TimePicker
                           label="Closes"
                           value={
@@ -241,7 +283,7 @@ export function WorkingHoursSettings({ onSave }: WorkingHoursSettingsProps) {
                         />
                       </Grid>
 
-                      <Grid item xs={2} sm={3}>
+                      <Grid size={{ xs: 2, sm: 3 }}>
                         <Button
                           size="small"
                           onClick={() => handleCopyToAll(dayHours.day_of_week)}
@@ -253,7 +295,7 @@ export function WorkingHoursSettings({ onSave }: WorkingHoursSettingsProps) {
                   )}
 
                   {dayHours.is_closed && (
-                    <Grid item xs={12} sm={9}>
+                    <Grid size={{ xs: 12, sm: 9 }}>
                       <Typography variant="body2" color="text.secondary">
                         Closed
                       </Typography>

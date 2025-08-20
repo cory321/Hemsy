@@ -1,6 +1,7 @@
 'use client';
 
-import { Card, CardContent, Typography, Box, Grid } from '@mui/material';
+import { Card, CardContent, Typography, Box } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import GarmentDetailClientOptimistic from './GarmentDetailClientOptimistic';
 import GarmentServicesManagerOptimistic from '@/components/garments/GarmentServicesManagerOptimistic';
 import GarmentHistoryOptimistic from '@/components/garments/GarmentHistoryOptimistic';
@@ -59,7 +60,7 @@ export default function GarmentRightColumnOptimistic({
             Important Dates
           </Typography>
           <Grid container spacing={3}>
-            <Grid item xs={6} sm={4}>
+            <Grid size={{ xs: 6, sm: 4 }}>
               <Typography variant="body2" color="text.secondary">
                 Due Date
               </Typography>
@@ -67,7 +68,7 @@ export default function GarmentRightColumnOptimistic({
                 {formatDate(garment.due_date)}
               </Typography>
             </Grid>
-            <Grid item xs={6} sm={4}>
+            <Grid size={{ xs: 6, sm: 4 }}>
               <Typography variant="body2" color="text.secondary">
                 Event Date
               </Typography>
@@ -75,7 +76,7 @@ export default function GarmentRightColumnOptimistic({
                 {formatDate(garment.event_date)}
               </Typography>
             </Grid>
-            <Grid item xs={6} sm={4}>
+            <Grid size={{ xs: 6, sm: 4 }}>
               <Typography variant="body2" color="text.secondary">
                 Created
               </Typography>

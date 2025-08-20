@@ -1,13 +1,24 @@
 import { Container, Typography, Box } from '@mui/material';
 import { Suspense } from 'react';
+import ClientsList from '@/components/clients/ClientsList';
+import { getClients } from '@/lib/actions/clients';
 import AddClientCtas from '@/components/clients/AddClientCtas';
-import ClientsListWrapper from './ClientsListWrapper';
-import ClientsListSkeleton from '@/components/clients/ClientsListSkeleton';
+import { SkeletonList } from '@/components/ui/Skeleton';
 
 // Force dynamic rendering since this page uses authentication
 export const dynamic = 'force-dynamic';
 
-export default function ClientsPage() {
+// Async component that fetches data
+async function ClientsData() {
+  const initialData = await getClients(1, 10);
+
+  return (
+    <ClientsList initialData={initialData} getClientsAction={getClients} />
+  );
+}
+
+// Main page component with Suspense boundary
+export default function ClientsPageWithSuspense() {
   return (
     <Container maxWidth="lg">
       <Box sx={{ mt: 4, mb: 4 }}>
@@ -26,9 +37,9 @@ export default function ClientsPage() {
           <AddClientCtas />
         </Box>
 
-        {/* Clients List with pagination - shows skeleton while loading */}
-        <Suspense fallback={<ClientsListSkeleton />}>
-          <ClientsListWrapper />
+        {/* Suspense boundary for data fetching - shows skeleton while loading */}
+        <Suspense fallback={<SkeletonList count={6} />}>
+          <ClientsData />
         </Suspense>
 
         {/* Mobile FAB is rendered inside AddClientCtas */}

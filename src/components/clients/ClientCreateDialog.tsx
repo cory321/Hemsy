@@ -7,7 +7,6 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  Grid,
   Button,
   Alert,
   CircularProgress,
@@ -17,6 +16,7 @@ import {
   Typography,
   IconButton,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import type { DialogProps } from '@mui/material/Dialog';
 import CloseIcon from '@mui/icons-material/Close';
 import { z } from 'zod';
@@ -129,12 +129,12 @@ export default function ClientCreateDialog({
         )}
 
         <Grid container spacing={2} sx={{ mt: 1 }}>
-          <Grid item xs={12}>
+          <Grid size={12}>
             <Typography variant="h6" gutterBottom>
               Basic Information
             </Typography>
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Controller
               name="first_name"
               control={control}
@@ -151,7 +151,7 @@ export default function ClientCreateDialog({
             />
           </Grid>
 
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Controller
               name="last_name"
               control={control}
@@ -168,7 +168,7 @@ export default function ClientCreateDialog({
             />
           </Grid>
 
-          <Grid item xs={12}>
+          <Grid size={12}>
             <Controller
               name="email"
               control={control}
@@ -186,7 +186,7 @@ export default function ClientCreateDialog({
             />
           </Grid>
 
-          <Grid item xs={12}>
+          <Grid size={12}>
             <Controller
               name="phone_number"
               control={control}
@@ -204,7 +204,7 @@ export default function ClientCreateDialog({
             />
           </Grid>
 
-          <Grid item xs={12}>
+          <Grid size={12}>
             <Typography variant="h6" gutterBottom>
               Communication Preferences*
             </Typography>
@@ -219,7 +219,7 @@ export default function ClientCreateDialog({
               apply. The client can reply STOP to opt-out from SMS at any time.
             </Typography>
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Controller
               name="accept_email"
               control={control}
@@ -236,7 +236,7 @@ export default function ClientCreateDialog({
               )}
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Controller
               name="accept_sms"
               control={control}
@@ -254,12 +254,12 @@ export default function ClientCreateDialog({
             />
           </Grid>
 
-          <Grid item xs={12}>
+          <Grid size={12}>
             <Typography variant="h6" gutterBottom>
               Additional Information
             </Typography>
           </Grid>
-          <Grid item xs={12}>
+          <Grid size={12}>
             <Controller
               name="mailing_address"
               control={control}
@@ -278,7 +278,7 @@ export default function ClientCreateDialog({
             />
           </Grid>
 
-          <Grid item xs={12}>
+          <Grid size={12}>
             <Controller
               name="notes"
               control={control}

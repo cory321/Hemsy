@@ -1,4 +1,5 @@
-import { Container, Typography, Button, Box, Grid } from '@mui/material';
+import { Container, Typography, Button, Box } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { auth } from '@clerk/nextjs/server';
@@ -57,7 +58,7 @@ export default async function HomePage() {
       </Box>
 
       <Grid container spacing={4} sx={{ my: 8 }}>
-        <Grid item xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <Box sx={{ textAlign: 'center' }}>
             <Typography variant="h5" gutterBottom>
               Manage Clients
@@ -67,7 +68,7 @@ export default async function HomePage() {
             </Typography>
           </Box>
         </Grid>
-        <Grid item xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <Box sx={{ textAlign: 'center' }}>
             <Typography variant="h5" gutterBottom>
               Track Orders
@@ -77,7 +78,7 @@ export default async function HomePage() {
             </Typography>
           </Box>
         </Grid>
-        <Grid item xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <Box sx={{ textAlign: 'center' }}>
             <Typography variant="h5" gutterBottom>
               Send Invoices

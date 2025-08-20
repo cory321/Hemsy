@@ -189,6 +189,7 @@ function MobileBottomNav() {
             icon={item.icon}
             component={Link}
             href={item.href}
+            // prefetch is enabled by default for viewport visibility
           />
         ))}
       </BottomNavigation>

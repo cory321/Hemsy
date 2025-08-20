@@ -17,13 +17,13 @@ import {
   IconButton,
   TextField,
   MenuItem,
-  Grid,
   Paper,
   Tooltip,
   CircularProgress,
   Alert,
   Button,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import {
   Refresh as RefreshIcon,
   Visibility as ViewIcon,
@@ -147,7 +147,7 @@ export function EmailActivityLog() {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <TextField
                 fullWidth
                 select
@@ -169,7 +169,7 @@ export function EmailActivityLog() {
               </TextField>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <TextField
                 fullWidth
                 select
@@ -192,7 +192,7 @@ export function EmailActivityLog() {
               </TextField>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <DatePicker
                 label="Start Date"
                 value={filters.startDate}
@@ -209,7 +209,7 @@ export function EmailActivityLog() {
               />
             </Grid>
 
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <DatePicker
                 label="End Date"
                 value={filters.endDate}

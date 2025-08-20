@@ -12,7 +12,6 @@ import {
   AccordionSummary,
   AccordionDetails,
   TextField,
-  Grid,
   Chip,
   Stack,
   Divider,
@@ -20,6 +19,7 @@ import {
   Checkbox,
   FormControlLabel,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -174,7 +174,7 @@ export default function Step2GarmentDetails() {
                   {/* Date Validation Alert */}
                   {(dateValidationErrors[garment.id]?.dueDate ||
                     dateValidationErrors[garment.id]?.eventDate) && (
-                    <Grid item xs={12}>
+                    <Grid size={12}>
                       <Alert severity="warning" icon={<WarningAmberIcon />}>
                         {dateValidationErrors[garment.id]?.dueDate ||
                           dateValidationErrors[garment.id]?.eventDate}
@@ -183,7 +183,7 @@ export default function Step2GarmentDetails() {
                   )}
 
                   {/* Visual + Basics layout */}
-                  <Grid item xs={12} sm={3}>
+                  <Grid size={{ xs: 12, sm: 3 }}>
                     <Stack spacing={1} alignItems="stretch">
                       {/* Square icon picker */}
                       <Box
@@ -301,7 +301,7 @@ export default function Step2GarmentDetails() {
                     </Stack>
                   </Grid>
 
-                  <Grid item xs={12} sm={8}>
+                  <Grid size={{ xs: 12, sm: 8 }}>
                     <Stack spacing={1}>
                       <TextField
                         fullWidth
@@ -624,7 +624,7 @@ export default function Step2GarmentDetails() {
                   </Grid>
 
                   {/* Services Section */}
-                  <Grid item xs={12}>
+                  <Grid size={12}>
                     <Divider sx={{ my: 2 }} />
                     <Typography variant="h6" gutterBottom>
                       Services
@@ -633,7 +633,7 @@ export default function Step2GarmentDetails() {
                   </Grid>
 
                   {/* Notes moved below Services */}
-                  <Grid item xs={12}>
+                  <Grid size={12}>
                     <TextField
                       fullWidth
                       multiline
@@ -648,7 +648,7 @@ export default function Step2GarmentDetails() {
                   </Grid>
 
                   {/* Delete Garment */}
-                  <Grid item xs={12}>
+                  <Grid size={12}>
                     <Box
                       sx={{
                         display: 'flex',

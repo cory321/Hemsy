@@ -1,6 +1,7 @@
 'use client';
 
-import { Box, Grid } from '@mui/material';
+import { Box } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { DashboardAlerts } from '@/components/dashboard/alerts';
 import { TodaysFocus } from '@/components/dashboard/todays-focus';
@@ -24,17 +25,17 @@ export function Dashboard() {
       {/* Main Content Grid */}
       <Grid container spacing={3}>
         {/* Left Column - Today's Focus */}
-        <Grid item xs={12} lg={3}>
+        <Grid size={{ xs: 12, lg: 3 }}>
           <TodaysFocus />
         </Grid>
 
         {/* Center Column - Garment Pipeline */}
-        <Grid item xs={12} lg={6}>
+        <Grid size={{ xs: 12, lg: 6 }}>
           <GarmentPipeline />
         </Grid>
 
         {/* Right Column - Business Overview */}
-        <Grid item xs={12} lg={3}>
+        <Grid size={{ xs: 12, lg: 3 }}>
           <BusinessOverview />
         </Grid>
       </Grid>

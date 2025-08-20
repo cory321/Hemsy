@@ -3,7 +3,6 @@ import {
   Container,
   Typography,
   Box,
-  Grid,
   Card,
   CardContent,
   CardActions,
@@ -13,6 +12,7 @@ import {
   ListItemIcon,
   ListItemText,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import CheckIcon from '@mui/icons-material/Check';
 import Link from 'next/link';
 
@@ -79,7 +79,7 @@ export default function PricingPage() {
 
         <Grid container spacing={4} sx={{ mt: 4 }} alignItems="stretch">
           {plans.map((plan, index) => (
-            <Grid item xs={12} md={4} key={index}>
+            <Grid size={{ xs: 12, md: 4 }} key={index}>
               <Card
                 sx={{
                   height: '100%',

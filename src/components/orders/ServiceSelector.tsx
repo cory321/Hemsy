@@ -8,7 +8,6 @@ import {
   Stack,
   Typography,
   Button,
-  Grid,
   IconButton,
   Card,
   CardContent,
@@ -24,6 +23,7 @@ import {
   DialogActions,
   CircularProgress,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -214,7 +214,7 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
         </Typography>
         <Grid container spacing={1}>
           {frequentServices.map((service) => (
-            <Grid item xs={6} sm={4} md={3} key={service.id}>
+            <Grid size={{ xs: 6, sm: 4, md: 3 }} key={service.id}>
               <Button
                 variant="outlined"
                 fullWidth
@@ -239,7 +239,7 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
             </Grid>
           ))}
           {/* Quick Add Service Button */}
-          <Grid item xs={6} sm={4} md={3}>
+          <Grid size={{ xs: 6, sm: 4, md: 3 }}>
             <Button
               variant="outlined"
               fullWidth
@@ -351,10 +351,10 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
               <Card key={index} variant="outlined">
                 <CardContent sx={{ py: 1 }}>
                   <Grid container spacing={2} alignItems="center">
-                    <Grid item xs={12} sm={4}>
+                    <Grid size={{ xs: 12, sm: 4 }}>
                       <Typography variant="body2">{service.name}</Typography>
                     </Grid>
-                    <Grid item xs={4} sm={2}>
+                    <Grid size={{ xs: 4, sm: 2 }}>
                       <TextField
                         size="small"
                         type="number"
@@ -371,7 +371,7 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
                         inputProps={{ min: 1 }}
                       />
                     </Grid>
-                    <Grid item xs={4} sm={2}>
+                    <Grid size={{ xs: 4, sm: 2 }}>
                       <Select
                         size="small"
                         value={service.unit}
@@ -387,7 +387,7 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
                         <MenuItem value="day">day</MenuItem>
                       </Select>
                     </Grid>
-                    <Grid item xs={4} sm={3}>
+                    <Grid size={{ xs: 4, sm: 3 }}>
                       <ServicePriceField
                         key={`price-${garmentId}-${index}`}
                         unitPriceCents={service.unitPriceCents}
@@ -398,7 +398,7 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
                         }}
                       />
                     </Grid>
-                    <Grid item xs={12} sm={1}>
+                    <Grid size={{ xs: 12, sm: 1 }}>
                       <IconButton
                         color="error"
                         onClick={() =>

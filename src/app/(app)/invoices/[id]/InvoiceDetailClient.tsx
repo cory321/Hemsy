@@ -15,7 +15,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Grid,
   CircularProgress,
   Alert,
   Dialog,
@@ -28,6 +27,7 @@ import {
   Select,
   MenuItem,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import PrintIcon from '@mui/icons-material/Print';
 import SendIcon from '@mui/icons-material/Send';
 import PaymentIcon from '@mui/icons-material/Payment';
@@ -335,13 +335,13 @@ export default function InvoiceDetailClient({
         </Box>
 
         <Grid container spacing={3}>
-          <Grid item xs={12} md={8}>
+          <Grid size={{ xs: 12, md: 8 }}>
             {/* Invoice Details */}
             <Card>
               <CardContent>
                 {/* Business & Client Info */}
                 <Grid container spacing={3} sx={{ mb: 4 }}>
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <Typography variant="h6" gutterBottom>
                       From
                     </Typography>
@@ -364,7 +364,7 @@ export default function InvoiceDetailClient({
                       </Typography>
                     )}
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <Typography variant="h6" gutterBottom>
                       Bill To
                     </Typography>
@@ -574,7 +574,7 @@ export default function InvoiceDetailClient({
             )}
           </Grid>
 
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             {/* Invoice Info */}
             <Card sx={{ mb: 3 }}>
               <CardContent>

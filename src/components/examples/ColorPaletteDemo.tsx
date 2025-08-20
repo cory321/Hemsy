@@ -7,11 +7,11 @@ import {
   Stack,
   Button,
   Chip,
-  Grid2 as Grid,
-  IconButton,
+  Grid2 as IconButton,
   Card,
   CardContent,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import { useTheme } from '@mui/material/styles';
 import { colors } from '@/constants/colors';
 import ContentCutIcon from '@mui/icons-material/ContentCut';

@@ -16,6 +16,7 @@ import {
   Alert,
   CircularProgress,
   FormHelperText,
+  Skeleton,
 } from '@mui/material';
 import {
   getCalendarSettings,
@@ -82,8 +83,30 @@ export function CalendarSettings({ onSave }: CalendarSettingsProps) {
   if (loading) {
     return (
       <Card>
-        <CardContent sx={{ textAlign: 'center', py: 4 }}>
-          <CircularProgress />
+        <CardContent>
+          <Skeleton variant="text" width={180} height={28} sx={{ mb: 2 }} />
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 2 }}>
+            <Skeleton
+              variant="rectangular"
+              width="100%"
+              height={56}
+              sx={{ borderRadius: 1 }}
+            />
+            <Skeleton
+              variant="rectangular"
+              width="100%"
+              height={56}
+              sx={{ borderRadius: 1 }}
+            />
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <Skeleton
+                variant="rectangular"
+                width={120}
+                height={36}
+                sx={{ borderRadius: 1 }}
+              />
+            </Box>
+          </Box>
         </CardContent>
       </Card>
     );

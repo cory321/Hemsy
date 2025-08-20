@@ -6,10 +6,10 @@ import {
   Card,
   CardActionArea,
   CardContent,
-  Grid,
   Stack,
   Typography,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import Image from 'next/image';
 import InlinePresetSvg from '@/components/ui/InlinePresetSvg';
 import { getPresetIconUrl, presetCatalog } from '@/utils/presetIcons';
@@ -40,7 +40,7 @@ export default function PresetGarmentIconPicker({
             {cat.items.map((item) => {
               const isSelected = value === item.key;
               return (
-                <Grid item xs={6} sm={4} md={3} key={item.key}>
+                <Grid size={{ xs: 6, sm: 4, md: 3 }} key={item.key}>
                   <Card
                     variant="outlined"
                     sx={(theme) => ({

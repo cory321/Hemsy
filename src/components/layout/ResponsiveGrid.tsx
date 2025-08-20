@@ -1,9 +1,10 @@
 'use client';
 
-import { Grid, GridProps } from '@mui/material';
+import Grid from '@mui/material/Grid2';
+import { Grid2Props as GridProps } from '@mui/material/Grid2';
 import { ReactNode } from 'react';
 
-interface ResponsiveGridItemProps extends Omit<GridProps, 'item'> {
+interface ResponsiveGridItemProps extends Omit<GridProps, 'size'> {
   children: ReactNode;
   // Simplified responsive API
   mobile?: number; // columns on mobile (xs)
@@ -25,11 +26,12 @@ export function ResponsiveGridItem({
 }: ResponsiveGridItemProps) {
   return (
     <Grid
-      item
-      xs={mobile}
-      sm={tablet || mobile}
-      md={desktop || tablet || mobile}
-      lg={largeDesktop || desktop || tablet || mobile}
+      size={{
+        xs: mobile,
+        sm: tablet || mobile,
+        md: desktop || tablet || mobile,
+        lg: largeDesktop || desktop || tablet || mobile,
+      }}
       {...props}
     >
       {children}
@@ -37,7 +39,7 @@ export function ResponsiveGridItem({
   );
 }
 
-interface ResponsiveGridContainerProps extends Omit<GridProps, 'container'> {
+interface ResponsiveGridContainerProps extends GridProps {
   children: ReactNode;
   // Responsive spacing
   mobileSpacing?: number;

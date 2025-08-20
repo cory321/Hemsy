@@ -6,7 +6,6 @@ import {
   Typography,
   Card,
   CardContent,
-  Grid,
   Divider,
   TextField,
   Table,
@@ -18,6 +17,7 @@ import {
   Paper,
   Chip,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import { useOrderFlow } from '@/contexts/OrderFlowContext';
 import { formatCurrency, dollarsToCents } from '@/lib/utils/currency';
 import { createClient as createSupabaseClient } from '@/lib/supabase/client';
@@ -85,7 +85,7 @@ export default function Step3Summary() {
           </Typography>
           {orderDraft.client && (
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <Typography variant="body2" color="text.secondary">
                   Name
                 </Typography>
@@ -93,7 +93,7 @@ export default function Step3Summary() {
                   {orderDraft.client.first_name} {orderDraft.client.last_name}
                 </Typography>
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <Typography variant="body2" color="text.secondary">
                   Email
                 </Typography>
@@ -101,7 +101,7 @@ export default function Step3Summary() {
                   {orderDraft.client.email}
                 </Typography>
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <Typography variant="body2" color="text.secondary">
                   Phone
                 </Typography>
@@ -110,7 +110,7 @@ export default function Step3Summary() {
                 </Typography>
               </Grid>
               {orderDraft.client.mailing_address && (
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Typography variant="body2" color="text.secondary">
                     Address
                   </Typography>
@@ -243,19 +243,19 @@ export default function Step3Summary() {
             Pricing
           </Typography>
           <Grid container spacing={2}>
-            <Grid item xs={6}>
+            <Grid size={6}>
               <Typography variant="body2">Subtotal:</Typography>
             </Grid>
-            <Grid item xs={6} sx={{ textAlign: 'right' }}>
+            <Grid size={6} sx={{ textAlign: 'right' }}>
               <Typography variant="body1">
                 {formatCurrency(subtotal / 100)}
               </Typography>
             </Grid>
 
-            <Grid item xs={6}>
+            <Grid size={6}>
               <Typography variant="body2">Discount:</Typography>
             </Grid>
-            <Grid item xs={6}>
+            <Grid size={6}>
               <TextField
                 size="small"
                 value={discountDollars}
@@ -267,25 +267,25 @@ export default function Step3Summary() {
               />
             </Grid>
 
-            <Grid item xs={6}>
+            <Grid size={6}>
               <Typography variant="body2">
                 Tax ({(taxPercent * 100).toFixed(2)}%):
               </Typography>
             </Grid>
-            <Grid item xs={6} sx={{ textAlign: 'right' }}>
+            <Grid size={6} sx={{ textAlign: 'right' }}>
               <Typography variant="body1">
                 {formatCurrency(taxAmount / 100)}
               </Typography>
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Divider sx={{ my: 1 }} />
             </Grid>
 
-            <Grid item xs={6}>
+            <Grid size={6}>
               <Typography variant="h6">Total:</Typography>
             </Grid>
-            <Grid item xs={6} sx={{ textAlign: 'right' }}>
+            <Grid size={6} sx={{ textAlign: 'right' }}>
               <Typography variant="h6" color="primary">
                 {formatCurrency(total / 100)}
               </Typography>

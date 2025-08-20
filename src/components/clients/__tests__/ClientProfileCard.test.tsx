@@ -84,15 +84,15 @@ describe('ClientProfileCard', () => {
     renderWithTheme(<ClientProfileCard client={mockClient} />);
     expect(screen.getByText('JD')).toBeInTheDocument();
 
-    // Test with only first name
-    const clientFirstOnly = { ...mockClient, last_name: null };
+    // Test with only first name (empty last name)
+    const clientFirstOnly = { ...mockClient, last_name: '' };
     const { rerender } = renderWithTheme(
       <ClientProfileCard client={clientFirstOnly} />
     );
     expect(screen.getByText('J')).toBeInTheDocument();
 
-    // Test with only last name
-    const clientLastOnly = { ...mockClient, first_name: null };
+    // Test with only last name (empty first name)
+    const clientLastOnly = { ...mockClient, first_name: '', last_name: 'Doe' };
     rerender(
       <ThemeProvider theme={theme}>
         <ClientProfileCard client={clientLastOnly} />
@@ -100,8 +100,8 @@ describe('ClientProfileCard', () => {
     );
     expect(screen.getByText('D')).toBeInTheDocument();
 
-    // Test with no names
-    const clientNoNames = { ...mockClient, first_name: null, last_name: null };
+    // Test with empty names
+    const clientNoNames = { ...mockClient, first_name: '', last_name: '' };
     rerender(
       <ThemeProvider theme={theme}>
         <ClientProfileCard client={clientNoNames} />

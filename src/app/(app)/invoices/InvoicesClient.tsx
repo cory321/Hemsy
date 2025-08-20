@@ -13,7 +13,6 @@ import {
   Fab,
   TextField,
   InputAdornment,
-  Grid,
   Card,
   CardContent,
   CircularProgress,
@@ -23,6 +22,7 @@ import {
   MenuItem,
   Skeleton,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
@@ -250,7 +250,7 @@ export default function InvoicesClient({
 
         {/* Summary Cards */}
         <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={6} md={3}>
+          <Grid size={{ xs: 6, md: 3 }}>
             <Card>
               <CardContent>
                 <Typography color="text.secondary" gutterBottom>
@@ -269,7 +269,7 @@ export default function InvoicesClient({
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={6} md={3}>
+          <Grid size={{ xs: 6, md: 3 }}>
             <Card>
               <CardContent>
                 <Typography color="text.secondary" gutterBottom>
@@ -288,7 +288,7 @@ export default function InvoicesClient({
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={6} md={3}>
+          <Grid size={{ xs: 6, md: 3 }}>
             <Card>
               <CardContent>
                 <Typography color="text.secondary" gutterBottom>
@@ -307,7 +307,7 @@ export default function InvoicesClient({
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={6} md={3}>
+          <Grid size={{ xs: 6, md: 3 }}>
             <Card>
               <CardContent>
                 <Typography color="text.secondary" gutterBottom>

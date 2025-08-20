@@ -6,7 +6,8 @@ describe('AddClientCtas', () => {
     render(<AddClientCtas />);
 
     const addButtons = screen.getAllByRole('button', { name: /add client/i });
-    fireEvent.click(addButtons[0]);
+    expect(addButtons.length).toBeGreaterThan(0);
+    fireEvent.click(addButtons[0]!);
 
     expect(await screen.findByText('Add New Client')).toBeInTheDocument();
 

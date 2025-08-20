@@ -9,8 +9,8 @@ import {
   Divider,
   Typography,
   Chip,
-  Grid,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import { alpha } from '@mui/material/styles';
 import MailOutlineIcon from '@mui/icons-material/MailOutline';
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined';
@@ -28,9 +28,9 @@ interface ClientStatsCardsProps {
   readyForPickupCount: number;
 }
 
-function getInitials(first: string | null, last: string | null) {
-  const f = (first ?? '').trim();
-  const l = (last ?? '').trim();
+function getInitials(first: string, last: string) {
+  const f = first.trim();
+  const l = last.trim();
   const fi = f ? f[0] : '';
   const li = l ? l[0] : '';
   return `${fi}${li}`.toUpperCase() || '—';
@@ -124,7 +124,7 @@ export function ClientStatsCards({
   return (
     <Grid container spacing={2} sx={{ mb: 3 }}>
       {statCards.map((stat, index) => (
-        <Grid item xs={6} sm={3} key={index}>
+        <Grid size={{ xs: 6, sm: 3 }} key={index}>
           <Card
             elevation={1}
             sx={{

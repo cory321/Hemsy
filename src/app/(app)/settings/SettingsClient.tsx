@@ -15,13 +15,13 @@ import {
   FormControl,
   InputLabel,
   Divider,
-  Grid,
   Tabs,
   Tab,
   Paper,
-  CircularProgress,
+  Skeleton,
   Alert,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import {
   Person as PersonIcon,
   Schedule as ScheduleIcon,
@@ -171,9 +171,137 @@ export function SettingsClient() {
 
         <TabPanel value={tabValue} index={0}>
           {loading ? (
-            <Box display="flex" justifyContent="center" p={4}>
-              <CircularProgress />
-            </Box>
+            <>
+              {/* Business Information Skeleton */}
+              <Card sx={{ mb: 3 }}>
+                <CardContent>
+                  <Skeleton
+                    variant="text"
+                    width={200}
+                    height={28}
+                    sx={{ mb: 2 }}
+                  />
+                  <Grid container spacing={2}>
+                    <Grid size={12}>
+                      <Skeleton
+                        variant="rectangular"
+                        height={56}
+                        sx={{ borderRadius: 1 }}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <Skeleton
+                        variant="rectangular"
+                        height={56}
+                        sx={{ borderRadius: 1 }}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <Skeleton
+                        variant="rectangular"
+                        height={56}
+                        sx={{ borderRadius: 1 }}
+                      />
+                    </Grid>
+                    <Grid size={12}>
+                      <Skeleton
+                        variant="rectangular"
+                        height={80}
+                        sx={{ borderRadius: 1 }}
+                      />
+                    </Grid>
+                    <Grid size={12}>
+                      <Skeleton
+                        variant="rectangular"
+                        height={56}
+                        sx={{ borderRadius: 1 }}
+                      />
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </Card>
+
+              {/* Payment Preferences Skeleton */}
+              <Card sx={{ mb: 3 }}>
+                <CardContent>
+                  <Skeleton
+                    variant="text"
+                    width={180}
+                    height={28}
+                    sx={{ mb: 2 }}
+                  />
+                  <Skeleton
+                    variant="rectangular"
+                    height={56}
+                    sx={{ borderRadius: 1, mb: 2 }}
+                  />
+                  <Skeleton variant="text" width="80%" height={20} />
+                </CardContent>
+              </Card>
+
+              {/* Notifications Skeleton */}
+              <Card sx={{ mb: 3 }}>
+                <CardContent>
+                  <Skeleton
+                    variant="text"
+                    width={150}
+                    height={28}
+                    sx={{ mb: 2 }}
+                  />
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 2,
+                      mb: 2,
+                    }}
+                  >
+                    <Skeleton
+                      variant="rectangular"
+                      width={48}
+                      height={24}
+                      sx={{ borderRadius: 12 }}
+                    />
+                    <Skeleton variant="text" width={200} height={24} />
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Skeleton
+                      variant="rectangular"
+                      width={48}
+                      height={24}
+                      sx={{ borderRadius: 12 }}
+                    />
+                    <Skeleton variant="text" width={180} height={24} />
+                  </Box>
+                </CardContent>
+              </Card>
+
+              {/* Brand Customization Skeleton */}
+              <Card sx={{ mb: 3 }}>
+                <CardContent>
+                  <Skeleton
+                    variant="text"
+                    width={180}
+                    height={28}
+                    sx={{ mb: 2 }}
+                  />
+                  <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                    <Skeleton variant="circular" width={40} height={40} />
+                    <Skeleton variant="text" width={150} height={24} />
+                  </Box>
+                </CardContent>
+              </Card>
+
+              {/* Save Button Skeleton */}
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
+                <Skeleton
+                  variant="rectangular"
+                  width={140}
+                  height={36}
+                  sx={{ borderRadius: 1 }}
+                />
+              </Box>
+            </>
           ) : error ? (
             <Alert
               severity="error"
@@ -195,7 +323,7 @@ export function SettingsClient() {
                     Business Information
                   </Typography>
                   <Grid container spacing={2}>
-                    <Grid item xs={12}>
+                    <Grid size={12}>
                       <TextField
                         fullWidth
                         label="Business Name"
@@ -209,7 +337,7 @@ export function SettingsClient() {
                         variant="outlined"
                       />
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <TextField
                         fullWidth
                         label="Phone Number"
@@ -223,7 +351,7 @@ export function SettingsClient() {
                         variant="outlined"
                       />
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <TextField
                         fullWidth
                         label="Email Address"
@@ -238,7 +366,7 @@ export function SettingsClient() {
                         type="email"
                       />
                     </Grid>
-                    <Grid item xs={12}>
+                    <Grid size={12}>
                       <TextField
                         fullWidth
                         label="Address"
@@ -254,7 +382,7 @@ export function SettingsClient() {
                         rows={2}
                       />
                     </Grid>
-                    <Grid item xs={12}>
+                    <Grid size={12}>
                       <FormControl fullWidth>
                         <InputLabel>Location Type</InputLabel>
                         <Select

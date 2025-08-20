@@ -1,14 +1,7 @@
 'use client';
 
-import {
-  Box,
-  Typography,
-  Grid,
-  Button,
-  Chip,
-  useTheme,
-  alpha,
-} from '@mui/material';
+import { Box, Typography, Button, Chip, useTheme, alpha } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import { format, isSameMonth, isSameDay, isToday } from 'date-fns';
 import {
   generateMonthDays,
@@ -59,7 +52,7 @@ export function MonthView({
       {/* Week day headers */}
       <Grid container>
         {weekDays.map((day) => (
-          <Grid item xs key={day} sx={{ p: 1, textAlign: 'center' }}>
+          <Grid size="grow" key={day} sx={{ p: 1, textAlign: 'center' }}>
             <Typography
               variant="caption"
               fontWeight="bold"
@@ -81,7 +74,7 @@ export function MonthView({
           const isOpen = isShopOpen(day, shopHours);
 
           return (
-            <Grid item xs key={index}>
+            <Grid size="grow" key={index}>
               <Button
                 fullWidth
                 sx={{

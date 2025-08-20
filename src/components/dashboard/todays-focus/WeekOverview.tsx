@@ -6,11 +6,11 @@ import {
   Stack,
   Typography,
   Button,
-  Grid,
   Paper,
   LinearProgress,
   alpha,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import {
   ArrowForward as ArrowForwardIcon,
   CalendarMonth as CalendarIcon,
@@ -82,7 +82,7 @@ export function WeekOverview({
         <Grid container spacing={0.5} sx={{ mb: 1 }}>
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(
             (day, index) => (
-              <Grid item xs key={index}>
+              <Grid size="grow" key={index}>
                 <Typography
                   variant="caption"
                   sx={{
@@ -103,7 +103,7 @@ export function WeekOverview({
         {/* Date cells */}
         <Grid container spacing={0.5}>
           {weekData.map((dayData, index) => (
-            <Grid item xs key={index}>
+            <Grid size="grow" key={index}>
               <Paper
                 sx={{
                   position: 'relative',

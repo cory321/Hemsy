@@ -5,6 +5,7 @@ import { QueryProvider } from '@/providers/QueryProvider';
 import { DateLocalizationProvider } from '@/providers/DateLocalizationProvider';
 import { ClerkProvider } from '@clerk/nextjs';
 import { Toaster } from 'react-hot-toast';
+import { NavigationProgress } from '@/components/ui/NavigationProgress';
 import './globals.css';
 import '../../public/icons/generated-icons.css';
 
@@ -52,6 +53,7 @@ export default function RootLayout({
             <ClerkProvider>
               <QueryProvider>
                 <ThemeProvider>
+                  <NavigationProgress />
                   {children}
                   <Toaster
                     position="bottom-center"
@@ -81,6 +83,7 @@ export default function RootLayout({
           ) : (
             <QueryProvider>
               <ThemeProvider>
+                <NavigationProgress />
                 {children}
                 <Toaster
                   position="bottom-center"

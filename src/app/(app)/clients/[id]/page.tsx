@@ -5,11 +5,11 @@ import {
   Box,
   Card,
   CardContent,
-  Grid,
   Chip,
   IconButton,
   Divider,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EmailIcon from '@mui/icons-material/Email';
@@ -139,7 +139,7 @@ export default async function ClientDetailPage({
           {/* Two-column layout: Left - client info, Right - tabs (Orders/Appointments) */}
           <Grid container spacing={3}>
             {/* Left column */}
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <ClientProfileCard client={client} />
 
               {/* Preferences */}
@@ -231,7 +231,7 @@ export default async function ClientDetailPage({
                     <Divider sx={{ mb: 2 }} />
 
                     <Grid container spacing={2}>
-                      <Grid item xs={12} sm={6}>
+                      <Grid size={{ xs: 12, sm: 6 }}>
                         <Typography variant="body2" color="text.secondary">
                           Created
                         </Typography>
@@ -239,7 +239,7 @@ export default async function ClientDetailPage({
                           {formatDate(client.created_at)}
                         </Typography>
                       </Grid>
-                      <Grid item xs={12} sm={6}>
+                      <Grid size={{ xs: 12, sm: 6 }}>
                         <Typography variant="body2" color="text.secondary">
                           Last Updated
                         </Typography>
@@ -254,7 +254,7 @@ export default async function ClientDetailPage({
             </Grid>
 
             {/* Right column */}
-            <Grid item xs={12} md={8}>
+            <Grid size={{ xs: 12, md: 8 }}>
               {/* Client Stats Cards - positioned above tabs */}
               <ClientStatsCards
                 client={client}

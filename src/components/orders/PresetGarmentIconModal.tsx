@@ -8,11 +8,11 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Grid,
   Stack,
   Typography,
   IconButton,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import CloseIcon from '@mui/icons-material/Close';
 import PresetGarmentIconPicker from './PresetGarmentIconPicker';
 import InlinePresetSvg from '@/components/ui/InlinePresetSvg';
@@ -83,13 +83,13 @@ export default function PresetGarmentIconModal({
       </DialogTitle>
       <DialogContent dividers>
         <Grid container spacing={3}>
-          <Grid item xs={12} md={8}>
+          <Grid size={{ xs: 12, md: 8 }}>
             <PresetGarmentIconPicker
               {...(selectedKey ? { value: selectedKey } : {})}
               onChange={(key) => setSelectedKey(key)}
             />
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Stack spacing={2}>
               <Box
                 sx={{

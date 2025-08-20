@@ -1,6 +1,7 @@
 'use client';
 
-import { Box, Button, Grid } from '@mui/material';
+import { Box, Button } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import Link from 'next/link';
 import GarmentImageSection from './GarmentImageSection';
@@ -47,12 +48,12 @@ export default function GarmentDetailContent({
 
       <Grid container spacing={3}>
         {/* Left Column - Image and Stage */}
-        <Grid item xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <GarmentImageSection clientName={clientName} />
         </Grid>
 
         {/* Right Column - Details */}
-        <Grid item xs={12} md={8}>
+        <Grid size={{ xs: 12, md: 8 }}>
           <GarmentRightColumnOptimistic clientName={clientName} />
         </Grid>
       </Grid>

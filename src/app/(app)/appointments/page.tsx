@@ -8,7 +8,6 @@ export const revalidate = 0;
 export const dynamic = 'force-dynamic';
 
 import { auth } from '@clerk/nextjs/server';
-import { CircularProgress, Box } from '@mui/material';
 import { AppointmentsClient } from './AppointmentsClient';
 import { getShopHours } from '@/lib/actions/shop-hours';
 import { getCalendarSettings } from '@/lib/actions/calendar-settings';
@@ -66,18 +65,10 @@ export default async function AppointmentsPage() {
   } as const;
 
   return (
-    <Suspense
-      fallback={
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}>
-          <CircularProgress />
-        </Box>
-      }
-    >
-      <AppointmentsClient
-        shopId={shopId}
-        shopHours={shopHours}
-        calendarSettings={normalizedCalendarSettings}
-      />
-    </Suspense>
+    <AppointmentsClient
+      shopId={shopId}
+      shopHours={shopHours}
+      calendarSettings={normalizedCalendarSettings}
+    />
   );
 }

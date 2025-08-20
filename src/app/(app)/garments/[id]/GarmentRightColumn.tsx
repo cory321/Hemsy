@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Card, CardContent, Typography, Box, Grid } from '@mui/material';
+import { Card, CardContent, Typography, Box } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import GarmentDetailClient from './GarmentDetailClient';
 import GarmentServicesManager from '@/components/garments/GarmentServicesManager';
 import GarmentHistory from '@/components/garments/GarmentHistory';
@@ -73,7 +74,7 @@ export default function GarmentRightColumn({
             Important Dates
           </Typography>
           <Grid container spacing={3}>
-            <Grid item xs={6} sm={4}>
+            <Grid size={{ xs: 6, sm: 4 }}>
               <Typography variant="body2" color="text.secondary">
                 Due Date
               </Typography>
@@ -81,7 +82,7 @@ export default function GarmentRightColumn({
                 {formatDate(garment.due_date)}
               </Typography>
             </Grid>
-            <Grid item xs={6} sm={4}>
+            <Grid size={{ xs: 6, sm: 4 }}>
               <Typography variant="body2" color="text.secondary">
                 Event Date
               </Typography>
@@ -89,7 +90,7 @@ export default function GarmentRightColumn({
                 {formatDate(garment.event_date)}
               </Typography>
             </Grid>
-            <Grid item xs={6} sm={4}>
+            <Grid size={{ xs: 6, sm: 4 }}>
               <Typography variant="body2" color="text.secondary">
                 Created
               </Typography>
@@ -129,7 +130,7 @@ export default function GarmentRightColumn({
               Client Information
             </Typography>
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <Typography variant="body2" color="text.secondary">
                   Name
                 </Typography>
@@ -143,7 +144,7 @@ export default function GarmentRightColumn({
                   )}
                 </Typography>
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <Typography variant="body2" color="text.secondary">
                   Email
                 </Typography>
@@ -151,7 +152,7 @@ export default function GarmentRightColumn({
                   {garment.order.client.email}
                 </Typography>
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <Typography variant="body2" color="text.secondary">
                   Phone
                 </Typography>
