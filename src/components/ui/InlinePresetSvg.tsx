@@ -60,8 +60,11 @@ function extractAndParametrize(svg: string) {
   if (!/overflow=/i.test(normalizedRoot)) {
     normalizedRoot = appendSvgAttrs(normalizedRoot, 'overflow="visible"');
   }
-  // Force width/height 100%
-  normalizedRoot = appendSvgAttrs(normalizedRoot, 'width="100%" height="100%"');
+  // Force width/height 100% and ensure proper display with constraints
+  normalizedRoot = appendSvgAttrs(
+    normalizedRoot,
+    'width="100%" height="100%" style="display: block; max-width: 100%; max-height: 100%;"'
+  );
 
   // Replace the original root tag with normalized one
   out = out.replace(rootTag, normalizedRoot);
@@ -75,6 +78,7 @@ export interface InlinePresetSvgProps {
   fillColor?: string;
   className?: string;
   style?: CSSProperties;
+  'data-testid'?: string;
 }
 
 export default function InlinePresetSvg({
@@ -83,6 +87,7 @@ export default function InlinePresetSvg({
   fillColor,
   className,
   style,
+  'data-testid': dataTestId,
 }: InlinePresetSvgProps) {
   const [raw, setRaw] = useState<string | null>(null);
 
@@ -150,10 +155,17 @@ export default function InlinePresetSvg({
   return (
     <div
       className={className}
+      data-testid={dataTestId}
       style={{
         position: 'relative',
         width: '100%',
         height: '100%',
+        maxWidth: '100%',
+        maxHeight: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
         ...vars,
         ...style,
       }}

@@ -150,15 +150,23 @@ const GarmentCard: React.FC<GarmentCardProps> = ({
                   sx={{
                     height: '88%',
                     width: '88%',
+                    maxWidth: '88%',
+                    maxHeight: '88%',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
+                    overflow: 'hidden',
                   }}
                 >
                   <InlinePresetSvg
                     src={resolved.src as string}
                     fillColor={(garment.preset_fill_color ?? undefined) as any}
-                    style={{ height: '100%', width: '100%', maxWidth: '100%' }}
+                    style={{
+                      height: '100%',
+                      width: '100%',
+                      maxWidth: '100%',
+                      maxHeight: '100%',
+                    }}
                   />
                 </Box>
               </Box>

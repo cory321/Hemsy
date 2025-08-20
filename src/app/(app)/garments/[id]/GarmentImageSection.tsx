@@ -62,6 +62,7 @@ export default function GarmentImageSection({
           <Box
             sx={{
               height: 400,
+              width: '100%',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -80,9 +81,12 @@ export default function GarmentImageSection({
                 sx={{
                   height: '88%',
                   width: '88%',
+                  maxWidth: '88%',
+                  maxHeight: '88%',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  overflow: 'hidden',
                 }}
               >
                 <InlinePresetSvg
@@ -93,6 +97,7 @@ export default function GarmentImageSection({
                     height: '100%',
                     width: '100%',
                     maxWidth: '100%',
+                    maxHeight: '100%',
                   }}
                 />
               </Box>
