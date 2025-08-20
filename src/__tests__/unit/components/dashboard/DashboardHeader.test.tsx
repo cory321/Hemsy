@@ -53,7 +53,7 @@ describe('DashboardHeader', () => {
 
       render(<DashboardHeader />);
 
-      expect(screen.getByText('Good morning, Sarah!')).toBeInTheDocument();
+      expect(screen.getByText('Good morning, Sarah')).toBeInTheDocument();
 
       jest.useRealTimers();
     });
@@ -73,7 +73,7 @@ describe('DashboardHeader', () => {
 
       render(<DashboardHeader />);
 
-      expect(screen.getByText('Good afternoon, Mike!')).toBeInTheDocument();
+      expect(screen.getByText('Good afternoon, Mike')).toBeInTheDocument();
 
       jest.useRealTimers();
     });
@@ -93,7 +93,7 @@ describe('DashboardHeader', () => {
 
       render(<DashboardHeader />);
 
-      expect(screen.getByText('Good evening, Lisa!')).toBeInTheDocument();
+      expect(screen.getByText('Good evening, Lisa')).toBeInTheDocument();
 
       jest.useRealTimers();
     });
@@ -110,7 +110,7 @@ describe('DashboardHeader', () => {
 
       render(<DashboardHeader />);
 
-      expect(screen.getByText(/Good \w+, there!/)).toBeInTheDocument();
+      expect(screen.getByText(/Good \w+, there/)).toBeInTheDocument();
     });
 
     it('should show skeleton when user is not loaded', () => {

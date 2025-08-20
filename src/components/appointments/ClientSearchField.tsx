@@ -168,7 +168,11 @@ export function ClientSearchField({
               endAdornment: (
                 <>
                   {loading ? (
-                    <CircularProgress color="inherit" size={20} />
+                    <CircularProgress
+                      color="inherit"
+                      size={20}
+                      role="progressbar"
+                    />
                   ) : null}
                   {InputProps.endAdornment}
                 </>
