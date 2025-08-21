@@ -85,7 +85,7 @@ describe('GarmentRightColumnOptimistic', () => {
     const { order, ...garmentWithoutOrder } = mockGarment;
     const garmentWithoutOrderId = {
       ...garmentWithoutOrder,
-      order_id: 'test-order-id',
+      order_id: null, // Set to null to simulate missing order_id
     };
 
     render(

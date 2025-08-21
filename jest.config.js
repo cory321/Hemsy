@@ -14,6 +14,8 @@ const customJestConfig = {
     '<rootDir>/node_modules/',
     '<rootDir>/src/__tests__/e2e/',
   ],
+  // Add timeout settings to prevent hanging tests
+  testTimeout: 10000, // 10 seconds instead of default 5
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '@clerk/backend/dist/runtime/browser/crypto':

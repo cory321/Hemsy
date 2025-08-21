@@ -129,9 +129,9 @@ describe('serviceUtils', () => {
       expect(total).toBe('$76.50');
     });
 
-    it('should handle string quantity in form data', () => {
+    it('should handle numeric quantity in form data', () => {
       const service = {
-        qty: '5',
+        qty: 5,
         unit_price: 20,
       };
 
@@ -176,9 +176,9 @@ describe('serviceUtils', () => {
       expect(total).toBe('$0.00');
     });
 
-    it('should handle invalid string quantity', () => {
+    it('should handle zero quantity', () => {
       const service = {
-        qty: 'invalid',
+        qty: 0,
         unit_price: 50,
       };
 

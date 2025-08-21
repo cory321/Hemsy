@@ -20,7 +20,7 @@ export interface Service {
 export interface ServiceFormData {
   name: string;
   description: string;
-  qty: string | number;
+  qty: number;
   unit: ServiceUnitType;
   unit_price: number;
   frequently_used?: boolean;
@@ -50,7 +50,7 @@ export const handleUnitPriceBlur = (
 };
 
 export const calculateTotalPrice = (service: {
-  qty?: string | number;
+  qty?: number;
   unit_price?: number;
   default_qty?: number;
   default_unit_price_cents?: number;
@@ -58,10 +58,7 @@ export const calculateTotalPrice = (service: {
   // Handle both form data and database service objects
   if ('qty' in service && 'unit_price' in service) {
     // Form data with dollars
-    const quantity =
-      typeof service.qty === 'string'
-        ? parseInt(service.qty, 10) || 0
-        : service.qty || 0;
+    const quantity = service.qty || 0;
     const unitPrice = service.unit_price || 0;
     const total = quantity * unitPrice;
     return `$${total.toFixed(2)}`;
@@ -103,10 +100,7 @@ export const convertServiceForDatabase = (
 ): Partial<Service> => {
   const result: Partial<Service> = {
     name: formData.name,
-    default_qty:
-      typeof formData.qty === 'string'
-        ? parseInt(formData.qty, 10) || 1
-        : formData.qty,
+    default_qty: formData.qty,
     default_unit: formData.unit,
     default_unit_price_cents: dollarsToCents(formData.unit_price),
   };

@@ -90,6 +90,12 @@ global.ResizeObserver = jest.fn().mockImplementation(() => ({
   disconnect: jest.fn(),
 }));
 
+// Add better test cleanup to prevent test pollution
+afterEach(() => {
+  // Clean up any pending timers
+  jest.clearAllTimers();
+});
+
 // Ensure EMAIL_DEV_OVERRIDE is set in test env to avoid accidental real sends
 process.env.EMAIL_DEV_OVERRIDE =
   process.env.EMAIL_DEV_OVERRIDE || 'cory321@gmail.com';

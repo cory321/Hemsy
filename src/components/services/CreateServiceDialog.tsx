@@ -98,10 +98,7 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
     try {
       const serviceData = {
         name: newService.name,
-        default_qty:
-          typeof newService.qty === 'string'
-            ? parseInt(newService.qty, 10) || 1
-            : newService.qty,
+        default_qty: newService.qty,
         default_unit: newService.unit,
         default_unit_price_cents: dollarsToCents(newService.unit_price),
       } as const;

@@ -35,7 +35,7 @@ interface Garment {
   photo_url: string | null;
   image_cloud_id: string | null;
   created_at: string;
-  order_id: string;
+  order_id: string | null;
   garment_services: Service[];
   order?: {
     id: string;

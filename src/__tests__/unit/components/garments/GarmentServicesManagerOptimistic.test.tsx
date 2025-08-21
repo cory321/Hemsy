@@ -99,7 +99,8 @@ describe('GarmentServicesManagerOptimistic - Quantity Updates', () => {
 
     // Click edit on the hourly service
     const editButtons = screen.getAllByTestId('EditIcon');
-    fireEvent.click(editButtons[0]); // First service is hourly
+    expect(editButtons[0]).toBeDefined();
+    fireEvent.click(editButtons[0]!); // First service is hourly
 
     await waitFor(() => {
       expect(screen.getByRole('dialog')).toBeInTheDocument();
@@ -117,7 +118,8 @@ describe('GarmentServicesManagerOptimistic - Quantity Updates', () => {
 
     // Click edit on the flat rate service
     const editButtons = screen.getAllByTestId('EditIcon');
-    fireEvent.click(editButtons[1]); // Second service is flat rate
+    expect(editButtons[1]).toBeDefined();
+    fireEvent.click(editButtons[1]!); // Second service is flat rate
 
     await waitFor(() => {
       expect(screen.getByRole('dialog')).toBeInTheDocument();
@@ -132,7 +134,8 @@ describe('GarmentServicesManagerOptimistic - Quantity Updates', () => {
 
     // Click edit on the hourly service
     const editButtons = screen.getAllByTestId('EditIcon');
-    fireEvent.click(editButtons[0]);
+    expect(editButtons[0]).toBeDefined();
+    fireEvent.click(editButtons[0]!);
 
     await waitFor(() => {
       expect(screen.getByRole('dialog')).toBeInTheDocument();
@@ -164,7 +167,8 @@ describe('GarmentServicesManagerOptimistic - Quantity Updates', () => {
 
     // Click edit on the hourly service
     const editButtons = screen.getAllByTestId('EditIcon');
-    fireEvent.click(editButtons[0]);
+    expect(editButtons[0]).toBeDefined();
+    fireEvent.click(editButtons[0]!);
 
     await waitFor(() => {
       expect(screen.getByRole('dialog')).toBeInTheDocument();
@@ -216,7 +220,8 @@ describe('GarmentServicesManagerOptimistic - Quantity Updates', () => {
       'textbox'
     );
     const nameField = textFields[0]; // First text field should be the name
-    fireEvent.change(nameField, { target: { value: 'Custom Alteration' } });
+    expect(nameField).toBeDefined();
+    fireEvent.change(nameField!, { target: { value: 'Custom Alteration' } });
 
     // Change unit to hour
     const unitSelect = screen.getByText('flat rate');
