@@ -16,6 +16,8 @@ const UpdateGarmentSchema = z.object({
     presetIconKey: z.string().nullable().optional(),
     presetFillColor: z.string().nullable().optional(),
     notes: z.string().nullable().optional(),
+    photoUrl: z.string().nullable().optional(),
+    imageCloudId: z.string().nullable().optional(),
   }),
 });
 
@@ -155,6 +157,34 @@ export async function updateGarment(
         field_name: 'notes',
         old_value: garment.notes,
         new_value: validatedInput.updates.notes,
+        change_type: 'field_update',
+      });
+    }
+    if (
+      validatedInput.updates.photoUrl !== undefined &&
+      validatedInput.updates.photoUrl !== garment.photo_url
+    ) {
+      updateData.photo_url = validatedInput.updates.photoUrl;
+      historyEntries.push({
+        garment_id: validatedInput.garmentId,
+        changed_by: user.id,
+        field_name: 'photo_url',
+        old_value: garment.photo_url,
+        new_value: validatedInput.updates.photoUrl,
+        change_type: 'field_update',
+      });
+    }
+    if (
+      validatedInput.updates.imageCloudId !== undefined &&
+      validatedInput.updates.imageCloudId !== garment.image_cloud_id
+    ) {
+      updateData.image_cloud_id = validatedInput.updates.imageCloudId;
+      historyEntries.push({
+        garment_id: validatedInput.garmentId,
+        changed_by: user.id,
+        field_name: 'image_cloud_id',
+        old_value: garment.image_cloud_id,
+        new_value: validatedInput.updates.imageCloudId,
         change_type: 'field_update',
       });
     }

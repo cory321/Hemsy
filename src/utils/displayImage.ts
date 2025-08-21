@@ -9,7 +9,7 @@ export interface ResolvedDisplayImage {
   src: string | null; // URL for photo/cloud or URL for 'preset', null for default
 }
 
-// Returns best display image precedence: uploaded photoUrl > cloudPublicId delivery URL > presetIconKey > null
+// Returns best display image precedence: cloudPublicId (Cloudinary) > photoUrl > presetIconKey > default
 export function resolveGarmentDisplayImage(
   input: GarmentImageSources
 ): ResolvedDisplayImage {
@@ -19,15 +19,17 @@ export function resolveGarmentDisplayImage(
     getPresetIconUrl: (key?: string | null) => string | null;
   };
 
-  if (input.photoUrl) {
-    return { kind: 'photo', src: input.photoUrl };
-  }
-
+  // Prioritize Cloudinary images first
   if (input.cloudPublicId && cloudName) {
     return {
       kind: 'cloud',
       src: `https://res.cloudinary.com/${cloudName}/image/upload/${input.cloudPublicId}`,
     };
+  }
+
+  // Then check for direct photo URLs (non-Cloudinary)
+  if (input.photoUrl) {
+    return { kind: 'photo', src: input.photoUrl };
   }
 
   if (input.presetIconKey) {

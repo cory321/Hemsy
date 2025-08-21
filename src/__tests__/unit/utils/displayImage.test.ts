@@ -13,14 +13,16 @@ describe('resolveGarmentDisplayImage', () => {
     process.env = OLD_ENV;
   });
 
-  it('prefers photoUrl when present', () => {
+  it('prefers cloudPublicId over photoUrl when both are present', () => {
     const res = resolveGarmentDisplayImage({
       photoUrl: 'https://example.com/photo.jpg',
       cloudPublicId: 'abc',
       presetIconKey: 'tops.t_shirt',
     });
-    expect(res.kind).toBe('photo');
-    expect(res.src).toBe('https://example.com/photo.jpg');
+    expect(res.kind).toBe('cloud');
+    expect(res.src).toContain(
+      'https://res.cloudinary.com/demo/image/upload/abc'
+    );
   });
 
   it('falls back to cloud delivery URL when no photo but cloud public id exists', () => {
@@ -29,6 +31,15 @@ describe('resolveGarmentDisplayImage', () => {
     expect(res.src).toContain(
       'https://res.cloudinary.com/demo/image/upload/folder/id'
     );
+  });
+
+  it('uses photoUrl when no cloudPublicId is present', () => {
+    const res = resolveGarmentDisplayImage({
+      photoUrl: 'https://example.com/photo.jpg',
+      presetIconKey: 'tops.t_shirt',
+    });
+    expect(res.kind).toBe('photo');
+    expect(res.src).toBe('https://example.com/photo.jpg');
   });
 
   it('falls back to preset icon key when no photo or cloud id', () => {

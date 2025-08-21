@@ -24,6 +24,7 @@ const mockGarment = {
   photo_url: null,
   image_cloud_id: null,
   created_at: '2024-01-01',
+  order_id: 'test-order-id',
   garment_services: [],
   totalPriceCents: 0,
 };

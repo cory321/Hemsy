@@ -1,6 +1,12 @@
 'use client';
 
-import { Card, CardContent, Typography, Box } from '@mui/material';
+import {
+  Card,
+  CardContent,
+  Typography,
+  Box,
+  Link as MuiLink,
+} from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import GarmentDetailClientOptimistic from './GarmentDetailClientOptimistic';
 import GarmentServicesManagerOptimistic from '@/components/garments/GarmentServicesManagerOptimistic';
@@ -47,7 +53,41 @@ export default function GarmentRightColumnOptimistic({
             {garment.name || 'Untitled Garment'}
           </Typography>
           <Typography color="text.secondary">
-            Order #{garment.order?.order_number || 'N/A'} • {clientName}
+            {garment.order_id ? (
+              <MuiLink
+                component={Link}
+                href={`/orders/${garment.order_id}`}
+                color="inherit"
+                sx={{
+                  textDecoration: 'none',
+                  '&:hover': {
+                    textDecoration: 'underline',
+                  },
+                }}
+              >
+                Order #{garment.order?.order_number || 'N/A'}
+              </MuiLink>
+            ) : (
+              <>Order #{garment.order?.order_number || 'N/A'}</>
+            )}{' '}
+            •{' '}
+            {garment.order?.client?.id ? (
+              <MuiLink
+                component={Link}
+                href={`/clients/${garment.order.client.id}`}
+                color="inherit"
+                sx={{
+                  textDecoration: 'none',
+                  '&:hover': {
+                    textDecoration: 'underline',
+                  },
+                }}
+              >
+                {clientName}
+              </MuiLink>
+            ) : (
+              clientName
+            )}
           </Typography>
         </Box>
         <GarmentDetailClientOptimistic />

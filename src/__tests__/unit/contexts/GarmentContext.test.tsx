@@ -21,6 +21,7 @@ const mockGarment = {
   photo_url: null,
   image_cloud_id: null,
   created_at: '2024-01-01',
+  order_id: 'test-order-id',
   garment_services: [
     {
       id: 'service-1',
@@ -33,8 +34,10 @@ const mockGarment = {
     },
   ],
   order: {
+    id: 'test-order-id',
     order_number: 'ORD-001',
     client: {
+      id: 'test-client-id',
       first_name: 'John',
       last_name: 'Doe',
       email: 'john@example.com',

@@ -6,15 +6,16 @@ import {
   CardMedia,
   CardContent,
   Typography,
-  Button,
+  Link,
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
-import CameraAltIcon from '@mui/icons-material/CameraAlt';
+import NextLink from 'next/link';
+import { CldImage } from 'next-cloudinary';
 import { getStageColor } from '@/constants/garmentStages';
 import InlinePresetSvg from '@/components/ui/InlinePresetSvg';
 import { resolveGarmentDisplayImage } from '@/utils/displayImage';
-import ChangeGarmentIconButtonOptimistic from './ChangeGarmentIconButtonOptimistic';
 import { useGarment } from '@/contexts/GarmentContext';
+import GarmentImageHoverOverlay from './GarmentImageHoverOverlay';
 
 interface GarmentImageSectionProps {
   clientName: string;
@@ -51,100 +52,110 @@ export default function GarmentImageSection({
       </Box>
 
       <Card sx={{ mb: 3 }} data-testid="garment-image-section">
-        {resolved.kind === 'photo' || resolved.kind === 'cloud' ? (
-          <CardMedia
-            component="img"
-            image={resolved.src as string}
-            alt={garment.name}
-            sx={{ height: 400, objectFit: 'cover' }}
-          />
-        ) : resolved.kind === 'preset' && resolved.src ? (
-          <Box
-            sx={{
-              height: 400,
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              bgcolor: 'grey.100',
-              position: 'relative',
-              aspectRatio: '1 / 1',
-              maxWidth: 400,
-              mx: 'auto',
-              overflow: 'hidden',
-              p: 3,
-            }}
-            data-testid="garment-svg-container"
-          >
-            {typeof resolved.src === 'string' ? (
+        <GarmentImageHoverOverlay
+          imageType={
+            resolved.kind === 'cloud'
+              ? 'cloudinary'
+              : resolved.kind === 'photo'
+                ? 'photo'
+                : 'icon'
+          }
+        >
+          {resolved.kind === 'cloud' ? (
+            <Box sx={{ position: 'relative', height: 400, width: '100%' }}>
+              <CldImage
+                src={garment.image_cloud_id as string}
+                alt={garment.name}
+                fill
+                style={{ objectFit: 'cover' }}
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              />
+            </Box>
+          ) : resolved.kind === 'photo' ? (
+            <CardMedia
+              component="img"
+              image={resolved.src as string}
+              alt={garment.name}
+              sx={{ height: 400, objectFit: 'cover' }}
+            />
+          ) : resolved.kind === 'preset' && resolved.src ? (
+            <Box
+              sx={{
+                height: 400,
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                bgcolor: 'grey.100',
+                position: 'relative',
+                aspectRatio: '1 / 1',
+                maxWidth: 400,
+                mx: 'auto',
+                overflow: 'hidden',
+                p: 3,
+              }}
+              data-testid="garment-svg-container"
+            >
+              {typeof resolved.src === 'string' ? (
+                <Box
+                  sx={{
+                    height: '88%',
+                    width: '88%',
+                    maxWidth: '88%',
+                    maxHeight: '88%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <InlinePresetSvg
+                    src={resolved.src}
+                    outlineColor={garment.preset_outline_color || ''}
+                    fillColor={garment.preset_fill_color || ''}
+                    style={{
+                      height: '100%',
+                      width: '100%',
+                      maxWidth: '100%',
+                      maxHeight: '100%',
+                    }}
+                  />
+                </Box>
+              ) : null}
+            </Box>
+          ) : (
+            <Box
+              sx={{
+                height: 400,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                bgcolor: 'grey.100',
+                flexDirection: 'column',
+                gap: 1,
+                p: 3,
+              }}
+            >
               <Box
                 sx={{
                   height: '88%',
                   width: '88%',
-                  maxWidth: '88%',
-                  maxHeight: '88%',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  overflow: 'hidden',
+                  flexDirection: 'column',
+                  gap: 1,
                 }}
               >
                 <InlinePresetSvg
-                  src={resolved.src}
-                  outlineColor={garment.preset_outline_color || ''}
-                  fillColor={garment.preset_fill_color || ''}
-                  style={{
-                    height: '100%',
-                    width: '100%',
-                    maxWidth: '100%',
-                    maxHeight: '100%',
-                  }}
+                  src={'/presets/garments/select-garment.svg'}
+                  style={{ height: '90%', width: '100%', maxWidth: '100%' }}
                 />
+                <Typography color="text.secondary">Preset selected</Typography>
               </Box>
-            ) : null}
-          </Box>
-        ) : (
-          <Box
-            sx={{
-              height: 400,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              bgcolor: 'grey.100',
-              flexDirection: 'column',
-              gap: 1,
-              p: 3,
-            }}
-          >
-            <Box
-              sx={{
-                height: '88%',
-                width: '88%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexDirection: 'column',
-                gap: 1,
-              }}
-            >
-              <InlinePresetSvg
-                src={'/presets/garments/select-garment.svg'}
-                style={{ height: '90%', width: '100%', maxWidth: '100%' }}
-              />
-              <Typography color="text.secondary">Preset selected</Typography>
             </Box>
-          </Box>
-        )}
-        <Box sx={{ p: 2 }}>
-          <ChangeGarmentIconButtonOptimistic />
-          <Box sx={{ mt: 1 }}>
-            <Button variant="outlined" fullWidth startIcon={<CameraAltIcon />}>
-              {resolved.kind === 'photo' || resolved.kind === 'cloud'
-                ? 'Update Photo'
-                : 'Add Photo'}
-            </Button>
-          </Box>
-        </Box>
+          )}
+        </GarmentImageHoverOverlay>
       </Card>
 
       {/* Client Information */}
@@ -159,7 +170,24 @@ export default function GarmentImageSection({
                 <Typography variant="body2" color="text.secondary">
                   Name
                 </Typography>
-                <Typography variant="body1">{clientName}</Typography>
+                {garment.order?.client && 'id' in garment.order.client ? (
+                  <Link
+                    component={NextLink}
+                    href={`/clients/${(garment.order.client as any).id}`}
+                    variant="body1"
+                    sx={{
+                      textDecoration: 'none',
+                      color: 'primary.main',
+                      '&:hover': {
+                        textDecoration: 'underline',
+                      },
+                    }}
+                  >
+                    {clientName}
+                  </Link>
+                ) : (
+                  <Typography variant="body1">{clientName}</Typography>
+                )}
               </Grid>
               <Grid size={12}>
                 <Typography variant="body2" color="text.secondary">

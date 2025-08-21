@@ -35,10 +35,13 @@ interface Garment {
   photo_url: string | null;
   image_cloud_id: string | null;
   created_at: string;
+  order_id: string;
   garment_services: Service[];
   order?: {
+    id: string;
     order_number: string;
     client: {
+      id: string;
       first_name: string;
       last_name: string;
       email: string;
@@ -56,6 +59,11 @@ interface GarmentContextType {
     iconKey: string | null,
     fillColor: string | null
   ) => Promise<void>;
+  updateGarmentPhoto: (
+    photoUrl: string | null,
+    imageCloudId: string | null
+  ) => Promise<void>;
+  deleteGarmentPhoto: () => Promise<void>;
   addService: (service: {
     serviceId?: string;
     customService?: any;
@@ -222,6 +230,94 @@ export function GarmentProvider({
     },
     [garment, refreshHistory]
   );
+
+  const updateGarmentPhoto = useCallback(
+    async (photoUrl: string | null, imageCloudId: string | null) => {
+      // Optimistically update the UI
+      const previousGarment = garment;
+      setGarment((prev) => ({
+        ...prev,
+        photo_url: photoUrl,
+        image_cloud_id: imageCloudId,
+      }));
+
+      try {
+        const result = await updateGarment({
+          garmentId: garment.id,
+          updates: {
+            photoUrl: photoUrl,
+            imageCloudId: imageCloudId,
+          },
+        });
+
+        if (!result.success) {
+          // Rollback on failure
+          setGarment(previousGarment);
+          toast.error(result.error || 'Failed to update garment photo');
+        } else {
+          refreshHistory();
+          toast.success('Garment photo updated successfully');
+        }
+      } catch (error) {
+        // Rollback on error
+        setGarment(previousGarment);
+        toast.error('An unexpected error occurred');
+      }
+    },
+    [garment, refreshHistory]
+  );
+
+  const deleteGarmentPhoto = useCallback(async () => {
+    const previousGarment = garment;
+    const cloudinaryPublicId = garment.image_cloud_id;
+
+    // Optimistically update the UI - remove photo and revert to icon
+    setGarment((prev) => ({
+      ...prev,
+      photo_url: null,
+      image_cloud_id: null,
+    }));
+
+    try {
+      // Delete from Cloudinary if there's a cloud ID
+      if (cloudinaryPublicId) {
+        const deleteResponse = await fetch('/api/delete-cloudinary-image', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ publicId: cloudinaryPublicId }),
+        });
+
+        if (!deleteResponse.ok) {
+          console.warn('Failed to delete image from Cloudinary');
+          // Continue with database update even if Cloudinary deletion fails
+        }
+      }
+
+      // Update the database
+      const result = await updateGarment({
+        garmentId: garment.id,
+        updates: {
+          photoUrl: null,
+          imageCloudId: null,
+        },
+      });
+
+      if (!result.success) {
+        // Rollback on failure
+        setGarment(previousGarment);
+        toast.error(result.error || 'Failed to delete garment photo');
+      } else {
+        refreshHistory();
+        toast.success('Photo deleted successfully');
+      }
+    } catch (error) {
+      // Rollback on error
+      setGarment(previousGarment);
+      toast.error('An unexpected error occurred');
+    }
+  }, [garment, refreshHistory]);
 
   const addService = useCallback(
     async (input: { serviceId?: string; customService?: any }) => {
@@ -501,6 +597,8 @@ export function GarmentProvider({
         garment,
         updateGarmentOptimistic,
         updateGarmentIcon,
+        updateGarmentPhoto,
+        deleteGarmentPhoto,
         addService,
         removeService,
         updateService,
