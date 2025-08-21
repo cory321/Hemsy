@@ -92,8 +92,6 @@ export async function getOrdersPaginated(
 const ServiceInlineSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
-  unit: z.enum(['flat_rate', 'hour', 'day']),
-  unitPriceCents: z.number().int().min(0),
 });
 
 const ServiceLineSchema = z.object({

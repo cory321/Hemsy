@@ -137,8 +137,9 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
 
             <Grid size={{ xs: 12, sm: 3 }}>
               <Typography variant="body2" color="text.secondary">
-                Default: {service.default_qty}{' '}
-                {pluralizeUnit(service.default_unit, service.default_qty)}
+                {service.default_unit === 'flat_rate'
+                  ? 'Flat rate service'
+                  : `Default: ${service.default_qty} ${pluralizeUnit(service.default_unit, service.default_qty)}`}
               </Typography>
             </Grid>
 

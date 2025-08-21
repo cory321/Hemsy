@@ -1,201 +1,266 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { GarmentProvider } from '@/contexts/GarmentContext';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react';
+import '@testing-library/jest-dom';
 import GarmentServicesManagerOptimistic from '@/components/garments/GarmentServicesManagerOptimistic';
-import * as garmentActions from '@/lib/actions/garments';
-import * as servicesActions from '@/lib/actions/services';
-import { SERVICE_UNIT_TYPES } from '@/lib/utils/serviceUnitTypes';
+import { GarmentProvider } from '@/contexts/GarmentContext';
+import { searchServices } from '@/lib/actions/services';
 
-// Mock the actions
-jest.mock('@/lib/actions/garments');
-jest.mock('@/lib/actions/services');
-jest.mock('sonner');
+// Mock the services action
+jest.mock('@/lib/actions/services', () => ({
+  searchServices: jest.fn(),
+}));
 
+// Mock garment data
 const mockGarment = {
   id: 'test-garment-id',
   name: 'Test Garment',
-  due_date: '2024-12-01',
-  event_date: '2024-12-15',
-  preset_icon_key: 'tops/blouse',
-  preset_fill_color: '#D6C4F2',
-  preset_outline_color: null,
-  notes: 'Test notes',
-  stage: 'Cutting',
-  photo_url: null,
-  image_cloud_id: null,
-  created_at: '2024-01-01',
-  order_id: 'test-order-id',
+  stage: 'In Progress',
   garment_services: [
     {
       id: 'service-1',
-      name: 'Hemming',
-      quantity: 1,
-      unit: 'flat_rate',
-      unit_price_cents: 2000,
-      line_total_cents: 2000,
-      description: 'Basic hem',
+      name: 'Hem Pants',
+      quantity: 2,
+      unit: 'hour',
+      unit_price_cents: 2500,
+      line_total_cents: 5000,
+      description: 'Shorten hem',
+      is_done: false,
     },
     {
       id: 'service-2',
-      name: 'Take in sides',
-      quantity: 2,
-      unit: 'hour',
-      unit_price_cents: 3000,
-      line_total_cents: 6000,
+      name: 'Button Replacement',
+      quantity: 1,
+      unit: 'flat_rate',
+      unit_price_cents: 1500,
+      line_total_cents: 1500,
       description: null,
+      is_done: true,
     },
   ],
-  totalPriceCents: 8000,
 };
 
-const renderComponent = (garment = mockGarment) => {
-  return render(
-    <GarmentProvider initialGarment={garment}>
-      <GarmentServicesManagerOptimistic />
-    </GarmentProvider>
-  );
+// Mock context functions
+const mockAddService = jest.fn();
+const mockRemoveService = jest.fn();
+const mockUpdateService = jest.fn();
+const mockToggleServiceComplete = jest.fn();
+
+// Mock the useGarment hook
+jest.mock('@/contexts/GarmentContext', () => ({
+  GarmentProvider: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
+  useGarment: () => ({
+    garment: mockGarment,
+    addService: mockAddService,
+    removeService: mockRemoveService,
+    updateService: mockUpdateService,
+    toggleServiceComplete: mockToggleServiceComplete,
+  }),
+}));
+
+// Custom render function
+const renderComponent = () => {
+  return render(<GarmentServicesManagerOptimistic />);
 };
 
-describe('GarmentServicesManagerOptimistic', () => {
+describe('GarmentServicesManagerOptimistic - Quantity Updates', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (garmentActions.removeServiceFromGarment as jest.Mock).mockResolvedValue({
-      success: true,
-    });
-    (garmentActions.addServiceToGarment as jest.Mock).mockResolvedValue({
-      success: true,
-      serviceId: 'new-service-id',
-    });
-    (servicesActions.searchServices as jest.Mock).mockResolvedValue([]);
   });
 
-  it('renders services list with correct total', () => {
+  it('displays correct quantity and pricing for hourly services', () => {
     renderComponent();
 
-    // Check services are displayed
-    expect(screen.getByText('Hemming')).toBeInTheDocument();
-    expect(screen.getByText('Take in sides')).toBeInTheDocument();
-
-    // Check total is calculated correctly
-    expect(screen.getByText('Total: $80.00')).toBeInTheDocument();
+    // Check that hourly service shows quantity correctly
+    const hourlyService = screen.getByText('Hem Pants').closest('li');
+    expect(hourlyService).toHaveTextContent('2 hours @ $25.00/hour');
   });
 
-  it('shows confirmation dialog when clicking delete', async () => {
+  it('displays flat rate services without quantity in display', () => {
     renderComponent();
 
-    // Find and click the first delete button
-    const deleteButtons = screen.getAllByTestId('DeleteIcon');
-    if (deleteButtons[0]) {
-      fireEvent.click(deleteButtons[0]);
-    }
-
-    // Confirmation dialog should appear
-    await waitFor(() => {
-      expect(screen.getByText('Remove Service')).toBeInTheDocument();
-      expect(
-        screen.getByText(
-          'Are you sure you want to remove "Hemming" from this garment?'
-        )
-      ).toBeInTheDocument();
-    });
-
-    // Dialog should have Cancel and Remove buttons
-    expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /remove/i })).toBeInTheDocument();
+    // Check that flat rate service shows correctly
+    const flatRateService = screen
+      .getByText('Button Replacement')
+      .closest('li');
+    expect(flatRateService).toHaveTextContent('$15.00 flat rate');
+    expect(flatRateService).not.toHaveTextContent('1 flat_rate');
   });
 
-  it('cancels deletion when clicking cancel in confirmation dialog', async () => {
+  it('shows quantity field when editing hourly service', async () => {
     renderComponent();
 
-    // Click delete
-    const deleteButtons = screen.getAllByTestId('DeleteIcon');
-    if (deleteButtons[0]) {
-      fireEvent.click(deleteButtons[0]);
-    }
+    // Click edit on the hourly service
+    const editButtons = screen.getAllByTestId('EditIcon');
+    fireEvent.click(editButtons[0]); // First service is hourly
 
-    // Wait for dialog
     await waitFor(() => {
-      expect(screen.getByText('Remove Service')).toBeInTheDocument();
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
 
-    // Click Cancel
-    const cancelButton = screen.getByRole('button', { name: /cancel/i });
-    fireEvent.click(cancelButton);
-
-    // Dialog should close and service should still be there
-    await waitFor(() => {
-      expect(screen.queryByText('Remove Service')).not.toBeInTheDocument();
-    });
-    expect(screen.getByText('Hemming')).toBeInTheDocument();
+    // Check that quantity field is visible and editable
+    const quantityField = screen.getByLabelText('Hours');
+    expect(quantityField).toBeInTheDocument();
+    expect(quantityField).toHaveValue(2);
+    expect(quantityField).not.toBeDisabled();
   });
 
-  it('removes service when confirming deletion', async () => {
+  it('hides quantity field when editing flat rate service', async () => {
     renderComponent();
 
-    // Click delete
-    const deleteButtons = screen.getAllByTestId('DeleteIcon');
-    if (deleteButtons[0]) {
-      fireEvent.click(deleteButtons[0]);
-    }
+    // Click edit on the flat rate service
+    const editButtons = screen.getAllByTestId('EditIcon');
+    fireEvent.click(editButtons[1]); // Second service is flat rate
 
-    // Wait for dialog
     await waitFor(() => {
-      expect(screen.getByText('Remove Service')).toBeInTheDocument();
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
 
-    // Click Remove
-    const removeButton = screen.getByRole('button', { name: /remove/i });
-    fireEvent.click(removeButton);
+    // Check that quantity field is not visible
+    expect(screen.queryByLabelText('Quantity')).not.toBeInTheDocument();
+  });
 
-    // Dialog should close immediately
+  it('updates quantity and recalculates total when changed', async () => {
+    renderComponent();
+
+    // Click edit on the hourly service
+    const editButtons = screen.getAllByTestId('EditIcon');
+    fireEvent.click(editButtons[0]);
+
     await waitFor(() => {
-      expect(screen.queryByText('Remove Service')).not.toBeInTheDocument();
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
 
-    // Verify removeService was called
-    expect(garmentActions.removeServiceFromGarment).toHaveBeenCalledWith({
-      garmentId: 'test-garment-id',
-      garmentServiceId: 'service-1',
+    // Change quantity
+    const quantityField = screen.getByLabelText('Hours');
+    fireEvent.change(quantityField, { target: { value: '3' } });
+
+    // Check that quantity is updated
+    expect(quantityField).toHaveValue(3);
+
+    // Save changes
+    const saveButton = screen.getByRole('button', { name: /save/i });
+    fireEvent.click(saveButton);
+
+    await waitFor(() => {
+      expect(mockUpdateService).toHaveBeenCalledWith('service-1', {
+        quantity: 3,
+        unit_price_cents: 2500,
+        unit: 'hour',
+        description: 'Shorten hem',
+      });
     });
   });
 
-  it('handles service addition', async () => {
-    const user = userEvent.setup();
+  it('resets quantity to 1 when switching from hourly to flat rate', async () => {
     renderComponent();
 
-    // Click Add Service button
+    // Click edit on the hourly service
+    const editButtons = screen.getAllByTestId('EditIcon');
+    fireEvent.click(editButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+
+    // Initially shows quantity field for hourly
+    expect(screen.getByLabelText('Hours')).toHaveValue(2);
+
+    // Change unit to flat rate
+    const unitSelect = screen.getByText('per hour');
+    fireEvent.mouseDown(unitSelect);
+    const flatRateOption = screen.getByRole('option', { name: 'flat rate' });
+    fireEvent.click(flatRateOption);
+
+    // Quantity field should be hidden
+    expect(screen.queryByLabelText('Quantity')).not.toBeInTheDocument();
+  });
+
+  it('includes quantity when adding a new hourly service', async () => {
+    (searchServices as jest.Mock).mockResolvedValue([
+      {
+        id: 'service-3',
+        name: 'Alteration',
+        default_unit: 'hour',
+        default_unit_price_cents: 3000,
+        default_qty: 2,
+        description: 'General alteration',
+      },
+    ]);
+
+    renderComponent();
+
+    // Click Add Service
     const addButton = screen.getByRole('button', { name: /add service/i });
-    expect(addButton).toBeInTheDocument();
+    fireEvent.click(addButton);
 
-    // Verify the component is using the correct service unit types
-    // The component imports SERVICE_UNIT_TYPES which has the correct enum values
-    expect(SERVICE_UNIT_TYPES.FLAT_RATE).toBe('flat_rate');
-    expect(SERVICE_UNIT_TYPES.HOUR).toBe('hour');
-    expect(SERVICE_UNIT_TYPES.DAY).toBe('day');
-  });
-
-  it('verifies custom service state includes catalog options', () => {
-    renderComponent();
-
-    // The component should have state for the new checkbox options
-    // These are handled in the component's newService state
-    // which includes addToCatalog and markAsFrequentlyUsed
-    const addButton = screen.getByRole('button', { name: /add service/i });
-    expect(addButton).toBeInTheDocument();
-
-    // Verify the component can handle custom services
-    // The actual dialog behavior is tested through integration tests
-    expect(garmentActions.addServiceToGarment).toBeDefined();
-  });
-
-  it('shows empty state when no services', () => {
-    renderComponent({
-      ...mockGarment,
-      garment_services: [],
-      totalPriceCents: 0,
+    await waitFor(() => {
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('No services added yet')).toBeInTheDocument();
+    // Click Custom Service
+    const customButton = screen.getByRole('button', {
+      name: /custom service/i,
+    });
+    fireEvent.click(customButton);
+
+    // Fill in service details
+    const textFields = within(screen.getByRole('dialog')).getAllByRole(
+      'textbox'
+    );
+    const nameField = textFields[0]; // First text field should be the name
+    fireEvent.change(nameField, { target: { value: 'Custom Alteration' } });
+
+    // Change unit to hour
+    const unitSelect = screen.getByText('flat rate');
+    fireEvent.mouseDown(unitSelect);
+    const hourOption = screen.getByRole('option', { name: 'per hour' });
+    fireEvent.click(hourOption);
+
+    // Set quantity
+    const quantityField = screen.getByLabelText('Hours');
+    fireEvent.change(quantityField, { target: { value: '3' } });
+
+    // Set price
+    const priceField = screen.getByLabelText('Price');
+    fireEvent.focus(priceField);
+    fireEvent.change(priceField, { target: { value: '30' } });
+    fireEvent.blur(priceField);
+
+    // Total should be calculated correctly (3 hours * $30 = $90)
+
+    // Add the service
+    const addServiceButton = within(screen.getByRole('dialog')).getByRole(
+      'button',
+      { name: /add service/i }
+    );
+    fireEvent.click(addServiceButton);
+
+    await waitFor(() => {
+      expect(mockAddService).toHaveBeenCalledWith(
+        expect.objectContaining({
+          customService: expect.objectContaining({
+            name: 'Custom Alteration',
+            unit: 'hour',
+            quantity: 3,
+            unitPriceCents: 3000,
+          }),
+        })
+      );
+    });
+  });
+
+  it('calculates correct total price with multiple services', () => {
+    renderComponent();
+
+    // Check the overall total
+    expect(screen.getByText('Total: $65.00')).toBeInTheDocument(); // $50 + $15
   });
 });

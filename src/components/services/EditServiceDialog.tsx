@@ -91,7 +91,13 @@ const EditServiceDialog: React.FC<EditServiceDialogProps> = ({
     setEditedService((prev) => ({
       ...prev,
       unit: newUnit,
+      // Reset quantity to 1 when switching to flat_rate
+      qty: newUnit === 'flat_rate' ? 1 : prev.qty,
     }));
+  };
+
+  const handleQuantityChange = (quantity: number) => {
+    setEditedService((prev) => ({ ...prev, qty: quantity }));
   };
 
   const handleSave = async () => {
@@ -157,9 +163,12 @@ const EditServiceDialog: React.FC<EditServiceDialogProps> = ({
           <ServicePriceInput
             price={price}
             unit={editedService.unit as 'flat_rate' | 'hour' | 'day'}
+            quantity={editedService.qty}
             onPriceChange={handlePriceChange}
             onUnitChange={handleUnitChange}
+            onQuantityChange={handleQuantityChange}
             disabled={isLoading}
+            showTotal={true}
           />
 
           <FormControlLabel
@@ -172,10 +181,6 @@ const EditServiceDialog: React.FC<EditServiceDialogProps> = ({
             }
             label="Mark as frequently used"
           />
-
-          <Typography variant="h6" sx={{ mt: 2 }}>
-            Total: {calculateTotalPrice(editedService)}
-          </Typography>
         </Box>
       </DialogContent>
 

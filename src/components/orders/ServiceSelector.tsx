@@ -43,6 +43,7 @@ import {
   addService,
 } from '@/lib/actions/services';
 import { useDebounce } from '@/hooks/useDebounce';
+import ServicePriceInput from '@/components/common/ServicePriceInput';
 
 interface ServiceSelectorProps {
   garmentId: string;
@@ -74,6 +75,7 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
   const [quickAddUnit, setQuickAddUnit] = useState<
     'flat_rate' | 'hour' | 'day'
   >('flat_rate');
+  const [quickAddQuantity, setQuickAddQuantity] = useState(1);
   const [quickAddToCatalog, setQuickAddToCatalog] = useState(true);
   const [quickAddFrequentlyUsed, setQuickAddFrequentlyUsed] = useState(false);
 
@@ -152,7 +154,7 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
       try {
         const created = await addService({
           name: quickAddName,
-          default_qty: 1,
+          default_qty: quickAddQuantity,
           default_unit: quickAddUnit,
           default_unit_price_cents: priceCents,
           frequently_used: quickAddFrequentlyUsed,
@@ -160,7 +162,7 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
         const newService: ServiceLine = {
           serviceId: created.id,
           name: quickAddName,
-          quantity: 1,
+          quantity: quickAddQuantity,
           unit: quickAddUnit,
           unitPriceCents: priceCents,
         };
@@ -184,7 +186,7 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
       // Add as inline service
       const newService: ServiceLine = {
         name: quickAddName,
-        quantity: 1,
+        quantity: quickAddQuantity,
         unit: quickAddUnit,
         unitPriceCents: priceCents,
         inline: {
@@ -199,6 +201,7 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
     setQuickAddPrice('0.00');
     setQuickAddPriceFocused(false);
     setQuickAddUnit('flat_rate');
+    setQuickAddQuantity(1);
     setQuickAddFrequentlyUsed(false);
     setShowQuickAdd(false);
   };
@@ -358,7 +361,13 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
                       <TextField
                         size="small"
                         type="number"
-                        label="Qty"
+                        label={
+                          service.unit === 'hour'
+                            ? 'Hours'
+                            : service.unit === 'day'
+                              ? 'Days'
+                              : 'Qty'
+                        }
                         value={service.quantity}
                         onChange={(e) =>
                           updateServiceInGarment(garmentId, index, {
@@ -368,6 +377,8 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
                             ),
                           })
                         }
+                        disabled={service.unit === 'flat_rate'}
+                        placeholder={service.unit === 'flat_rate' ? 'N/A' : ''}
                         inputProps={{ min: 1 }}
                       />
                     </Grid>
@@ -375,11 +386,14 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
                       <Select
                         size="small"
                         value={service.unit}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          const newUnit = e.target.value as any;
                           updateServiceInGarment(garmentId, index, {
-                            unit: e.target.value as any,
-                          })
-                        }
+                            unit: newUnit,
+                            // Reset quantity to 1 when switching to flat_rate
+                            ...(newUnit === 'flat_rate' && { quantity: 1 }),
+                          });
+                        }}
                         fullWidth
                       >
                         <MenuItem value="flat_rate">flat rate</MenuItem>
@@ -427,6 +441,7 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
           setQuickAddPrice('0.00');
           setQuickAddPriceFocused(false);
           setQuickAddUnit('flat_rate');
+          setQuickAddQuantity(1);
           setQuickAddFrequentlyUsed(false);
         }}
         maxWidth="sm"
@@ -456,49 +471,15 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
               onChange={(e) => setQuickAddName(e.target.value)}
               autoFocus
             />
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
-                fullWidth
-                label="Price"
-                value={
-                  quickAddPriceFocused
-                    ? quickAddPrice
-                    : formatAsCurrency(quickAddPrice)
-                }
-                onChange={(e) => {
-                  const rawValue = e.target.value;
-                  setQuickAddPrice(formatAsCurrency(rawValue));
-                }}
-                onFocus={() => {
-                  setQuickAddPriceFocused(true);
-                  if (quickAddPrice === '0.00' || quickAddPrice === '') {
-                    setQuickAddPrice('');
-                  }
-                }}
-                onBlur={() => {
-                  const numericValue = parseFloatFromCurrency(
-                    quickAddPrice || '0'
-                  );
-                  const formatted = numericValue.toFixed(2);
-                  setQuickAddPrice(formatted);
-                  setQuickAddPriceFocused(false);
-                }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">$</InputAdornment>
-                  ),
-                }}
-              />
-              <Select
-                fullWidth
-                value={quickAddUnit}
-                onChange={(e) => setQuickAddUnit(e.target.value as any)}
-              >
-                <MenuItem value="flat_rate">flat rate</MenuItem>
-                <MenuItem value="hour">per hour</MenuItem>
-                <MenuItem value="day">per day</MenuItem>
-              </Select>
-            </Box>
+            <ServicePriceInput
+              price={quickAddPrice}
+              unit={quickAddUnit}
+              quantity={quickAddQuantity}
+              onPriceChange={(price) => setQuickAddPrice(price)}
+              onUnitChange={(unit) => setQuickAddUnit(unit)}
+              onQuantityChange={(quantity) => setQuickAddQuantity(quantity)}
+              showTotal={true}
+            />
             <FormControlLabel
               control={
                 <Checkbox
@@ -539,6 +520,7 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
               setQuickAddPrice('0.00');
               setQuickAddPriceFocused(false);
               setQuickAddUnit('flat_rate');
+              setQuickAddQuantity(1);
               setQuickAddFrequentlyUsed(false);
             }}
           >

@@ -81,7 +81,13 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
     setNewService((prev) => ({
       ...prev,
       unit: newUnit,
+      // Reset quantity to 1 when switching to flat_rate
+      qty: newUnit === 'flat_rate' ? 1 : prev.qty,
     }));
+  };
+
+  const handleQuantityChange = (quantity: number) => {
+    setNewService((prev) => ({ ...prev, qty: quantity }));
   };
 
   const handleSubmit = async () => {
@@ -208,14 +214,13 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
           <ServicePriceInput
             price={price}
             unit={newService.unit as 'flat_rate' | 'hour' | 'day'}
+            quantity={newService.qty}
             onPriceChange={handlePriceChange}
             onUnitChange={handleUnitChange}
+            onQuantityChange={handleQuantityChange}
             disabled={isLoading}
+            showTotal={true}
           />
-
-          <Typography variant="h6" sx={{ mt: 2 }}>
-            Total: {calculateTotalPrice(newService)}
-          </Typography>
         </Box>
       </DialogContent>
 

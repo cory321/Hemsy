@@ -64,7 +64,13 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
     setNewService((prev) => ({
       ...prev,
       unit: newUnit,
+      // Reset quantity to 1 when switching to flat_rate
+      qty: newUnit === 'flat_rate' ? 1 : prev.qty,
     }));
+  };
+
+  const handleQuantityChange = (quantity: number) => {
+    setNewService((prev) => ({ ...prev, qty: quantity }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -166,9 +172,12 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
       <ServicePriceInput
         price={price}
         unit={newService.unit as 'flat_rate' | 'hour' | 'day'}
+        quantity={newService.qty}
         onPriceChange={handlePriceChange}
         onUnitChange={handleUnitChange}
+        onQuantityChange={handleQuantityChange}
         disabled={isLoading}
+        showTotal={true}
       />
 
       <FormControlLabel
@@ -181,10 +190,6 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
         }
         label="Mark as frequently used"
       />
-
-      <Typography variant="h6">
-        Total: {calculateTotalPrice(newService)}
-      </Typography>
 
       <Box mt={2} display="flex" justifyContent="flex-end" gap={2}>
         <Button variant="outlined" onClick={onClose} disabled={isLoading}>

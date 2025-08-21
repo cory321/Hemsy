@@ -78,6 +78,7 @@ export default function GarmentServicesManagerOptimistic() {
     name: '',
     unit: 'flat_rate' as 'flat_rate' | 'hour' | 'day',
     price: '0.00',
+    quantity: 1,
     description: '',
     addToCatalog: false,
     markAsFrequentlyUsed: false,
@@ -113,7 +114,7 @@ export default function GarmentServicesManagerOptimistic() {
             description: newService.description || undefined,
             unit: newService.unit,
             unitPriceCents: unitPriceCents,
-            quantity: 1,
+            quantity: newService.quantity,
           },
         }
       : {
@@ -123,7 +124,7 @@ export default function GarmentServicesManagerOptimistic() {
             description: newService.description || undefined,
             unit: newService.unit,
             unitPriceCents: unitPriceCents,
-            quantity: 1,
+            quantity: newService.quantity,
           },
         };
 
@@ -137,6 +138,7 @@ export default function GarmentServicesManagerOptimistic() {
       name: '',
       unit: 'flat_rate' as 'flat_rate' | 'hour' | 'day',
       price: '0.00',
+      quantity: 1,
       description: '',
       addToCatalog: false,
       markAsFrequentlyUsed: false,
@@ -177,7 +179,7 @@ export default function GarmentServicesManagerOptimistic() {
 
     // Optimistic update happens inside updateService
     await updateService(editingService.id, {
-      quantity: 1, // Always set quantity to 1 for garment services
+      quantity: editingService.quantity,
       unit_price_cents: editingService.unit_price_cents,
       unit: editingService.unit,
       description: editingService.description || null,
@@ -313,18 +315,10 @@ export default function GarmentServicesManagerOptimistic() {
                       primary={service.name}
                       secondary={
                         <>
-                          {service.quantity} {service.unit} × $
-                          {(service.unit_price_cents / 100).toFixed(2)} = $
-                          {(service.line_total_cents / 100).toFixed(2)}
-                          {service.description && (
-                            <Box
-                              component="span"
-                              display="block"
-                              sx={{ mt: 0.5 }}
-                            >
-                              {service.description}
-                            </Box>
-                          )}
+                          {service.unit === 'flat_rate'
+                            ? `$${(service.unit_price_cents / 100).toFixed(2)} flat rate`
+                            : `${service.quantity} ${service.unit}${service.quantity > 1 ? 's' : ''} @ $${(service.unit_price_cents / 100).toFixed(2)}/${service.unit}`}
+                          {service.description && ` • ${service.description}`}
                         </>
                       }
                     />
@@ -407,12 +401,22 @@ export default function GarmentServicesManagerOptimistic() {
                 <ServicePriceInput
                   price={newService.price}
                   unit={newService.unit}
+                  quantity={newService.quantity}
                   onPriceChange={(price) =>
                     setNewService({ ...newService, price })
                   }
                   onUnitChange={(unit) =>
-                    setNewService({ ...newService, unit })
+                    setNewService({
+                      ...newService,
+                      unit,
+                      // Reset quantity to 1 when switching to flat_rate
+                      quantity: unit === 'flat_rate' ? 1 : newService.quantity,
+                    })
                   }
+                  onQuantityChange={(quantity) =>
+                    setNewService({ ...newService, quantity })
+                  }
+                  showTotal={true}
                 />
                 <FormControlLabel
                   control={
@@ -546,6 +550,7 @@ export default function GarmentServicesManagerOptimistic() {
               <ServicePriceInput
                 price={editPrice}
                 unit={editingService.unit as 'flat_rate' | 'hour' | 'day'}
+                quantity={editingService.quantity}
                 onPriceChange={(price) => {
                   setEditPrice(price);
                   const cents = Math.round(parseFloat(price || '0') * 100);
@@ -559,8 +564,20 @@ export default function GarmentServicesManagerOptimistic() {
                   setEditingService({
                     ...editingService,
                     unit,
+                    // Reset quantity to 1 when switching to flat_rate
+                    quantity:
+                      unit === 'flat_rate' ? 1 : editingService.quantity,
                   })
                 }
+                onQuantityChange={(quantity) =>
+                  setEditingService({
+                    ...editingService,
+                    quantity,
+                    line_total_cents:
+                      quantity * editingService.unit_price_cents,
+                  })
+                }
+                showTotal={true}
               />
             </Box>
           </DialogContent>

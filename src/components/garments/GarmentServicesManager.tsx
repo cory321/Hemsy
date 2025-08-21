@@ -77,6 +77,7 @@ export default function GarmentServicesManager({
     name: '',
     unit: 'flat_rate' as 'flat_rate' | 'hour' | 'day',
     price: '0.00',
+    quantity: 1,
     description: '',
   });
 
@@ -110,7 +111,7 @@ export default function GarmentServicesManager({
               description: newService.description || undefined,
               unit: newService.unit,
               unitPriceCents: unitPriceCents,
-              quantity: 1,
+              quantity: newService.quantity,
             },
           }
         : {
@@ -128,6 +129,7 @@ export default function GarmentServicesManager({
           name: '',
           unit: 'flat_rate' as 'flat_rate' | 'hour' | 'day',
           price: '0.00',
+          quantity: 1,
           description: '',
         });
         router.refresh();
@@ -203,7 +205,7 @@ export default function GarmentServicesManager({
       const result = await updateGarmentService({
         garmentServiceId: editingService.id,
         updates: {
-          quantity: 1, // Always set quantity to 1 for garment services
+          quantity: editingService.quantity,
           unitPriceCents: editingService.unit_price_cents,
           unit: editingService.unit as 'flat_rate' | 'hour' | 'day',
           description: editingService.description || undefined,
@@ -355,10 +357,9 @@ export default function GarmentServicesManager({
                       primary={service.name}
                       secondary={
                         <>
-                          {service.quantity} {service.unit}
-                          {service.quantity > 1 ? 's' : ''} @ $
-                          {(service.unit_price_cents / 100).toFixed(2)}/
-                          {service.unit}
+                          {service.unit === 'flat_rate'
+                            ? `$${(service.unit_price_cents / 100).toFixed(2)} flat rate`
+                            : `${service.quantity} ${service.unit}${service.quantity > 1 ? 's' : ''} @ $${(service.unit_price_cents / 100).toFixed(2)}/${service.unit}`}
                           {service.description && ` • ${service.description}`}
                         </>
                       }
@@ -423,12 +424,22 @@ export default function GarmentServicesManager({
                 <ServicePriceInput
                   price={newService.price}
                   unit={newService.unit}
+                  quantity={newService.quantity}
                   onPriceChange={(price) =>
                     setNewService({ ...newService, price })
                   }
                   onUnitChange={(unit) =>
-                    setNewService({ ...newService, unit })
+                    setNewService({
+                      ...newService,
+                      unit,
+                      // Reset quantity to 1 when switching to flat_rate
+                      quantity: unit === 'flat_rate' ? 1 : newService.quantity,
+                    })
                   }
+                  onQuantityChange={(quantity) =>
+                    setNewService({ ...newService, quantity })
+                  }
+                  showTotal={true}
                 />
                 <TextField
                   label="Description (optional)"
@@ -509,6 +520,7 @@ export default function GarmentServicesManager({
               <ServicePriceInput
                 price={editPrice}
                 unit={editingService.unit as 'flat_rate' | 'hour' | 'day'}
+                quantity={editingService.quantity}
                 onPriceChange={(price) => {
                   setEditPrice(price);
                   const cents = Math.round(parseFloat(price || '0') * 100);
@@ -521,8 +533,18 @@ export default function GarmentServicesManager({
                   setEditingService({
                     ...editingService,
                     unit,
+                    // Reset quantity to 1 when switching to flat_rate
+                    quantity:
+                      unit === 'flat_rate' ? 1 : editingService.quantity,
                   })
                 }
+                onQuantityChange={(quantity) =>
+                  setEditingService({
+                    ...editingService,
+                    quantity,
+                  })
+                }
+                showTotal={true}
               />
               <TextField
                 label="Description (optional)"
