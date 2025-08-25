@@ -5,7 +5,7 @@
   "private": true,
   "description": "Mobile-first PWA for seamstresses and tailoring businesses",
   "engines": {
-    "node": "22.17.1"
+    "node": "22"
   },
   "scripts": {
     "dev": "next dev --turbo",
