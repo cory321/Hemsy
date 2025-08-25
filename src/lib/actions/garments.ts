@@ -30,28 +30,12 @@ export async function updateGarment(
 
     // Validate garmentId is not empty
     if (!validatedInput.garmentId || validatedInput.garmentId.trim() === '') {
-      console.error('PRODUCTION DEBUG - Invalid garmentId:', {
-        garmentId: validatedInput.garmentId,
-        type: typeof validatedInput.garmentId,
-        length: validatedInput.garmentId?.length,
-        environment: process.env.NODE_ENV,
-        timestamp: new Date().toISOString(),
-        input: JSON.stringify(input, null, 2),
-      });
       throw new Error('Garment ID is required and cannot be empty');
     }
 
     const { shop, user } = await ensureUserAndShop();
 
     if (!user?.id || user.id.trim() === '') {
-      console.error('PRODUCTION DEBUG - Invalid user ID:', {
-        userId: user?.id,
-        type: typeof user?.id,
-        length: user?.id?.length,
-        environment: process.env.NODE_ENV,
-        timestamp: new Date().toISOString(),
-        userObject: JSON.stringify(user, null, 2),
-      });
       throw new Error('User not authenticated or invalid user ID');
     }
 
@@ -68,16 +52,13 @@ export async function updateGarment(
       throw new Error('Garment not found');
     }
 
-    // Set user context for trigger (skip if user.id is missing)
-    if (user.id) {
-      const { error: rpcError } = await supabase.rpc('set_current_user_id', {
-        user_id: user.id,
-      });
+    // Set user context for trigger (required for history tracking)
+    const { error: rpcError } = await supabase.rpc('set_current_user_id', {
+      user_id: user.id,
+    });
 
-      if (rpcError) {
-        console.error('Error setting user context:', rpcError);
-        // Don't fail the update if context setting fails
-      }
+    if (rpcError) {
+      throw new Error(`Failed to set user context: ${rpcError.message}`);
     }
 
     // Prepare update data
@@ -85,23 +66,12 @@ export async function updateGarment(
       updated_at: new Date().toISOString(),
     };
 
-    // Track changes for history
-    const historyEntries = [];
-
-    // Only include fields that are being updated and track changes
+    // Only include fields that are being updated (history tracking is handled by database trigger)
     if (
       validatedInput.updates.name !== undefined &&
       validatedInput.updates.name !== garment.name
     ) {
       updateData.name = validatedInput.updates.name;
-      historyEntries.push({
-        garment_id: validatedInput.garmentId,
-        changed_by: user.id,
-        field_name: 'name',
-        old_value: garment.name,
-        new_value: validatedInput.updates.name,
-        change_type: 'field_update',
-      });
     }
     if (validatedInput.updates.dueDate !== undefined) {
       // Keep dates as YYYY-MM-DD strings to avoid timezone issues
@@ -109,14 +79,6 @@ export async function updateGarment(
       const newDueDate = validatedInput.updates.dueDate || null;
       if (oldDueDate !== newDueDate) {
         updateData.due_date = newDueDate;
-        historyEntries.push({
-          garment_id: validatedInput.garmentId,
-          changed_by: user.id,
-          field_name: 'due_date',
-          old_value: oldDueDate,
-          new_value: newDueDate,
-          change_type: 'field_update',
-        });
       }
     }
     if (validatedInput.updates.eventDate !== undefined) {
@@ -125,14 +87,6 @@ export async function updateGarment(
       const newEventDate = validatedInput.updates.eventDate || null;
       if (oldEventDate !== newEventDate) {
         updateData.event_date = newEventDate;
-        historyEntries.push({
-          garment_id: validatedInput.garmentId,
-          changed_by: user.id,
-          field_name: 'event_date',
-          old_value: oldEventDate,
-          new_value: newEventDate,
-          change_type: 'field_update',
-        });
       }
     }
     if (
@@ -140,111 +94,39 @@ export async function updateGarment(
       validatedInput.updates.presetIconKey !== garment.preset_icon_key
     ) {
       updateData.preset_icon_key = validatedInput.updates.presetIconKey;
-      historyEntries.push({
-        garment_id: validatedInput.garmentId,
-        changed_by: user.id,
-        field_name: 'preset_icon_key',
-        old_value: garment.preset_icon_key,
-        new_value: validatedInput.updates.presetIconKey,
-        change_type: 'field_update',
-      });
     }
     if (
       validatedInput.updates.presetFillColor !== undefined &&
       validatedInput.updates.presetFillColor !== garment.preset_fill_color
     ) {
       updateData.preset_fill_color = validatedInput.updates.presetFillColor;
-      historyEntries.push({
-        garment_id: validatedInput.garmentId,
-        changed_by: user.id,
-        field_name: 'preset_fill_color',
-        old_value: garment.preset_fill_color,
-        new_value: validatedInput.updates.presetFillColor,
-        change_type: 'field_update',
-      });
     }
     if (
       validatedInput.updates.notes !== undefined &&
       validatedInput.updates.notes !== garment.notes
     ) {
       updateData.notes = validatedInput.updates.notes;
-      historyEntries.push({
-        garment_id: validatedInput.garmentId,
-        changed_by: user.id,
-        field_name: 'notes',
-        old_value: garment.notes,
-        new_value: validatedInput.updates.notes,
-        change_type: 'field_update',
-      });
     }
     if (
       validatedInput.updates.photoUrl !== undefined &&
       validatedInput.updates.photoUrl !== garment.photo_url
     ) {
       updateData.photo_url = validatedInput.updates.photoUrl;
-      historyEntries.push({
-        garment_id: validatedInput.garmentId,
-        changed_by: user.id,
-        field_name: 'photo_url',
-        old_value: garment.photo_url,
-        new_value: validatedInput.updates.photoUrl,
-        change_type: 'field_update',
-      });
     }
     if (
       validatedInput.updates.imageCloudId !== undefined &&
       validatedInput.updates.imageCloudId !== garment.image_cloud_id
     ) {
       updateData.image_cloud_id = validatedInput.updates.imageCloudId;
-      historyEntries.push({
-        garment_id: validatedInput.garmentId,
-        changed_by: user.id,
-        field_name: 'image_cloud_id',
-        old_value: garment.image_cloud_id,
-        new_value: validatedInput.updates.imageCloudId,
-        change_type: 'field_update',
-      });
     }
 
-    // Update garment
+    // Update garment (history tracking is handled by database trigger)
     const { error } = await supabase
       .from('garments')
       .update(updateData)
       .eq('id', validatedInput.garmentId);
 
     if (error) throw error;
-
-    // Insert history entries if there are any changes
-    if (historyEntries.length > 0) {
-      // Debug log before insertion
-      console.log('PRODUCTION DEBUG - About to insert history entries:', {
-        count: historyEntries.length,
-        entries: historyEntries.map((entry) => ({
-          garment_id: entry.garment_id,
-          changed_by: entry.changed_by,
-          field_name: entry.field_name,
-          change_type: entry.change_type,
-          garment_id_type: typeof entry.garment_id,
-          changed_by_type: typeof entry.changed_by,
-        })),
-        environment: process.env.NODE_ENV,
-        timestamp: new Date().toISOString(),
-      });
-
-      const { error: historyError } = await supabase
-        .from('garment_history')
-        .insert(historyEntries);
-
-      if (historyError) {
-        console.error('PRODUCTION DEBUG - Error inserting garment history:', {
-          error: historyError,
-          entries: historyEntries,
-          environment: process.env.NODE_ENV,
-          timestamp: new Date().toISOString(),
-        });
-        // Don't fail the update if history insertion fails
-      }
-    }
 
     revalidatePath(`/garments/${validatedInput.garmentId}`);
     return { success: true };
