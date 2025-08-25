@@ -29,14 +29,30 @@ export async function updateGarment(
     const validatedInput = UpdateGarmentSchema.parse(input);
 
     // Validate garmentId is not empty
-    if (!validatedInput.garmentId) {
-      throw new Error('Garment ID is required');
+    if (!validatedInput.garmentId || validatedInput.garmentId.trim() === '') {
+      console.error('PRODUCTION DEBUG - Invalid garmentId:', {
+        garmentId: validatedInput.garmentId,
+        type: typeof validatedInput.garmentId,
+        length: validatedInput.garmentId?.length,
+        environment: process.env.NODE_ENV,
+        timestamp: new Date().toISOString(),
+        input: JSON.stringify(input, null, 2),
+      });
+      throw new Error('Garment ID is required and cannot be empty');
     }
 
     const { shop, user } = await ensureUserAndShop();
 
-    if (!user?.id) {
-      throw new Error('User not authenticated');
+    if (!user?.id || user.id.trim() === '') {
+      console.error('PRODUCTION DEBUG - Invalid user ID:', {
+        userId: user?.id,
+        type: typeof user?.id,
+        length: user?.id?.length,
+        environment: process.env.NODE_ENV,
+        timestamp: new Date().toISOString(),
+        userObject: JSON.stringify(user, null, 2),
+      });
+      throw new Error('User not authenticated or invalid user ID');
     }
 
     const supabase = await createClient();
@@ -200,12 +216,32 @@ export async function updateGarment(
 
     // Insert history entries if there are any changes
     if (historyEntries.length > 0) {
+      // Debug log before insertion
+      console.log('PRODUCTION DEBUG - About to insert history entries:', {
+        count: historyEntries.length,
+        entries: historyEntries.map((entry) => ({
+          garment_id: entry.garment_id,
+          changed_by: entry.changed_by,
+          field_name: entry.field_name,
+          change_type: entry.change_type,
+          garment_id_type: typeof entry.garment_id,
+          changed_by_type: typeof entry.changed_by,
+        })),
+        environment: process.env.NODE_ENV,
+        timestamp: new Date().toISOString(),
+      });
+
       const { error: historyError } = await supabase
         .from('garment_history')
         .insert(historyEntries);
 
       if (historyError) {
-        console.error('Error inserting garment history:', historyError);
+        console.error('PRODUCTION DEBUG - Error inserting garment history:', {
+          error: historyError,
+          entries: historyEntries,
+          environment: process.env.NODE_ENV,
+          timestamp: new Date().toISOString(),
+        });
         // Don't fail the update if history insertion fails
       }
     }
