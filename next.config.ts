@@ -5,13 +5,6 @@ const nextConfig: NextConfig = {
 
   // Turbopack configuration removed due to build/runtime chunk issue
 
-  experimental: {
-    // Enable Server Actions (stable in Next.js 15+)
-    serverActions: {
-      allowedOrigins: ['localhost:3000'],
-    },
-  },
-
   // Compiler configuration for emotion (Material UI's CSS-in-JS)
   compiler: {
     emotion: true,
@@ -58,6 +51,17 @@ const nextConfig: NextConfig = {
     }
     return config;
   },
+
+  // Experimental features
+  experimental: {
+    // Enable Server Actions (stable in Next.js 15+)
+    serverActions: {
+      allowedOrigins: ['localhost:3000'],
+    },
+  },
+
+  // Turbopack configuration (stable in Next.js 15+)
+  // Removed problematic rules that were causing module parsing issues
 
   // Headers for security and performance
   async headers() {

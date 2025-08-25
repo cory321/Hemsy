@@ -440,10 +440,23 @@ export type Database = {
           description: string | null;
           garment_id: string;
           id: string;
+          invoice_id: string | null;
           is_done: boolean;
+          is_locked: boolean | null;
+          is_removed: boolean | null;
           line_total_cents: number | null;
+          locked_at: string | null;
           name: string;
+          paid_amount_cents: number | null;
+          payment_status: string | null;
           quantity: number;
+          refund_notes: string | null;
+          refunded_amount_cents: number | null;
+          refunded_at: string | null;
+          refunded_by: string | null;
+          removal_reason: string | null;
+          removed_at: string | null;
+          removed_by: string | null;
           service_id: string | null;
           unit: string;
           unit_price_cents: number;
@@ -454,10 +467,23 @@ export type Database = {
           description?: string | null;
           garment_id: string;
           id?: string;
+          invoice_id?: string | null;
           is_done?: boolean;
+          is_locked?: boolean | null;
+          is_removed?: boolean | null;
           line_total_cents?: number | null;
+          locked_at?: string | null;
           name: string;
+          paid_amount_cents?: number | null;
+          payment_status?: string | null;
           quantity: number;
+          refund_notes?: string | null;
+          refunded_amount_cents?: number | null;
+          refunded_at?: string | null;
+          refunded_by?: string | null;
+          removal_reason?: string | null;
+          removed_at?: string | null;
+          removed_by?: string | null;
           service_id?: string | null;
           unit: string;
           unit_price_cents: number;
@@ -468,10 +494,23 @@ export type Database = {
           description?: string | null;
           garment_id?: string;
           id?: string;
+          invoice_id?: string | null;
           is_done?: boolean;
+          is_locked?: boolean | null;
+          is_removed?: boolean | null;
           line_total_cents?: number | null;
+          locked_at?: string | null;
           name?: string;
+          paid_amount_cents?: number | null;
+          payment_status?: string | null;
           quantity?: number;
+          refund_notes?: string | null;
+          refunded_amount_cents?: number | null;
+          refunded_at?: string | null;
+          refunded_by?: string | null;
+          removal_reason?: string | null;
+          removed_at?: string | null;
+          removed_by?: string | null;
           service_id?: string | null;
           unit?: string;
           unit_price_cents?: number;
@@ -490,6 +529,27 @@ export type Database = {
             columns: ['garment_id'];
             isOneToOne: false;
             referencedRelation: 'garments_with_clients';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'garment_services_invoice_id_fkey';
+            columns: ['invoice_id'];
+            isOneToOne: false;
+            referencedRelation: 'invoices';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'garment_services_refunded_by_fkey';
+            columns: ['refunded_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'garment_services_removed_by_fkey';
+            columns: ['removed_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
             referencedColumns: ['id'];
           },
           {
@@ -668,6 +728,7 @@ export type Database = {
           due_date: string | null;
           id: string;
           invoice_number: string;
+          invoice_type: string | null;
           line_items: Json;
           metadata: Json | null;
           order_id: string;
@@ -684,6 +745,7 @@ export type Database = {
           due_date?: string | null;
           id?: string;
           invoice_number: string;
+          invoice_type?: string | null;
           line_items?: Json;
           metadata?: Json | null;
           order_id: string;
@@ -700,6 +762,7 @@ export type Database = {
           due_date?: string | null;
           id?: string;
           invoice_number?: string;
+          invoice_type?: string | null;
           line_items?: Json;
           metadata?: Json | null;
           order_id?: string;
@@ -725,7 +788,7 @@ export type Database = {
           {
             foreignKeyName: 'invoices_order_id_fkey';
             columns: ['order_id'];
-            isOneToOne: true;
+            isOneToOne: false;
             referencedRelation: 'orders';
             referencedColumns: ['id'];
           },
@@ -742,13 +805,16 @@ export type Database = {
         Row: {
           client_id: string | null;
           created_at: string | null;
+          deposit_amount_cents: number | null;
           discount_cents: number;
           id: string;
           is_paid: boolean;
           notes: string | null;
           order_due_date: string | null;
           order_number: string;
+          paid_amount_cents: number | null;
           paid_at: string | null;
+          payment_status: string | null;
           shop_id: string;
           status: string | null;
           subtotal_cents: number;
@@ -759,13 +825,16 @@ export type Database = {
         Insert: {
           client_id?: string | null;
           created_at?: string | null;
+          deposit_amount_cents?: number | null;
           discount_cents?: number;
           id?: string;
           is_paid?: boolean;
           notes?: string | null;
           order_due_date?: string | null;
           order_number: string;
+          paid_amount_cents?: number | null;
           paid_at?: string | null;
+          payment_status?: string | null;
           shop_id: string;
           status?: string | null;
           subtotal_cents?: number;
@@ -776,13 +845,16 @@ export type Database = {
         Update: {
           client_id?: string | null;
           created_at?: string | null;
+          deposit_amount_cents?: number | null;
           discount_cents?: number;
           id?: string;
           is_paid?: boolean;
           notes?: string | null;
           order_due_date?: string | null;
           order_number?: string;
+          paid_amount_cents?: number | null;
           paid_at?: string | null;
+          payment_status?: string | null;
           shop_id?: string;
           status?: string | null;
           subtotal_cents?: number;
@@ -810,6 +882,95 @@ export type Database = {
             columns: ['shop_id'];
             isOneToOne: false;
             referencedRelation: 'shops';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      payment_audit_log: {
+        Row: {
+          action: string;
+          amount_cents: number;
+          created_at: string | null;
+          id: string;
+          metadata: Json | null;
+          payment_id: string | null;
+          performed_by: string | null;
+          reason: string | null;
+        };
+        Insert: {
+          action: string;
+          amount_cents: number;
+          created_at?: string | null;
+          id?: string;
+          metadata?: Json | null;
+          payment_id?: string | null;
+          performed_by?: string | null;
+          reason?: string | null;
+        };
+        Update: {
+          action?: string;
+          amount_cents?: number;
+          created_at?: string | null;
+          id?: string;
+          metadata?: Json | null;
+          payment_id?: string | null;
+          performed_by?: string | null;
+          reason?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'payment_audit_log_payment_id_fkey';
+            columns: ['payment_id'];
+            isOneToOne: false;
+            referencedRelation: 'payments';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'payment_audit_log_performed_by_fkey';
+            columns: ['performed_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      payment_audit_logs: {
+        Row: {
+          action: string;
+          created_at: string | null;
+          details: Json;
+          id: string;
+          ip_address: unknown | null;
+          payment_id: string;
+          timestamp: string;
+          user_agent: string | null;
+        };
+        Insert: {
+          action: string;
+          created_at?: string | null;
+          details?: Json;
+          id?: string;
+          ip_address?: unknown | null;
+          payment_id: string;
+          timestamp?: string;
+          user_agent?: string | null;
+        };
+        Update: {
+          action?: string;
+          created_at?: string | null;
+          details?: Json;
+          id?: string;
+          ip_address?: unknown | null;
+          payment_id?: string;
+          timestamp?: string;
+          user_agent?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'payment_audit_logs_payment_id_fkey';
+            columns: ['payment_id'];
+            isOneToOne: false;
+            referencedRelation: 'payments';
             referencedColumns: ['id'];
           },
         ];
@@ -872,6 +1033,11 @@ export type Database = {
           payment_method: string;
           payment_type: string;
           processed_at: string | null;
+          refund_id: string | null;
+          refund_reason: string | null;
+          refunded_amount_cents: number | null;
+          refunded_at: string | null;
+          refunded_by: string | null;
           status: string;
           stripe_metadata: Json | null;
           stripe_payment_intent_id: string | null;
@@ -886,6 +1052,11 @@ export type Database = {
           payment_method: string;
           payment_type?: string;
           processed_at?: string | null;
+          refund_id?: string | null;
+          refund_reason?: string | null;
+          refunded_amount_cents?: number | null;
+          refunded_at?: string | null;
+          refunded_by?: string | null;
           status?: string;
           stripe_metadata?: Json | null;
           stripe_payment_intent_id?: string | null;
@@ -900,6 +1071,11 @@ export type Database = {
           payment_method?: string;
           payment_type?: string;
           processed_at?: string | null;
+          refund_id?: string | null;
+          refund_reason?: string | null;
+          refunded_amount_cents?: number | null;
+          refunded_at?: string | null;
+          refunded_by?: string | null;
           status?: string;
           stripe_metadata?: Json | null;
           stripe_payment_intent_id?: string | null;
@@ -910,6 +1086,192 @@ export type Database = {
             columns: ['invoice_id'];
             isOneToOne: false;
             referencedRelation: 'invoices';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'payments_refunded_by_fkey';
+            columns: ['refunded_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      refunds: {
+        Row: {
+          amount_cents: number;
+          created_at: string | null;
+          id: string;
+          initiated_by: string | null;
+          merchant_notes: string | null;
+          payment_id: string;
+          processed_at: string | null;
+          reason: string | null;
+          refund_type: string;
+          status: string;
+          stripe_metadata: Json | null;
+          stripe_refund_id: string | null;
+        };
+        Insert: {
+          amount_cents: number;
+          created_at?: string | null;
+          id?: string;
+          initiated_by?: string | null;
+          merchant_notes?: string | null;
+          payment_id: string;
+          processed_at?: string | null;
+          reason?: string | null;
+          refund_type: string;
+          status?: string;
+          stripe_metadata?: Json | null;
+          stripe_refund_id?: string | null;
+        };
+        Update: {
+          amount_cents?: number;
+          created_at?: string | null;
+          id?: string;
+          initiated_by?: string | null;
+          merchant_notes?: string | null;
+          payment_id?: string;
+          processed_at?: string | null;
+          reason?: string | null;
+          refund_type?: string;
+          status?: string;
+          stripe_metadata?: Json | null;
+          stripe_refund_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'refunds_initiated_by_fkey';
+            columns: ['initiated_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'refunds_payment_id_fkey';
+            columns: ['payment_id'];
+            isOneToOne: false;
+            referencedRelation: 'payments';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      service_payment_allocations: {
+        Row: {
+          allocated_amount_cents: number;
+          created_at: string | null;
+          garment_service_id: string | null;
+          id: string;
+          invoice_id: string | null;
+          last_refunded_at: string | null;
+          payment_id: string | null;
+          payment_method: string;
+          refunded_amount_cents: number | null;
+        };
+        Insert: {
+          allocated_amount_cents: number;
+          created_at?: string | null;
+          garment_service_id?: string | null;
+          id?: string;
+          invoice_id?: string | null;
+          last_refunded_at?: string | null;
+          payment_id?: string | null;
+          payment_method: string;
+          refunded_amount_cents?: number | null;
+        };
+        Update: {
+          allocated_amount_cents?: number;
+          created_at?: string | null;
+          garment_service_id?: string | null;
+          id?: string;
+          invoice_id?: string | null;
+          last_refunded_at?: string | null;
+          payment_id?: string | null;
+          payment_method?: string;
+          refunded_amount_cents?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'service_payment_allocations_garment_service_id_fkey';
+            columns: ['garment_service_id'];
+            isOneToOne: false;
+            referencedRelation: 'garment_services';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'service_payment_allocations_invoice_id_fkey';
+            columns: ['invoice_id'];
+            isOneToOne: false;
+            referencedRelation: 'invoices';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'service_payment_allocations_payment_id_fkey';
+            columns: ['payment_id'];
+            isOneToOne: false;
+            referencedRelation: 'payments';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      service_refund_history: {
+        Row: {
+          created_at: string | null;
+          created_by: string | null;
+          external_reference: string | null;
+          garment_service_id: string | null;
+          id: string;
+          payment_id: string | null;
+          refund_amount_cents: number;
+          refund_reason: string;
+          refund_type: string | null;
+          stripe_refund_id: string | null;
+        };
+        Insert: {
+          created_at?: string | null;
+          created_by?: string | null;
+          external_reference?: string | null;
+          garment_service_id?: string | null;
+          id?: string;
+          payment_id?: string | null;
+          refund_amount_cents: number;
+          refund_reason: string;
+          refund_type?: string | null;
+          stripe_refund_id?: string | null;
+        };
+        Update: {
+          created_at?: string | null;
+          created_by?: string | null;
+          external_reference?: string | null;
+          garment_service_id?: string | null;
+          id?: string;
+          payment_id?: string | null;
+          refund_amount_cents?: number;
+          refund_reason?: string;
+          refund_type?: string | null;
+          stripe_refund_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'service_refund_history_created_by_fkey';
+            columns: ['created_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'service_refund_history_garment_service_id_fkey';
+            columns: ['garment_service_id'];
+            isOneToOne: false;
+            referencedRelation: 'garment_services';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'service_refund_history_payment_id_fkey';
+            columns: ['payment_id'];
+            isOneToOne: false;
+            referencedRelation: 'payments';
             referencedColumns: ['id'];
           },
         ];
@@ -1013,9 +1375,15 @@ export type Database = {
           id: string;
           invoice_prefix: string | null;
           last_invoice_number: number | null;
-          payment_required_before_service: boolean | null;
           payment_settings: Json | null;
           shop_id: string;
+          stripe_connect_account_id: string | null;
+          stripe_connect_capabilities: Json | null;
+          stripe_connect_charges_enabled: boolean | null;
+          stripe_connect_onboarded_at: string | null;
+          stripe_connect_payouts_enabled: boolean | null;
+          stripe_connect_requirements: Json | null;
+          stripe_connect_status: string | null;
           stripe_enabled: boolean | null;
           updated_at: string | null;
         };
@@ -1026,9 +1394,15 @@ export type Database = {
           id?: string;
           invoice_prefix?: string | null;
           last_invoice_number?: number | null;
-          payment_required_before_service?: boolean | null;
           payment_settings?: Json | null;
           shop_id: string;
+          stripe_connect_account_id?: string | null;
+          stripe_connect_capabilities?: Json | null;
+          stripe_connect_charges_enabled?: boolean | null;
+          stripe_connect_onboarded_at?: string | null;
+          stripe_connect_payouts_enabled?: boolean | null;
+          stripe_connect_requirements?: Json | null;
+          stripe_connect_status?: string | null;
           stripe_enabled?: boolean | null;
           updated_at?: string | null;
         };
@@ -1039,9 +1413,15 @@ export type Database = {
           id?: string;
           invoice_prefix?: string | null;
           last_invoice_number?: number | null;
-          payment_required_before_service?: boolean | null;
           payment_settings?: Json | null;
           shop_id?: string;
+          stripe_connect_account_id?: string | null;
+          stripe_connect_capabilities?: Json | null;
+          stripe_connect_charges_enabled?: boolean | null;
+          stripe_connect_onboarded_at?: string | null;
+          stripe_connect_payouts_enabled?: boolean | null;
+          stripe_connect_requirements?: Json | null;
+          stripe_connect_status?: string | null;
           stripe_enabled?: boolean | null;
           updated_at?: string | null;
         };
@@ -1067,7 +1447,6 @@ export type Database = {
           name: string;
           onboarding_completed: boolean | null;
           owner_user_id: string;
-          payment_preference: string | null;
           phone_number: string | null;
           tax_percent: number;
           trial_countdown_enabled: boolean | null;
@@ -1086,7 +1465,6 @@ export type Database = {
           name: string;
           onboarding_completed?: boolean | null;
           owner_user_id: string;
-          payment_preference?: string | null;
           phone_number?: string | null;
           tax_percent?: number;
           trial_countdown_enabled?: boolean | null;
@@ -1105,7 +1483,6 @@ export type Database = {
           name?: string;
           onboarding_completed?: boolean | null;
           owner_user_id?: string;
-          payment_preference?: string | null;
           phone_number?: string | null;
           tax_percent?: number;
           trial_countdown_enabled?: boolean | null;
@@ -1271,6 +1648,10 @@ export type Database = {
         };
         Returns: boolean;
       };
+      cleanup_abandoned_pending_payments: {
+        Args: Record<PropertyKey, never>;
+        Returns: number;
+      };
       compute_order_totals: {
         Args: { p_order_id: string };
         Returns: undefined;
@@ -1320,6 +1701,7 @@ export type Database = {
           due_date: string | null;
           id: string;
           invoice_number: string;
+          invoice_type: string | null;
           line_items: Json;
           metadata: Json | null;
           order_id: string;
@@ -1327,6 +1709,15 @@ export type Database = {
           status: string;
           updated_at: string | null;
         };
+      };
+      create_order_with_payment_transaction: {
+        Args: {
+          p_order_data: Json;
+          p_payment_intent: Json;
+          p_shop_id: string;
+          p_user_id: string;
+        };
+        Returns: Json;
       };
       generate_order_number: {
         Args: { p_shop_id: string };
@@ -1412,6 +1803,10 @@ export type Database = {
         };
         Returns: undefined;
       };
+      process_refund_completion: {
+        Args: { p_refund_id: string; p_stripe_refund_data: Json };
+        Returns: undefined;
+      };
       set_current_user_id: {
         Args: { user_id: string };
         Returns: undefined;
@@ -1427,6 +1822,10 @@ export type Database = {
       show_trgm: {
         Args: { '': string };
         Returns: string[];
+      };
+      update_order_payment_status: {
+        Args: { p_order_id: string };
+        Returns: undefined;
       };
     };
     Enums: {

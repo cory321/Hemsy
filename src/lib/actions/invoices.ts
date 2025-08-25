@@ -37,6 +37,7 @@ export interface InvoicesFilters {
 }
 
 export interface InvoiceLineItem {
+  service_id?: string; // Optional for backward compatibility, required for payment allocation
   name: string;
   description?: string;
   quantity: number;
@@ -170,7 +171,58 @@ export async function getInvoiceById(invoiceId: string) {
     throw new Error('Failed to fetch invoice');
   }
 
-  return data;
+  // Fetch garment services for this invoice's order
+  const { data: garmentServices, error: servicesError } = await supabase
+    .from('garment_services')
+    .select(
+      `
+      id,
+      garment_id,
+      name,
+      description,
+      quantity,
+      unit_price_cents,
+      line_total_cents,
+      is_removed,
+      removed_at,
+      removed_by,
+      removal_reason,
+      garments!inner(
+        id,
+        name,
+        order_id
+      )
+    `
+    )
+    .eq('garments.order_id', data.order_id)
+    .order('created_at', { ascending: true });
+
+  if (servicesError) {
+    console.error('Error fetching garment services:', servicesError);
+    // Don't throw error, just log it and continue without services
+  }
+
+  // Transform garment services into invoice line items format
+  const lineItems =
+    garmentServices?.map((service) => ({
+      id: (service as any).id,
+      garment_id: (service as any).garment_id,
+      name: (service as any).name,
+      description: (service as any).description,
+      quantity: (service as any).quantity,
+      unit_price_cents: (service as any).unit_price_cents,
+      line_total_cents: (service as any).line_total_cents,
+      is_removed: (service as any).is_removed,
+      removed_at: (service as any).removed_at,
+      removed_by: (service as any).removed_by,
+      removal_reason: (service as any).removal_reason,
+      garment_name: (service as any).garments.name,
+    })) || [];
+
+  return {
+    ...data,
+    garment_services: lineItems,
+  };
 }
 
 /**
@@ -200,11 +252,17 @@ export async function createInvoice(
       throw new Error('Order has no client');
     }
 
-    // Build line items from garments and services
+    // Build line items from garments and services (exclude soft-deleted services)
     const lineItems: InvoiceLineItem[] = [];
     for (const garment of order.garments) {
       for (const service of garment.garment_services) {
+        // For now, include all services (removal logic will be added later)
+        // if (service.is_removed) {
+        //   continue;
+        // }
+
         lineItems.push({
+          service_id: service.id, // Include service_id for payment allocation
           name: `${garment.name} - ${service.name}`,
           ...(service.description && { description: service.description }),
           quantity: service.quantity,
@@ -216,6 +274,12 @@ export async function createInvoice(
       }
     }
 
+    // Calculate invoice amount from line items to ensure consistency
+    const calculatedTotal = lineItems.reduce(
+      (sum, item) => sum + item.line_total_cents,
+      0
+    );
+
     // Use the database function to create invoice with atomic number generation
     const { data: invoice, error } = await supabase.rpc(
       'create_invoice_with_number',
@@ -223,7 +287,7 @@ export async function createInvoice(
         p_shop_id: shop.id,
         p_order_id: validated.orderId,
         p_client_id: order.client.id,
-        p_amount_cents: order.total_cents,
+        p_amount_cents: calculatedTotal, // Use calculated total instead of order.total_cents
         p_deposit_amount_cents: validated.depositAmountCents || 0,
         p_line_items: JSON.parse(JSON.stringify(lineItems)),
         ...(validated.description && { p_description: validated.description }),
@@ -235,6 +299,23 @@ export async function createInvoice(
       throw new Error('Failed to create invoice');
     }
 
+    // Link services to invoice (critical for payment allocation)
+    const serviceIds = lineItems
+      .map((item) => item.service_id)
+      .filter((id): id is string => id !== undefined);
+
+    if (serviceIds.length > 0) {
+      const { error: linkError } = await supabase
+        .from('garment_services')
+        .update({ invoice_id: invoice.id })
+        .in('id', serviceIds);
+
+      if (linkError) {
+        console.error('Error linking services to invoice:', linkError);
+        // Continue - don't fail invoice creation, but log the error
+      }
+    }
+
     // Log status history
     await supabase.from('invoice_status_history').insert({
       invoice_id: invoice.id,
@@ -243,20 +324,12 @@ export async function createInvoice(
       reason: 'Invoice created',
     });
 
-    // Send order created email if payment required before service
-    const { data: shopSettings } = await supabase
-      .from('shop_settings')
-      .select('payment_required_before_service')
-      .eq('shop_id', shop.id)
-      .single();
-
-    if (shopSettings?.payment_required_before_service) {
-      try {
-        await sendOrderCreatedEmail(invoice.id);
-      } catch (emailError) {
-        console.error('Failed to send order created email:', emailError);
-        // Don't fail invoice creation if email fails
-      }
+    // Send order created email
+    try {
+      await sendOrderCreatedEmail(invoice.id);
+    } catch (emailError) {
+      console.error('Failed to send order created email:', emailError);
+      // Don't fail invoice creation if email fails
     }
 
     revalidatePath('/invoices');

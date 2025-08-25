@@ -4,10 +4,20 @@ import {
   handleSuccessfulPayment,
   handleFailedPayment,
 } from '@/lib/actions/payments';
+import { syncConnectAccountToDB } from '@/lib/actions/stripe-connect';
 
 // Exported for unit testing of business logic separate from signature verification
 export async function processStripeEvent(event: Stripe.Event): Promise<void> {
   const supabase = createClient();
+
+  // Log all webhook events for debugging
+  console.log('🔔 Webhook Event Received:', {
+    id: event.id,
+    type: event.type,
+    account: event.account || 'platform',
+    created: new Date(event.created * 1000).toISOString(),
+    livemode: event.livemode,
+  });
 
   // Record the webhook event to prevent duplicate processing
   try {
@@ -33,6 +43,20 @@ export async function processStripeEvent(event: Stripe.Event): Promise<void> {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
       console.log('PaymentIntent was successful:', paymentIntent.id);
 
+      // Check if this is a Connect payment (has transfer_data or on_behalf_of)
+      const isConnectPayment =
+        paymentIntent.transfer_data?.destination || paymentIntent.on_behalf_of;
+
+      if (isConnectPayment) {
+        console.log('Connect payment detected:', {
+          payment_intent: paymentIntent.id,
+          connected_account:
+            paymentIntent.transfer_data?.destination ||
+            paymentIntent.on_behalf_of,
+          account_from_event: event.account || 'platform',
+        });
+      }
+
       // Process the successful payment
       try {
         await handleSuccessfulPayment(paymentIntent.id, {
@@ -40,6 +64,11 @@ export async function processStripeEvent(event: Stripe.Event): Promise<void> {
           currency: paymentIntent.currency,
           payment_method: paymentIntent.payment_method,
           receipt_email: paymentIntent.receipt_email,
+          is_connect_payment: isConnectPayment,
+          connected_account:
+            paymentIntent.transfer_data?.destination ||
+            paymentIntent.on_behalf_of,
+          event_account: event.account,
         });
       } catch (error) {
         console.error('Error processing successful payment:', error);
@@ -97,23 +126,161 @@ export async function processStripeEvent(event: Stripe.Event): Promise<void> {
       const charge = event.data.object as Stripe.Charge;
       console.log('Charge refunded:', charge.id);
 
+      // Check if this is a Connect refund
+      const isConnectRefund =
+        charge.transfer_data?.destination ||
+        charge.on_behalf_of ||
+        event.account;
+
+      if (isConnectRefund) {
+        console.log('Connect refund detected:', {
+          charge: charge.id,
+          payment_intent: charge.payment_intent,
+          connected_account:
+            charge.transfer_data?.destination || charge.on_behalf_of,
+          event_account: event.account,
+          refunded_amount: charge.amount_refunded,
+        });
+      }
+
       // Update payment record with refund info
       if (charge.payment_intent && typeof charge.payment_intent === 'string') {
         const supabase = createClient();
         const { error } = await supabase
           .from('payments')
           .update({
+            refunded_amount_cents: charge.amount_refunded,
+            refunded_at: new Date().toISOString(),
+            status:
+              charge.amount_refunded >= charge.amount
+                ? 'refunded'
+                : 'partially_refunded',
             stripe_metadata: {
               refunded: true,
               refunded_at: new Date().toISOString(),
               refund_amount: charge.amount_refunded,
-            },
+              is_connect_refund: !!isConnectRefund,
+              connected_account:
+                typeof event.account === 'string' ? event.account : null,
+              event_account: event.account || null,
+            } as any,
           })
           .eq('stripe_payment_intent_id', charge.payment_intent);
 
         if (error) {
           console.error('Error updating refund status:', error);
         }
+      }
+      return;
+    }
+
+    case 'refund.created': {
+      const refund = event.data.object as Stripe.Refund;
+      console.log('Refund created:', refund.id);
+
+      // Check if this is a Connect refund
+      const isConnectRefund =
+        event.account ||
+        (typeof refund.charge === 'object' &&
+          refund.charge?.transfer_data?.destination);
+
+      if (isConnectRefund) {
+        console.log('Connect refund created:', {
+          refund: refund.id,
+          payment_intent: refund.payment_intent,
+          charge: refund.charge,
+          event_account: event.account,
+          amount: refund.amount,
+        });
+      }
+
+      // Find the associated payment and update refund tracking
+      if (refund.payment_intent && typeof refund.payment_intent === 'string') {
+        const supabase = createClient();
+
+        // Get the payment record
+        const { data: payment } = await supabase
+          .from('payments')
+          .select('id')
+          .eq('stripe_payment_intent_id', refund.payment_intent)
+          .single();
+
+        if (payment) {
+          // Insert refund record
+          await supabase.from('refunds').insert({
+            payment_id: payment.id,
+            stripe_refund_id: refund.id,
+            amount_cents: refund.amount,
+            reason: refund.reason || 'Refund processed',
+            refund_type: 'full', // Will be updated if partial
+            status: 'succeeded',
+            processed_at: new Date().toISOString(),
+            stripe_metadata: {
+              ...(refund as any),
+              is_connect_refund: isConnectRefund,
+              event_account: event.account,
+            },
+          });
+        }
+      }
+      return;
+    }
+
+    case 'account.updated': {
+      const account = event.data.object as Stripe.Account;
+      console.log('Connect account updated:', account.id);
+
+      try {
+        // Sync Connect account status with local database
+        await syncConnectAccountToDB(account.id, account);
+      } catch (error) {
+        console.error('Error syncing Connect account:', error);
+        throw error; // Let Stripe retry
+      }
+      return;
+    }
+
+    case 'capability.updated': {
+      const capability = event.data.object as Stripe.Capability;
+      console.log(
+        'Connect capability updated:',
+        capability.account,
+        capability.id
+      );
+
+      try {
+        // Retrieve full account and sync
+        const stripe = new (require('stripe'))(process.env.STRIPE_SECRET_KEY!, {
+          apiVersion: '2025-02-24.acacia',
+        });
+        const account = await stripe.accounts.retrieve(
+          capability.account as string
+        );
+        await syncConnectAccountToDB(account.id, account);
+      } catch (error) {
+        console.error('Error handling capability update:', error);
+        throw error; // Let Stripe retry
+      }
+      return;
+    }
+
+    case 'account.external_account.created':
+    case 'account.external_account.updated': {
+      const externalAccount = event.data.object as Stripe.ExternalAccount;
+      console.log('Connect external account updated:', externalAccount.account);
+
+      try {
+        // Sync account to update payout capabilities
+        const stripe = new (require('stripe'))(process.env.STRIPE_SECRET_KEY!, {
+          apiVersion: '2025-02-24.acacia',
+        });
+        const account = await stripe.accounts.retrieve(
+          externalAccount.account as string
+        );
+        await syncConnectAccountToDB(account.id, account);
+      } catch (error) {
+        console.error('Error handling external account update:', error);
+        throw error; // Let Stripe retry
       }
       return;
     }

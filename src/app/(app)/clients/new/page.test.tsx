@@ -88,7 +88,10 @@ describe('NewClientPage', () => {
       updated_at: '2024-01-01T00:00:00Z',
     };
 
-    mockCreateClient.mockResolvedValueOnce(mockNewClient);
+    mockCreateClient.mockResolvedValueOnce({
+      success: true,
+      data: mockNewClient,
+    });
 
     render(<NewClientPage />);
 
@@ -135,7 +138,10 @@ describe('NewClientPage', () => {
       updated_at: '2024-01-01T00:00:00Z',
     };
 
-    mockCreateClient.mockResolvedValueOnce(mockNewClient);
+    mockCreateClient.mockResolvedValueOnce({
+      success: true,
+      data: mockNewClient,
+    });
 
     render(<NewClientPage />);
 
@@ -190,7 +196,10 @@ describe('NewClientPage', () => {
       updated_at: '2024-01-01T00:00:00Z',
     };
 
-    mockCreateClient.mockResolvedValueOnce(mockNewClient);
+    mockCreateClient.mockResolvedValueOnce({
+      success: true,
+      data: mockNewClient,
+    });
 
     render(<NewClientPage />);
 

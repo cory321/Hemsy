@@ -28,12 +28,19 @@ import {
   InputAdornment,
   Chip,
   LinearProgress,
+  Tooltip,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
+import RestoreFromTrashIcon from '@mui/icons-material/RestoreFromTrash';
+import InfoIcon from '@mui/icons-material/Info';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
+import LockIcon from '@mui/icons-material/Lock';
+
+import WarningIcon from '@mui/icons-material/Warning';
 import { searchServices } from '@/lib/actions/services';
 import { useGarment } from '@/contexts/GarmentContext';
 import { SERVICE_UNIT_TYPES } from '@/lib/utils/serviceUnitTypes';
@@ -49,6 +56,23 @@ interface Service {
   line_total_cents: number;
   description?: string | null;
   is_done?: boolean;
+  // Payment tracking fields
+  paid_amount_cents?: number;
+  refunded_amount_cents?: number;
+  payment_status?:
+    | 'unpaid'
+    | 'partial'
+    | 'paid'
+    | 'partial_refund'
+    | 'refunded';
+
+  refund_notes?: string;
+  // Soft delete fields
+  is_removed?: boolean;
+  removed_at?: string | null;
+  removed_by?: string | null;
+  removal_reason?: string | null;
+  is_locked?: boolean;
 }
 
 export default function GarmentServicesManagerOptimistic() {
@@ -58,6 +82,7 @@ export default function GarmentServicesManagerOptimistic() {
     removeService,
     updateService,
     toggleServiceComplete,
+    restoreService,
   } = useGarment();
   const isGarmentDone = garment?.stage === 'Done';
   const [loading, setLoading] = useState(false);
@@ -83,6 +108,7 @@ export default function GarmentServicesManagerOptimistic() {
     addToCatalog: false,
     markAsFrequentlyUsed: false,
   });
+  const [isForceEdit, setIsForceEdit] = useState(false);
 
   const handleSearchServices = async (query: string) => {
     if (query.length < 2) return;
@@ -169,6 +195,21 @@ export default function GarmentServicesManagerOptimistic() {
     });
   };
 
+  const handlePaidOrderServiceEdit = (service: Service) => {
+    // Show confirmation dialog for services on paid orders
+    if (
+      window.confirm(
+        `This order has paid invoices. Modifying services may require creating an adjustment invoice.\n\n` +
+          `Do you want to proceed with editing?`
+      )
+    ) {
+      setEditingService(service);
+      setEditPrice((service.unit_price_cents / 100).toFixed(2));
+      // Set a flag to indicate this is a forced edit
+      setIsForceEdit(true);
+    }
+  };
+
   const handleUpdateService = async () => {
     if (!editingService) return;
 
@@ -188,17 +229,31 @@ export default function GarmentServicesManagerOptimistic() {
     setLoading(false);
   };
 
+  const handleLockedServiceEdit = (service: Service) => {
+    if (
+      window.confirm(
+        `This service is locked. Do you want to override the lock and edit it?`
+      )
+    ) {
+      setEditingService(service);
+      setEditPrice((service.unit_price_cents / 100).toFixed(2));
+      setIsForceEdit(true);
+    }
+  };
+
   const garmentServices = garment?.garment_services || [];
 
-  const totalPrice = garmentServices.reduce(
+  // Filter out soft-deleted services for both total and progress calculations
+  const activeServices = garmentServices.filter((s: Service) => !s.is_removed);
+
+  const totalPrice = activeServices.reduce(
     (sum: number, service: Service) => sum + service.line_total_cents,
     0
   );
-
-  const completedCount = garmentServices.filter(
+  const completedCount = activeServices.filter(
     (s: Service) => s.is_done
   ).length;
-  const totalCount = garmentServices.length;
+  const totalCount = activeServices.length;
   const completionPercentage =
     totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
@@ -249,82 +304,261 @@ export default function GarmentServicesManagerOptimistic() {
         {garmentServices.length > 0 ? (
           <>
             <List>
-              {garmentServices.map((service: Service, index: number) => (
-                <ListItem
-                  key={service.id}
-                  divider={index < garmentServices.length - 1}
-                  sx={{
-                    opacity: service.is_done ? 0.6 : 1,
-                    transition: 'opacity 0.3s ease',
-                  }}
-                  secondaryAction={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      {service.is_done && (
-                        <Chip
-                          label="Completed"
-                          size="small"
-                          color="success"
-                          sx={{ mr: 1 }}
-                        />
-                      )}
-                      <Button
-                        size="small"
-                        variant={service.is_done ? 'outlined' : 'contained'}
-                        onClick={() =>
-                          toggleServiceComplete(service.id, !service.is_done)
+              {garmentServices.map((service: Service, index: number) => {
+                const isRemoved = !!service.is_removed;
+                return (
+                  <ListItem
+                    key={service.id}
+                    divider={index < garmentServices.length - 1}
+                    sx={{
+                      opacity: isRemoved || service.is_done ? 0.6 : 1,
+                      backgroundColor:
+                        service.payment_status === 'refunded'
+                          ? 'error.50'
+                          : 'transparent',
+                      position: 'relative',
+                      transition: 'opacity 0.3s ease',
+                      '&:hover': {
+                        backgroundColor:
+                          service.payment_status === 'refunded'
+                            ? 'error.100'
+                            : 'action.hover',
+                      },
+                    }}
+                    secondaryAction={
+                      <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                      >
+                        {isRemoved ? (
+                          <>
+                            {service.removal_reason && (
+                              <Tooltip
+                                title={`Removed: ${service.removal_reason}`}
+                              >
+                                <InfoIcon fontSize="small" color="action" />
+                              </Tooltip>
+                            )}
+                            <IconButton
+                              size="small"
+                              onClick={() => restoreService(service.id)}
+                              disabled={loading}
+                              aria-label="Restore service"
+                            >
+                              <RestoreFromTrashIcon fontSize="small" />
+                            </IconButton>
+                          </>
+                        ) : (
+                          <>
+                            {/* Complete/Incomplete button - disabled if refunded */}
+                            {!service.payment_status?.includes('refund') && (
+                              <>
+                                {service.is_done && (
+                                  <Chip
+                                    label="Completed"
+                                    size="small"
+                                    color="success"
+                                    sx={{ mr: 1 }}
+                                  />
+                                )}
+                                <Button
+                                  size="small"
+                                  variant={
+                                    service.is_done ? 'outlined' : 'contained'
+                                  }
+                                  onClick={() =>
+                                    toggleServiceComplete(
+                                      service.id,
+                                      !service.is_done
+                                    )
+                                  }
+                                  disabled={loading || isGarmentDone}
+                                  startIcon={
+                                    service.is_done ? (
+                                      <CheckCircleIcon />
+                                    ) : (
+                                      <RadioButtonUncheckedIcon />
+                                    )
+                                  }
+                                  sx={{ minWidth: '140px' }}
+                                >
+                                  {service.is_done
+                                    ? 'Mark Incomplete'
+                                    : 'Mark Complete'}
+                                </Button>
+                              </>
+                            )}
+
+                            {/* Edit button - show warning if locked or completed */}
+                            {!isRemoved &&
+                            !service.is_locked &&
+                            !service.is_done ? (
+                              <IconButton
+                                onClick={() => {
+                                  setEditingService(service);
+                                  setEditPrice(
+                                    (service.unit_price_cents / 100).toFixed(2)
+                                  );
+                                }}
+                                disabled={loading || isGarmentDone}
+                                size="small"
+                              >
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                            ) : (
+                              !isRemoved &&
+                              (service.is_locked || service.is_done) && (
+                                <Tooltip
+                                  title={
+                                    service.is_done
+                                      ? 'Cannot edit completed services'
+                                      : 'Service is locked. Override required to edit.'
+                                  }
+                                >
+                                  <span>
+                                    <IconButton
+                                      {...(service.is_done
+                                        ? {}
+                                        : {
+                                            onClick: () =>
+                                              handleLockedServiceEdit(service),
+                                          })}
+                                      disabled={
+                                        loading ||
+                                        isGarmentDone ||
+                                        !!service.is_done
+                                      }
+                                      size="small"
+                                      color={
+                                        service.is_done ? 'default' : 'warning'
+                                      }
+                                    >
+                                      {service.is_done ? (
+                                        <EditIcon fontSize="small" />
+                                      ) : (
+                                        <LockOpenIcon fontSize="small" />
+                                      )}
+                                    </IconButton>
+                                  </span>
+                                </Tooltip>
+                              )
+                            )}
+
+                            {/* Delete button - show warning if locked or completed */}
+                            {!isRemoved &&
+                            !service.is_locked &&
+                            !service.is_done ? (
+                              <IconButton
+                                onClick={() => openDeleteConfirmation(service)}
+                                disabled={loading || isGarmentDone}
+                                size="small"
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            ) : (
+                              !isRemoved &&
+                              (service.is_locked || service.is_done) && (
+                                <Tooltip
+                                  title={
+                                    service.is_done
+                                      ? 'Cannot delete completed services'
+                                      : 'Cannot delete paid services'
+                                  }
+                                >
+                                  <span>
+                                    <IconButton disabled size="small">
+                                      <DeleteIcon fontSize="small" />
+                                    </IconButton>
+                                  </span>
+                                </Tooltip>
+                              )
+                            )}
+                          </>
+                        )}
+                      </Box>
+                    }
+                  >
+                    {/* Lock indicator */}
+
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        flex: 1,
+                        pl: 0,
+                      }}
+                    >
+                      {service.is_done &&
+                        !isRemoved &&
+                        !service.payment_status?.includes('refund') && (
+                          <CheckCircleIcon color="success" />
+                        )}
+
+                      <ListItemText
+                        primary={
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 1,
+                            }}
+                          >
+                            <Typography
+                              component="span"
+                              sx={{
+                                textDecoration: isRemoved
+                                  ? 'line-through'
+                                  : 'none',
+                                color: isRemoved
+                                  ? 'text.secondary'
+                                  : 'text.primary',
+                              }}
+                            >
+                              {service.name}
+                            </Typography>
+                          </Box>
                         }
-                        disabled={loading || isGarmentDone}
-                        startIcon={
-                          service.is_done ? (
-                            <CheckCircleIcon />
-                          ) : (
-                            <RadioButtonUncheckedIcon />
-                          )
+                        secondary={
+                          <>
+                            {/* Price and quantity info */}
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              component="span"
+                              sx={{
+                                textDecoration: isRemoved
+                                  ? 'line-through'
+                                  : 'none',
+                                color: isRemoved
+                                  ? 'text.secondary'
+                                  : 'text.secondary',
+                              }}
+                            >
+                              {service.unit === 'flat_rate'
+                                ? `$${(service.unit_price_cents / 100).toFixed(2)} flat rate`
+                                : `${service.quantity || 1} ${service.unit || 'service'}${(service.quantity || 1) > 1 ? 's' : ''} @ $${(service.unit_price_cents / 100).toFixed(2)}/${service.unit || 'service'}`}
+                              {service.description &&
+                                ` • ${service.description}`}
+                            </Typography>
+
+                            {/* Refund notes if any */}
+                            {service.refund_notes && (
+                              <Typography
+                                variant="caption"
+                                color="error"
+                                component="span"
+                                sx={{ display: 'block', mt: 0.5 }}
+                              >
+                                Refund reason: {service.refund_notes}
+                              </Typography>
+                            )}
+                          </>
                         }
-                        sx={{ minWidth: '140px' }}
-                      >
-                        {service.is_done ? 'Mark Incomplete' : 'Mark Complete'}
-                      </Button>
-                      <IconButton
-                        edge="end"
-                        onClick={() => {
-                          setEditingService(service);
-                          setEditPrice(
-                            (service.unit_price_cents / 100).toFixed(2)
-                          );
-                        }}
-                        disabled={loading || isGarmentDone}
-                        size="small"
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton
-                        edge="end"
-                        onClick={() => openDeleteConfirmation(service)}
-                        disabled={loading || isGarmentDone}
-                        size="small"
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
+                      />
                     </Box>
-                  }
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {service.is_done && <CheckCircleIcon color="success" />}
-                    <ListItemText
-                      primary={service.name}
-                      secondary={
-                        <>
-                          {service.unit === 'flat_rate'
-                            ? `$${(service.unit_price_cents / 100).toFixed(2)} flat rate`
-                            : `${service.quantity} ${service.unit}${service.quantity > 1 ? 's' : ''} @ $${(service.unit_price_cents / 100).toFixed(2)}/${service.unit}`}
-                          {service.description && ` • ${service.description}`}
-                        </>
-                      }
-                    />
-                  </Box>
-                </ListItem>
-              ))}
+                  </ListItem>
+                );
+              })}
             </List>
             <Divider sx={{ my: 2 }} />
             <Box sx={{ textAlign: 'right' }}>

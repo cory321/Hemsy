@@ -84,6 +84,20 @@ export function getPresetIconUrl(key?: PresetIconKey | null): string | null {
   return encodeURI(path);
 }
 
+export function getPresetIconLabel(key?: PresetIconKey | null): string | null {
+  if (!key) return null;
+
+  // Search through all categories to find the item with matching key
+  for (const category of presetCatalog) {
+    const item = category.items.find((item) => item.key === key);
+    if (item) {
+      return item.label;
+    }
+  }
+
+  return null;
+}
+
 export const presetCatalog: PresetCategory[] = [
   {
     id: 'tops',

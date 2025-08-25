@@ -75,13 +75,17 @@ export default function NewClientPage() {
     setError(null);
 
     try {
-      const newClient = await createClient({
+      const result = await createClient({
         ...data,
         notes: data.notes || null,
         mailing_address: data.mailing_address || null,
       });
 
-      router.push(`/clients/${newClient.id}`);
+      if (result.success) {
+        router.push(`/clients/${result.data.id}`);
+      } else {
+        setError(result.error);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create client');
     } finally {

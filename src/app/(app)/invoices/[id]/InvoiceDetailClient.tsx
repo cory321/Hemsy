@@ -43,16 +43,23 @@ import {
   generatePaymentLink,
   recordManualPayment,
 } from '@/lib/actions/invoices';
-import { createPaymentIntent } from '@/lib/actions/payments';
+import {
+  createPaymentIntent,
+  cancelPendingPayment,
+} from '@/lib/actions/payments';
 import {
   sendPaymentRequestEmail,
   sendInvoiceReceiptEmail,
 } from '@/lib/actions/emails/invoice-emails';
+import { restoreRemovedService } from '@/lib/actions/garments';
+import PaymentManagement from '@/components/invoices/PaymentManagement';
+import InvoiceLineItems from '@/components/invoices/InvoiceLineItems';
 import {
   formatCurrency,
   formatDate,
   formatDateTime,
 } from '@/lib/utils/formatting';
+import { formatCentsAsCurrency } from '@/lib/utils/currency';
 import type { Tables } from '@/types/supabase';
 
 interface InvoiceDetailClientProps {
@@ -74,6 +81,7 @@ export default function InvoiceDetailClient({
     externalReference: '',
     notes: '',
   });
+  const [cancellingPayment, setCancellingPayment] = useState(false);
 
   useEffect(() => {
     fetchInvoice();
@@ -84,12 +92,20 @@ export default function InvoiceDetailClient({
       const data = await getInvoiceById(invoiceId);
       setInvoice(data);
 
-      // Calculate default payment amount
+      // Calculate default payment amount accounting for refunds
       const totalPaid =
         data.payments
           ?.filter((p: any) => p.status === 'completed')
           .reduce((sum: number, p: any) => sum + p.amount_cents, 0) || 0;
-      const remaining = data.amount_cents - totalPaid;
+      const totalRefunded =
+        data.payments
+          ?.filter((p: any) => p.status === 'completed')
+          .reduce(
+            (sum: number, p: any) => sum + (p.refunded_amount_cents || 0),
+            0
+          ) || 0;
+      const netPaid = totalPaid - totalRefunded;
+      const remaining = data.amount_cents - netPaid;
 
       setPaymentForm((prev) => ({
         ...prev,
@@ -120,6 +136,43 @@ export default function InvoiceDetailClient({
       }
     } catch (error) {
       toast.error('Failed to cancel invoice');
+    }
+  };
+
+  const handleCancelPendingPayments = async () => {
+    const pendingStripePayments =
+      invoice?.payments?.filter(
+        (p: any) => p.payment_method === 'stripe' && p.status === 'pending'
+      ) || [];
+
+    if (pendingStripePayments.length === 0) {
+      toast.error('No pending Stripe payments to cancel');
+      return;
+    }
+
+    if (!confirm(`Cancel ${pendingStripePayments.length} pending payment(s)?`))
+      return;
+
+    setCancellingPayment(true);
+    try {
+      let cancelledCount = 0;
+      for (const payment of pendingStripePayments) {
+        const result = await cancelPendingPayment(payment.id);
+        if (result.success) {
+          cancelledCount++;
+        }
+      }
+
+      if (cancelledCount > 0) {
+        toast.success(`Cancelled ${cancelledCount} payment(s)`);
+        fetchInvoice();
+      } else {
+        toast.error('Failed to cancel payments');
+      }
+    } catch (error) {
+      toast.error('Failed to cancel payments');
+    } finally {
+      setCancellingPayment(false);
     }
   };
 
@@ -196,6 +249,23 @@ export default function InvoiceDetailClient({
     }
   };
 
+  const handleRestoreService = async (serviceId: string, garmentId: string) => {
+    try {
+      const result = await restoreRemovedService({
+        garmentServiceId: serviceId,
+        garmentId: garmentId,
+      });
+      if (result.success) {
+        toast.success('Service restored successfully');
+        fetchInvoice(); // Refresh the invoice data
+      } else {
+        toast.error(result.error || 'Failed to restore service');
+      }
+    } catch (error) {
+      toast.error('Failed to restore service');
+    }
+  };
+
   if (loading) {
     return (
       <Container maxWidth="lg">
@@ -216,13 +286,29 @@ export default function InvoiceDetailClient({
     );
   }
 
+  // Calculate total paid amount from completed payments
   const totalPaid =
     invoice.payments
       ?.filter((p: any) => p.status === 'completed')
       .reduce((sum: number, p: any) => sum + p.amount_cents, 0) || 0;
-  const remainingAmount = invoice.amount_cents - totalPaid;
+
+  // Calculate total refunded amount
+  const totalRefunded =
+    invoice.payments
+      ?.filter((p: any) => p.status === 'completed')
+      .reduce(
+        (sum: number, p: any) => sum + (p.refunded_amount_cents || 0),
+        0
+      ) || 0;
+
+  // Net paid amount after refunds
+  const netPaid = totalPaid - totalRefunded;
+
+  // Balance due is invoice amount minus net paid amount
+  const remainingAmount = invoice.amount_cents - netPaid;
   const isFullyPaid = remainingAmount <= 0;
-  const isPartiallyPaid = totalPaid > 0 && !isFullyPaid;
+  const isPartiallyPaid = netPaid > 0 && !isFullyPaid;
+  const hasRefunds = totalRefunded > 0;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -320,6 +406,29 @@ export default function InvoiceDetailClient({
                 Send Receipt
               </Button>
             )}
+            {/* Quick cancel pending payments button */}
+            {invoice?.payments?.some(
+              (p: any) =>
+                p.payment_method === 'stripe' && p.status === 'pending'
+            ) && (
+              <Button
+                variant="outlined"
+                color="warning"
+                startIcon={
+                  cancellingPayment ? (
+                    <CircularProgress size={16} />
+                  ) : (
+                    <CancelIcon />
+                  )
+                }
+                onClick={handleCancelPendingPayments}
+                disabled={cancellingPayment}
+              >
+                {cancellingPayment
+                  ? 'Cancelling...'
+                  : 'Cancel Pending Payments'}
+              </Button>
+            )}
             {(invoice.status === 'pending' ||
               invoice.status === 'partially_paid') && (
               <Button
@@ -328,7 +437,7 @@ export default function InvoiceDetailClient({
                 startIcon={<CancelIcon />}
                 onClick={handleCancelInvoice}
               >
-                Cancel
+                Cancel Invoice
               </Button>
             )}
           </Box>
@@ -388,51 +497,15 @@ export default function InvoiceDetailClient({
                 <Divider sx={{ my: 3 }} />
 
                 {/* Invoice Items */}
-                {invoice.line_items && invoice.line_items.length > 0 && (
-                  <>
-                    <TableContainer>
-                      <Table>
-                        <TableHead>
-                          <TableRow>
-                            <TableCell>Description</TableCell>
-                            <TableCell align="center">Qty</TableCell>
-                            <TableCell align="right">Price</TableCell>
-                            <TableCell align="right">Total</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {invoice.line_items.map(
-                            (item: any, index: number) => (
-                              <TableRow key={index}>
-                                <TableCell>
-                                  {item.name}
-                                  {item.description && (
-                                    <Typography
-                                      variant="caption"
-                                      display="block"
-                                      color="text.secondary"
-                                    >
-                                      {item.description}
-                                    </Typography>
-                                  )}
-                                </TableCell>
-                                <TableCell align="center">
-                                  {item.quantity}
-                                </TableCell>
-                                <TableCell align="right">
-                                  {formatCurrency(item.unit_price_cents)}
-                                </TableCell>
-                                <TableCell align="right">
-                                  {formatCurrency(item.line_total_cents)}
-                                </TableCell>
-                              </TableRow>
-                            )
-                          )}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  </>
-                )}
+                <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
+                  Services
+                </Typography>
+                <InvoiceLineItems
+                  items={invoice.garment_services || []}
+                  showRemoved={true}
+                  onRestoreItem={handleRestoreService}
+                  readonly={false}
+                />
 
                 {/* Description */}
                 {invoice.description && (
@@ -456,7 +529,7 @@ export default function InvoiceDetailClient({
                       >
                         <Typography>Total Amount</Typography>
                         <Typography>
-                          {formatCurrency(invoice.amount_cents)}
+                          {formatCentsAsCurrency(invoice.amount_cents)}
                         </Typography>
                       </Box>
                       <Box
@@ -468,7 +541,7 @@ export default function InvoiceDetailClient({
                       >
                         <Typography>Deposit Required</Typography>
                         <Typography>
-                          {formatCurrency(invoice.deposit_amount_cents)}
+                          {formatCentsAsCurrency(invoice.deposit_amount_cents)}
                         </Typography>
                       </Box>
                     </>
@@ -482,9 +555,39 @@ export default function InvoiceDetailClient({
                         mb: 1,
                       }}
                     >
-                      <Typography color="success.main">Paid</Typography>
+                      <Typography color="success.main">Total Paid</Typography>
                       <Typography color="success.main">
-                        {formatCurrency(totalPaid)}
+                        {formatCentsAsCurrency(totalPaid)}
+                      </Typography>
+                    </Box>
+                  )}
+
+                  {hasRefunds && (
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        mb: 1,
+                      }}
+                    >
+                      <Typography color="error.main">Total Refunded</Typography>
+                      <Typography color="error.main">
+                        -{formatCentsAsCurrency(totalRefunded)}
+                      </Typography>
+                    </Box>
+                  )}
+
+                  {hasRefunds && (
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        mb: 1,
+                      }}
+                    >
+                      <Typography color="info.main">Net Paid</Typography>
+                      <Typography color="info.main">
+                        {formatCentsAsCurrency(netPaid)}
                       </Typography>
                     </Box>
                   )}
@@ -495,83 +598,34 @@ export default function InvoiceDetailClient({
                     sx={{ display: 'flex', justifyContent: 'space-between' }}
                   >
                     <Typography variant="h6">
-                      {isFullyPaid ? 'Total Paid' : 'Balance Due'}
+                      {isFullyPaid ? 'Fully Paid' : 'Balance Due'}
                     </Typography>
                     <Typography
                       variant="h6"
-                      color={isFullyPaid ? 'success.main' : 'inherit'}
+                      color={
+                        isFullyPaid
+                          ? 'success.main'
+                          : remainingAmount < 0
+                            ? 'error.main'
+                            : 'inherit'
+                      }
                     >
-                      {formatCurrency(
-                        isFullyPaid ? invoice.amount_cents : remainingAmount
-                      )}
+                      {isFullyPaid
+                        ? formatCentsAsCurrency(invoice.amount_cents)
+                        : remainingAmount < 0
+                          ? `Credit: ${formatCentsAsCurrency(Math.abs(remainingAmount))}`
+                          : formatCentsAsCurrency(remainingAmount)}
                     </Typography>
                   </Box>
                 </Box>
               </CardContent>
             </Card>
 
-            {/* Payment History */}
-            {invoice.payments && invoice.payments.length > 0 && (
-              <Card sx={{ mt: 3 }}>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Payment History
-                  </Typography>
-                  <TableContainer>
-                    <Table size="small">
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Date</TableCell>
-                          <TableCell>Type</TableCell>
-                          <TableCell>Method</TableCell>
-                          <TableCell align="right">Amount</TableCell>
-                          <TableCell>Status</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {invoice.payments
-                          .sort(
-                            (a: any, b: any) =>
-                              new Date(b.created_at).getTime() -
-                              new Date(a.created_at).getTime()
-                          )
-                          .map((payment: any) => (
-                            <TableRow key={payment.id}>
-                              <TableCell>
-                                {formatDateTime(
-                                  payment.processed_at || payment.created_at
-                                )}
-                              </TableCell>
-                              <TableCell sx={{ textTransform: 'capitalize' }}>
-                                {payment.payment_type}
-                              </TableCell>
-                              <TableCell sx={{ textTransform: 'capitalize' }}>
-                                {payment.payment_method.replace('_', ' ')}
-                              </TableCell>
-                              <TableCell align="right">
-                                {formatCurrency(payment.amount_cents)}
-                              </TableCell>
-                              <TableCell>
-                                <Chip
-                                  label={payment.status}
-                                  size="small"
-                                  color={
-                                    payment.status === 'completed'
-                                      ? 'success'
-                                      : payment.status === 'failed'
-                                        ? 'error'
-                                        : 'default'
-                                  }
-                                />
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                </CardContent>
-              </Card>
-            )}
+            {/* Payment Management */}
+            <PaymentManagement
+              payments={invoice.payments || []}
+              onPaymentUpdate={fetchInvoice}
+            />
           </Grid>
 
           <Grid size={{ xs: 12, md: 4 }}>
@@ -654,6 +708,13 @@ export default function InvoiceDetailClient({
         >
           <DialogTitle>Record Payment</DialogTitle>
           <DialogContent>
+            {remainingAmount < 0 && (
+              <Alert severity="info" sx={{ mb: 2 }}>
+                This invoice has a credit balance of{' '}
+                {formatCentsAsCurrency(Math.abs(remainingAmount))}. No
+                additional payment is needed.
+              </Alert>
+            )}
             <Box
               sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}
             >
@@ -665,12 +726,12 @@ export default function InvoiceDetailClient({
                   onChange={(e) => {
                     const type = e.target
                       .value as typeof paymentForm.paymentType;
-                    let amount = remainingAmount;
+                    let amount = Math.max(0, remainingAmount); // Don't allow negative amounts
 
                     if (type === 'deposit' && invoice.deposit_amount_cents) {
                       amount = Math.min(
                         invoice.deposit_amount_cents,
-                        remainingAmount
+                        Math.max(0, remainingAmount)
                       );
                     }
 

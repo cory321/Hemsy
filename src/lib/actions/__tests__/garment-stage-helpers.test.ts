@@ -1,6 +1,7 @@
 import {
   updateGarmentStage,
   recalculateAndUpdateGarmentStage,
+  calculateGarmentStage,
 } from '../garment-stage-helpers';
 import { createClient } from '@/lib/supabase/server';
 
@@ -283,13 +284,17 @@ describe('Garment Stage Helpers', () => {
         return {} as any;
       });
 
-      // First call for services
+      // First call for services - needs to handle double .eq() chain
       let callCount = 0;
       selectMock.mockImplementation(() => {
         callCount++;
         if (callCount === 1) {
-          // Services query
-          return { eq: () => servicesMock() };
+          // Services query: .eq('garment_id', garmentId).eq('is_removed', false)
+          return {
+            eq: jest.fn().mockReturnValue({
+              eq: jest.fn().mockReturnValue(servicesMock()),
+            }),
+          };
         } else {
           // Garment query
           return { eq: eqMock };
@@ -313,6 +318,114 @@ describe('Garment Stage Helpers', () => {
         new_value: 'In Progress',
         change_type: 'field_update',
       });
+    });
+  });
+
+  describe('calculateGarmentStage', () => {
+    it('should exclude soft-deleted services from stage calculation', async () => {
+      const garmentId = 'garment-123';
+
+      // Mock services query - should only return active services due to is_removed filter
+      const activeServices = [
+        { id: 'service-1', is_done: true },
+        { id: 'service-2', is_done: false },
+      ];
+
+      const selectMock = jest.fn().mockReturnThis();
+      const eqMock1 = jest.fn().mockReturnThis();
+      const eqMock2 = jest.fn().mockResolvedValue({
+        data: activeServices,
+        error: null,
+      });
+
+      mockSupabase.from.mockImplementation((table: string) => {
+        if (table === 'garment_services') {
+          return {
+            select: selectMock,
+          };
+        }
+        return {} as any;
+      });
+
+      selectMock.mockReturnValue({ eq: eqMock1 });
+      eqMock1.mockReturnValue({ eq: eqMock2 });
+
+      const result = await calculateGarmentStage(garmentId);
+
+      expect(result).not.toBeNull();
+      expect(result!.stage).toBe('In Progress'); // 1 completed out of 2 active services
+      expect(result!.completedCount).toBe(1);
+      expect(result!.totalCount).toBe(2); // Only active services counted
+
+      // Verify the query filters out soft-deleted services
+      expect(mockSupabase.from).toHaveBeenCalledWith('garment_services');
+      expect(selectMock).toHaveBeenCalledWith('id, is_done');
+      expect(eqMock1).toHaveBeenCalledWith('garment_id', garmentId);
+      expect(eqMock2).toHaveBeenCalledWith('is_removed', false);
+    });
+
+    it('should return "Ready For Pickup" when all active services are completed', async () => {
+      const garmentId = 'garment-123';
+      const mockServices = [
+        { id: 'service-1', is_done: true },
+        { id: 'service-2', is_done: true },
+      ];
+
+      const selectMock = jest.fn().mockReturnThis();
+      const eqMock1 = jest.fn().mockReturnThis();
+      const eqMock2 = jest.fn().mockResolvedValue({
+        data: mockServices,
+        error: null,
+      });
+
+      mockSupabase.from.mockImplementation((table: string) => {
+        if (table === 'garment_services') {
+          return {
+            select: selectMock,
+          };
+        }
+        return {} as any;
+      });
+
+      selectMock.mockReturnValue({ eq: eqMock1 });
+      eqMock1.mockReturnValue({ eq: eqMock2 });
+
+      const result = await calculateGarmentStage(garmentId);
+
+      expect(result).not.toBeNull();
+      expect(result!.stage).toBe('Ready For Pickup');
+      expect(result!.completedCount).toBe(2);
+      expect(result!.totalCount).toBe(2);
+    });
+
+    it('should return "New" when no active services exist', async () => {
+      const garmentId = 'garment-123';
+
+      const selectMock = jest.fn().mockReturnThis();
+      const eqMock1 = jest.fn().mockReturnThis();
+      const eqMock2 = jest.fn().mockResolvedValue({
+        data: [],
+        error: null,
+      });
+
+      mockSupabase.from.mockImplementation((table: string) => {
+        if (table === 'garment_services') {
+          return {
+            select: selectMock,
+          };
+        }
+        return {} as any;
+      });
+
+      selectMock.mockReturnValue({ eq: eqMock1 });
+      eqMock1.mockReturnValue({ eq: eqMock2 });
+
+      const result = await calculateGarmentStage(garmentId);
+
+      expect(result).not.toBeNull();
+      expect(result!.stage).toBe('New');
+      expect(result!.completedCount).toBe(0);
+      expect(result!.totalCount).toBe(0);
     });
   });
 });

@@ -24,16 +24,16 @@ import PersonIcon from '@mui/icons-material/Person';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { useRouter } from 'next/navigation';
 import { useDebounce } from '@/hooks/useDebounce';
+import { formatPhoneNumber } from '@/lib/utils/phone';
 import type { PaginatedClients, ClientsFilters } from '@/lib/actions/clients';
 
 interface ClientsListProps {
   initialData: PaginatedClients;
   getClientsAction: (
-    // eslint-disable-next-line no-unused-vars
     page: number,
-    // eslint-disable-next-line no-unused-vars
+
     pageSize: number,
-    // eslint-disable-next-line no-unused-vars
+
     filters?: ClientsFilters
   ) => Promise<PaginatedClients>;
 }
@@ -107,10 +107,7 @@ export default function ClientsList({
     router.push(`/clients/${clientId}`);
   };
 
-  const formatPhoneNumber = (phone: string) => {
-    // Basic phone formatting - can be enhanced
-    return phone.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
-  };
+  // Remove local formatPhoneNumber function - using imported utility
 
   return (
     <Box>

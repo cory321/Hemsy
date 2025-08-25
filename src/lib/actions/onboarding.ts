@@ -16,7 +16,6 @@ export interface OnboardingData {
     { start: string; end: string; closed: boolean }
   >;
   bufferTimeMinutes?: number;
-  paymentPreference?: 'upfront' | 'after_service';
 }
 
 export async function completeOnboarding(data: OnboardingData) {
@@ -37,7 +36,6 @@ export async function completeOnboarding(data: OnboardingData) {
         location_type: data.locationType || 'shop_location',
         working_hours: data.workingHours || {},
         buffer_time_minutes: data.bufferTimeMinutes || 0,
-        payment_preference: data.paymentPreference || 'after_service',
         onboarding_completed: true,
         updated_at: new Date().toISOString(),
       })

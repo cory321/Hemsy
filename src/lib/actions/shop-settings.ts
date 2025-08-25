@@ -132,17 +132,95 @@ export async function getStripeAccountStatus() {
 
   const { data: settings } = await supabase
     .from('shop_settings')
-    .select('stripe_enabled, payment_settings')
+    .select(
+      `
+      stripe_enabled, 
+      payment_settings,
+      stripe_connect_account_id,
+      stripe_connect_status,
+      stripe_connect_charges_enabled,
+      stripe_connect_payouts_enabled
+    `
+    )
     .eq('shop_id', shop.id)
     .single();
 
-  // TODO: Check actual Stripe account connection status
-  // For now, return basic status based on settings
+  // Check Connect account status
+  const hasConnectAccount = !!settings?.stripe_connect_account_id;
+  const connectActive =
+    settings?.stripe_connect_status === 'active' &&
+    settings?.stripe_connect_charges_enabled;
+
   return {
     connected: !!settings?.stripe_enabled,
     paymentMethodsEnabled: settings?.stripe_enabled ? ['card'] : [],
     testMode: true, // Always true for development
+    connect: {
+      hasAccount: hasConnectAccount,
+      accountId: settings?.stripe_connect_account_id,
+      status: settings?.stripe_connect_status || 'not_started',
+      active: connectActive,
+      chargesEnabled: settings?.stripe_connect_charges_enabled || false,
+      payoutsEnabled: settings?.stripe_connect_payouts_enabled || false,
+    },
   };
+}
+
+/**
+ * Update Stripe webhook configuration
+ */
+/**
+ * Validate that Stripe payments can be processed
+ * (either direct Stripe or Connect account is active)
+ */
+export async function validateStripePaymentCapability(): Promise<{
+  canProcessPayments: boolean;
+  requiresConnectOnboarding: boolean;
+  error?: string;
+}> {
+  try {
+    const status = await getStripeAccountStatus();
+
+    if (!status.connected) {
+      return {
+        canProcessPayments: false,
+        requiresConnectOnboarding: false,
+        error: 'Stripe is not enabled for this shop',
+      };
+    }
+
+    // Check if Connect is required (you can add feature flag logic here)
+    const connectRequired = process.env.STRIPE_CONNECT_REQUIRED === 'true';
+
+    if (connectRequired) {
+      if (!status.connect.hasAccount) {
+        return {
+          canProcessPayments: false,
+          requiresConnectOnboarding: true,
+          error: 'Stripe Connect account setup is required',
+        };
+      }
+
+      if (!status.connect.active) {
+        return {
+          canProcessPayments: false,
+          requiresConnectOnboarding: true,
+          error: 'Stripe Connect account is not fully activated',
+        };
+      }
+    }
+
+    return {
+      canProcessPayments: true,
+      requiresConnectOnboarding: false,
+    };
+  } catch (error) {
+    return {
+      canProcessPayments: false,
+      requiresConnectOnboarding: false,
+      error: 'Failed to validate payment capability',
+    };
+  }
 }
 
 /**

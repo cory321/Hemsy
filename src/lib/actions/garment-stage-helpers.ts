@@ -20,11 +20,12 @@ export async function calculateGarmentStage(
   try {
     const supabase = await createClient();
 
-    // Get all services for this garment to determine the stage
+    // Get all active (non-soft-deleted) services for this garment to determine the stage
     const { data: allServices, error: servicesError } = await supabase
       .from('garment_services')
       .select('id, is_done')
-      .eq('garment_id', garmentId);
+      .eq('garment_id', garmentId)
+      .eq('is_removed', false);
 
     if (servicesError) {
       console.error('Error fetching garment services:', servicesError);

@@ -22,8 +22,9 @@ import CloseIcon from '@mui/icons-material/Close';
 import { z } from 'zod';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { Tables } from '@/types/supabase';
+import type { Client } from '@/types';
 import { createClient } from '@/lib/actions/clients';
+import PhoneInput from '@/components/ui/PhoneInput';
 
 const clientSchema = z.object({
   first_name: z.string().min(1, 'First name is required'),
@@ -41,7 +42,7 @@ type ClientFormData = z.infer<typeof clientSchema>;
 export interface ClientCreateDialogProps {
   open: boolean;
   onClose: () => void;
-  onCreated: (client: Tables<'clients'>) => void;
+  onCreated: (client: Client) => void;
   maxWidth?: DialogProps['maxWidth'];
 }
 
@@ -84,13 +85,18 @@ export default function ClientCreateDialog({
     setError(null);
 
     try {
-      const newClient = await createClient({
+      const result = await createClient({
         ...data,
         notes: data.notes || null,
         mailing_address: data.mailing_address || null,
       });
-      onCreated(newClient);
-      internalClose();
+
+      if (result.success) {
+        onCreated(result.data);
+        internalClose();
+      } else {
+        setError(result.error);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create client');
     } finally {
@@ -191,14 +197,16 @@ export default function ClientCreateDialog({
               name="phone_number"
               control={control}
               render={({ field }) => (
-                <TextField
+                <PhoneInput
                   {...field}
                   label="Phone Number"
                   fullWidth
                   required
-                  placeholder="(555) 123-4567"
                   error={!!errors.phone_number}
                   helperText={errors.phone_number?.message}
+                  onChange={(value, isValid) => {
+                    field.onChange(value);
+                  }}
                 />
               )}
             />

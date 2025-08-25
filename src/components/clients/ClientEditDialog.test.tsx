@@ -80,7 +80,12 @@ describe('ClientEditDialog', () => {
     expect(screen.getByDisplayValue('John')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Doe')).toBeInTheDocument();
     expect(screen.getByDisplayValue('john@example.com')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('5551234567')).toBeInTheDocument();
+    // Phone input displays formatted value; assert digits match
+    const phoneInput = screen.getByLabelText(
+      /Phone Number/i
+    ) as HTMLInputElement;
+    expect(phoneInput).toBeInTheDocument();
+    expect(phoneInput.value.replace(/\D/g, '')).toBe('5551234567');
     expect(screen.getByDisplayValue('Test notes')).toBeInTheDocument();
     expect(screen.getByDisplayValue('123 Main St')).toBeInTheDocument();
 
@@ -118,7 +123,10 @@ describe('ClientEditDialog', () => {
 
   it('submits form with updated data', async () => {
     const user = userEvent.setup();
-    mockUpdateClient.mockResolvedValueOnce({} as any);
+    mockUpdateClient.mockResolvedValueOnce({
+      success: true,
+      data: { id: 'client1' },
+    } as any);
 
     render(
       <ClientEditDialog client={mockClient}>

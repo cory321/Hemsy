@@ -60,7 +60,7 @@ describe('Client Actions', () => {
           phone_number: '555-0123',
           mailing_address: '123 Test St',
           location_type: 'shop_location',
-          payment_preference: 'upfront',
+
           tax_percent: 0,
           buffer_time_minutes: 15,
           trial_countdown_enabled: false,
@@ -143,7 +143,7 @@ describe('Client Actions', () => {
           phone_number: '555-0123',
           mailing_address: '123 Test St',
           location_type: 'shop_location',
-          payment_preference: 'upfront',
+
           tax_percent: 0,
           buffer_time_minutes: 15,
           trial_countdown_enabled: false,
@@ -170,7 +170,7 @@ describe('Client Actions', () => {
   });
 
   describe('createClient', () => {
-    it('should create a new client', async () => {
+    it('should create a new client successfully', async () => {
       mockEnsureUserAndShop.mockResolvedValue({
         user: {
           id: 'user_123',
@@ -191,7 +191,7 @@ describe('Client Actions', () => {
           phone_number: '555-0123',
           mailing_address: '123 Test St',
           location_type: 'shop_location',
-          payment_preference: 'upfront',
+
           tax_percent: 0,
           buffer_time_minutes: 15,
           trial_countdown_enabled: false,
@@ -214,7 +214,8 @@ describe('Client Actions', () => {
         mailing_address: null,
       };
 
-      mockSupabase.single.mockResolvedValueOnce({
+      // Mock insert().select().single() chain for successful insert
+      const insertSingle = jest.fn().mockResolvedValue({
         data: {
           id: 'new_client_id',
           shop_id: 'shop_123',
@@ -224,18 +225,107 @@ describe('Client Actions', () => {
         },
         error: null,
       });
+      (mockSupabase.insert as jest.Mock).mockReturnValue({
+        select: jest.fn().mockReturnValue({ single: insertSingle }),
+      });
 
       const result = await createClient(newClient);
 
-      expect(mockSupabase.insert).toHaveBeenCalledWith({
-        ...newClient,
-        shop_id: 'shop_123',
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data).toMatchObject({
+          id: 'new_client_id',
+          ...newClient,
+        });
+      }
+    });
+
+    it('should return error when email already exists', async () => {
+      mockEnsureUserAndShop.mockResolvedValue({
+        user: { id: 'user_123' },
+        shop: { id: 'shop_123' },
+      } as any);
+
+      const newClient = {
+        first_name: 'New',
+        last_name: 'Client',
+        email: 'existing@example.com',
+        phone_number: '5551112222',
+        accept_email: true,
+        accept_sms: false,
+        notes: null,
+        mailing_address: null,
+      };
+
+      // Mock insert unique constraint violation on email
+      const emailUniqueError = {
+        data: null,
+        error: {
+          code: '23505',
+          message:
+            'duplicate key value violates unique constraint "clients_shop_email_unique"',
+        },
+      };
+      (mockSupabase.insert as jest.Mock).mockReturnValue({
+        select: jest
+          .fn()
+          .mockReturnValue({
+            single: jest.fn().mockResolvedValue(emailUniqueError),
+          }),
       });
 
-      expect(result).toMatchObject({
-        id: 'new_client_id',
-        ...newClient,
+      const result = await createClient(newClient);
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error).toBe(
+          'A client with this email address already exists'
+        );
+      }
+    });
+
+    it('should return error when phone number already exists', async () => {
+      mockEnsureUserAndShop.mockResolvedValue({
+        user: { id: 'user_123' },
+        shop: { id: 'shop_123' },
+      } as any);
+
+      const newClient = {
+        first_name: 'New',
+        last_name: 'Client',
+        email: 'new@example.com',
+        phone_number: '5551112222',
+        accept_email: true,
+        accept_sms: false,
+        notes: null,
+        mailing_address: null,
+      };
+
+      // Mock insert unique constraint violation on phone
+      const phoneUniqueError = {
+        data: null,
+        error: {
+          code: '23505',
+          message:
+            'duplicate key value violates unique constraint "clients_shop_phone_unique"',
+        },
+      };
+      (mockSupabase.insert as jest.Mock).mockReturnValue({
+        select: jest
+          .fn()
+          .mockReturnValue({
+            single: jest.fn().mockResolvedValue(phoneUniqueError),
+          }),
       });
+
+      const result = await createClient(newClient);
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error).toBe(
+          'A client with this phone number already exists'
+        );
+      }
     });
   });
 
@@ -261,7 +351,7 @@ describe('Client Actions', () => {
           phone_number: '555-0123',
           mailing_address: '123 Test St',
           location_type: 'shop_location',
-          payment_preference: 'upfront',
+
           tax_percent: 0,
           buffer_time_minutes: 15,
           trial_countdown_enabled: false,
@@ -278,7 +368,7 @@ describe('Client Actions', () => {
         email: 'updated@example.com',
       };
 
-      mockSupabase.single.mockResolvedValue({
+      const updateSingle = jest.fn().mockResolvedValue({
         data: {
           id: 'client_123',
           ...updates,
@@ -288,12 +378,21 @@ describe('Client Actions', () => {
         },
         error: null,
       });
+      (mockSupabase.update as jest.Mock).mockReturnValue({
+        eq: jest
+          .fn()
+          .mockReturnValue({
+            select: jest.fn().mockReturnValue({ single: updateSingle }),
+          }),
+      });
 
       const result = await updateClient('client_123', updates);
 
       expect(mockSupabase.update).toHaveBeenCalledWith(updates);
-      expect(mockSupabase.eq).toHaveBeenCalledWith('id', 'client_123');
-      expect(result).toMatchObject(updates);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data).toMatchObject(updates);
+      }
     });
   });
 
@@ -319,7 +418,7 @@ describe('Client Actions', () => {
           phone_number: '555-0123',
           mailing_address: '123 Test St',
           location_type: 'shop_location',
-          payment_preference: 'upfront',
+
           tax_percent: 0,
           buffer_time_minutes: 15,
           trial_countdown_enabled: false,

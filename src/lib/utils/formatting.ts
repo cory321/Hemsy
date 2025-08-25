@@ -33,15 +33,16 @@ export function formatDateTime(date: string | Date): string {
 }
 
 /**
- * Format a phone number
+ * Format a phone number using libphonenumber-js for proper international formatting
+ * @deprecated Use formatPhoneNumber from './phone' instead for better functionality
  */
-export function formatPhoneNumber(phone: string): string {
-  const cleaned = phone.replace(/\D/g, '');
-  const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/);
-  if (match) {
-    return `(${match[1]}) ${match[2]}-${match[3]}`;
-  }
-  return phone;
+export function formatPhoneNumber(
+  phone: string,
+  defaultCountry: string = 'US'
+): string {
+  // Import the dedicated phone utility
+  const { formatPhoneNumber: formatPhone } = require('./phone');
+  return formatPhone(phone, defaultCountry);
 }
 
 /**

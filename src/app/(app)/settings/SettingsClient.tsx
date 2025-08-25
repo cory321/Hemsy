@@ -28,6 +28,7 @@ import {
   Email as EmailIcon,
   Payment as PaymentIcon,
   Save as SaveIcon,
+  AccountBalance as StripeIcon,
 } from '@mui/icons-material';
 import { useState, useEffect, useTransition } from 'react';
 import { WorkingHoursSettings } from '@/components/appointments/WorkingHoursSettings';
@@ -66,7 +67,6 @@ export function SettingsClient() {
   const [tabValue, setTabValue] = useState(0);
   const [emailReminders, setEmailReminders] = useState(true);
   const [smsReminders, setSmsReminders] = useState(false);
-  const [paymentPreference, setPaymentPreference] = useState('after_service');
   const [brandColor, setBrandColor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [businessInfo, setBusinessInfo] = useState({
@@ -78,7 +78,6 @@ export function SettingsClient() {
       | 'home_based'
       | 'shop_location'
       | 'mobile_service',
-    payment_preference: 'after_service' as 'upfront' | 'after_service',
   });
   const [isPending, startTransition] = useTransition();
   const { showToast } = useToast();
@@ -105,9 +104,7 @@ export function SettingsClient() {
           phone_number: result.data.phone_number || '',
           mailing_address: result.data.mailing_address || '',
           location_type: result.data.location_type || 'shop_location',
-          payment_preference: result.data.payment_preference || 'after_service',
         });
-        setPaymentPreference(result.data.payment_preference || 'after_service');
       }
     } catch (err) {
       setError(
@@ -129,7 +126,6 @@ export function SettingsClient() {
       try {
         const result = await updateShopBusinessInfo({
           ...businessInfo,
-          payment_preference: paymentPreference as 'upfront' | 'after_service',
         });
 
         if (!result.success) {
@@ -166,6 +162,7 @@ export function SettingsClient() {
           <Tab icon={<PersonIcon />} label="General" />
           <Tab icon={<ScheduleIcon />} label="Calendar" />
           <Tab icon={<EmailIcon />} label="Emails" />
+          <Tab icon={<StripeIcon />} label="Stripe Connect" />
           <Tab icon={<PaymentIcon />} label="Billing" />
         </Tabs>
 
@@ -277,34 +274,6 @@ export function SettingsClient() {
                 </CardContent>
               </Card>
 
-              {/* Payment Preferences */}
-              <Card sx={{ mb: 3 }}>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Payment Preferences
-                  </Typography>
-                  <FormControl fullWidth sx={{ mb: 2 }}>
-                    <InputLabel>Default Payment Timing</InputLabel>
-                    <Select
-                      value={paymentPreference}
-                      label="Default Payment Timing"
-                      onChange={(e) => setPaymentPreference(e.target.value)}
-                    >
-                      <MenuItem value="upfront">
-                        Payment required before service
-                      </MenuItem>
-                      <MenuItem value="after_service">
-                        Payment after service completion
-                      </MenuItem>
-                    </Select>
-                  </FormControl>
-                  <Typography variant="body2" color="text.secondary">
-                    This sets the default payment preference for new orders. You
-                    can override this for individual orders.
-                  </Typography>
-                </CardContent>
-              </Card>
-
               {/* Notifications */}
               <Card sx={{ mb: 3 }}>
                 <CardContent>
@@ -366,6 +335,32 @@ export function SettingsClient() {
         </TabPanel>
 
         <TabPanel value={tabValue} index={3}>
+          {/* Stripe Connect */}
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Stripe Connect
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                Set up your Stripe account to receive payments directly from
+                clients
+              </Typography>
+              <Button
+                variant="contained"
+                href="/settings/stripe-connect"
+                sx={{ mb: 2 }}
+              >
+                Manage Stripe Connect
+              </Button>
+              <Typography variant="body2" color="text.secondary">
+                With Stripe Connect, payments go directly to your bank account,
+                giving you full control over your funds and payouts.
+              </Typography>
+            </CardContent>
+          </Card>
+        </TabPanel>
+
+        <TabPanel value={tabValue} index={4}>
           {/* Subscription */}
           <Card>
             <CardContent>

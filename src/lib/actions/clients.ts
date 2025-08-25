@@ -1,7 +1,7 @@
 'use server';
 
 import { createClient as createSupabaseClient } from '@/lib/supabase/server';
-import type { Tables } from '@/types/supabase';
+import type { Tables } from '@/types/supabase-extended';
 import { ensureUserAndShop } from './users';
 
 export interface PaginatedClients {
@@ -103,29 +103,80 @@ export async function getClient(
   return data;
 }
 
+/**
+ * Detects and handles Supabase unique constraint violation errors
+ */
+function handleUniqueConstraintError(error: any): string | null {
+  if (error?.code === '23505') {
+    const message = error.message || '';
+
+    // Check for email constraint violation
+    if (message.includes('clients_shop_email_unique')) {
+      return 'A client with this email address already exists';
+    }
+
+    // Check for phone constraint violation
+    if (message.includes('clients_shop_phone_unique')) {
+      return 'A client with this phone number already exists';
+    }
+
+    // Generic unique constraint error
+    return 'A client with these details already exists';
+  }
+
+  return null;
+}
+
 export async function createClient(
   clientData: Omit<
     Tables<'clients'>,
     'id' | 'shop_id' | 'created_at' | 'updated_at'
   >
-): Promise<Tables<'clients'>> {
-  const { shop } = await ensureUserAndShop();
-  const supabase = await createSupabaseClient();
+): Promise<
+  { success: true; data: Tables<'clients'> } | { success: false; error: string }
+> {
+  try {
+    const { shop } = await ensureUserAndShop();
+    const supabase = await createSupabaseClient();
 
-  const { data, error } = await supabase
-    .from('clients')
-    .insert({
-      ...clientData,
-      shop_id: shop.id,
-    })
-    .select()
-    .single();
+    // Try to insert directly - let the database constraints handle uniqueness
+    // This is more efficient and avoids race conditions
+    const { data, error } = await supabase
+      .from('clients')
+      .insert({
+        ...clientData,
+        shop_id: shop.id,
+      })
+      .select()
+      .single();
 
-  if (error) {
-    throw new Error(`Failed to create client: ${error.message}`);
+    if (error) {
+      // Check for unique constraint violations first
+      const constraintError = handleUniqueConstraintError(error);
+      if (constraintError) {
+        return {
+          success: false,
+          error: constraintError,
+        };
+      }
+
+      // Handle other errors
+      return {
+        success: false,
+        error: `Failed to create client: ${error.message}`,
+      };
+    }
+
+    return {
+      success: true,
+      data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to create client',
+    };
   }
-
-  return data;
 }
 
 export async function updateClient(
@@ -133,22 +184,47 @@ export async function updateClient(
   clientData: Partial<
     Omit<Tables<'clients'>, 'id' | 'shop_id' | 'created_at' | 'updated_at'>
   >
-): Promise<Tables<'clients'>> {
-  await ensureUserAndShop(); // Ensure user exists but we don't need shop for this update
-  const supabase = await createSupabaseClient();
+): Promise<
+  { success: true; data: Tables<'clients'> } | { success: false; error: string }
+> {
+  try {
+    await ensureUserAndShop(); // Ensure user exists but we don't need shop for this update
+    const supabase = await createSupabaseClient();
 
-  const { data, error } = await supabase
-    .from('clients')
-    .update(clientData)
-    .eq('id', clientId)
-    .select()
-    .single();
+    const { data, error } = await supabase
+      .from('clients')
+      .update(clientData)
+      .eq('id', clientId)
+      .select()
+      .single();
 
-  if (error) {
-    throw new Error(`Failed to update client: ${error.message}`);
+    if (error) {
+      // Check for unique constraint violations first
+      const constraintError = handleUniqueConstraintError(error);
+      if (constraintError) {
+        return {
+          success: false,
+          error: constraintError,
+        };
+      }
+
+      // Handle other errors
+      return {
+        success: false,
+        error: `Failed to update client: ${error.message}`,
+      };
+    }
+
+    return {
+      success: true,
+      data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to update client',
+    };
   }
-
-  return data;
 }
 
 export async function deleteClient(clientId: string): Promise<void> {
@@ -225,6 +301,61 @@ export async function searchClients(
     return result.data;
   } catch (error) {
     console.error('Error searching clients:', error);
+    return [];
+  }
+}
+
+export async function getRecentClients(
+  limit: number = 5
+): Promise<Tables<'clients'>[]> {
+  try {
+    const { shop } = await ensureUserAndShop();
+    const supabase = await createSupabaseClient();
+
+    // Get clients with recent orders
+    const { data, error } = await supabase
+      .from('clients')
+      .select(
+        `
+        *,
+        orders!inner(
+          id,
+          created_at
+        )
+      `
+      )
+      .eq('shop_id', shop.id)
+      .order('orders.created_at', { ascending: false })
+      .limit(limit * 2); // Get more to handle duplicates
+
+    if (error) {
+      console.error('Failed to get recent clients with orders:', error);
+      // Fallback to just getting most recent clients
+      const { data: fallbackData } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('shop_id', shop.id)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      return fallbackData || [];
+    }
+
+    // Remove duplicate clients and format response
+    const uniqueClients = new Map();
+    (data || []).forEach((item) => {
+      if (!uniqueClients.has(item.id)) {
+        const { orders, ...client } = item;
+        uniqueClients.set(item.id, {
+          ...client,
+          last_order_date: orders?.[0]?.created_at,
+        });
+      }
+    });
+
+    return Array.from(uniqueClients.values()).slice(0, limit);
+  } catch (error) {
+    console.error('Failed to get recent clients:', error);
     return [];
   }
 }

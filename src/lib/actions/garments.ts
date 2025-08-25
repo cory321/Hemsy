@@ -5,6 +5,7 @@ import { ensureUserAndShop } from '@/lib/auth/user-shop';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { recalculateAndUpdateGarmentStage } from './garment-stage-helpers';
+import { syncInvoiceWithGarmentServices } from './invoice-sync';
 
 // Schema for updating garment
 const UpdateGarmentSchema = z.object({
@@ -246,7 +247,7 @@ export async function addServiceToGarment(
     // Verify garment belongs to shop
     const { data: garment, error: fetchError } = await supabase
       .from('garments')
-      .select('*, orders!inner(shop_id)')
+      .select('*, orders!inner(id, shop_id)')
       .eq('id', input.garmentId)
       .single();
 
@@ -267,14 +268,20 @@ export async function addServiceToGarment(
 
       if (serviceError || !catalogService) throw new Error('Service not found');
 
+      // Map catalog service units to garment service units
+      let unit = catalogService.default_unit;
+      if (unit === 'item') {
+        unit = 'flat_rate'; // Map 'item' to 'flat_rate' for garment services
+      }
+
       serviceData = {
         garment_id: input.garmentId,
         service_id: input.serviceId,
         name: catalogService.name,
         description: catalogService.description,
-        unit: catalogService.default_unit,
-        unit_price_cents: catalogService.default_unit_price_cents,
-        quantity: catalogService.default_qty,
+        unit: unit,
+        unit_price_cents: catalogService.default_unit_price_cents || 0,
+        quantity: catalogService.default_qty || 1,
         is_done: false,
       };
     } else if (input.customService) {
@@ -284,9 +291,9 @@ export async function addServiceToGarment(
         service_id: null, // No catalog reference
         name: input.customService.name,
         description: input.customService.description,
-        unit: input.customService.unit,
-        unit_price_cents: input.customService.unitPriceCents,
-        quantity: input.customService.quantity,
+        unit: input.customService.unit || 'flat_rate',
+        unit_price_cents: input.customService.unitPriceCents || 0,
+        quantity: input.customService.quantity || 1,
         is_done: false,
       };
     } else {
@@ -319,7 +326,12 @@ export async function addServiceToGarment(
     // Recalculate and update garment stage after adding service
     await recalculateAndUpdateGarmentStage(input.garmentId);
 
+    // Sync invoice with updated services
+    const orderId = garment.orders.id;
+    await syncInvoiceWithGarmentServices(orderId);
+
     revalidatePath(`/garments/${input.garmentId}`);
+    revalidatePath(`/orders/${orderId}`);
     return { success: true, serviceId: newService.id };
   } catch (error) {
     console.error('Error adding service to garment:', error);
@@ -330,19 +342,20 @@ export async function addServiceToGarment(
   }
 }
 
-// Remove service from garment
+// Remove service from garment (soft delete)
 export async function removeServiceFromGarment(input: {
   garmentId: string;
   garmentServiceId: string;
+  removalReason?: string;
 }) {
   try {
     const { shop, user } = await ensureUserAndShop();
     const supabase = await createClient();
 
-    // Get service details before deletion
+    // Get service details before soft deletion
     const { data: service, error: fetchError } = await supabase
       .from('garment_services')
-      .select('*, garments!inner(orders!inner(shop_id))')
+      .select('*, garments!inner(orders!inner(id, shop_id))')
       .eq('id', input.garmentServiceId)
       .single();
 
@@ -355,7 +368,17 @@ export async function removeServiceFromGarment(input: {
       throw new Error('Service not found');
     }
 
-    // Log to history before deletion
+    // Check if already removed
+    if ((service as any).is_removed) {
+      throw new Error('Service is already removed');
+    }
+
+    // Check if service is completed - completed services cannot be removed
+    if (service.is_done) {
+      throw new Error('Cannot remove a completed service');
+    }
+
+    // Log to history before soft deletion
     await supabase.from('garment_history').insert({
       garment_id: input.garmentId,
       changed_by: user.id,
@@ -364,14 +387,31 @@ export async function removeServiceFromGarment(input: {
         name: service.name,
         quantity: service.quantity,
         unit_price_cents: service.unit_price_cents,
+        line_total_cents: service.line_total_cents,
+        status: 'active',
+      },
+      new_value: {
+        name: service.name,
+        quantity: service.quantity,
+        unit_price_cents: service.unit_price_cents,
+        line_total_cents: service.line_total_cents,
+        status: 'removed',
+        removal_reason: input.removalReason,
       },
       change_type: 'service_removed',
+      related_service_id: input.garmentServiceId,
     });
 
-    // Delete service
+    // Soft delete: mark as removed instead of deleting
     const { error } = await supabase
       .from('garment_services')
-      .delete()
+      .update({
+        is_removed: true,
+        removed_at: new Date().toISOString(),
+        removed_by: user.id,
+        removal_reason: input.removalReason || 'Service removed by user',
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', input.garmentServiceId);
 
     if (error) throw error;
@@ -379,7 +419,12 @@ export async function removeServiceFromGarment(input: {
     // Recalculate and update garment stage after removing service
     await recalculateAndUpdateGarmentStage(input.garmentId);
 
+    // Sync invoice with updated services (removed services won't count toward total)
+    const orderId = service.garments.orders.id;
+    await syncInvoiceWithGarmentServices(orderId);
+
     revalidatePath(`/garments/${input.garmentId}`);
+    revalidatePath(`/orders/${orderId}`);
     return { success: true };
   } catch (error) {
     console.error('Error removing service from garment:', error);
@@ -387,6 +432,87 @@ export async function removeServiceFromGarment(input: {
       success: false,
       error:
         error instanceof Error ? error.message : 'Failed to remove service',
+    };
+  }
+}
+
+// Restore a previously removed service
+export async function restoreRemovedService(input: {
+  garmentId: string;
+  garmentServiceId: string;
+}) {
+  try {
+    const { shop, user } = await ensureUserAndShop();
+    const supabase = await createClient();
+
+    // Get service details
+    const { data: service, error: fetchError } = await supabase
+      .from('garment_services')
+      .select('*, garments!inner(orders!inner(id, shop_id))')
+      .eq('id', input.garmentServiceId)
+      .single();
+
+    if (
+      fetchError ||
+      !service ||
+      service.garment_id !== input.garmentId ||
+      service.garments.orders.shop_id !== shop.id
+    ) {
+      throw new Error('Service not found');
+    }
+
+    // Check if actually removed
+    if (!(service as any).is_removed) {
+      throw new Error('Service is not removed');
+    }
+
+    // Log to history
+    await supabase.from('garment_history').insert({
+      garment_id: input.garmentId,
+      changed_by: user.id,
+      field_name: 'services',
+      old_value: {
+        name: service.name,
+        status: 'removed',
+      },
+      new_value: {
+        name: service.name,
+        status: 'active',
+      },
+      change_type: 'service_restored',
+      related_service_id: input.garmentServiceId,
+    });
+
+    // Restore: mark as active again
+    const { error } = await supabase
+      .from('garment_services')
+      .update({
+        is_removed: false,
+        removed_at: null,
+        removed_by: null,
+        removal_reason: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', input.garmentServiceId);
+
+    if (error) throw error;
+
+    // Recalculate and update garment stage after restoring service
+    await recalculateAndUpdateGarmentStage(input.garmentId);
+
+    // Sync invoice with updated services
+    const orderId = service.garments.orders.id;
+    await syncInvoiceWithGarmentServices(orderId);
+
+    revalidatePath(`/garments/${input.garmentId}`);
+    revalidatePath(`/orders/${orderId}`);
+    return { success: true };
+  } catch (error) {
+    console.error('Error restoring service:', error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : 'Failed to restore service',
     };
   }
 }
@@ -412,7 +538,7 @@ export async function updateGarmentService(
     // Get current service
     const { data: oldService, error: fetchError } = await supabase
       .from('garment_services')
-      .select('*, garments!inner(orders!inner(shop_id))')
+      .select('*, garments!inner(orders!inner(id, shop_id))')
       .eq('id', input.garmentServiceId)
       .single();
 
@@ -422,6 +548,11 @@ export async function updateGarmentService(
       oldService.garments.orders.shop_id !== shop.id
     ) {
       throw new Error('Service not found');
+    }
+
+    // Check if service is completed - completed services cannot be edited
+    if (oldService.is_done) {
+      throw new Error('Cannot edit a completed service');
     }
 
     // Calculate new values
@@ -489,6 +620,15 @@ export async function updateGarmentService(
         change_type: 'service_updated',
         related_service_id: input.garmentServiceId,
       });
+    }
+
+    // Sync invoice with updated services (if price/quantity changed)
+    if (
+      changes.some((c) => c.field === 'quantity' || c.field === 'unit_price')
+    ) {
+      const orderId = oldService.garments.orders.id;
+      await syncInvoiceWithGarmentServices(orderId);
+      revalidatePath(`/orders/${orderId}`);
     }
 
     revalidatePath(`/garments/${oldService.garment_id}`);

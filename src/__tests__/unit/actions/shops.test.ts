@@ -43,7 +43,7 @@ describe('Shop Actions', () => {
         phone_number: '123-456-7890',
         mailing_address: '123 Main St',
         location_type: 'shop_location',
-        payment_preference: 'after_service',
+
         trial_countdown_enabled: false,
       });
 
@@ -63,7 +63,7 @@ describe('Shop Actions', () => {
         phone_number: '123-456-7890',
         mailing_address: '123 Main St',
         location_type: 'shop_location',
-        payment_preference: 'after_service',
+
         trial_countdown_enabled: false,
         trial_end_date: null,
       });
@@ -80,7 +80,6 @@ describe('Shop Actions', () => {
         phone_number: null,
         mailing_address: null,
         location_type: null,
-        payment_preference: null,
       });
 
       mockEnsureUserAndShop.mockResolvedValue({
@@ -97,7 +96,7 @@ describe('Shop Actions', () => {
         phone_number: '',
         mailing_address: '',
         location_type: 'shop_location',
-        payment_preference: 'after_service',
+
         trial_countdown_enabled: false,
       });
     });
@@ -122,7 +121,6 @@ describe('Shop Actions', () => {
         phone_number: '098-765-4321',
         mailing_address: '456 Oak St',
         location_type: 'home_based' as const,
-        payment_preference: 'upfront' as const,
       };
 
       mockEnsureUserAndShop.mockResolvedValue({

@@ -26,7 +26,6 @@ export interface Shop {
     { start: string; end: string; closed: boolean }
   > | null;
   buffer_time_minutes?: number | null;
-  payment_preference?: 'upfront' | 'after_service' | null;
   tax_percent: number;
   trial_countdown_enabled?: boolean | null;
   trial_end_date?: string | null;
@@ -106,7 +105,7 @@ export interface GarmentService {
 export interface Invoice {
   id: string;
   order_id: string;
-  status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
+  status: 'pending' | 'partially_paid' | 'paid' | 'cancelled';
   stripe_link?: string;
   due_date: string;
   subtotal: number;
@@ -156,12 +155,7 @@ export interface OrderWithGarmentCount extends Order {
 
 // UI/UX types
 export type GarmentStage = 'New' | 'In Progress' | 'Ready For Pickup' | 'Done';
-export type OrderStatus =
-  | 'draft'
-  | 'confirmed'
-  | 'in_progress'
-  | 'completed'
-  | 'cancelled';
+export type OrderStatus = 'pending' | 'partially_paid' | 'paid' | 'cancelled';
 export type InvoiceStatus = Invoice['status'];
 export type AppointmentType = Appointment['type'];
 export type AppointmentStatus = Appointment['status'];

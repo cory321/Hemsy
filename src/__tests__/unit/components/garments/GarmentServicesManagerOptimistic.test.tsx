@@ -40,7 +40,7 @@ const mockGarment = {
       unit_price_cents: 1500,
       line_total_cents: 1500,
       description: null,
-      is_done: true,
+      is_done: false,
     },
   ],
 };
@@ -121,11 +121,13 @@ describe('GarmentServicesManagerOptimistic - Quantity Updates', () => {
     expect(editButtons[1]).toBeDefined();
     fireEvent.click(editButtons[1]!); // Second service is flat rate
 
+    // Wait for dialog by title instead of role
     await waitFor(() => {
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      expect(screen.getByText('Edit Service')).toBeInTheDocument();
     });
 
-    // Check that quantity field is not visible
+    // Check that quantity field is not visible for flat rate services
+    expect(screen.queryByLabelText('Hours')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Quantity')).not.toBeInTheDocument();
   });
 

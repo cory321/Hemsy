@@ -23,16 +23,20 @@ import {
   InputAdornment,
   Chip,
   LinearProgress,
+  Tooltip,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
+import RestoreFromTrashIcon from '@mui/icons-material/RestoreFromTrash';
+import InfoIcon from '@mui/icons-material/Info';
 import {
   addServiceToGarment,
   removeServiceFromGarment,
   updateGarmentService,
+  restoreRemovedService,
 } from '@/lib/actions/garments';
 import { toggleServiceCompletion } from '@/lib/actions/garment-services';
 import { searchServices } from '@/lib/actions/services';
@@ -49,6 +53,11 @@ interface Service {
   line_total_cents: number;
   description?: string | null;
   is_done?: boolean;
+  // Soft delete fields
+  is_removed?: boolean;
+  removed_at?: string | null;
+  removed_by?: string | null;
+  removal_reason?: string | null;
 }
 
 interface GarmentServicesManagerProps {
@@ -195,6 +204,29 @@ export default function GarmentServicesManager({
     }
   };
 
+  const handleRestoreService = async (serviceId: string) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await restoreRemovedService({
+        garmentId,
+        garmentServiceId: serviceId,
+      });
+
+      if (result.success) {
+        router.refresh();
+        onServiceChange?.();
+      } else {
+        setError(result.error || 'Failed to restore service');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleUpdateService = async () => {
     if (!editingService) return;
 
@@ -226,13 +258,16 @@ export default function GarmentServicesManager({
     }
   };
 
-  const totalPrice = services.reduce(
+  // Filter out soft-deleted services for both total and progress calculations
+  const activeServices = services.filter((s) => !s.is_removed);
+
+  const totalPrice = activeServices.reduce(
     (sum, service) => sum + service.line_total_cents,
     0
   );
 
-  const completedCount = services.filter((s) => s.is_done).length;
-  const totalCount = services.length;
+  const completedCount = activeServices.filter((s) => s.is_done).length;
+  const totalCount = activeServices.length;
   const completionPercentage =
     totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
@@ -288,88 +323,137 @@ export default function GarmentServicesManager({
         {services.length > 0 ? (
           <>
             <List>
-              {services.map((service, index) => (
-                <ListItem
-                  key={service.id}
-                  divider={index < services.length - 1}
-                  sx={{
-                    opacity: service.is_done ? 0.6 : 1,
-                    transition: 'opacity 0.3s ease',
-                  }}
-                  secondaryAction={
+              {services.map((service, index) => {
+                const isRemoved = !!service.is_removed;
+                return (
+                  <ListItem
+                    key={service.id}
+                    divider={index < services.length - 1}
+                    sx={{
+                      opacity: isRemoved || service.is_done ? 0.6 : 1,
+                      transition: 'opacity 0.3s ease',
+                    }}
+                    secondaryAction={
+                      <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                      >
+                        {isRemoved ? (
+                          <>
+                            {service.removal_reason && (
+                              <Tooltip
+                                title={`Removed: ${service.removal_reason}`}
+                              >
+                                <InfoIcon fontSize="small" color="action" />
+                              </Tooltip>
+                            )}
+                            <IconButton
+                              edge="end"
+                              onClick={() => handleRestoreService(service.id)}
+                              disabled={loading}
+                              size="small"
+                              aria-label="Restore service"
+                            >
+                              <RestoreFromTrashIcon fontSize="small" />
+                            </IconButton>
+                          </>
+                        ) : (
+                          <>
+                            {service.is_done && (
+                              <Chip
+                                label="Completed"
+                                size="small"
+                                color="success"
+                                sx={{ mr: 1 }}
+                              />
+                            )}
+                            <Button
+                              size="small"
+                              variant={
+                                service.is_done ? 'outlined' : 'contained'
+                              }
+                              onClick={() =>
+                                handleToggleCompletion(
+                                  service.id,
+                                  service.is_done || false
+                                )
+                              }
+                              disabled={loading}
+                              startIcon={
+                                service.is_done ? (
+                                  <CheckCircleIcon />
+                                ) : (
+                                  <RadioButtonUncheckedIcon />
+                                )
+                              }
+                              sx={{ minWidth: '140px' }}
+                            >
+                              {service.is_done
+                                ? 'Mark Incomplete'
+                                : 'Mark Complete'}
+                            </Button>
+                            <IconButton
+                              edge="end"
+                              onClick={() => {
+                                setEditingService(service);
+                                setEditPrice(
+                                  (service.unit_price_cents / 100).toFixed(2)
+                                );
+                              }}
+                              disabled={loading}
+                              size="small"
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                              edge="end"
+                              onClick={() => handleRemoveService(service.id)}
+                              disabled={loading}
+                              size="small"
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </>
+                        )}
+                      </Box>
+                    }
+                  >
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      {service.is_done && (
-                        <Chip
-                          label="Completed"
-                          size="small"
-                          color="success"
-                          sx={{ mr: 1 }}
-                        />
+                      {service.is_done && !isRemoved && (
+                        <CheckCircleIcon color="success" />
                       )}
-                      <Button
-                        size="small"
-                        variant={service.is_done ? 'outlined' : 'contained'}
-                        onClick={() =>
-                          handleToggleCompletion(
-                            service.id,
-                            service.is_done || false
-                          )
-                        }
-                        disabled={loading}
-                        startIcon={
-                          service.is_done ? (
-                            <CheckCircleIcon />
-                          ) : (
-                            <RadioButtonUncheckedIcon />
-                          )
-                        }
-                        sx={{ minWidth: '140px' }}
-                      >
-                        {service.is_done ? 'Mark Incomplete' : 'Mark Complete'}
-                      </Button>
-                      <IconButton
-                        edge="end"
-                        onClick={() => {
-                          setEditingService(service);
-                          setEditPrice(
-                            (service.unit_price_cents / 100).toFixed(2)
-                          );
+                      <ListItemText
+                        primary={service.name}
+                        primaryTypographyProps={{
+                          sx: {
+                            textDecoration: isRemoved ? 'line-through' : 'none',
+                            color: isRemoved
+                              ? 'text.secondary'
+                              : 'text.primary',
+                          },
                         }}
-                        disabled={loading}
-                        size="small"
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton
-                        edge="end"
-                        onClick={() => handleRemoveService(service.id)}
-                        disabled={loading}
-                        size="small"
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
+                        secondary={
+                          <>
+                            {service.unit === 'flat_rate'
+                              ? `$${(service.unit_price_cents / 100).toFixed(2)} flat rate`
+                              : `${service.quantity || 1} ${service.unit || 'service'}${(service.quantity || 1) > 1 ? 's' : ''} @ $${(service.unit_price_cents / 100).toFixed(2)}/${service.unit || 'service'}`}
+                            {service.description && ` • ${service.description}`}
+                          </>
+                        }
+                      />
                     </Box>
-                  }
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {service.is_done && <CheckCircleIcon color="success" />}
-                    <ListItemText
-                      primary={service.name}
-                      secondary={
-                        <>
-                          {service.unit === 'flat_rate'
-                            ? `$${(service.unit_price_cents / 100).toFixed(2)} flat rate`
-                            : `${service.quantity} ${service.unit}${service.quantity > 1 ? 's' : ''} @ $${(service.unit_price_cents / 100).toFixed(2)}/${service.unit}`}
-                          {service.description && ` • ${service.description}`}
-                        </>
-                      }
-                    />
-                  </Box>
-                  <Typography variant="body1" sx={{ mr: 2 }}>
-                    ${(service.line_total_cents / 100).toFixed(2)}
-                  </Typography>
-                </ListItem>
-              ))}
+                    <Typography
+                      variant="body1"
+                      sx={{
+                        mr: 2,
+                        textDecoration: isRemoved ? 'line-through' : 'none',
+                        color: isRemoved ? 'text.secondary' : 'text.primary',
+                      }}
+                    >
+                      ${(service.line_total_cents / 100).toFixed(2)}
+                    </Typography>
+                  </ListItem>
+                );
+              })}
             </List>
             <Divider sx={{ my: 2 }} />
             <Typography variant="h6" sx={{ textAlign: 'right' }}>

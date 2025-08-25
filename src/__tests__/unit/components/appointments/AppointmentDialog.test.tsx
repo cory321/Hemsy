@@ -357,7 +357,10 @@ describe('AppointmentDialog', () => {
       updated_at: '2024-01-01T00:00:00Z',
     };
 
-    (createClient as jest.Mock).mockResolvedValue(created);
+    (createClient as jest.Mock).mockResolvedValue({
+      success: true,
+      data: created,
+    });
 
     renderWithLocalization(<AppointmentDialog {...defaultProps} />);
 
@@ -383,12 +386,22 @@ describe('AppointmentDialog', () => {
     // Submit
     await user.click(inDialog.getByRole('button', { name: /add client/i }));
 
-    // Client field should now have the new client's name
+    // Wait for the quick-add dialog to close
     await waitFor(() => {
-      const clientInput = screen.getByPlaceholderText(
-        'Search by name, email, or phone...'
-      );
-      expect(clientInput).toHaveValue('Alice Wonder');
+      expect(
+        screen.queryByRole('dialog', { name: /add new client/i })
+      ).not.toBeInTheDocument();
     });
+
+    // Client field should now have the new client's name
+    await waitFor(
+      () => {
+        const clientInput = screen.getByPlaceholderText(
+          'Search by name, email, or phone...'
+        );
+        expect(clientInput).toHaveValue('Alice Wonder');
+      },
+      { timeout: 3000 }
+    );
   });
 });

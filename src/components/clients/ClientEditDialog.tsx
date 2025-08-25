@@ -21,8 +21,9 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { updateClient } from '@/lib/actions/clients';
-import type { Tables } from '@/types/supabase';
+import type { Tables } from '@/types/supabase-extended';
 import { useRouter } from 'next/navigation';
+import PhoneInput from '@/components/ui/PhoneInput';
 
 const clientSchema = z.object({
   first_name: z.string().min(1, 'First name is required'),
@@ -96,14 +97,18 @@ export default function ClientEditDialog({
     setError(null);
 
     try {
-      await updateClient(client.id, {
+      const result = await updateClient(client.id, {
         ...data,
         notes: data.notes || null,
         mailing_address: data.mailing_address || null,
       });
 
-      setOpen(false);
-      router.refresh();
+      if (result.success) {
+        setOpen(false);
+        router.refresh();
+      } else {
+        setError(result.error);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update client');
     } finally {
@@ -208,13 +213,16 @@ export default function ClientEditDialog({
                 name="phone_number"
                 control={control}
                 render={({ field }) => (
-                  <TextField
+                  <PhoneInput
                     {...field}
                     label="Phone Number"
                     fullWidth
                     required
                     error={!!errors.phone_number}
                     helperText={errors.phone_number?.message}
+                    onChange={(value, isValid) => {
+                      field.onChange(value);
+                    }}
                   />
                 )}
               />

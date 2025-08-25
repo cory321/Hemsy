@@ -15,6 +15,7 @@ import { alpha } from '@mui/material/styles';
 import MailOutlineIcon from '@mui/icons-material/MailOutline';
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined';
 import ClientEditDialog from '@/components/clients/ClientEditDialog';
+import { formatPhoneNumber } from '@/lib/utils/phone';
 import type { Tables } from '@/types/supabase';
 import type { Appointment } from '@/types';
 
@@ -304,10 +305,7 @@ export default function ClientProfileCard({ client }: ClientProfileCardProps) {
                 <PhoneOutlinedIcon fontSize="small" />
               </Box>
               <Typography variant="body1" color="text.primary">
-                {client.phone_number.replace(
-                  /(\d{3})(\d{3})(\d{4})/,
-                  '($1) $2-$3'
-                )}
+                {formatPhoneNumber(client.phone_number)}
               </Typography>
             </Box>
           </Box>

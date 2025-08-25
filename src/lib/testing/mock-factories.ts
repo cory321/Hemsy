@@ -54,7 +54,6 @@ export function createMockShop(overrides?: Partial<Shop>): Shop {
       '0': { start: '00:00', end: '00:00', closed: true },
     },
     buffer_time_minutes: 15,
-    payment_preference: 'upfront',
     tax_percent: 8.25,
     trial_countdown_enabled: false,
     trial_end_date: null,
@@ -134,7 +133,7 @@ export function createMockOrder(overrides?: Partial<Order>): Order {
     shop_id: generateId(),
     client_id: generateId(),
     order_number: `ORD-${Date.now()}`,
-    status: 'draft',
+    status: 'pending',
     subtotal_cents: 10000,
     tax_cents: 825,
     discount_cents: 0,
@@ -278,10 +277,9 @@ export const APPOINTMENT_STATUSES: AppointmentStatus[] = [
   'no_show',
 ];
 export const ORDER_STATUSES: OrderStatus[] = [
-  'draft',
-  'confirmed',
-  'in_progress',
-  'completed',
+  'pending',
+  'partially_paid',
+  'paid',
   'cancelled',
 ];
 export const GARMENT_STAGES: GarmentStage[] = [

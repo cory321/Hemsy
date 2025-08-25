@@ -278,4 +278,84 @@ describe('GarmentServicesManager', () => {
     // Note: There might be multiple due to buttons and list items
     expect(checkIcons.length).toBeGreaterThan(0);
   });
+
+  it('excludes soft-deleted services from total price calculation', () => {
+    const servicesWithSoftDeleted = [
+      ...mockServices,
+      {
+        id: 'service-4',
+        name: 'Soft Deleted Service',
+        quantity: 1,
+        unit: 'item',
+        unit_price_cents: 1000,
+        line_total_cents: 1000,
+        description: null,
+        is_done: false,
+        is_removed: true,
+        removed_at: '2024-01-01T00:00:00Z',
+        removal_reason: 'Test removal',
+      },
+    ];
+
+    render(
+      <GarmentServicesManager
+        garmentId="garment-123"
+        services={servicesWithSoftDeleted}
+        onServiceChange={jest.fn()}
+      />
+    );
+
+    // Total should only include active services: $20.00 + $20.00 + $30.00 = $70.00
+    // Should NOT include the soft-deleted service ($10.00)
+    expect(screen.getByText('Total: $70.00')).toBeInTheDocument();
+
+    // Verify the soft-deleted service is not included in the total
+    expect(screen.queryByText('Total: $80.00')).not.toBeInTheDocument();
+  });
+
+  it('shows $0.00 total when all services are soft-deleted', () => {
+    const allSoftDeletedServices = [
+      {
+        id: 'service-1',
+        name: 'Soft Deleted Service 1',
+        quantity: 1,
+        unit: 'item',
+        unit_price_cents: 2000,
+        line_total_cents: 2000,
+        description: null,
+        is_done: false,
+        is_removed: true,
+        removed_at: '2024-01-01T00:00:00Z',
+        removal_reason: 'Test removal',
+      },
+      {
+        id: 'service-2',
+        name: 'Soft Deleted Service 2',
+        quantity: 1,
+        unit: 'item',
+        unit_price_cents: 3000,
+        line_total_cents: 3000,
+        description: null,
+        is_done: true,
+        is_removed: true,
+        removed_at: '2024-01-01T00:00:00Z',
+        removal_reason: 'Test removal',
+      },
+    ];
+
+    render(
+      <GarmentServicesManager
+        garmentId="garment-123"
+        services={allSoftDeletedServices}
+        onServiceChange={jest.fn()}
+      />
+    );
+
+    // Total should be $0.00 since all services are soft-deleted
+    expect(screen.getByText('Total: $0.00')).toBeInTheDocument();
+
+    // Progress indicator should not be shown when there are no active services
+    expect(screen.queryByText('0%')).not.toBeInTheDocument();
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+  });
 });

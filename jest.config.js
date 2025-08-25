@@ -16,6 +16,13 @@ const customJestConfig = {
   ],
   // Add timeout settings to prevent hanging tests
   testTimeout: 10000, // 10 seconds instead of default 5
+  // Prevent tests from hanging on unhandled promises
+  forceExit: true,
+  detectOpenHandles: false,
+  // Better error reporting
+  verbose: false,
+  // Exit early on test failure to prevent hanging
+  bail: 1,
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '@clerk/backend/dist/runtime/browser/crypto':

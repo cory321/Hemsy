@@ -5,7 +5,7 @@ import { Button, Fab } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { useRouter } from 'next/navigation';
 import ClientCreateDialog from '@/components/clients/ClientCreateDialog';
-import type { Tables } from '@/types/supabase';
+import type { Client } from '@/types';
 
 export default function AddClientCtas() {
   const router = useRouter();
@@ -15,7 +15,7 @@ export default function AddClientCtas() {
   const handleClose = useCallback(() => setOpen(false), []);
 
   const handleCreated = useCallback(
-    (client: Tables<'clients'>) => {
+    (client: Client) => {
       // Navigate to the newly created client's detail page
       router.push(`/clients/${client.id}`);
     },

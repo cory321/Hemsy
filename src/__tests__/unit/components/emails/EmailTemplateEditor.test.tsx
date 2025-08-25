@@ -122,10 +122,17 @@ describe('EmailTemplateEditor - Test Email Functionality', () => {
     );
 
     const sendButton = screen.getByText('Send Test Email');
-    await user.click(sendButton);
 
-    expect(screen.getByText('Sending...')).toBeInTheDocument();
+    await act(async () => {
+      await user.click(sendButton);
+    });
 
+    // Wait for loading state to appear
+    await waitFor(() => {
+      expect(screen.getByText('Sending...')).toBeInTheDocument();
+    });
+
+    // Wait for loading state to disappear and button to return to normal
     await waitFor(() => {
       expect(screen.getByText('Send Test Email')).toBeInTheDocument();
     });

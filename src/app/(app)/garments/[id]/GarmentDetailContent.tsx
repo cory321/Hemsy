@@ -57,6 +57,9 @@ export default function GarmentDetailContent({
           <GarmentRightColumnOptimistic clientName={clientName} />
         </Grid>
       </Grid>
+
+      {/* TODO: Services and Payment History sections will be added once database schema is updated */}
+      {/* For now, these sections are commented out due to database schema issues */}
     </>
   );
 }

@@ -17,7 +17,6 @@ const UpdateBusinessInfoSchema = z.object({
   location_type: z
     .enum(['home_based', 'shop_location', 'mobile_service'])
     .optional(),
-  payment_preference: z.enum(['upfront', 'after_service']).optional(),
 });
 
 type UpdateBusinessInfoInput = z.infer<typeof UpdateBusinessInfoSchema>;
@@ -47,7 +46,6 @@ export async function getShopBusinessInfo(): Promise<{
         phone_number: shopData.phone_number || '',
         mailing_address: shopData.mailing_address || '',
         location_type: shopData.location_type || 'shop_location',
-        payment_preference: shopData.payment_preference || 'after_service',
         trial_countdown_enabled: shopData.trial_countdown_enabled || false,
         trial_end_date: shopData.trial_end_date,
       },

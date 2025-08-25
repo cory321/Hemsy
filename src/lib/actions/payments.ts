@@ -2,13 +2,14 @@
 
 import { z } from 'zod';
 import Stripe from 'stripe';
-import { createClient as createSupabaseClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import { ensureUserAndShop } from './users';
 import { revalidatePath } from 'next/cache';
 import {
   sendInvoiceReceiptEmail,
   sendDepositReceiptEmail,
 } from './emails/invoice-emails';
+import { checkPaymentStatus } from './payment-status';
 
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -39,18 +40,75 @@ const ConfirmPaymentSchema = z.object({
 
 /**
  * Create a Stripe PaymentIntent for an invoice payment
+ *
+ * STRIPE CONNECT FLOW FOR SEAMSTRESS PAYMENTS:
+ * ============================================
+ *
+ * Scenario: Seamstress charges client's credit card for tailoring services
+ * - Card Holder: Client (customer receiving services)
+ * - Merchant: Seamstress (connected account providing services)
+ * - Platform: Threadfolio (facilitates the transaction)
+ *
+ * Payment Flow:
+ * 1. Client's card is charged via Stripe PaymentIntent
+ * 2. Funds are automatically transferred to seamstress's connected account
+ * 3. Platform can optionally take application fees
+ * 4. Seamstress receives funds directly in their bank account
+ *
+ * Technical Implementation:
+ * - Uses "destination charges" pattern (transfer_data.destination)
+ * - PaymentIntent created on platform account
+ * - Funds transferred to connected account automatically
+ * - No separate Transfer API call needed
+ * - Connected account appears as merchant on client's statement
+ *
+ * Security & Compliance:
+ * - Card-present transaction (lower risk)
+ * - Merchant-assisted payment (seamstress inputs card details)
+ * - Enhanced metadata for fraud detection
+ * - Proper statement descriptors for client's bank statement
  */
 export async function createPaymentIntent(
   params: z.infer<typeof CreatePaymentIntentSchema>
 ): Promise<{
   success: boolean;
-  data?: PaymentIntentResult;
+  data?: PaymentIntentResult | undefined;
   error?: string;
 }> {
   try {
     const { shop } = await ensureUserAndShop();
     const validated = CreatePaymentIntentSchema.parse(params);
-    const supabase = await createSupabaseClient();
+    const supabase = await createClient();
+
+    // Get shop settings to check for Connect account
+    const { data: shopSettings } = await supabase
+      .from('shop_settings')
+      .select(
+        `
+				stripe_connect_account_id,
+				stripe_connect_status,
+				stripe_connect_charges_enabled
+			`
+      )
+      .eq('shop_id', shop.id)
+      .single();
+
+    // TEMPORARILY DISABLED: Check if we can create a new payment
+    // const statusCheck = await checkPaymentStatus(validated.invoiceId);
+    // if (!statusCheck.canCreateNewPayment) {
+    // 	return {
+    // 		success: false,
+    // 		error: statusCheck.message,
+    // 		data: statusCheck.existingPaymentIntent
+    // 			? {
+    // 					clientSecret: '',
+    // 					paymentIntentId: statusCheck.existingPaymentIntent,
+    // 					amountCents: 0,
+    // 					currency: 'usd',
+    // 				}
+    // 			: undefined,
+    // 	};
+    // }
 
     // Get invoice details
     const { data: invoice, error: invoiceError } = await supabase
@@ -76,6 +134,55 @@ export async function createPaymentIntent(
 
     if (invoice.status === 'cancelled') {
       throw new Error('Cannot process payment for cancelled invoice');
+    }
+
+    // Check for existing pending Stripe payments
+    const existingPendingPayments = invoice.payments.filter(
+      (p: any) => p.payment_method === 'stripe' && p.status === 'pending'
+    );
+
+    if (existingPendingPayments.length > 0) {
+      // Check if any pending payments are recent (within last 15 minutes)
+      const recentPending = existingPendingPayments.filter((p: any) => {
+        const paymentAge = Date.now() - new Date(p.created_at).getTime();
+        return paymentAge < 15 * 60 * 1000; // 15 minutes
+      });
+
+      if (recentPending.length > 0) {
+        const pendingPayment = recentPending[0];
+        // Return existing payment intent instead of creating new one
+        return {
+          success: true,
+          data: {
+            clientSecret:
+              (pendingPayment?.stripe_metadata as any)?.client_secret || '',
+            paymentIntentId: pendingPayment?.stripe_payment_intent_id || '',
+            amountCents: pendingPayment?.amount_cents || 0,
+            currency: 'usd',
+          },
+        };
+      }
+
+      // If pending payments are old (>15 min), cancel them first
+      for (const oldPending of existingPendingPayments) {
+        if (oldPending.stripe_payment_intent_id) {
+          try {
+            await stripe.paymentIntents.cancel(
+              oldPending.stripe_payment_intent_id
+            );
+            // Mark as failed in database
+            await supabase
+              .from('payments')
+              .update({
+                status: 'failed',
+                processed_at: new Date().toISOString(),
+              })
+              .eq('id', oldPending.id);
+          } catch (error) {
+            console.warn('Failed to cancel old payment intent:', error);
+          }
+        }
+      }
     }
 
     // Calculate amount to charge
@@ -109,8 +216,25 @@ export async function createPaymentIntent(
       throw new Error('Invalid payment amount');
     }
 
-    // Create Stripe PaymentIntent
-    const paymentIntent = await stripe.paymentIntents.create({
+    // Determine if we should use Connect account for destination charges
+    // This ensures the seamstress (connected account) receives payments directly
+    const useConnectAccount =
+      shopSettings?.stripe_connect_account_id &&
+      shopSettings?.stripe_connect_status === 'active' &&
+      shopSettings?.stripe_connect_charges_enabled;
+
+    console.log('Payment flow decision:', {
+      hasConnectAccount: !!shopSettings?.stripe_connect_account_id,
+      connectStatus: shopSettings?.stripe_connect_status,
+      chargesEnabled: shopSettings?.stripe_connect_charges_enabled,
+      useConnectAccount,
+      paymentScenario: useConnectAccount
+        ? 'destination_charge_to_seamstress'
+        : 'platform_payment',
+    });
+
+    // Base PaymentIntent configuration
+    const paymentIntentConfig: Stripe.PaymentIntentCreateParams = {
       amount: amountToCharge,
       currency: 'usd',
       metadata: {
@@ -120,13 +244,71 @@ export async function createPaymentIntent(
         payment_type: validated.paymentType,
         client_name: `${invoice.client.first_name} ${invoice.client.last_name}`,
         client_email: invoice.client.email,
+        payment_context: 'card_present_merchant_assisted',
+        merchant_present: 'true',
+        // Enhanced security metadata
+        transaction_type: 'card_present',
+        merchant_category: 'personal_services', // Tailoring/alterations
+        pos_environment: 'seamstress_shop',
+        risk_level: 'low', // Card present = lower risk
+        authentication_method: 'merchant_assisted',
+        // Connect account info
+        connect_account_id: shopSettings?.stripe_connect_account_id || '',
+        payment_flow: useConnectAccount ? 'connect_transfer' : 'direct',
       },
       description: `Payment for invoice ${invoice.invoice_number}`,
       automatic_payment_methods: {
         enabled: true,
+        // Disable saved payment methods and Link for card-present
+        allow_redirects: 'never', // No redirects in POS environment
       },
-      receipt_email: invoice.client.email,
-    });
+      // Don't send receipt email immediately - let seamstress control this
+      // receipt_email: invoice.client.email,
+
+      // Card-present specific settings
+      capture_method: 'automatic', // Immediate capture for POS
+      payment_method_options: {
+        card: {
+          request_three_d_secure: 'automatic', // Handle 3DS when required
+        },
+      },
+      // Statement descriptor suffix for customer's bank statement (card payments only support suffix)
+      // Must contain at least one Latin character (a-z, A-Z)
+      statement_descriptor_suffix: `SHP${invoice.invoice_number.slice(-3)}`, // "SHP" + last 3 digits
+    };
+
+    // Add Connect-specific configuration for destination charges
+    if (useConnectAccount && shopSettings?.stripe_connect_account_id) {
+      // Use destination charges - funds go directly to connected account
+      paymentIntentConfig.transfer_data = {
+        destination: shopSettings.stripe_connect_account_id,
+        // Transfer the full amount to the seamstress (connected account)
+        // Platform can take fees via application_fee_amount if needed
+      };
+
+      // Optional: Add application fee (platform commission)
+      // paymentIntentConfig.application_fee_amount = Math.round(amountToCharge * 0.025); // 2.5% fee
+
+      // Enhanced metadata for Connect transactions
+      paymentIntentConfig.metadata = {
+        ...paymentIntentConfig.metadata,
+        connect_flow_type: 'destination_charge',
+        merchant_account_id: shopSettings.stripe_connect_account_id,
+        payment_scenario: 'seamstress_charges_client',
+        card_holder: 'client', // The card belongs to the client
+        merchant: 'seamstress', // The seamstress is the merchant
+      };
+    }
+
+    // Create the PaymentIntent
+    // For destination charges, we create the PaymentIntent on the platform account
+    // but specify the connected account as the destination via transfer_data
+    const paymentIntent = await stripe.paymentIntents.create(
+      paymentIntentConfig
+      // NOTE: For destination charges, we DON'T use stripeAccount parameter
+      // The payment is created on the platform account, but funds are transferred
+      // to the connected account via transfer_data.destination
+    );
 
     // Create pending payment record
     const { error: paymentError } = await supabase.from('payments').insert({
@@ -181,7 +363,7 @@ export async function handleSuccessfulPayment(
   paymentIntentId: string,
   metadata?: Record<string, any>
 ) {
-  const supabase = await createSupabaseClient();
+  const supabase = await createClient();
 
   // Find the payment record
   const { data: payment, error: paymentError } = await supabase
@@ -294,7 +476,7 @@ export async function handleFailedPayment(
   failureReason?: string,
   metadata?: Record<string, any>
 ) {
-  const supabase = await createSupabaseClient();
+  const supabase = await createClient();
 
   // Find and update the payment record
   const { error } = await supabase
@@ -318,11 +500,85 @@ export async function handleFailedPayment(
 }
 
 /**
+ * Cancel a pending Stripe payment
+ */
+export async function cancelPendingPayment(paymentId: string) {
+  try {
+    const { shop } = await ensureUserAndShop();
+    const supabase = await createClient();
+
+    // Get payment details with validation
+    const { data: payment, error: paymentError } = await supabase
+      .from('payments')
+      .select('*, invoice:invoices!inner(shop_id)')
+      .eq('id', paymentId)
+      .eq('invoice.shop_id', shop.id)
+      .single();
+
+    if (paymentError || !payment) {
+      throw new Error('Payment not found');
+    }
+
+    if (payment.payment_method !== 'stripe') {
+      throw new Error('Can only cancel Stripe payments');
+    }
+
+    if (payment.status !== 'pending') {
+      throw new Error('Can only cancel pending payments');
+    }
+
+    if (!payment.stripe_payment_intent_id) {
+      throw new Error('No Stripe payment intent found');
+    }
+
+    // Cancel the payment intent on Stripe
+    try {
+      await stripe.paymentIntents.cancel(payment.stripe_payment_intent_id);
+    } catch (stripeError: any) {
+      // If already cancelled on Stripe, that's okay
+      if (stripeError.code !== 'payment_intent_invalid_state') {
+        throw new Error(`Failed to cancel on Stripe: ${stripeError.message}`);
+      }
+    }
+
+    // Update payment status in database
+    const { error: updateError } = await supabase
+      .from('payments')
+      .update({
+        status: 'failed',
+        processed_at: new Date().toISOString(),
+        notes: 'Cancelled by merchant',
+        stripe_metadata: {
+          ...((payment.stripe_metadata as object) || {}),
+          cancelled_at: new Date().toISOString(),
+          cancelled_by: 'merchant',
+        },
+      })
+      .eq('id', paymentId);
+
+    if (updateError) {
+      throw new Error('Failed to update payment status');
+    }
+
+    revalidatePath('/invoices');
+    revalidatePath(`/invoices/${payment.invoice_id}`);
+
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : 'Failed to cancel payment',
+    };
+  }
+}
+
+/**
  * Get payment history for an invoice
  */
 export async function getInvoicePayments(invoiceId: string) {
   const { shop } = await ensureUserAndShop();
-  const supabase = await createSupabaseClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from('payments')
@@ -359,12 +615,12 @@ export async function refundPayment(
 ) {
   try {
     const { shop, user } = await ensureUserAndShop();
-    const supabase = await createSupabaseClient();
+    const supabase = await createClient();
 
     // Get payment details
     const { data: payment, error: paymentError } = await supabase
       .from('payments')
-      .select('*, invoice:invoices!inner(shop_id)')
+      .select('*, invoice:invoices!inner(shop_id, invoice_number)')
       .eq('id', paymentId)
       .eq('invoice.shop_id', shop.id)
       .single();
@@ -391,18 +647,68 @@ export async function refundPayment(
       throw new Error('Refund amount cannot exceed payment amount');
     }
 
-    // Create Stripe refund
-    const refund = await stripe.refunds.create({
-      payment_intent: payment.stripe_payment_intent_id,
-      amount: refundAmount,
-      reason: 'requested_by_customer',
-      metadata: {
+    // Create Stripe refund with enhanced metadata
+    let refund;
+    try {
+      refund = await stripe.refunds.create({
+        payment_intent: payment.stripe_payment_intent_id,
+        amount: refundAmount,
+        reason: 'requested_by_customer',
+        metadata: {
+          payment_id: payment.id,
+          invoice_id: payment.invoice_id,
+          invoice_number: payment.invoice.invoice_number || 'N/A',
+          refunded_by: user.id,
+          refund_reason: reason || 'Customer requested refund',
+          merchant_category: 'personal_services',
+          refund_type:
+            refundAmount === payment.amount_cents ? 'full' : 'partial',
+          original_amount_cents: payment.amount_cents.toString(),
+          refund_amount_cents: refundAmount.toString(),
+        },
+      });
+    } catch (stripeError: any) {
+      console.error('Stripe refund error:', stripeError);
+      throw new Error(`Stripe refund failed: ${stripeError.message}`);
+    }
+
+    // Create refund record after Stripe refund succeeds
+    const { data: refundRecord, error: refundInsertError } = await supabase
+      .from('refunds')
+      .insert({
         payment_id: payment.id,
-        invoice_id: payment.invoice_id,
-        refunded_by: user.id,
+        stripe_refund_id: refund.id,
+        amount_cents: refundAmount,
         reason: reason || 'Customer requested refund',
-      },
-    });
+        refund_type: refundAmount === payment.amount_cents ? 'full' : 'partial',
+        initiated_by: user.id,
+        merchant_notes: reason || null,
+        status: 'succeeded',
+        processed_at: new Date().toISOString(),
+        stripe_metadata: {
+          refund_id: refund.id,
+          amount: refund.amount,
+          currency: refund.currency,
+          reason: refund.reason,
+          status: refund.status,
+        },
+      })
+      .select()
+      .single();
+
+    if (refundInsertError) {
+      console.error('Refund insert error:', refundInsertError);
+      console.error('Refund data attempted:', {
+        payment_id: payment.id,
+        stripe_refund_id: refund.id,
+        amount_cents: refundAmount,
+        refund_type: refundAmount === payment.amount_cents ? 'full' : 'partial',
+        initiated_by: user.id,
+      });
+      throw new Error(
+        `Failed to record refund details: ${refundInsertError.message}`
+      );
+    }
 
     // Update payment record
     const { error: updateError } = await supabase
@@ -412,12 +718,17 @@ export async function refundPayment(
           refundAmount === payment.amount_cents
             ? 'refunded'
             : 'partially_refunded',
+        refund_id: refund.id,
+        refunded_amount_cents: refundAmount,
+        refunded_at: new Date().toISOString(),
+        refunded_by: user.id,
+        refund_reason: reason || null,
         stripe_metadata: {
           ...((payment.stripe_metadata as object) || {}),
           refund_id: refund.id,
           refunded_amount_cents: refundAmount,
           refunded_at: new Date().toISOString(),
-          refund_reason: reason,
+          refund_reason: reason || null,
         },
       })
       .eq('id', paymentId);

@@ -12,6 +12,7 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import PersonIcon from '@mui/icons-material/Person';
 import { useDebounce } from '@/hooks/useDebounce';
+import { formatPhoneNumber } from '@/lib/utils/phone';
 import type { Client as ClientType } from '@/types';
 import { searchClients } from '@/lib/actions/clients';
 
@@ -93,10 +94,7 @@ export function ClientSearchField({
     };
   }, [debouncedSearch]);
 
-  const formatPhoneNumber = (phone: string) => {
-    // Basic phone formatting - can be enhanced
-    return phone.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
-  };
+  // Remove local formatPhoneNumber function - using imported utility
 
   return (
     <Autocomplete

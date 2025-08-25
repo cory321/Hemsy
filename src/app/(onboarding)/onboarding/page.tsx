@@ -18,6 +18,7 @@ import {
   CircularProgress,
   Alert,
 } from '@mui/material';
+import { PhoneInput } from '@/components/ui/PhoneInput';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { completeOnboarding } from '@/lib/actions/onboarding';
@@ -40,15 +41,9 @@ export default function OnboardingPage() {
       | 'shop_location'
       | 'mobile_service',
     workingHours: {},
-    paymentPreference: 'after_service' as 'upfront' | 'after_service',
   });
 
-  const steps = [
-    'Business Info',
-    'Location & Hours',
-    'Payment Preferences',
-    'Get Started',
-  ];
+  const steps = ['Business Info', 'Location & Hours', 'Get Started'];
 
   // Prefill flags so user edits are not overwritten after initial prefill
   const didPrefillEmailRef = useRef(false);
@@ -104,9 +99,6 @@ export default function OnboardingPage() {
           businessName: formData.businessName,
           locationType: formData.locationType,
           workingHours: formData.workingHours,
-          paymentPreference: formData.paymentPreference as
-            | 'upfront'
-            | 'after_service',
           email: formData.email,
           ...(formData.businessType && { businessType: formData.businessType }),
           ...(formData.phone && { phoneNumber: formData.phone }),
@@ -174,15 +166,15 @@ export default function OnboardingPage() {
                 !formData.email && activeStep > 0 ? 'Email is required' : ''
               }
             />
-            <TextField
+            <PhoneInput
               fullWidth
               label="Phone Number"
               value={formData.phone}
-              onChange={(e) =>
-                setFormData({ ...formData, phone: e.target.value })
+              onChange={(value, isValid) =>
+                setFormData({ ...formData, phone: value })
               }
-              type="tel"
               sx={{ mb: 3 }}
+              showValidation={false}
             />
             <FormControl fullWidth>
               <InputLabel>Location Type</InputLabel>
@@ -246,50 +238,6 @@ export default function OnboardingPage() {
           </Box>
         );
       case 2:
-        return (
-          <Box>
-            <Typography variant="h6" gutterBottom>
-              How do you prefer to handle payments?
-            </Typography>
-            <FormControl fullWidth>
-              <InputLabel>Payment Preference</InputLabel>
-              <Select
-                value={formData.paymentPreference}
-                label="Payment Preference"
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    paymentPreference: e.target.value as
-                      | 'upfront'
-                      | 'after_service',
-                  })
-                }
-              >
-                <MenuItem value="upfront">
-                  <Box>
-                    <Typography>Payment before service</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Customers pay when dropping off garments
-                    </Typography>
-                  </Box>
-                </MenuItem>
-                <MenuItem value="after_service">
-                  <Box>
-                    <Typography>Payment after service</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Customers pay when picking up completed items
-                    </Typography>
-                  </Box>
-                </MenuItem>
-              </Select>
-            </FormControl>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-              You can change this preference anytime and override it for
-              individual orders.
-            </Typography>
-          </Box>
-        );
-      case 3:
         return (
           <Box sx={{ textAlign: 'center' }}>
             <Typography variant="h5" gutterBottom>

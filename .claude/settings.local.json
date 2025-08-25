@@ -13,7 +13,8 @@
       "Bash(npx tsc:*)",
       "Bash(npm run lint)",
       "Bash(npm test:*)",
-      "Bash(npm run lint:*)"
+      "Bash(npm run lint:*)",
+      "Bash(timeout 30s npm test -- --passWithNoTests --silent)"
     ]
   },
   "enableAllProjectMcpServers": true,

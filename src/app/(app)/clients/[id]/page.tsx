@@ -33,6 +33,7 @@ import ClientProfileCard, {
 } from '@/components/clients/ClientProfileCard';
 import { createClient } from '@/lib/supabase/server';
 import { auth } from '@clerk/nextjs/server';
+import { formatPhoneNumber } from '@/lib/utils/phone';
 
 // Force dynamic rendering since this page uses authentication
 export const dynamic = 'force-dynamic';
@@ -89,9 +90,7 @@ export default async function ClientDetailPage({
           : Promise.resolve(0),
       ]);
 
-    const formatPhoneNumber = (phone: string) => {
-      return phone.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
-    };
+    // Remove local formatPhoneNumber function - using imported utility
 
     const formatDate = (dateString: string | null) => {
       if (!dateString) return 'N/A';
