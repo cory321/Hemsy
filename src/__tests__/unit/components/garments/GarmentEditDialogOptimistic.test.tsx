@@ -1,21 +1,18 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { GarmentProvider } from '@/contexts/GarmentContext';
 import GarmentEditDialogOptimistic from '@/components/garments/GarmentEditDialogOptimistic';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import * as garmentActions from '@/lib/actions/garments';
-
-// Mock the garment actions
-jest.mock('@/lib/actions/garments');
-jest.mock('sonner');
+import dayjs from 'dayjs';
 
 const mockGarment = {
   id: 'test-garment-id',
   name: 'Test Garment',
-  due_date: '2024-12-01',
-  event_date: '2024-12-15',
+  due_date: dayjs().add(7, 'days').format('YYYY-MM-DD'), // Future date
+  event_date: dayjs().add(14, 'days').format('YYYY-MM-DD'), // Future date
   preset_icon_key: 'tops/blouse',
   preset_fill_color: '#D6C4F2',
   preset_outline_color: null,
@@ -29,14 +26,36 @@ const mockGarment = {
   totalPriceCents: 0,
 };
 
+// Mock the garment actions
+jest.mock('@/lib/actions/garments');
+jest.mock('sonner');
+
+// Mock the GarmentContext
+const mockUpdateGarmentOptimistic = jest.fn();
+const mockUpdateGarmentIcon = jest.fn();
+const mockUpdateGarmentPhoto = jest.fn();
+const mockDeleteGarmentPhoto = jest.fn();
+
+let currentMockGarment = mockGarment;
+
+jest.mock('@/contexts/GarmentContext', () => ({
+  useGarment: () => ({
+    garment: currentMockGarment,
+    updateGarmentOptimistic: mockUpdateGarmentOptimistic,
+    updateGarmentIcon: mockUpdateGarmentIcon,
+    updateGarmentPhoto: mockUpdateGarmentPhoto,
+    deleteGarmentPhoto: mockDeleteGarmentPhoto,
+  }),
+  GarmentProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 const mockOnClose = jest.fn();
 
 const renderComponent = (garment = mockGarment) => {
+  currentMockGarment = garment;
   return render(
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <GarmentProvider initialGarment={garment}>
-        <GarmentEditDialogOptimistic open={true} onClose={mockOnClose} />
-      </GarmentProvider>
+      <GarmentEditDialogOptimistic open={true} onClose={mockOnClose} />
     </LocalizationProvider>
   );
 };
@@ -44,6 +63,8 @@ const renderComponent = (garment = mockGarment) => {
 describe('GarmentEditDialogOptimistic', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    currentMockGarment = mockGarment;
+    mockUpdateGarmentOptimistic.mockResolvedValue(undefined);
     (garmentActions.updateGarment as jest.Mock).mockResolvedValue({
       success: true,
     });
@@ -120,18 +141,19 @@ describe('GarmentEditDialogOptimistic', () => {
     const saveButton = screen.getByRole('button', { name: /save changes/i });
     await user.click(saveButton);
 
-    // Dialog should close immediately (optimistic)
-    expect(mockOnClose).toHaveBeenCalled();
+    // Wait for async operations to complete
+    await waitFor(() => {
+      expect(mockOnClose).toHaveBeenCalled();
+    });
 
-    // Verify updateGarment was called with correct data
-    expect(garmentActions.updateGarment).toHaveBeenCalledWith({
-      garmentId: 'test-garment-id',
-      updates: {
+    // Verify updateGarmentOptimistic was called with correct data
+    await waitFor(() => {
+      expect(mockUpdateGarmentOptimistic).toHaveBeenCalledWith({
         name: 'Updated Garment',
-        dueDate: '2024-12-01',
-        eventDate: '2024-12-15',
+        due_date: dayjs().add(7, 'days').format('YYYY-MM-DD'),
+        event_date: dayjs().add(14, 'days').format('YYYY-MM-DD'),
         notes: 'Test notes',
-      },
+      });
     });
   });
 
@@ -149,15 +171,14 @@ describe('GarmentEditDialogOptimistic', () => {
     const saveButton = screen.getByRole('button', { name: /save changes/i });
     await user.click(saveButton);
 
-    // Verify updateGarment was called with null event date
-    expect(garmentActions.updateGarment).toHaveBeenCalledWith({
-      garmentId: 'test-garment-id',
-      updates: {
+    // Wait for async operations to complete
+    await waitFor(() => {
+      expect(mockUpdateGarmentOptimistic).toHaveBeenCalledWith({
         name: 'Test Garment',
-        dueDate: '2024-12-01',
-        eventDate: null,
+        due_date: dayjs().add(7, 'days').format('YYYY-MM-DD'),
+        event_date: null,
         notes: 'Test notes',
-      },
+      });
     });
   });
 
@@ -179,5 +200,116 @@ describe('GarmentEditDialogOptimistic', () => {
       'placeholder',
       expect.stringContaining('EEEE, MMMM')
     );
+  });
+
+  it('prevents submission with past due date', async () => {
+    const user = userEvent.setup();
+    const pastDate = dayjs().subtract(1, 'day').format('YYYY-MM-DD');
+
+    renderComponent({
+      ...mockGarment,
+      due_date: pastDate,
+    });
+
+    // Try to save with past due date
+    const saveButton = screen.getByRole('button', { name: /save changes/i });
+    await user.click(saveButton);
+
+    // Should show validation error
+    expect(
+      screen.getByText('Due date cannot be in the past.')
+    ).toBeInTheDocument();
+
+    // Dialog should not close
+    expect(mockOnClose).not.toHaveBeenCalled();
+
+    // updateGarmentOptimistic should not be called
+    expect(mockUpdateGarmentOptimistic).not.toHaveBeenCalled();
+  });
+
+  it('prevents submission with past event date', async () => {
+    const user = userEvent.setup();
+    const pastDate = dayjs().subtract(1, 'day').format('YYYY-MM-DD');
+    const futureDate = dayjs().add(1, 'day').format('YYYY-MM-DD');
+
+    renderComponent({
+      ...mockGarment,
+      due_date: futureDate, // Set future due date so it doesn't trigger first
+      event_date: pastDate,
+    });
+
+    // Try to save with past event date
+    const saveButton = screen.getByRole('button', { name: /save changes/i });
+    await user.click(saveButton);
+
+    // Should show validation error
+    expect(
+      screen.getByText('Event date cannot be in the past.')
+    ).toBeInTheDocument();
+
+    // Dialog should not close
+    expect(mockOnClose).not.toHaveBeenCalled();
+
+    // updateGarmentOptimistic should not be called
+    expect(mockUpdateGarmentOptimistic).not.toHaveBeenCalled();
+  });
+
+  it('allows submission with today as due date', async () => {
+    const user = userEvent.setup();
+    const today = dayjs().format('YYYY-MM-DD');
+
+    renderComponent({
+      ...mockGarment,
+      due_date: today,
+      event_date: null, // No event date to avoid conflicts
+    });
+
+    // Uncheck special event to avoid event date validation
+    const specialEventCheckbox = screen.getByRole('checkbox', {
+      name: /special event/i,
+    });
+    await user.click(specialEventCheckbox);
+
+    // Try to save with today's date
+    const saveButton = screen.getByRole('button', { name: /save changes/i });
+    await user.click(saveButton);
+
+    // Should not show validation error
+    expect(
+      screen.queryByText('Due date cannot be in the past.')
+    ).not.toBeInTheDocument();
+
+    // Dialog should close
+    expect(mockOnClose).toHaveBeenCalled();
+
+    // updateGarmentOptimistic should be called
+    expect(mockUpdateGarmentOptimistic).toHaveBeenCalled();
+  });
+
+  it('allows submission with today as event date', async () => {
+    const user = userEvent.setup();
+    const today = dayjs().format('YYYY-MM-DD');
+    const futureDate = dayjs().add(1, 'day').format('YYYY-MM-DD');
+
+    renderComponent({
+      ...mockGarment,
+      due_date: futureDate, // Future due date
+      event_date: today, // Today as event date
+    });
+
+    // Try to save with today's event date
+    const saveButton = screen.getByRole('button', { name: /save changes/i });
+    await user.click(saveButton);
+
+    // Should not show validation error
+    expect(
+      screen.queryByText('Event date cannot be in the past.')
+    ).not.toBeInTheDocument();
+
+    // Dialog should close
+    expect(mockOnClose).toHaveBeenCalled();
+
+    // updateGarmentOptimistic should be called
+    expect(mockUpdateGarmentOptimistic).toHaveBeenCalled();
   });
 });

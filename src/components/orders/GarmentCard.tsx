@@ -132,7 +132,9 @@ export default function GarmentCard({
                   getPresetIconUrl(garment.presetIconKey) ||
                   '/presets/garments/select-garment.svg'
                 }
-                fillColor={garment.presetFillColor || '#000000'}
+                {...(garment.presetFillColor
+                  ? { fillColor: garment.presetFillColor }
+                  : {})}
                 style={{ width: 80, height: 80 }}
               />
             ) : (

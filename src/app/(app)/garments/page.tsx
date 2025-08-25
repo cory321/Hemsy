@@ -292,7 +292,7 @@ export default function GarmentsPage() {
                   sx={{
                     position: 'relative',
                     paddingTop: '100%',
-                    bgcolor: 'grey.50',
+                    bgcolor: 'grey.100',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -309,8 +309,8 @@ export default function GarmentsPage() {
                     }}
                   >
                     <i
-                      className="ri ri-t-shirt-2-fill"
-                      style={{ fontSize: 128, color: '#e0e0e0' }}
+                      className="ri ri-t-shirt-line"
+                      style={{ fontSize: 128 }}
                       aria-hidden
                     />
                   </Box>

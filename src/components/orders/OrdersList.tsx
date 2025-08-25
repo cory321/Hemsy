@@ -19,6 +19,8 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  CircularProgress,
+  Backdrop,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -79,6 +81,7 @@ export default function OrdersList({
   const [page, setPage] = useState(initialData.page - 1);
   const [rowsPerPage, setRowsPerPage] = useState(initialData.pageSize);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isFiltering, setIsFiltering] = useState(false);
 
   const debouncedSearch = useDebounce(search, 300);
   const getOrdersActionRef = useRef(getOrdersAction);
@@ -95,7 +98,14 @@ export default function OrdersList({
     }
 
     const fetchData = async () => {
-      setLoading(true);
+      // Use isFiltering for search/status changes, loading for pagination
+      const isSearchOrStatusChange =
+        debouncedSearch !== '' || statusFilter !== 'all';
+      if (isSearchOrStatusChange) {
+        setIsFiltering(true);
+      } else {
+        setLoading(true);
+      }
       setError(null);
       try {
         const status = statusFilter === 'all' ? undefined : statusFilter;
@@ -115,6 +125,7 @@ export default function OrdersList({
         setError(err instanceof Error ? err.message : 'Failed to fetch orders');
       } finally {
         setLoading(false);
+        setIsFiltering(false);
       }
     };
 
@@ -177,109 +188,126 @@ export default function OrdersList({
       )}
 
       {/* Orders List */}
-      <Stack spacing={2}>
-        {loading ? (
-          // Loading skeletons
-          Array.from({ length: rowsPerPage }).map((_, index) => (
-            <Card key={index}>
-              <CardContent>
-                <Stack spacing={2}>
-                  <Skeleton variant="text" width="30%" height={32} />
-                  <Box sx={{ display: 'flex', gap: 2 }}>
-                    <Skeleton variant="circular" width={40} height={40} />
-                    <Box sx={{ flex: 1 }}>
-                      <Skeleton variant="text" width="40%" />
-                      <Skeleton variant="text" width="20%" />
-                    </Box>
-                  </Box>
-                  <Skeleton variant="rectangular" height={24} width="25%" />
-                </Stack>
-              </CardContent>
-            </Card>
-          ))
-        ) : data.data.length === 0 ? (
-          <Card>
-            <CardContent sx={{ textAlign: 'center', py: 5 }}>
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                {search || statusFilter !== 'all'
-                  ? 'No orders found matching your filters'
-                  : 'No orders yet'}
-              </Typography>
-            </CardContent>
-          </Card>
-        ) : (
-          data.data.map((order) => (
-            <Card
-              key={order.id}
-              data-testid={`order-card-${order.id}`}
-              sx={{
-                cursor: 'pointer',
-                '&:hover': {
-                  bgcolor: 'action.hover',
-                },
-              }}
-              onClick={() => handleCardClick(order.id)}
-            >
-              <CardContent>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    mb: 2,
-                  }}
-                >
-                  <Typography variant="h6">
-                    Order #{order.order_number || 'N/A'}
-                  </Typography>
-                  <IconButton size="small">
-                    <ChevronRightIcon />
-                  </IconButton>
-                </Box>
-
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <PersonIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                  <Typography variant="body2">
-                    {order.client
-                      ? `${order.client.first_name} ${order.client.last_name}`
-                      : 'No Client'}
-                  </Typography>
-                </Box>
-
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Chip
-                      label={getStatusLabel(order.status || 'pending')}
-                      color={getStatusColor(order.status || 'pending')}
-                      size="small"
-                    />
-                    <Typography variant="body2" color="text.secondary">
-                      {order.garments?.length || 0} garment
-                      {order.garments?.length !== 1 ? 's' : ''}
-                    </Typography>
-                  </Stack>
-                  <Stack alignItems="flex-end" spacing={0.5}>
-                    <Typography variant="h6">
-                      {formatUSD(order.total_cents)}
-                    </Typography>
-                    {order.created_at && (
-                      <Typography variant="caption" color="text.secondary">
-                        {format(new Date(order.created_at), 'MMM d, yyyy')}
-                      </Typography>
-                    )}
-                  </Stack>
-                </Box>
-              </CardContent>
-            </Card>
-          ))
+      <Box sx={{ position: 'relative' }}>
+        {/* Subtle loading overlay for filtering */}
+        {isFiltering && (
+          <Backdrop
+            open={isFiltering}
+            sx={{
+              position: 'absolute',
+              zIndex: 1,
+              backgroundColor: 'rgba(255, 255, 255, 0.7)',
+              borderRadius: 1,
+            }}
+          >
+            <CircularProgress size={40} />
+          </Backdrop>
         )}
-      </Stack>
+
+        <Stack spacing={2}>
+          {loading ? (
+            // Loading skeletons for pagination
+            Array.from({ length: rowsPerPage }).map((_, index) => (
+              <Card key={index}>
+                <CardContent>
+                  <Stack spacing={2}>
+                    <Skeleton variant="text" width="30%" height={32} />
+                    <Box sx={{ display: 'flex', gap: 2 }}>
+                      <Skeleton variant="circular" width={40} height={40} />
+                      <Box sx={{ flex: 1 }}>
+                        <Skeleton variant="text" width="40%" />
+                        <Skeleton variant="text" width="20%" />
+                      </Box>
+                    </Box>
+                    <Skeleton variant="rectangular" height={24} width="25%" />
+                  </Stack>
+                </CardContent>
+              </Card>
+            ))
+          ) : data.data.length === 0 ? (
+            <Card>
+              <CardContent sx={{ textAlign: 'center', py: 5 }}>
+                <Typography variant="h6" color="text.secondary" gutterBottom>
+                  {search || statusFilter !== 'all'
+                    ? 'No orders found matching your filters'
+                    : 'No orders yet'}
+                </Typography>
+              </CardContent>
+            </Card>
+          ) : (
+            data.data.map((order) => (
+              <Card
+                key={order.id}
+                data-testid={`order-card-${order.id}`}
+                sx={{
+                  cursor: 'pointer',
+                  '&:hover': {
+                    bgcolor: 'action.hover',
+                  },
+                }}
+                onClick={() => handleCardClick(order.id)}
+              >
+                <CardContent>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      mb: 2,
+                    }}
+                  >
+                    <Typography variant="h6">
+                      Order #{order.order_number || 'N/A'}
+                    </Typography>
+                    <IconButton size="small">
+                      <ChevronRightIcon />
+                    </IconButton>
+                  </Box>
+
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <PersonIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                    <Typography variant="body2">
+                      {order.client
+                        ? `${order.client.first_name} ${order.client.last_name}`
+                        : 'No Client'}
+                    </Typography>
+                  </Box>
+
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Chip
+                        label={getStatusLabel(order.status || 'pending')}
+                        color={getStatusColor(order.status || 'pending')}
+                        size="small"
+                      />
+                      <Typography variant="body2" color="text.secondary">
+                        {order.garments?.length || 0} garment
+                        {order.garments?.length !== 1 ? 's' : ''}
+                      </Typography>
+                    </Stack>
+                    <Stack alignItems="flex-end" spacing={0.5}>
+                      <Typography variant="h6">
+                        {formatUSD(order.total_cents)}
+                      </Typography>
+                      {order.created_at && (
+                        <Typography variant="caption" color="text.secondary">
+                          {format(new Date(order.created_at), 'MMM d, yyyy')}
+                        </Typography>
+                      )}
+                    </Stack>
+                  </Box>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </Stack>
+      </Box>
 
       {/* Pagination */}
       <Paper elevation={1} sx={{ mt: 3 }}>

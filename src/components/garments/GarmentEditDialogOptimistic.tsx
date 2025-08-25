@@ -75,6 +75,23 @@ export default function GarmentEditDialogOptimistic({
       return;
     }
 
+    // Additional validation for past dates
+    const today = dayjs().startOf('day');
+
+    if (formData.dueDate && dayjs(formData.dueDate).isBefore(today)) {
+      setDateValidationError('Due date cannot be in the past.');
+      return;
+    }
+
+    if (
+      formData.specialEvent &&
+      formData.eventDate &&
+      dayjs(formData.eventDate).isBefore(today)
+    ) {
+      setDateValidationError('Event date cannot be in the past.');
+      return;
+    }
+
     setLoading(true);
 
     // Close dialog immediately for better UX
@@ -217,7 +234,9 @@ export default function GarmentEditDialogOptimistic({
                         return (
                           <InlinePresetSvg
                             src={resolved.src as string}
-                            fillColor={garment.preset_fill_color || '#000000'}
+                            {...(garment.preset_fill_color
+                              ? { fillColor: garment.preset_fill_color }
+                              : {})}
                             style={{
                               width: '80%',
                               height: '80%',
@@ -262,6 +281,7 @@ export default function GarmentEditDialogOptimistic({
                   label="Due Date"
                   value={formData.dueDate ? dayjs(formData.dueDate) : null}
                   format="dddd, MMMM D, YYYY"
+                  minDate={dayjs().startOf('day')}
                   onChange={(newValue) => {
                     if (!newValue) {
                       setFormData({ ...formData, dueDate: '' });
@@ -322,6 +342,7 @@ export default function GarmentEditDialogOptimistic({
                       formData.eventDate ? dayjs(formData.eventDate) : null
                     }
                     format="dddd, MMMM D, YYYY"
+                    minDate={dayjs().startOf('day')}
                     onChange={(newValue) => {
                       if (!newValue) {
                         setFormData({ ...formData, eventDate: '' });
