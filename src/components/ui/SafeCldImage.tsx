@@ -73,6 +73,8 @@ export default function SafeCldImage({
     const transformations = 'f_auto,q_auto';
     const fullUrl = `${baseUrl}/${transformations}/${src}`;
 
+    console.log('[SafeCldImage] Built Cloudinary URL:', fullUrl);
+
     setImageUrl(fullUrl);
     setHasError(false);
   }, [src]);
@@ -166,12 +168,19 @@ export default function SafeCldImage({
 
   // Check for invalid src
   if (!src || !imageUrl) {
+    console.log('[SafeCldImage] No src or imageUrl, showing fallback');
     return renderFallback();
   }
 
   // Show fallback if there's an error
   if (hasError) {
     console.log('[SafeCldImage] Rendering fallback for:', src);
+    return renderFallback();
+  }
+
+  // TEMPORARY: Force fallback for debugging
+  if (src.includes('s0tfhef21la9q2pmgysd')) {
+    console.log('[SafeCldImage] FORCING fallback for debugging:', src);
     return renderFallback();
   }
 
