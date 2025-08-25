@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { CldImage } from 'next-cloudinary';
+import { useState, useEffect, useRef } from 'react';
 import { Box } from '@mui/material';
+import Image from 'next/image';
 import InlinePresetSvg from '@/components/ui/InlinePresetSvg';
 import { getPresetIconUrl } from '@/utils/presetIcons';
 
@@ -20,8 +20,8 @@ interface SafeCldImageProps {
 }
 
 /**
- * A wrapper around CldImage that handles errors gracefully
- * Falls back to preset icon when Cloudinary image fails to load
+ * A safe Cloudinary image component that handles errors gracefully
+ * Uses Next.js Image component directly with Cloudinary URLs to avoid console errors
  */
 export default function SafeCldImage({
   src,
@@ -36,16 +36,45 @@ export default function SafeCldImage({
   onError,
 }: SafeCldImageProps) {
   const [hasError, setHasError] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const mountedRef = useRef(true);
 
-  // Reset error state when src changes
   useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  // Build Cloudinary URL
+  useEffect(() => {
+    if (!src) {
+      setHasError(true);
+      return;
+    }
+
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    if (!cloudName) {
+      console.error(
+        '[SafeCldImage] NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME is not set'
+      );
+      setHasError(true);
+      return;
+    }
+
+    // Build the Cloudinary URL with auto format and quality
+    const baseUrl = `https://res.cloudinary.com/${cloudName}/image/upload`;
+    const transformations = 'f_auto,q_auto';
+    const fullUrl = `${baseUrl}/${transformations}/${src}`;
+
+    setImageUrl(fullUrl);
     setHasError(false);
   }, [src]);
 
   const handleError = () => {
-    console.warn(`[SafeCldImage] Failed to load Cloudinary image: ${src}`);
-    setHasError(true);
-    onError?.();
+    if (mountedRef.current) {
+      setHasError(true);
+      onError?.();
+    }
   };
 
   // Render fallback component
@@ -112,41 +141,47 @@ export default function SafeCldImage({
     );
   };
 
-  // Check for invalid src
-  if (!src) {
+  // Show fallback if there's an error or no URL
+  if (hasError || !imageUrl) {
     return renderFallback();
   }
 
-  // Show fallback if there's an error
-  if (hasError) {
-    return renderFallback();
-  }
-
-  // Show the CldImage component with error handling
+  // For fill mode
   if (fill) {
     return (
-      <CldImage
-        src={src}
-        alt={alt}
-        fill={true}
-        style={style}
-        sizes={sizes}
-        onError={handleError}
-      />
+      <Box
+        sx={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+        }}
+      >
+        <Image
+          src={imageUrl}
+          alt={alt}
+          fill
+          style={{ objectFit: 'cover', ...style }}
+          sizes={sizes || '100vw'}
+          onError={handleError}
+          unoptimized // Use Cloudinary's optimization instead of Next.js
+        />
+      </Box>
     );
   }
 
-  // Width and height variant
+  // For fixed dimensions
   if (width && height) {
     return (
-      <CldImage
-        src={src}
+      <Image
+        src={imageUrl}
         alt={alt}
         width={width}
         height={height}
         style={style}
         sizes={sizes}
         onError={handleError}
+        unoptimized // Use Cloudinary's optimization instead of Next.js
       />
     );
   }
