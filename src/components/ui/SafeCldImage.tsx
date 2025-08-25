@@ -36,58 +36,20 @@ export default function SafeCldImage({
   onError,
 }: SafeCldImageProps) {
   const [hasError, setHasError] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
   // Reset error state when src changes
   useEffect(() => {
     setHasError(false);
-    setIsLoading(true);
   }, [src]);
 
   const handleError = () => {
     console.warn(`[SafeCldImage] Failed to load Cloudinary image: ${src}`);
     setHasError(true);
-    setIsLoading(false);
     onError?.();
   };
 
-  const handleLoad = () => {
-    setIsLoading(false);
-  };
-
-  // Check if the image exists by attempting to fetch it
-  useEffect(() => {
-    if (!src) {
-      setHasError(true);
-      setIsLoading(false);
-      return;
-    }
-
-    // Construct the Cloudinary URL to check if image exists
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-    if (!cloudName) {
-      console.error('[SafeCldImage] NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME is not set');
-      setHasError(true);
-      setIsLoading(false);
-      return;
-    }
-
-    // Use a small transformation to check if image exists
-    const checkUrl = `https://res.cloudinary.com/${cloudName}/image/upload/w_1,h_1,f_auto/${src}`;
-    
-    fetch(checkUrl, { method: 'HEAD' })
-      .then((response) => {
-        if (!response.ok) {
-          handleError();
-        }
-      })
-      .catch(() => {
-        handleError();
-      });
-  }, [src]);
-
-    // Show fallback if there's an error
-  if (hasError) {
+  // Render fallback component
+  const renderFallback = () => {
     // If we have a fallback icon, show it
     if (fallbackIconKey) {
       const iconUrl = getPresetIconUrl(fallbackIconKey);
@@ -121,7 +83,7 @@ export default function SafeCldImage({
       }
     }
 
-        // Default fallback
+    // Default fallback
     return (
       <Box
         sx={{
@@ -148,34 +110,47 @@ export default function SafeCldImage({
         />
       </Box>
     );
+  };
+
+  // Check for invalid src
+  if (!src) {
+    return renderFallback();
+  }
+
+  // Show fallback if there's an error
+  if (hasError) {
+    return renderFallback();
   }
 
   // Show the CldImage component with error handling
-  return (
-    <>
-      {!hasError && fill && (
-        <CldImage
-          src={src}
-          alt={alt}
-          fill={true}
-          style={style}
-          sizes={sizes}
-          onError={handleError}
-          onLoad={handleLoad}
-        />
-      )}
-      {!hasError && !fill && width && height && (
-        <CldImage
-          src={src}
-          alt={alt}
-          width={width}
-          height={height}
-          style={style}
-          sizes={sizes}
-          onError={handleError}
-          onLoad={handleLoad}
-        />
-      )}
-    </>
-  );
+  if (fill) {
+    return (
+      <CldImage
+        src={src}
+        alt={alt}
+        fill={true}
+        style={style}
+        sizes={sizes}
+        onError={handleError}
+      />
+    );
+  }
+
+  // Width and height variant
+  if (width && height) {
+    return (
+      <CldImage
+        src={src}
+        alt={alt}
+        width={width}
+        height={height}
+        style={style}
+        sizes={sizes}
+        onError={handleError}
+      />
+    );
+  }
+
+  // If neither fill nor width/height are provided, show fallback
+  return renderFallback();
 }
