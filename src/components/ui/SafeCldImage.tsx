@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, SyntheticEvent } from 'react';
 import { Box } from '@mui/material';
 import Image from 'next/image';
 import InlinePresetSvg from '@/components/ui/InlinePresetSvg';
@@ -38,6 +38,7 @@ export default function SafeCldImage({
   const [hasError, setHasError] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const mountedRef = useRef(true);
+  const imageRef = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => {
     return () => {
@@ -70,12 +71,41 @@ export default function SafeCldImage({
     setHasError(false);
   }, [src]);
 
-  const handleError = () => {
+  // Silently handle errors without logging to console
+  const handleError = (e: SyntheticEvent<HTMLImageElement, Event>) => {
+    // Prevent the error from bubbling up
+    e.preventDefault();
+    e.stopPropagation();
+
     if (mountedRef.current) {
       setHasError(true);
       onError?.();
     }
+
+    // Return false to prevent default error handling
+    return false;
   };
+
+  // Add global error suppression for this specific image
+  useEffect(() => {
+    if (!imageRef.current || hasError) return;
+
+    const handleGlobalError = (event: ErrorEvent): boolean | undefined => {
+      // Check if the error is related to our Cloudinary image
+      if (event.message && event.message.includes(src)) {
+        event.preventDefault();
+        event.stopPropagation();
+        return false;
+      }
+      return undefined;
+    };
+
+    window.addEventListener('error', handleGlobalError, true);
+
+    return () => {
+      window.removeEventListener('error', handleGlobalError, true);
+    };
+  }, [src, hasError]);
 
   // Render fallback component
   const renderFallback = () => {
@@ -141,8 +171,13 @@ export default function SafeCldImage({
     );
   };
 
-  // Show fallback if there's an error or no URL
-  if (hasError || !imageUrl) {
+  // Check for invalid src
+  if (!src || !imageUrl) {
+    return renderFallback();
+  }
+
+  // Show fallback if there's an error
+  if (hasError) {
     return renderFallback();
   }
 
@@ -157,14 +192,18 @@ export default function SafeCldImage({
           height: '100%',
         }}
       >
-        <Image
+        <img
+          ref={imageRef}
           src={imageUrl}
           alt={alt}
-          fill
-          style={{ objectFit: 'cover', ...style }}
-          sizes={sizes || '100vw'}
+          style={{
+            objectFit: 'cover',
+            width: '100%',
+            height: '100%',
+            ...style,
+          }}
           onError={handleError}
-          unoptimized // Use Cloudinary's optimization instead of Next.js
+          suppressHydrationWarning
         />
       </Box>
     );
@@ -173,15 +212,15 @@ export default function SafeCldImage({
   // For fixed dimensions
   if (width && height) {
     return (
-      <Image
+      <img
+        ref={imageRef}
         src={imageUrl}
         alt={alt}
         width={width}
         height={height}
         style={style}
-        sizes={sizes}
         onError={handleError}
-        unoptimized // Use Cloudinary's optimization instead of Next.js
+        suppressHydrationWarning
       />
     );
   }
