@@ -148,7 +148,6 @@ export default function SafeCldImage({
           alignItems: 'center',
           justifyContent: 'center',
           bgcolor: 'grey.100',
-          border: '2px solid red', // Debug border
         }}
         style={style}
       >
