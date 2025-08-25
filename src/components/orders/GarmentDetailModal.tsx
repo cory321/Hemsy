@@ -35,7 +35,7 @@ import PresetGarmentIconModal, {
 } from './PresetGarmentIconModal';
 import { getPresetIconUrl, getPresetIconLabel } from '@/utils/presetIcons';
 import { v4 as uuidv4 } from 'uuid';
-import { CldImage } from 'next-cloudinary';
+import SafeCldImage from '@/components/ui/SafeCldImage';
 
 interface ServiceOption {
   id: string;
@@ -277,12 +277,14 @@ export default function GarmentDetailModal({
                         }}
                       >
                         {localGarment.cloudinaryPublicId ? (
-                          <CldImage
+                          <SafeCldImage
                             src={localGarment.cloudinaryPublicId}
                             alt={localGarment.name || 'Garment image'}
                             fill
                             style={{ objectFit: 'cover' }}
                             sizes="(max-width: 768px) 100vw, 300px"
+                            fallbackIconKey={localGarment.presetIconKey}
+                            fallbackIconColor={localGarment.presetFillColor}
                           />
                         ) : localGarment.presetIconKey ? (
                           <InlinePresetSvg

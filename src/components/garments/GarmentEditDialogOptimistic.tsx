@@ -20,7 +20,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import { useGarment } from '@/contexts/GarmentContext';
-import { CldImage } from 'next-cloudinary';
+import SafeCldImage from '@/components/ui/SafeCldImage';
 import Grid from '@mui/material/Grid2';
 import GarmentImageOverlay from '@/components/orders/GarmentImageOverlay';
 import InlinePresetSvg from '@/components/ui/InlinePresetSvg';
@@ -186,12 +186,14 @@ export default function GarmentEditDialogOptimistic({
 
                       if (resolved.kind === 'cloud') {
                         return (
-                          <CldImage
+                          <SafeCldImage
                             src={garment.image_cloud_id as string}
                             alt={garment.name}
                             fill
                             style={{ objectFit: 'cover' }}
                             sizes="(max-width: 768px) 100vw, 300px"
+                            fallbackIconKey={garment.preset_icon_key}
+                            fallbackIconColor={garment.preset_fill_color}
                           />
                         );
                       }

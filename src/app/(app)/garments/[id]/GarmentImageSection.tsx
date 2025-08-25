@@ -10,7 +10,7 @@ import {
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import NextLink from 'next/link';
-import { CldImage } from 'next-cloudinary';
+import SafeCldImage from '@/components/ui/SafeCldImage';
 import { getStageColor } from '@/constants/garmentStages';
 import InlinePresetSvg from '@/components/ui/InlinePresetSvg';
 import { resolveGarmentDisplayImage } from '@/utils/displayImage';
@@ -75,12 +75,14 @@ export default function GarmentImageSection({
         >
           {resolved.kind === 'cloud' ? (
             <Box sx={{ position: 'relative', height: 400, width: '100%' }}>
-              <CldImage
+              <SafeCldImage
                 src={garment.image_cloud_id as string}
                 alt={garment.name}
                 fill
                 style={{ objectFit: 'cover' }}
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                fallbackIconKey={garment.preset_icon_key}
+                fallbackIconColor={garment.preset_fill_color}
               />
             </Box>
           ) : resolved.kind === 'photo' ? (

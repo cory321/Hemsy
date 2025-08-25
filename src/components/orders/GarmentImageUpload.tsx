@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { CldUploadWidget, CldImage } from 'next-cloudinary';
+import { CldUploadWidget } from 'next-cloudinary';
+import SafeCldImage from '@/components/ui/SafeCldImage';
 import {
   Box,
   Button,
@@ -55,12 +56,14 @@ export default function GarmentImageUpload({
         publicId ? (
           <Card variant="outlined" sx={{ position: 'relative' }}>
             <Box sx={{ position: 'relative', paddingTop: '75%' }}>
-              <CldImage
+              <SafeCldImage
                 src={publicId}
                 alt={garmentName || 'Garment image'}
                 fill
                 style={{ objectFit: 'cover' }}
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                fallbackIconKey="tops/shirt"
+                fallbackIconColor="#9e9e9e"
               />
               <Stack
                 direction="row"

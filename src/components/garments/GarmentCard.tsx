@@ -9,7 +9,7 @@ import {
   Tooltip,
   Chip,
 } from '@mui/material';
-import { CldImage } from 'next-cloudinary';
+import SafeCldImage from '@/components/ui/SafeCldImage';
 import InlinePresetSvg from '@/components/ui/InlinePresetSvg';
 import { resolveGarmentDisplayImage } from '@/utils/displayImage';
 import { getStageColor } from '@/constants/garmentStages';
@@ -103,12 +103,14 @@ const GarmentCard: React.FC<GarmentCardProps> = ({
           } as any);
           if (resolved.kind === 'cloud') {
             return (
-              <CldImage
+              <SafeCldImage
                 src={garment.image_cloud_id as string}
                 alt={garment.name}
                 fill
                 style={{ objectFit: 'cover' }}
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                fallbackIconKey={garment.preset_icon_key}
+                fallbackIconColor={garment.preset_fill_color}
               />
             );
           }
