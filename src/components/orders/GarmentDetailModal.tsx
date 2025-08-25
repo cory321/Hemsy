@@ -138,6 +138,7 @@ export default function GarmentDetailModal({
       setLocalGarment({
         ...localGarment,
         cloudinaryPublicId: result.info.public_id,
+        imageCloudId: result.info.public_id, // Set both fields for compatibility
         imageUrl: result.info.secure_url,
         // Clear preset icon when image is uploaded
         presetIconKey: undefined,
@@ -151,6 +152,7 @@ export default function GarmentDetailModal({
       setLocalGarment({
         ...localGarment,
         cloudinaryPublicId: undefined,
+        imageCloudId: undefined, // Clear both fields for compatibility
         imageUrl: undefined,
       });
     }
@@ -176,6 +178,7 @@ export default function GarmentDetailModal({
         ...(shouldAutoFillName && presetLabel ? { name: presetLabel } : {}),
         // Clear cloudinary image when icon is selected
         cloudinaryPublicId: undefined,
+        imageCloudId: undefined, // Clear both fields for compatibility
         imageUrl: undefined,
       };
 
@@ -187,6 +190,7 @@ export default function GarmentDetailModal({
         presetFillColor: result.presetFillColor,
         // Clear cloudinary image when icon is selected
         cloudinaryPublicId: undefined,
+        imageCloudId: undefined, // Clear both fields for compatibility
         imageUrl: undefined,
       };
 

@@ -479,6 +479,18 @@ export async function getGarmentById(garmentId: string) {
           return total + service.quantity * service.unit_price_cents;
         }, 0) || 0;
 
+    // Debug logging in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Garment fetched from DB:', {
+        id: garment.id,
+        name: garment.name,
+        preset_icon_key: garment.preset_icon_key,
+        preset_fill_color: garment.preset_fill_color,
+        image_cloud_id: garment.image_cloud_id,
+        photo_url: garment.photo_url,
+      });
+    }
+
     return {
       success: true,
       garment: {

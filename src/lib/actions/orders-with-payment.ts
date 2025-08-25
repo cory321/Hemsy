@@ -16,6 +16,10 @@ const CreateOrderWithPaymentSchema = z.object({
         notes: z.string().optional(),
         eventDate: z.string().optional(),
         dueDate: z.string().optional(),
+        presetIconKey: z.string().optional(),
+        presetFillColor: z.string().optional(),
+        imageCloudId: z.string().optional(),
+        imageUrl: z.string().url().optional(),
         services: z.array(
           z.object({
             serviceId: z.string().uuid().optional(),
@@ -30,6 +34,7 @@ const CreateOrderWithPaymentSchema = z.object({
     ),
     taxPercent: z.number().min(0).max(100),
     discountCents: z.number().int().min(0),
+    notes: z.string().optional(),
   }),
   paymentIntent: z.object({
     collectNow: z.boolean(),

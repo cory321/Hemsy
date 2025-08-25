@@ -141,20 +141,40 @@ export default function OrderFlowStepper() {
         discountCents: orderDraft.discountCents,
         notes: orderDraft.notes,
         taxPercent: taxPercent,
-        garments: garmentsNormalized.map((garment: GarmentDraft) => ({
-          name: garment.name,
-          notes: garment.notes,
-          dueDate: garment.dueDate || undefined,
-          eventDate: garment.eventDate || undefined,
-          services: garment.services.map((service: ServiceLine) => ({
-            quantity: service.quantity,
-            unit: service.unit,
-            unitPriceCents: service.unitPriceCents,
-            serviceId: service.serviceId,
-            name: service.name,
-            description: service.description,
-          })),
-        })),
+        garments: garmentsNormalized.map((garment: GarmentDraft) => {
+          const garmentData = {
+            name: garment.name,
+            notes: garment.notes,
+            dueDate: garment.dueDate || undefined,
+            eventDate: garment.eventDate || undefined,
+            presetIconKey: garment.presetIconKey || undefined,
+            presetFillColor: garment.presetFillColor || undefined,
+            imageCloudId:
+              garment.imageCloudId || garment.cloudinaryPublicId || undefined,
+            imageUrl: garment.imageUrl || undefined,
+            services: garment.services.map((service: ServiceLine) => ({
+              quantity: service.quantity,
+              unit: service.unit,
+              unitPriceCents: service.unitPriceCents,
+              serviceId: service.serviceId,
+              name: service.name,
+              description: service.description,
+            })),
+          };
+
+          // Debug logging to verify icon/image data is present
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Garment submission data:', {
+              name: garmentData.name,
+              presetIconKey: garmentData.presetIconKey,
+              presetFillColor: garmentData.presetFillColor,
+              imageCloudId: garmentData.imageCloudId,
+              imageUrl: garmentData.imageUrl,
+            });
+          }
+
+          return garmentData;
+        }),
       };
 
       // Calculate total amount for payment dialog

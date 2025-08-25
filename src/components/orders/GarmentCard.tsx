@@ -115,9 +115,9 @@ export default function GarmentCard({
               justifyContent: 'center',
             }}
           >
-            {garment?.cloudinaryPublicId ? (
+            {garment?.cloudinaryPublicId || garment?.imageCloudId ? (
               <img
-                src={`https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/c_fill,h_160,w_160/${garment.cloudinaryPublicId}`}
+                src={`https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/c_fill,h_160,w_160/${garment.cloudinaryPublicId || garment.imageCloudId}`}
                 alt={garment.name || 'Garment'}
                 style={{
                   width: '100%',

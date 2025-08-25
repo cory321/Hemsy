@@ -140,7 +140,15 @@ export default function GarmentImageUpload({
                     bgcolor: 'action.hover',
                   },
                 }}
-                onClick={() => open()}
+                onClick={() => {
+                  if (open && typeof open === 'function') {
+                    open();
+                  } else {
+                    console.error(
+                      'Cloudinary upload widget not properly initialized'
+                    );
+                  }
+                }}
               >
                 <Stack spacing={2} alignItems="center">
                   <Box
@@ -176,6 +184,10 @@ export default function GarmentImageUpload({
           onSuccess={handleUploadSuccess}
           onQueuesStart={() => setIsUploading(true)}
           onQueuesEnd={() => setIsUploading(false)}
+          onError={(error) => {
+            console.error('Cloudinary upload error:', error);
+            setIsUploading(false);
+          }}
           options={{
             sources: ['local', 'camera'],
             multiple: false,
@@ -193,7 +205,16 @@ export default function GarmentImageUpload({
           {({ open }) => (
             <Button
               variant="text"
-              onClick={() => open()}
+              onClick={() => {
+                if (open && typeof open === 'function') {
+                  open();
+                } else {
+                  console.error(
+                    'Cloudinary upload widget not properly initialized'
+                  );
+                }
+              }}
+              disabled={!open}
               sx={{ p: 0, textDecoration: 'underline' }}
             >
               {isUploading ? 'Uploading…' : 'Upload photo'}

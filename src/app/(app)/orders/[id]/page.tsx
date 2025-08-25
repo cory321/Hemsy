@@ -68,7 +68,7 @@ export default async function OrderDetailPage({
   const { data: garments } = await supabase
     .from('garments')
     .select(
-      `id, name, stage, notes, due_date, event_date, is_done, preset_icon_key, preset_fill_color`
+      `id, name, stage, notes, due_date, event_date, is_done, preset_icon_key, preset_fill_color, image_cloud_id, photo_url`
     )
     .eq('order_id', id)
     .order('created_at', { ascending: true });
@@ -343,9 +343,50 @@ export default async function OrderDetailPage({
                             }}
                           >
                             {(() => {
+                              const imageCloudId = (garment as any)
+                                .image_cloud_id as string | null;
+                              const photoUrl = (garment as any).photo_url as
+                                | string
+                                | null;
                               const key = (garment as any).preset_icon_key as
                                 | string
                                 | null;
+                              const fillColor = (garment as any)
+                                .preset_fill_color as string | null;
+
+                              // Check for Cloudinary image first
+                              if (imageCloudId) {
+                                return (
+                                  <img
+                                    src={`https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/c_fill,h_48,w_48/${imageCloudId}`}
+                                    alt={garment.name}
+                                    style={{
+                                      width: 48,
+                                      height: 48,
+                                      objectFit: 'cover',
+                                      borderRadius: '4px',
+                                    }}
+                                  />
+                                );
+                              }
+
+                              // Then check for photo URL
+                              if (photoUrl) {
+                                return (
+                                  <img
+                                    src={photoUrl}
+                                    alt={garment.name}
+                                    style={{
+                                      width: 48,
+                                      height: 48,
+                                      objectFit: 'cover',
+                                      borderRadius: '4px',
+                                    }}
+                                  />
+                                );
+                              }
+
+                              // Finally fall back to preset icon
                               const url = key ? getPresetIconUrl(key) : null;
                               return (
                                 <span
@@ -360,10 +401,9 @@ export default async function OrderDetailPage({
                                       url ||
                                       '/presets/garments/select-garment.svg'
                                     }
-                                    {...((garment as any).preset_fill_color
+                                    {...(fillColor
                                       ? {
-                                          fillColor: (garment as any)
-                                            .preset_fill_color as string,
+                                          fillColor: fillColor,
                                         }
                                       : {})}
                                   />

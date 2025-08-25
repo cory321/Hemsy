@@ -102,6 +102,10 @@ export default function GarmentImageOverlay({
                   onSuccess={handleUploadSuccess}
                   onQueuesStart={() => setIsUploading(true)}
                   onQueuesEnd={() => setIsUploading(false)}
+                  onError={(error) => {
+                    console.error('Cloudinary upload error:', error);
+                    setIsUploading(false);
+                  }}
                   options={{
                     sources: ['local', 'camera'],
                     multiple: false,
@@ -128,9 +132,15 @@ export default function GarmentImageOverlay({
                       <IconButton
                         onClick={(e) => {
                           e.stopPropagation();
-                          open();
+                          if (open && typeof open === 'function') {
+                            open();
+                          } else {
+                            console.error(
+                              'Cloudinary upload widget not properly initialized'
+                            );
+                          }
                         }}
-                        disabled={isUploading}
+                        disabled={isUploading || !open}
                         sx={{
                           backgroundColor: 'rgba(255, 255, 255, 0.9)',
                           color: theme.palette.primary.main,
@@ -280,6 +290,10 @@ export default function GarmentImageOverlay({
                   onSuccess={handleUploadSuccess}
                   onQueuesStart={() => setIsUploading(true)}
                   onQueuesEnd={() => setIsUploading(false)}
+                  onError={(error) => {
+                    console.error('Cloudinary upload error:', error);
+                    setIsUploading(false);
+                  }}
                   options={{
                     sources: ['local', 'camera'],
                     multiple: false,
@@ -306,9 +320,15 @@ export default function GarmentImageOverlay({
                       <IconButton
                         onClick={(e) => {
                           e.stopPropagation();
-                          open();
+                          if (open && typeof open === 'function') {
+                            open();
+                          } else {
+                            console.error(
+                              'Cloudinary upload widget not properly initialized'
+                            );
+                          }
                         }}
-                        disabled={isUploading}
+                        disabled={isUploading || !open}
                         sx={{
                           backgroundColor: 'rgba(255, 255, 255, 0.9)',
                           color: theme.palette.primary.main,

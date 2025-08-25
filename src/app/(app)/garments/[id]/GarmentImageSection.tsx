@@ -26,6 +26,18 @@ export default function GarmentImageSection({
 }: GarmentImageSectionProps) {
   const { garment } = useGarment();
 
+  // Debug logging in development
+  if (process.env.NODE_ENV === 'development') {
+    console.log('GarmentImageSection received garment:', {
+      id: garment.id,
+      name: garment.name,
+      preset_icon_key: garment.preset_icon_key,
+      preset_fill_color: garment.preset_fill_color,
+      image_cloud_id: garment.image_cloud_id,
+      photo_url: garment.photo_url,
+    });
+  }
+
   // Resolve display image with fallbacks
   const resolved = resolveGarmentDisplayImage({
     photoUrl: garment.photo_url || '',
