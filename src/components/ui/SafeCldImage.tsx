@@ -109,40 +109,17 @@ export default function SafeCldImage({
 
   // Render fallback component
   const renderFallback = () => {
-    // If we have a fallback icon, show it
+    // Try to use the fallback icon key first
+    let iconUrl: string | null = null;
     if (fallbackIconKey) {
-      const iconUrl = getPresetIconUrl(fallbackIconKey);
-      if (iconUrl) {
-        return (
-          <Box
-            sx={{
-              width: fill ? '100%' : width,
-              height: fill ? '100%' : height,
-              position: fill ? 'absolute' : 'relative',
-              inset: fill ? 0 : undefined,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              bgcolor: 'grey.100',
-            }}
-            style={style}
-          >
-            <InlinePresetSvg
-              src={iconUrl}
-              fillColor={fallbackIconColor || '#9e9e9e'}
-              style={{
-                width: '60%',
-                height: '60%',
-                maxWidth: 200,
-                maxHeight: 200,
-              }}
-            />
-          </Box>
-        );
-      }
+      iconUrl = getPresetIconUrl(fallbackIconKey);
     }
 
-    // Default fallback
+    // If no fallback icon key or it didn't resolve, use default
+    if (!iconUrl) {
+      iconUrl = '/presets/garments/select-garment.svg';
+    }
+
     return (
       <Box
         sx={{
@@ -158,8 +135,8 @@ export default function SafeCldImage({
         style={style}
       >
         <InlinePresetSvg
-          src="/presets/garments/tops/shirt.svg"
-          fillColor="#9e9e9e"
+          src={iconUrl}
+          fillColor={fallbackIconColor || '#9e9e9e'}
           style={{
             width: '60%',
             height: '60%',

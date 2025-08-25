@@ -62,7 +62,7 @@ export default function GarmentImageUpload({
                 fill
                 style={{ objectFit: 'cover' }}
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                fallbackIconKey="tops/shirt"
+                fallbackIconKey="tops/tshirt"
                 fallbackIconColor="#9e9e9e"
               />
               <Stack
