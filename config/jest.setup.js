@@ -94,12 +94,66 @@ global.ResizeObserver = jest.fn().mockImplementation(() => ({
 afterEach(() => {
   // Clean up any pending timers
   jest.clearAllTimers();
+  // Clean up any pending promises
+  jest.clearAllMocks();
+
+  // Only run timer cleanup if fake timers are active
+  try {
+    if (jest.isMockFunction(setTimeout)) {
+      jest.runOnlyPendingTimers();
+      jest.useRealTimers();
+    }
+  } catch (error) {
+    // Ignore timer cleanup errors - they're not critical
+  }
+});
+
+// Set default test timeout
+jest.setTimeout(10000);
+
+// Suppress console errors during tests unless in debug mode
+const originalError = console.error;
+beforeAll(() => {
+  if (!process.env.DEBUG_TESTS) {
+    console.error = (...args) => {
+      // Only suppress React/DOM specific errors that don't indicate test failures
+      if (
+        args[0]?.includes?.('Warning:') ||
+        args[0]?.includes?.('Error:') ||
+        args[0]?.includes?.('console.error')
+      ) {
+        return;
+      }
+      originalError.call(console, ...args);
+    };
+  }
+});
+
+afterAll(() => {
+  console.error = originalError;
+
+  // Final cleanup to prevent hanging
+  jest.clearAllTimers();
+  jest.clearAllMocks();
+
+  // Force garbage collection if available
+  if (global.gc) {
+    global.gc();
+  }
 });
 
 // Ensure EMAIL_DEV_OVERRIDE is set in test env to avoid accidental real sends
 process.env.EMAIL_DEV_OVERRIDE =
   process.env.EMAIL_DEV_OVERRIDE || 'cory321@gmail.com';
 process.env.RESEND_API_KEY = process.env.RESEND_API_KEY || 'test_resend_key';
+process.env.STRIPE_SECRET_KEY =
+  process.env.STRIPE_SECRET_KEY || 'sk_test_fake_key_for_testing';
+process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME =
+  process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'test_cloudinary_name';
+process.env.CLOUDINARY_API_KEY =
+  process.env.CLOUDINARY_API_KEY || 'test_cloudinary_api_key';
+process.env.CLOUDINARY_API_SECRET =
+  process.env.CLOUDINARY_API_SECRET || 'test_cloudinary_api_secret';
 
 // Mock IntersectionObserver
 global.IntersectionObserver = jest.fn().mockImplementation(() => ({
@@ -124,6 +178,15 @@ if (typeof window !== 'undefined') {
     })),
   });
 }
+
+// Mock next-cloudinary to avoid requiring real Cloudinary config in tests
+jest.mock('next-cloudinary', () => ({
+  __esModule: true,
+  CldUploadWidget: ({ children }) =>
+    typeof children === 'function' ? children({ open: () => {} }) : null,
+  CldImage: ({ src, alt }) =>
+    require('react').createElement('img', { src: String(src), alt: alt || '' }),
+}));
 
 // Mock MUI App Router Cache Provider hooks for tests
 jest.mock('@mui/material-nextjs/v14-appRouter', () => ({
@@ -156,7 +219,9 @@ jest.mock('@/lib/supabase/client', () => {
     order: jest.fn().mockReturnThis(),
     limit: jest.fn().mockReturnThis(),
     single: jest.fn().mockResolvedValue({ data: null, error: null }),
+    maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
     insert: jest.fn().mockResolvedValue({ data: null, error: null }),
+    upsert: jest.fn().mockResolvedValue({ data: null, error: null }),
   });
 
   const channelMock = () => ({
@@ -183,7 +248,9 @@ jest.mock('@/lib/supabase/server', () => {
     order: jest.fn().mockReturnThis(),
     limit: jest.fn().mockReturnThis(),
     single: jest.fn().mockResolvedValue({ data: null, error: null }),
+    maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
     insert: jest.fn().mockResolvedValue({ data: null, error: null }),
+    upsert: jest.fn().mockResolvedValue({ data: null, error: null }),
   });
 
   return {

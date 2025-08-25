@@ -20,7 +20,9 @@ import InlinePresetSvg from '@/components/ui/InlinePresetSvg';
 import { getPresetIconUrl } from '@/utils/presetIcons';
 import { ensureUserAndShop } from '@/lib/actions/users';
 import OrderDetailClient from './OrderDetailClient';
+import OrderServicesAndPayments from './OrderServicesAndPayments';
 import type { Database } from '@/types/supabase';
+import { formatPhoneNumber } from '@/lib/utils/phone';
 
 // Force dynamic rendering since this page uses authentication
 export const dynamic = 'force-dynamic';
@@ -71,41 +73,132 @@ export default async function OrderDetailPage({
     .eq('order_id', id)
     .order('created_at', { ascending: true });
 
-  // Get invoice if exists
+  // Get invoice with payments if exists
   const { data: invoice } = await supabase
     .from('invoices')
-    .select('*')
+    .select(
+      `
+			*,
+			payments(*)
+		`
+    )
     .eq('order_id', id)
     .single();
 
   // Get shop settings
-  const { data: shopSettings } = await supabase
+  const { data: shopSettings, error: shopSettingsError } = await supabase
     .from('shop_settings')
-    .select('payment_required_before_service, invoice_prefix')
+    .select('invoice_prefix')
     .eq('shop_id', shop.id)
     .single();
 
-  const garmentIds = (garments || []).map((g: any) => g.id);
-  const { data: lines } = garmentIds.length
-    ? ((await supabase
+  // Log error for debugging but continue with defaults
+  if (shopSettingsError) {
+    console.warn('Failed to fetch shop settings:', shopSettingsError.message);
+  }
+
+  // Fetch garment services with removal information (same as invoice page)
+  // Try the full query first, fall back to basic query if removal fields don't exist
+  let lines: any[] = [];
+  let servicesError: any = null;
+
+  try {
+    const { data, error } = await supabase
+      .from('garment_services')
+      .select(
+        `
+				id,
+				garment_id,
+				name,
+				description,
+				quantity,
+				unit,
+				unit_price_cents,
+				line_total_cents,
+				is_done,
+				is_removed,
+				removed_at,
+				removed_by,
+				removal_reason,
+				garments!inner(
+					id,
+					name,
+					order_id
+				)
+				`
+      )
+      .eq('garments.order_id', id)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      throw error;
+    }
+    lines = data || [];
+  } catch (error) {
+    console.warn(
+      'Failed to fetch services with removal fields, falling back to basic query:',
+      error
+    );
+    // Fallback to basic query without removal fields
+    const garmentIds = (garments || []).map((g: any) => g.id);
+    if (garmentIds.length > 0) {
+      const { data: basicLines, error: basicError } = await supabase
         .from('garment_services')
         .select(
-          'id, garment_id, name, quantity, unit, unit_price_cents, line_total_cents, is_done'
+          `
+					id,
+					garment_id,
+					name,
+					description,
+					quantity,
+					unit,
+					unit_price_cents,
+					line_total_cents,
+					is_done
+					`
         )
-        .in('garment_id', garmentIds)) as {
-        data: Database['public']['Tables']['garment_services']['Row'][] | null;
-      })
-    : { data: [] as Database['public']['Tables']['garment_services']['Row'][] };
+        .in('garment_id', garmentIds)
+        .order('created_at', { ascending: true });
+
+      if (basicError) {
+        console.error('Error fetching basic garment services:', basicError);
+        servicesError = basicError;
+      } else {
+        // Transform basic data to include garment names and default removal fields
+        lines = (basicLines || []).map((service: any) => {
+          const garment = garments?.find(
+            (g: any) => g.id === service.garment_id
+          );
+          return {
+            ...service,
+            is_removed: false,
+            removed_at: null,
+            removed_by: null,
+            removal_reason: null,
+            garments: garment
+              ? {
+                  id: garment.id,
+                  name: garment.name,
+                  order_id: id,
+                }
+              : {
+                  id: service.garment_id,
+                  name: 'Unknown Garment',
+                  order_id: id,
+                },
+          };
+        });
+      }
+    }
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'new':
       case 'pending':
         return 'warning';
-      case 'in_progress':
+      case 'partially_paid':
         return 'info';
-      case 'ready_for_pickup':
-      case 'completed':
+      case 'paid':
         return 'success';
       case 'cancelled':
         return 'error';
@@ -151,8 +244,6 @@ export default async function OrderDetailPage({
                 order={order}
                 invoice={invoice}
                 shopSettings={{
-                  payment_required_before_service:
-                    shopSettings?.payment_required_before_service ?? true,
                   invoice_prefix: shopSettings?.invoice_prefix ?? 'INV',
                 }}
               />
@@ -163,37 +254,60 @@ export default async function OrderDetailPage({
         {/* Order Info */}
         <Grid container spacing={3}>
           <Grid size={{ xs: 12, md: 8 }}>
-            {/* Client Info */}
+            {/* From and Bill To Information */}
             <Card sx={{ mb: 3 }}>
               <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Client Information
-                </Typography>
-                <Typography variant="body1">
-                  <Link
-                    href={`/clients/${client?.id}`}
-                    style={{ textDecoration: 'none', color: 'inherit' }}
-                  >
-                    {client
-                      ? `${client.first_name} ${client.last_name}`
-                      : 'Client'}
-                  </Link>
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {client?.phone_number || ''}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {client?.email || ''}
-                </Typography>
-                {client?.mailing_address && (
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mt: 1 }}
-                  >
-                    {client.mailing_address}
-                  </Typography>
-                )}
+                <Grid container spacing={3}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Typography variant="h6" gutterBottom>
+                      From
+                    </Typography>
+                    <Typography variant="body1" fontWeight="bold">
+                      {shop?.name || 'Your Shop'}
+                    </Typography>
+                    {shop?.mailing_address && (
+                      <Typography variant="body2">
+                        {shop.mailing_address}
+                      </Typography>
+                    )}
+                    {shop?.email && (
+                      <Typography variant="body2">{shop.email}</Typography>
+                    )}
+                    {shop?.phone_number && (
+                      <Typography variant="body2">
+                        {shop.phone_number}
+                      </Typography>
+                    )}
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Typography variant="h6" gutterBottom>
+                      Bill To
+                    </Typography>
+                    <Typography variant="body1" fontWeight="bold">
+                      <Link
+                        href={`/clients/${client?.id}`}
+                        style={{ textDecoration: 'none', color: 'inherit' }}
+                      >
+                        {client
+                          ? `${client.first_name} ${client.last_name}`
+                          : 'Client'}
+                      </Link>
+                    </Typography>
+                    {client?.mailing_address && (
+                      <Typography variant="body2">
+                        {client.mailing_address}
+                      </Typography>
+                    )}
+                    <Typography variant="body2">
+                      {client?.email || ''}
+                    </Typography>
+                    <Typography variant="body2">
+                      {client?.phone_number
+                        ? formatPhoneNumber(client.phone_number)
+                        : ''}
+                    </Typography>
+                  </Grid>
+                </Grid>
               </CardContent>
             </Card>
 
@@ -307,7 +421,9 @@ export default async function OrderDetailPage({
                                   {formatUSD(
                                     (lines || [])
                                       .filter(
-                                        (l: any) => l.garment_id === garment.id
+                                        (l: any) =>
+                                          l.garment_id === garment.id &&
+                                          !l.is_removed
                                       )
                                       .reduce(
                                         (sum: number, l: any) =>
@@ -321,10 +437,13 @@ export default async function OrderDetailPage({
 
                             <Typography variant="body2" color="text.secondary">
                               {(lines || [])
-                                .filter((l: any) => l.garment_id === garment.id)
+                                .filter(
+                                  (l: any) =>
+                                    l.garment_id === garment.id && !l.is_removed
+                                )
                                 .map(
                                   (l: any) =>
-                                    `${l.name} (${l.quantity} ${l.unit})`
+                                    `${l.name} (${l.quantity} ${l.unit || 'service'})`
                                 )
                                 .join(', ')}
                             </Typography>
@@ -379,8 +498,10 @@ export default async function OrderDetailPage({
                   >
                     <Typography color="text.secondary">Status</Typography>
                     <Chip
-                      label={(order?.status || 'new').toString().toUpperCase()}
-                      color={getStatusColor(order?.status || 'new') as any}
+                      label={(order?.status || 'pending')
+                        .toString()
+                        .toUpperCase()}
+                      color={getStatusColor(order?.status || 'pending') as any}
                       size="small"
                     />
                   </Box>
@@ -474,6 +595,13 @@ export default async function OrderDetailPage({
             )}
           </Grid>
         </Grid>
+
+        {/* Services and Payment History Sections */}
+        <OrderServicesAndPayments
+          garmentServices={lines || []}
+          invoice={invoice}
+          payments={invoice?.payments || []}
+        />
       </Box>
     </Container>
   );

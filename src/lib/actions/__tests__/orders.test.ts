@@ -28,7 +28,7 @@ describe('getOrdersByClient', () => {
       {
         id: 'order-1',
         order_number: 'ORD-001',
-        status: 'new',
+        status: 'pending',
         total_cents: 5000,
         garments: [{ id: 'g1' }, { id: 'g2' }],
         client: {

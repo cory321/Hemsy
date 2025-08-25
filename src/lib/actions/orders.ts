@@ -195,7 +195,7 @@ export async function createOrder(
       .insert({
         shop_id: shop.id,
         client_id: input.clientId,
-        status: 'new',
+        status: 'pending',
         discount_cents: input.discountCents ?? 0,
         notes: input.notes ?? null,
         order_number: orderNumberData as string,
@@ -471,11 +471,13 @@ export async function getGarmentById(garmentId: string) {
       throw new Error('Garment not found or access denied');
     }
 
-    // Calculate total price from garment services
+    // Calculate total price from active garment services (exclude soft-deleted)
     const totalPriceCents =
-      garment.garment_services?.reduce((total: number, service: any) => {
-        return total + service.quantity * service.unit_price_cents;
-      }, 0) || 0;
+      garment.garment_services
+        ?.filter((service: any) => !service.is_removed)
+        .reduce((total: number, service: any) => {
+          return total + service.quantity * service.unit_price_cents;
+        }, 0) || 0;
 
     return {
       success: true,
@@ -489,6 +491,113 @@ export async function getGarmentById(garmentId: string) {
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to fetch garment',
+    };
+  }
+}
+
+export async function getGarmentWithInvoiceData(garmentId: string) {
+  'use server';
+
+  try {
+    const { shop } = await ensureUserAndShop();
+    const supabase = await createSupabaseClient();
+
+    // Fetch garment with all related data including invoice and payments
+    const { data: garment, error: garmentError } = await supabase
+      .from('garments')
+      .select(
+        `
+        *,
+        order:orders(
+          id,
+          order_number,
+          status,
+          client:clients(
+            id,
+            first_name,
+            last_name,
+            email,
+            phone_number
+          ),
+          invoices(
+            id,
+            invoice_number,
+            status,
+            amount_cents,
+            deposit_amount_cents,
+            description,
+            due_date,
+            created_at,
+            payments(*)
+          )
+        ),
+        garment_services(
+          id,
+          garment_id,
+          name,
+          description,
+          quantity,
+          unit_price_cents,
+          line_total_cents,
+          is_removed,
+          removed_at,
+          removal_reason,
+          service:services(
+            id,
+            name,
+            description
+          )
+        )
+      `
+      )
+      .eq('id', garmentId)
+      .single();
+
+    if (garmentError) {
+      console.error('Error fetching garment:', garmentError);
+      throw new Error(garmentError.message);
+    }
+
+    // Verify the garment belongs to the current shop
+    const { data: orderCheck } = await supabase
+      .from('orders')
+      .select('shop_id')
+      .eq('id', garment.order_id)
+      .maybeSingle();
+
+    if (!orderCheck || orderCheck.shop_id !== shop.id) {
+      throw new Error('Garment not found or access denied');
+    }
+
+    // Calculate total price from active garment services (exclude soft-deleted)
+    const totalPriceCents =
+      garment.garment_services
+        ?.filter((service: any) => !service.is_removed)
+        .reduce((total: number, service: any) => {
+          return total + service.quantity * service.unit_price_cents;
+        }, 0) || 0;
+
+    // Get the first invoice (assuming one invoice per order for now)
+    const invoice = garment.order?.invoices?.[0] || null;
+    const payments = invoice?.payments || [];
+
+    return {
+      success: true,
+      garment: {
+        ...garment,
+        totalPriceCents,
+        invoice,
+        payments,
+      },
+    };
+  } catch (error) {
+    console.error('Error in getGarmentWithInvoiceData:', error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch garment with invoice data',
     };
   }
 }

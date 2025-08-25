@@ -39,6 +39,12 @@ const customJestConfig = {
     '<rootDir>/../src/**/__tests__/**/*.{js,jsx,ts,tsx}',
     '<rootDir>/../src/**/*.{test,spec}.{js,jsx,ts,tsx}',
   ],
+  // Additional Jest options to prevent hanging
+  maxWorkers: '50%', // Limit workers to prevent resource exhaustion
+  detectOpenHandles: true, // Always detect open handles
+  forceExit: true, // Force exit after tests complete
+  clearMocks: true, // Clear mocks between tests
+  resetMocks: true, // Reset mocks between tests
 };
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async

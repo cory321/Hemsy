@@ -4,8 +4,6 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   TextField,
-  Chip,
-  Stack,
   Typography,
   Button,
   IconButton,
@@ -22,31 +20,35 @@ import {
   DialogContent,
   DialogActions,
   CircularProgress,
+  Stack,
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
-import { useOrderFlow, ServiceLine } from '@/contexts/OrderFlowContext';
+import { ServiceDraft } from '@/contexts/OrderFlowContext';
 import {
   formatCurrency,
   dollarsToCents,
   parseFloatFromCurrency,
   formatAsCurrency,
 } from '@/lib/utils/currency';
-import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'react-hot-toast';
 import {
   getFrequentlyUsedServices,
   searchServices,
   addService,
+  fetchAllServices,
 } from '@/lib/actions/services';
 import { useDebounce } from '@/hooks/useDebounce';
 import ServicePriceInput from '@/components/common/ServicePriceInput';
 
-interface ServiceSelectorProps {
-  garmentId: string;
+interface ServiceSelectorModalProps {
+  services: ServiceDraft[];
+  onChange: (services: ServiceDraft[]) => void;
+  garmentType?: string;
+  preloadedServices?: ServiceOption[];
 }
 
 interface ServiceOption {
@@ -57,13 +59,12 @@ interface ServiceOption {
   default_unit_price_cents: number;
 }
 
-export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
-  const {
-    orderDraft,
-    addServiceToGarment,
-    updateServiceInGarment,
-    removeServiceFromGarment,
-  } = useOrderFlow();
+export default function ServiceSelectorModal({
+  services,
+  onChange,
+  garmentType,
+  preloadedServices = [],
+}: ServiceSelectorModalProps) {
   const [frequentServices, setFrequentServices] = useState<ServiceOption[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<ServiceOption[]>([]);
@@ -71,7 +72,6 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [quickAddName, setQuickAddName] = useState('');
   const [quickAddPrice, setQuickAddPrice] = useState('0.00');
-  const [quickAddPriceFocused, setQuickAddPriceFocused] = useState(false);
   const [quickAddUnit, setQuickAddUnit] = useState<
     'flat_rate' | 'hour' | 'day'
   >('flat_rate');
@@ -83,15 +83,39 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
   // Load frequently used services on mount
   useEffect(() => {
     const loadFrequentServices = async () => {
+      // If we have preloaded services, use them immediately
+      if (preloadedServices.length > 0) {
+        setFrequentServices(preloadedServices);
+        return;
+      }
+
+      // Otherwise, load from API (fallback for components that don't preload)
       try {
-        const services = await getFrequentlyUsedServices();
-        setFrequentServices(services);
+        const serviceOptions = await getFrequentlyUsedServices();
+        console.log('Loaded frequent services:', serviceOptions);
+
+        // If no frequently used services, try to load all services and show first few
+        if (serviceOptions.length === 0) {
+          try {
+            const allServices = await fetchAllServices();
+            console.log(
+              'No frequent services found, loaded all services:',
+              allServices
+            );
+            // Show first 6 services as fallback
+            setFrequentServices(allServices.slice(0, 6));
+          } catch (searchError) {
+            console.error('Failed to load fallback services:', searchError);
+          }
+        } else {
+          setFrequentServices(serviceOptions);
+        }
       } catch (error) {
         console.error('Failed to load frequent services:', error);
       }
     };
     loadFrequentServices();
-  }, []);
+  }, [preloadedServices]);
 
   // Search services
   useEffect(() => {
@@ -127,20 +151,32 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
     };
   }, [searchQuery]);
 
-  const garment = orderDraft.garments.find((g) => g.id === garmentId);
-  if (!garment) return null;
-
   const handleAddService = (service: ServiceOption) => {
-    const newService: ServiceLine = {
+    const newService: ServiceDraft = {
       serviceId: service.id,
       name: service.name,
       quantity: service.default_qty,
-      unit: service.default_unit as ServiceLine['unit'],
+      unit: service.default_unit as ServiceDraft['unit'],
       unitPriceCents: service.default_unit_price_cents,
     };
-    addServiceToGarment(garmentId, newService);
+    onChange([...services, newService]);
     setSearchQuery('');
     setSearchResults([]);
+  };
+
+  const handleUpdateService = (
+    index: number,
+    updates: Partial<ServiceDraft>
+  ) => {
+    const updatedServices = services.map((service, i) =>
+      i === index ? { ...service, ...updates } : service
+    );
+    onChange(updatedServices);
+  };
+
+  const handleRemoveService = (index: number) => {
+    const updatedServices = services.filter((_, i) => i !== index);
+    onChange(updatedServices);
   };
 
   const handleQuickAdd = async () => {
@@ -162,21 +198,21 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
             default_unit_price_cents: priceCents,
             frequently_used: quickAddFrequentlyUsed,
           });
-          const newService: ServiceLine = {
+          const newService: ServiceDraft = {
             serviceId: created.id,
             name: quickAddName,
             quantity: quickAddQuantity,
             unit: quickAddUnit,
             unitPriceCents: priceCents,
           };
-          addServiceToGarment(garmentId, newService);
+          onChange([...services, newService]);
           toast.success('Service added to catalog');
 
           // Reload frequently used services if the new service is marked as frequently used
           if (quickAddFrequentlyUsed) {
             try {
-              const services = await getFrequentlyUsedServices();
-              setFrequentServices(services);
+              const serviceOptions = await getFrequentlyUsedServices();
+              setFrequentServices(serviceOptions);
             } catch (error) {
               console.error('Failed to reload frequent services:', error);
             }
@@ -188,7 +224,7 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
         }
       } else {
         // Add as inline service
-        const newService: ServiceLine = {
+        const newService: ServiceDraft = {
           name: quickAddName,
           quantity: quickAddQuantity,
           unit: quickAddUnit,
@@ -197,13 +233,12 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
             name: quickAddName,
           },
         };
-        addServiceToGarment(garmentId, newService);
+        onChange([...services, newService]);
       }
 
       // Reset quick add form
       setQuickAddName('');
       setQuickAddPrice('0.00');
-      setQuickAddPriceFocused(false);
       setQuickAddUnit('flat_rate');
       setQuickAddQuantity(1);
       setQuickAddFrequentlyUsed(false);
@@ -218,9 +253,7 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
       {/* Frequently Used Services */}
       <Box sx={{ mb: 3 }}>
         <Typography variant="subtitle2" gutterBottom>
-          {frequentServices.length > 0
-            ? 'Frequently Used Services'
-            : 'Services'}
+          {frequentServices.length > 0 ? 'Available Services' : 'Services'}
         </Typography>
         <Grid container spacing={1}>
           {frequentServices.map((service) => (
@@ -351,13 +384,13 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
         <Typography variant="subtitle2" gutterBottom>
           Added Services
         </Typography>
-        {garment.services.length === 0 ? (
+        {services.length === 0 ? (
           <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
             No services added yet
           </Typography>
         ) : (
           <Stack spacing={1}>
-            {garment.services.map((service, index) => (
+            {services.map((service, index) => (
               <Card key={index} variant="outlined">
                 <CardContent sx={{ py: 1 }}>
                   <Grid container spacing={2} alignItems="center">
@@ -377,7 +410,7 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
                         }
                         value={service.quantity}
                         onChange={(e) =>
-                          updateServiceInGarment(garmentId, index, {
+                          handleUpdateService(index, {
                             quantity: Math.max(
                               1,
                               parseInt(e.target.value) || 1
@@ -395,7 +428,7 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
                         value={service.unit}
                         onChange={(e) => {
                           const newUnit = e.target.value as any;
-                          updateServiceInGarment(garmentId, index, {
+                          handleUpdateService(index, {
                             unit: newUnit,
                             // Reset quantity to 1 when switching to flat_rate
                             ...(newUnit === 'flat_rate' && { quantity: 1 }),
@@ -410,10 +443,10 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
                     </Grid>
                     <Grid size={{ xs: 4, sm: 3 }}>
                       <ServicePriceField
-                        key={`price-${garmentId}-${index}`}
+                        key={`price-${index}`}
                         unitPriceCents={service.unitPriceCents}
                         onPriceChange={(cents: number) => {
-                          updateServiceInGarment(garmentId, index, {
+                          handleUpdateService(index, {
                             unitPriceCents: cents,
                           });
                         }}
@@ -422,9 +455,7 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
                     <Grid size={{ xs: 12, sm: 1 }}>
                       <IconButton
                         color="error"
-                        onClick={() =>
-                          removeServiceFromGarment(garmentId, index)
-                        }
+                        onClick={() => handleRemoveService(index)}
                         size="small"
                       >
                         <DeleteIcon />
@@ -446,7 +477,6 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
           // Reset form state
           setQuickAddName('');
           setQuickAddPrice('0.00');
-          setQuickAddPriceFocused(false);
           setQuickAddUnit('flat_rate');
           setQuickAddQuantity(1);
           setQuickAddFrequentlyUsed(false);
@@ -526,7 +556,6 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
               // Reset form state
               setQuickAddName('');
               setQuickAddPrice('0.00');
-              setQuickAddPriceFocused(false);
               setQuickAddUnit('flat_rate');
               setQuickAddQuantity(1);
               setQuickAddFrequentlyUsed(false);

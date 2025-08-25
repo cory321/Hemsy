@@ -8,6 +8,16 @@ import {
   CardContent,
   Divider,
   TextField,
+  Chip,
+  IconButton,
+  Collapse,
+  Button,
+  Avatar,
+  Stack,
+  alpha,
+  useTheme,
+  Alert,
+  useMediaQuery,
   Table,
   TableBody,
   TableCell,
@@ -15,22 +25,418 @@ import {
   TableHead,
   TableRow,
   Paper,
-  Chip,
+  ToggleButton,
+  ToggleButtonGroup,
+  CircularProgress,
 } from '@mui/material';
+import {
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
+  AccessTime as TimeIcon,
+  Event as EventIcon,
+  ShoppingBag as ShoppingBagIcon,
+  Person as PersonIcon,
+  Email as EmailIcon,
+  Phone as PhoneIcon,
+  LocationOn as LocationIcon,
+  AttachMoney as MoneyIcon,
+  ViewModule as CardViewIcon,
+  TableChart as TableViewIcon,
+} from '@mui/icons-material';
 import Grid from '@mui/material/Grid2';
 import { useOrderFlow } from '@/contexts/OrderFlowContext';
 import { formatCurrency, dollarsToCents } from '@/lib/utils/currency';
 import { createClient as createSupabaseClient } from '@/lib/supabase/client';
 import InlinePresetSvg from '@/components/ui/InlinePresetSvg';
 import { getPresetIconUrl } from '@/utils/presetIcons';
+import { resolveGarmentDisplayImage } from '@/utils/displayImage';
+import PaymentCollectionCard from '../PaymentCollectionCard';
+import { formatPhoneNumber } from '@/lib/utils/phone';
 
-export default function Step3Summary() {
+// Helper Components
+interface CollapsibleSectionProps {
+  title: string;
+  icon?: React.ReactNode;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+  badge?: string | number;
+  forceOpen?: boolean; // For desktop view
+}
+
+function CollapsibleSection({
+  title,
+  icon,
+  defaultOpen = false,
+  children,
+  badge,
+  forceOpen = false,
+}: CollapsibleSectionProps) {
+  const [open, setOpen] = useState(defaultOpen);
+  const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
+  const isOpen = forceOpen || (isDesktop ? true : open);
+
+  return (
+    <Card sx={{ mb: 2, overflow: 'visible' }}>
+      <CardContent sx={{ pb: isOpen ? 2 : 1 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            cursor: isDesktop ? 'default' : 'pointer',
+            userSelect: 'none',
+          }}
+          onClick={() => !isDesktop && setOpen(!open)}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {icon}
+            <Typography variant="h6">{title}</Typography>
+            {badge && (
+              <Chip label={badge} size="small" color="primary" sx={{ ml: 1 }} />
+            )}
+          </Box>
+          {!isDesktop && (
+            <IconButton size="small">
+              {open ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+            </IconButton>
+          )}
+        </Box>
+        <Collapse in={isOpen}>
+          <Box sx={{ mt: 2 }}>{children}</Box>
+        </Collapse>
+      </CardContent>
+    </Card>
+  );
+}
+
+interface GarmentCardProps {
+  garment: any;
+  index: number;
+}
+
+function GarmentCard({ garment, index }: GarmentCardProps) {
+  const theme = useTheme();
+  const daysUntilDue = garment.dueDate
+    ? Math.ceil(
+        (new Date(garment.dueDate).getTime() - new Date().getTime()) /
+          (1000 * 60 * 60 * 24)
+      )
+    : null;
+  const isUrgent = daysUntilDue !== null && daysUntilDue <= 2;
+
+  const garmentTotal = garment.services.reduce(
+    (sum: number, service: any) =>
+      sum + service.quantity * service.unitPriceCents,
+    0
+  );
+
+  return (
+    <Card
+      sx={{
+        mb: 2,
+        border: isUrgent ? `2px solid ${theme.palette.error.main}` : 'none',
+        bgcolor: isUrgent ? alpha(theme.palette.error.main, 0.05) : 'inherit',
+      }}
+    >
+      <CardContent>
+        {/* Garment Header */}
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, mb: 2 }}>
+          <Box
+            sx={{
+              width: 48,
+              height: 48,
+              borderRadius: 2,
+              overflow: 'hidden',
+              bgcolor: 'grey.100',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {(() => {
+              const resolved = resolveGarmentDisplayImage({
+                cloudPublicId: garment.cloudinaryPublicId,
+                photoUrl: garment.cloudinaryUrl,
+                presetIconKey: garment.presetIconKey,
+              });
+
+              if (resolved.kind === 'cloud') {
+                return (
+                  <img
+                    src={`https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/c_fill,h_96,w_96/${garment.cloudinaryPublicId}`}
+                    alt={garment.name || 'Garment'}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      borderRadius: 'inherit',
+                    }}
+                  />
+                );
+              }
+
+              return (
+                <InlinePresetSvg
+                  src={resolved.src || '/presets/garments/select-garment.svg'}
+                  {...(garment.presetFillColor
+                    ? { fillColor: garment.presetFillColor }
+                    : {})}
+                />
+              );
+            })()}
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              {garment.name}
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 0.5 }}>
+              {isUrgent && (
+                <Chip
+                  icon={<TimeIcon />}
+                  label="Rush"
+                  size="small"
+                  color="error"
+                />
+              )}
+              {garment.dueDate && (
+                <Chip
+                  icon={<TimeIcon />}
+                  label={`Due ${new Date(garment.dueDate).toLocaleDateString()}`}
+                  size="small"
+                  variant={isUrgent ? 'filled' : 'outlined'}
+                  color={isUrgent ? 'error' : 'default'}
+                />
+              )}
+              {garment.eventDate && (
+                <Chip
+                  icon={<EventIcon />}
+                  label={`Event ${new Date(garment.eventDate).toLocaleDateString()}`}
+                  size="small"
+                  color="secondary"
+                />
+              )}
+            </Box>
+          </Box>
+          <Typography variant="h6" color="primary" sx={{ fontWeight: 600 }}>
+            {formatCurrency(garmentTotal / 100)}
+          </Typography>
+        </Box>
+
+        {/* Services */}
+        <Box sx={{ mb: garment.notes ? 2 : 0 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            Services:
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            {garment.services.map((service: any, idx: number) => (
+              <Chip
+                key={idx}
+                label={`${service.name} (${service.quantity} ${service.unit}) - ${formatCurrency((service.quantity * service.unitPriceCents) / 100)}`}
+                size="medium"
+                variant="outlined"
+              />
+            ))}
+          </Box>
+        </Box>
+
+        {/* Notes */}
+        {garment.notes && (
+          <Alert severity="info" icon={false} sx={{ py: 1 }}>
+            <Typography variant="body2">{garment.notes}</Typography>
+          </Alert>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// Desktop Table View Component
+interface GarmentTableViewProps {
+  garments: any[];
+}
+
+function GarmentTableView({ garments }: GarmentTableViewProps) {
+  const theme = useTheme();
+
+  return (
+    <TableContainer component={Paper} sx={{ mt: 2 }}>
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableCell>Garment</TableCell>
+            <TableCell>Services</TableCell>
+            <TableCell>Due Date</TableCell>
+            <TableCell>Event Date</TableCell>
+            <TableCell align="right">Total</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {garments.map((garment) => {
+            const garmentTotal = garment.services.reduce(
+              (sum: number, service: any) =>
+                sum + service.quantity * service.unitPriceCents,
+              0
+            );
+            const daysUntilDue = garment.dueDate
+              ? Math.ceil(
+                  (new Date(garment.dueDate).getTime() - new Date().getTime()) /
+                    (1000 * 60 * 60 * 24)
+                )
+              : null;
+            const isUrgent = daysUntilDue !== null && daysUntilDue <= 2;
+
+            return (
+              <TableRow
+                key={garment.id}
+                sx={{
+                  bgcolor: isUrgent
+                    ? alpha(theme.palette.error.main, 0.05)
+                    : 'inherit',
+                  '&:hover': { bgcolor: 'action.hover' },
+                }}
+              >
+                <TableCell>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 1,
+                        overflow: 'hidden',
+                        bgcolor: 'grey.100',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {(() => {
+                        const resolved = resolveGarmentDisplayImage({
+                          cloudPublicId: garment.cloudinaryPublicId,
+                          photoUrl: garment.cloudinaryUrl,
+                          presetIconKey: garment.presetIconKey,
+                        });
+
+                        if (resolved.kind === 'cloud') {
+                          return (
+                            <img
+                              src={`https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/c_fill,h_80,w_80/${garment.cloudinaryPublicId}`}
+                              alt={garment.name || 'Garment'}
+                              style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover',
+                                borderRadius: 'inherit',
+                              }}
+                            />
+                          );
+                        }
+
+                        return (
+                          <InlinePresetSvg
+                            src={
+                              resolved.src ||
+                              '/presets/garments/select-garment.svg'
+                            }
+                            {...(garment.presetFillColor
+                              ? { fillColor: garment.presetFillColor }
+                              : {})}
+                          />
+                        );
+                      })()}
+                    </Box>
+                    <Box>
+                      <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                        {garment.name}
+                      </Typography>
+                      {garment.notes && (
+                        <Typography variant="caption" color="text.secondary">
+                          {garment.notes}
+                        </Typography>
+                      )}
+                    </Box>
+                  </Box>
+                </TableCell>
+                <TableCell>
+                  <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                    {garment.services.map((service: any, idx: number) => (
+                      <Chip
+                        key={idx}
+                        label={`${service.name} (${service.quantity})`}
+                        size="small"
+                        variant="outlined"
+                      />
+                    ))}
+                  </Box>
+                </TableCell>
+                <TableCell>
+                  {garment.dueDate ? (
+                    <Box>
+                      <Typography variant="body2">
+                        {new Date(garment.dueDate).toLocaleDateString()}
+                      </Typography>
+                      {isUrgent && (
+                        <Chip
+                          label="Rush"
+                          size="small"
+                          color="error"
+                          sx={{ mt: 0.5 }}
+                        />
+                      )}
+                    </Box>
+                  ) : (
+                    '-'
+                  )}
+                </TableCell>
+                <TableCell>
+                  {garment.eventDate ? (
+                    <Chip
+                      icon={<EventIcon />}
+                      label={new Date(garment.eventDate).toLocaleDateString()}
+                      size="small"
+                      color="secondary"
+                    />
+                  ) : (
+                    '-'
+                  )}
+                </TableCell>
+                <TableCell align="right">
+                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                    {formatCurrency(garmentTotal / 100)}
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
+}
+
+interface Step3SummaryProps {
+  onSubmit?: () => void;
+  isSubmitting?: boolean;
+  canSubmit?: boolean;
+  submitText?: string;
+}
+
+export default function Step3Summary({
+  onSubmit,
+  isSubmitting,
+  canSubmit,
+  submitText,
+}: Step3SummaryProps) {
   const { orderDraft, updateOrderDraft, calculateSubtotal, calculateTotal } =
     useOrderFlow();
+  const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
+  const isMedium = useMediaQuery(theme.breakpoints.up('md'));
   const [taxPercent, setTaxPercent] = useState(0);
   const [discountDollars, setDiscountDollars] = useState(
     (orderDraft.discountCents / 100).toFixed(2)
   );
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
 
   // Fetch shop tax percentage
   useEffect(() => {
@@ -63,199 +469,564 @@ export default function Step3Summary() {
     updateOrderDraft({ discountCents: Math.max(0, cents) });
   };
 
+  const handleQuickDiscount = (percent: number) => {
+    const subtotal = calculateSubtotal();
+    const discountAmount = (subtotal * percent) / 100;
+    const discountDollars = (discountAmount / 100).toFixed(2);
+    setDiscountDollars(discountDollars);
+    updateOrderDraft({ discountCents: Math.max(0, discountAmount) });
+  };
+
   const subtotal = calculateSubtotal();
   const afterDiscount = subtotal - orderDraft.discountCents;
   const taxAmount = Math.round(afterDiscount * taxPercent);
   const total = afterDiscount + taxAmount;
 
-  return (
-    <Box>
-      <Typography variant="h5" gutterBottom>
-        Order Summary
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Review your order details before submitting.
-      </Typography>
+  const handlePaymentMethodSelect = (
+    method: 'stripe' | 'cash' | 'external_pos' | 'send_invoice'
+  ) => {
+    console.log('Payment method selected:', method);
+  };
 
-      {/* Client Information */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Client Information
-          </Typography>
-          {orderDraft.client && (
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12, sm: 6 }}>
+  const handlePaymentIntentChange = (paymentIntent: any) => {
+    updateOrderDraft({ paymentIntent });
+  };
+
+  const handleStripePaymentSuccess = (paymentMethodId: string) => {
+    console.log('Stripe payment method collected:', paymentMethodId);
+    // The payment method is now ready for charging when order is submitted
+  };
+
+  // Calculate urgency indicators
+  const urgentGarments = orderDraft.garments.filter((g) => {
+    if (!g.dueDate) return false;
+    const daysUntilDue = Math.ceil(
+      (new Date(g.dueDate).getTime() - new Date().getTime()) /
+        (1000 * 60 * 60 * 24)
+    );
+    return daysUntilDue <= 2;
+  });
+
+  const shouldExpandGarments =
+    urgentGarments.length > 0 || orderDraft.garments.length <= 3;
+
+  // Get client initials for avatar
+  const clientInitials = orderDraft.client
+    ? `${orderDraft.client.first_name?.[0] || ''}${orderDraft.client.last_name?.[0] || ''}`
+    : '';
+
+  // Desktop layout with payment sidebar
+  if (isDesktop) {
+    return (
+      <Grid container spacing={3}>
+        {/* Main Content - Left Side */}
+        <Grid size={8}>
+          {/* Desktop Header */}
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
+              Order Summary
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Avatar
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    bgcolor: 'primary.main',
+                    color: 'white',
+                  }}
+                >
+                  {clientInitials}
+                </Avatar>
+                <Box>
+                  <Typography variant="h6">
+                    {orderDraft.client?.first_name}{' '}
+                    {orderDraft.client?.last_name}
+                  </Typography>
+                  <Stack direction="row" spacing={2}>
+                    <Typography variant="body2" color="text.secondary">
+                      {orderDraft.client?.email}
+                    </Typography>
+                    {orderDraft.client?.phone_number && (
+                      <>
+                        <Divider orientation="vertical" flexItem />
+                        <Typography variant="body2" color="text.secondary">
+                          {formatPhoneNumber(
+                            orderDraft.client?.phone_number || ''
+                          )}
+                        </Typography>
+                      </>
+                    )}
+                  </Stack>
+                </Box>
+              </Box>
+              <Divider orientation="vertical" flexItem />
+              <Box>
+                <Typography
+                  variant="h5"
+                  color="primary"
+                  sx={{ fontWeight: 600 }}
+                >
+                  {formatCurrency(total / 100)}
+                </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Name
+                  Total Order Value
                 </Typography>
-                <Typography variant="body1">
-                  {orderDraft.client.first_name} {orderDraft.client.last_name}
-                </Typography>
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Email
-                </Typography>
+              </Box>
+            </Box>
+          </Box>
+
+          {/* Garments Section with View Toggle */}
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  mb: 2,
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <ShoppingBagIcon />
+                  <Typography variant="h6">Garments & Services</Typography>
+                  <Chip
+                    label={orderDraft.garments.length}
+                    size="small"
+                    color="primary"
+                  />
+                </Box>
+                <ToggleButtonGroup
+                  value={viewMode}
+                  exclusive
+                  onChange={(e, newMode) => newMode && setViewMode(newMode)}
+                  size="small"
+                >
+                  <ToggleButton value="cards">
+                    <CardViewIcon sx={{ mr: 1 }} />
+                    Cards
+                  </ToggleButton>
+                  <ToggleButton value="table">
+                    <TableViewIcon sx={{ mr: 1 }} />
+                    Table
+                  </ToggleButton>
+                </ToggleButtonGroup>
+              </Box>
+
+              {viewMode === 'cards' ? (
+                <Box>
+                  {orderDraft.garments.map((garment, index) => (
+                    <GarmentCard
+                      key={garment.id}
+                      garment={garment}
+                      index={index}
+                    />
+                  ))}
+                </Box>
+              ) : (
+                <GarmentTableView garments={orderDraft.garments} />
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Payment Collection */}
+          <PaymentCollectionCard
+            totalAmount={total}
+            clientEmail={orderDraft.client?.email || ''}
+            onPaymentMethodSelect={handlePaymentMethodSelect}
+            onPaymentIntentChange={handlePaymentIntentChange}
+            onStripePaymentSuccess={handleStripePaymentSuccess}
+          />
+
+          {/* Order Notes */}
+          <Card sx={{ mt: 3 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Order Notes
+              </Typography>
+              <TextField
+                fullWidth
+                multiline
+                rows={4}
+                value={orderDraft.notes || ''}
+                onChange={(e) => updateOrderDraft({ notes: e.target.value })}
+                placeholder="Any additional notes for this order..."
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: 'background.paper',
+                  },
+                }}
+              />
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Payment Sidebar - Right Side */}
+        <Grid size={4}>
+          <Box sx={{ position: 'sticky', top: 24, alignSelf: 'flex-start' }}>
+            {/* Pricing Breakdown */}
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Box
+                  sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}
+                >
+                  <MoneyIcon />
+                  <Typography variant="h6">Pricing Breakdown</Typography>
+                </Box>
+
+                {/* Visual Pricing Bar */}
+                <Box sx={{ mb: 3 }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      height: 40,
+                      borderRadius: 1,
+                      overflow: 'hidden',
+                      mb: 2,
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        flex: subtotal / (subtotal + taxAmount) || 1,
+                        bgcolor: 'primary.main',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        fontSize: '0.875rem',
+                        fontWeight: 500,
+                      }}
+                    >
+                      Services
+                    </Box>
+                    {taxAmount > 0 && (
+                      <Box
+                        sx={{
+                          flex: taxAmount / (subtotal + taxAmount) || 0,
+                          bgcolor: 'warning.main',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'white',
+                          fontSize: '0.875rem',
+                          fontWeight: 500,
+                        }}
+                      >
+                        Tax
+                      </Box>
+                    )}
+                  </Box>
+                </Box>
+
+                {/* Pricing Details */}
+                <Stack spacing={2}>
+                  <Box
+                    sx={{ display: 'flex', justifyContent: 'space-between' }}
+                  >
+                    <Typography variant="body1">Subtotal</Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {formatCurrency(subtotal / 100)}
+                    </Typography>
+                  </Box>
+
+                  {/* Discount Section */}
+                  <Box>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        mb: 1,
+                      }}
+                    >
+                      <Typography variant="body1">Discount</Typography>
+                      <TextField
+                        size="small"
+                        value={discountDollars}
+                        onChange={handleDiscountChange}
+                        InputProps={{
+                          startAdornment: '$',
+                        }}
+                        sx={{ width: '120px' }}
+                      />
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => handleQuickDiscount(10)}
+                      >
+                        -10%
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => handleQuickDiscount(15)}
+                      >
+                        -15%
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => handleQuickDiscount(20)}
+                      >
+                        -20%
+                      </Button>
+                    </Box>
+                  </Box>
+
+                  {taxAmount > 0 && (
+                    <Box
+                      sx={{ display: 'flex', justifyContent: 'space-between' }}
+                    >
+                      <Typography variant="body1">
+                        Tax ({(taxPercent * 100).toFixed(2)}%)
+                      </Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                        {formatCurrency(taxAmount / 100)}
+                      </Typography>
+                    </Box>
+                  )}
+
+                  <Divider />
+
+                  <Box
+                    sx={{ display: 'flex', justifyContent: 'space-between' }}
+                  >
+                    <Typography variant="h6">Total</Typography>
+                    <Typography
+                      variant="h6"
+                      color="primary"
+                      sx={{ fontWeight: 700 }}
+                    >
+                      {formatCurrency(total / 100)}
+                    </Typography>
+                  </Box>
+
+                  {/* Create Order Button below Total */}
+                  <Box sx={{ pt: 2 }}>
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      onClick={onSubmit}
+                      disabled={Boolean(isSubmitting) || canSubmit === false}
+                      startIcon={
+                        isSubmitting ? (
+                          <CircularProgress size={16} color="inherit" />
+                        ) : undefined
+                      }
+                    >
+                      {isSubmitting
+                        ? 'Processing...'
+                        : submitText || 'Create Order'}
+                    </Button>
+                  </Box>
+
+                  {total > 500 && (
+                    <Alert severity="info" icon={<MoneyIcon />}>
+                      Consider collecting a 50% deposit (
+                      {formatCurrency(total / 2 / 100)})
+                    </Alert>
+                  )}
+                </Stack>
+              </CardContent>
+            </Card>
+          </Box>
+        </Grid>
+      </Grid>
+    );
+  }
+
+  // Mobile/Tablet Layout (existing code)
+  return (
+    <Box sx={{ pb: isMedium ? 0 : 8 }}>
+      {/* Hero Card */}
+      <Card
+        sx={{
+          mb: 3,
+          background: `linear-gradient(135deg, ${theme.palette.primary.light} 0%, ${theme.palette.primary.main} 100%)`,
+          color: 'white',
+        }}
+      >
+        <CardContent sx={{ p: 3 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <Box>
+              <Typography variant="h3" sx={{ fontWeight: 700 }}>
+                {formatCurrency(total / 100)}
+              </Typography>
+              <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                Total Amount
+              </Typography>
+            </Box>
+            <Box sx={{ textAlign: 'right' }}>
+              <Chip
+                icon={<ShoppingBagIcon />}
+                label={`${orderDraft.garments.length} garment${orderDraft.garments.length !== 1 ? 's' : ''}`}
+                sx={{
+                  bgcolor: 'rgba(255, 255, 255, 0.2)',
+                  color: 'white',
+                  mb: 1,
+                }}
+              />
+              {urgentGarments.length > 0 && (
+                <Chip
+                  icon={<TimeIcon />}
+                  label={`${urgentGarments.length} urgent`}
+                  color="error"
+                  sx={{ display: 'block', ml: 'auto' }}
+                />
+              )}
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
+
+      {/* Garments Section */}
+      <CollapsibleSection
+        title="Garments & Services"
+        icon={<ShoppingBagIcon />}
+        defaultOpen={shouldExpandGarments}
+        badge={orderDraft.garments.length}
+      >
+        {orderDraft.garments.map((garment, index) => (
+          <GarmentCard key={garment.id} garment={garment} index={index} />
+        ))}
+      </CollapsibleSection>
+
+      {/* Client Details Section */}
+      <CollapsibleSection
+        title="Client Details"
+        icon={<PersonIcon />}
+        defaultOpen={false}
+      >
+        {orderDraft.client && (
+          <Stack spacing={2}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <PersonIcon fontSize="small" color="action" />
+              <Typography variant="body1">
+                {orderDraft.client.first_name} {orderDraft.client.last_name}
+              </Typography>
+            </Box>
+            {orderDraft.client.email && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <EmailIcon fontSize="small" color="action" />
                 <Typography variant="body1">
                   {orderDraft.client.email}
                 </Typography>
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Phone
-                </Typography>
+              </Box>
+            )}
+            {orderDraft.client.phone_number && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <PhoneIcon fontSize="small" color="action" />
                 <Typography variant="body1">
-                  {orderDraft.client.phone_number}
+                  {formatPhoneNumber(orderDraft.client.phone_number || '')}
                 </Typography>
-              </Grid>
-              {orderDraft.client.mailing_address && (
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Address
-                  </Typography>
-                  <Typography variant="body1">
-                    {orderDraft.client.mailing_address}
-                  </Typography>
-                </Grid>
-              )}
-            </Grid>
-          )}
-        </CardContent>
-      </Card>
+              </Box>
+            )}
+            {orderDraft.client.mailing_address && (
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                <LocationIcon fontSize="small" color="action" />
+                <Typography variant="body1">
+                  {orderDraft.client.mailing_address}
+                </Typography>
+              </Box>
+            )}
+          </Stack>
+        )}
+      </CollapsibleSection>
 
-      {/* Garments and Services */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Garments & Services
-          </Typography>
-          <TableContainer>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Item</TableCell>
-                  <TableCell align="right">Qty</TableCell>
-                  <TableCell align="right">Unit Price</TableCell>
-                  <TableCell align="right">Total</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {orderDraft.garments.map((garment, gIdx) => (
-                  <React.Fragment key={garment.id}>
-                    <TableRow>
-                      <TableCell
-                        colSpan={4}
-                        sx={{ bgcolor: 'grey.100', fontWeight: 'bold' }}
-                      >
-                        <span
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 8,
-                          }}
-                        >
-                          {(() => {
-                            const url = garment.presetIconKey
-                              ? getPresetIconUrl(garment.presetIconKey)
-                              : null;
-                            return (
-                              <span
-                                style={{
-                                  width: 24,
-                                  height: 24,
-                                  display: 'inline-block',
-                                }}
-                              >
-                                <InlinePresetSvg
-                                  src={
-                                    url ||
-                                    '/presets/garments/select-garment.svg'
-                                  }
-                                  {...(garment.presetFillColor
-                                    ? { fillColor: garment.presetFillColor }
-                                    : {})}
-                                />
-                              </span>
-                            );
-                          })()}
-                          {garment.name}
-                        </span>
-                        {garment.dueDate && (
-                          <Chip
-                            label={`Due: ${new Date(garment.dueDate).toLocaleDateString()}`}
-                            size="small"
-                            sx={{ ml: 1 }}
-                          />
-                        )}
-                        {garment.eventDate && (
-                          <Chip
-                            label={`Event: ${new Date(garment.eventDate).toLocaleDateString()}`}
-                            size="small"
-                            color="secondary"
-                            sx={{ ml: 1 }}
-                          />
-                        )}
-                      </TableCell>
-                    </TableRow>
-                    {garment.services.map((service, sIdx) => (
-                      <TableRow key={`${garment.id}-${sIdx}`}>
-                        <TableCell sx={{ pl: 4 }}>{service.name}</TableCell>
-                        <TableCell align="right">
-                          {service.quantity} {service.unit}
-                        </TableCell>
-                        <TableCell align="right">
-                          {formatCurrency(service.unitPriceCents / 100)}
-                        </TableCell>
-                        <TableCell align="right">
-                          {formatCurrency(
-                            (service.quantity * service.unitPriceCents) / 100
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {garment.notes && (
-                      <TableRow>
-                        <TableCell
-                          colSpan={4}
-                          sx={{
-                            pl: 4,
-                            fontStyle: 'italic',
-                            fontSize: '0.875rem',
-                          }}
-                        >
-                          Notes: {garment.notes}
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </React.Fragment>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </CardContent>
-      </Card>
+      {/* Pricing Section */}
+      <CollapsibleSection
+        title="Pricing Breakdown"
+        icon={<MoneyIcon />}
+        defaultOpen={true}
+      >
+        {/* Visual Pricing Bar */}
+        <Box sx={{ mb: 3 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              height: 32,
+              borderRadius: 1,
+              overflow: 'hidden',
+              mb: 2,
+              border: 1,
+              borderColor: 'divider',
+            }}
+          >
+            <Box
+              sx={{
+                flex: subtotal / (subtotal + taxAmount) || 1,
+                bgcolor: 'grey.100',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'text.secondary',
+                fontSize: '0.75rem',
+                fontWeight: 500,
+                position: 'relative',
+                '&::after': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 3,
+                  bgcolor: 'primary.main',
+                },
+              }}
+            >
+              Services
+            </Box>
+            {taxAmount > 0 && (
+              <Box
+                sx={{
+                  flex: taxAmount / (subtotal + taxAmount) || 0,
+                  bgcolor: 'grey.100',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'text.secondary',
+                  fontSize: '0.75rem',
+                  fontWeight: 500,
+                  position: 'relative',
+                  '&::after': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: 3,
+                    bgcolor: 'warning.main',
+                  },
+                }}
+              >
+                Tax
+              </Box>
+            )}
+          </Box>
+        </Box>
 
-      {/* Pricing Summary */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Pricing
-          </Typography>
-          <Grid container spacing={2}>
-            <Grid size={6}>
-              <Typography variant="body2">Subtotal:</Typography>
-            </Grid>
-            <Grid size={6} sx={{ textAlign: 'right' }}>
-              <Typography variant="body1">
-                {formatCurrency(subtotal / 100)}
-              </Typography>
-            </Grid>
+        {/* Pricing Details */}
+        <Stack spacing={2}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Typography variant="body1">Subtotal</Typography>
+            <Typography variant="body1" sx={{ fontWeight: 500 }}>
+              {formatCurrency(subtotal / 100)}
+            </Typography>
+          </Box>
 
-            <Grid size={6}>
-              <Typography variant="body2">Discount:</Typography>
-            </Grid>
-            <Grid size={6}>
+          {/* Discount Section */}
+          <Box>
+            <Box
+              sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}
+            >
+              <Typography variant="body1">Discount</Typography>
               <TextField
                 size="small"
                 value={discountDollars}
@@ -263,39 +1034,65 @@ export default function Step3Summary() {
                 InputProps={{
                   startAdornment: '$',
                 }}
-                sx={{ width: '120px', float: 'right' }}
+                sx={{ width: '120px' }}
               />
-            </Grid>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => handleQuickDiscount(10)}
+              >
+                -10%
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => handleQuickDiscount(15)}
+              >
+                -15%
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => handleQuickDiscount(20)}
+              >
+                -20%
+              </Button>
+            </Box>
+          </Box>
 
-            <Grid size={6}>
-              <Typography variant="body2">
-                Tax ({(taxPercent * 100).toFixed(2)}%):
-              </Typography>
-            </Grid>
-            <Grid size={6} sx={{ textAlign: 'right' }}>
+          {taxAmount > 0 && (
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
               <Typography variant="body1">
+                Tax ({(taxPercent * 100).toFixed(2)}%)
+              </Typography>
+              <Typography variant="body1" sx={{ fontWeight: 500 }}>
                 {formatCurrency(taxAmount / 100)}
               </Typography>
-            </Grid>
+            </Box>
+          )}
 
-            <Grid size={12}>
-              <Divider sx={{ my: 1 }} />
-            </Grid>
+          <Divider />
 
-            <Grid size={6}>
-              <Typography variant="h6">Total:</Typography>
-            </Grid>
-            <Grid size={6} sx={{ textAlign: 'right' }}>
-              <Typography variant="h6" color="primary">
-                {formatCurrency(total / 100)}
-              </Typography>
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Typography variant="h6">Total</Typography>
+            <Typography variant="h6" color="primary" sx={{ fontWeight: 700 }}>
+              {formatCurrency(total / 100)}
+            </Typography>
+          </Box>
+
+          {total > 500 && (
+            <Alert severity="info" icon={<MoneyIcon />}>
+              Consider collecting a 50% deposit (
+              {formatCurrency(total / 2 / 100)})
+            </Alert>
+          )}
+        </Stack>
+      </CollapsibleSection>
 
       {/* Order Notes */}
-      <Card>
+      <Card sx={{ mb: 3 }}>
         <CardContent>
           <Typography variant="h6" gutterBottom>
             Order Notes
@@ -307,9 +1104,33 @@ export default function Step3Summary() {
             value={orderDraft.notes || ''}
             onChange={(e) => updateOrderDraft({ notes: e.target.value })}
             placeholder="Any additional notes for this order..."
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                bgcolor: 'background.paper',
+              },
+            }}
           />
         </CardContent>
       </Card>
+
+      {/* Payment Collection - Now more prominent */}
+      <Box
+        sx={{
+          position: 'sticky',
+          bottom: 0,
+          bgcolor: 'background.default',
+          pb: 2,
+          pt: 1,
+        }}
+      >
+        <PaymentCollectionCard
+          totalAmount={total}
+          clientEmail={orderDraft.client?.email || ''}
+          onPaymentMethodSelect={handlePaymentMethodSelect}
+          onPaymentIntentChange={handlePaymentIntentChange}
+          onStripePaymentSuccess={handleStripePaymentSuccess}
+        />
+      </Box>
     </Box>
   );
 }

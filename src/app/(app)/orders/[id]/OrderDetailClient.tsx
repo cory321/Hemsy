@@ -23,13 +23,12 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { createInvoice } from '@/lib/actions/invoices';
 import { formatCurrency } from '@/lib/utils/formatting';
-import type { Tables } from '@/types/supabase';
+import type { Tables } from '@/types/supabase-extended';
 
 interface OrderDetailClientProps {
   order: Tables<'orders'>;
   invoice?: Tables<'invoices'> | null;
   shopSettings: {
-    payment_required_before_service: boolean;
     invoice_prefix: string;
   };
 }
@@ -90,9 +89,7 @@ export default function OrderDetailClient({
   };
 
   const needsPaymentBeforeWork =
-    shopSettings.payment_required_before_service &&
-    order.status === 'draft' &&
-    !order.is_paid;
+    true && order.status === 'pending' && !order.is_paid;
 
   return (
     <>
@@ -155,7 +152,7 @@ export default function OrderDetailClient({
               Total amount: {formatCurrency(order.total_cents)}
             </Alert>
 
-            {shopSettings.payment_required_before_service && (
+            {true && (
               <TextField
                 fullWidth
                 label="Deposit Amount (optional)"
@@ -208,7 +205,7 @@ export default function OrderDetailClient({
               helperText="Additional information about this invoice"
             />
 
-            {shopSettings.payment_required_before_service && (
+            {true && (
               <Alert severity="info">
                 {invoiceForm.depositAmountCents > 0
                   ? `A deposit of ${formatCurrency(invoiceForm.depositAmountCents)} will be required before work begins.`

@@ -46,13 +46,11 @@ function formatUSD(cents: number) {
 
 const getStatusColor = (status: string) => {
   switch (status) {
-    case 'new':
     case 'pending':
       return 'warning';
-    case 'in_progress':
+    case 'partially_paid':
       return 'info';
-    case 'ready_for_pickup':
-    case 'completed':
+    case 'paid':
       return 'success';
     case 'cancelled':
       return 'error';
@@ -164,11 +162,9 @@ export default function OrdersList({
             onChange={(e) => setStatusFilter(e.target.value)}
           >
             <MenuItem value="all">All Statuses</MenuItem>
-            <MenuItem value="new">New</MenuItem>
             <MenuItem value="pending">Pending</MenuItem>
-            <MenuItem value="in_progress">In Progress</MenuItem>
-            <MenuItem value="ready_for_pickup">Ready for Pickup</MenuItem>
-            <MenuItem value="completed">Completed</MenuItem>
+            <MenuItem value="partially_paid">Partially Paid</MenuItem>
+            <MenuItem value="paid">Paid</MenuItem>
             <MenuItem value="cancelled">Cancelled</MenuItem>
           </Select>
         </FormControl>

@@ -26,6 +26,9 @@ export interface ServiceLine {
   };
 }
 
+// Alias for backward compatibility
+export type ServiceDraft = ServiceLine;
+
 export interface GarmentDraft {
   id: string; // Temporary ID for UI tracking
   name: string;
@@ -38,6 +41,7 @@ export interface GarmentDraft {
   specialEvent: boolean;
   services: ServiceLine[];
   imageCloudId?: string | undefined; // Cloudinary public ID
+  cloudinaryPublicId?: string | undefined; // Alias for imageCloudId for backward compatibility
   imageUrl?: string | undefined; // Full Cloudinary URL
   imageThumbnailUrl?: string | undefined; // Cloudinary thumbnail URL
   // Preset proxy image key (e.g., "tops.button_up_shirt"). Used when no real photo is uploaded.
@@ -53,6 +57,17 @@ export interface OrderDraft {
   garments: GarmentDraft[];
   discountCents: number;
   notes?: string | undefined;
+  paymentIntent?: {
+    collectNow: boolean;
+    method?: 'stripe' | 'cash' | 'external_pos';
+    depositAmount?: number;
+    dueDate?: Date;
+    notes?: string;
+    stripeDetails?: {
+      paymentMethodId?: string;
+    };
+    externalReference?: string;
+  };
 }
 
 interface OrderFlowContextType {

@@ -49,7 +49,7 @@ describe('getOrdersPaginated', () => {
         email: null,
         location_type: null,
         mailing_address: null,
-        payment_preference: null,
+
         phone_number: null,
         tax_percent: 0,
         trial_end_date: null,

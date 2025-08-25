@@ -34,6 +34,9 @@ const mockInitialData: PaginatedOrders = {
       order_due_date: null,
       is_paid: false,
       paid_at: null,
+      deposit_amount_cents: null,
+      paid_amount_cents: null,
+      payment_status: 'pending',
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z',
       client: {
@@ -47,7 +50,7 @@ const mockInitialData: PaginatedOrders = {
       id: 'order_2',
       shop_id: 'shop_123',
       client_id: 'client_2',
-      status: 'completed',
+      status: 'paid',
       order_number: 'ORD-002',
       total_cents: 7500,
       subtotal_cents: 7500,
@@ -57,6 +60,9 @@ const mockInitialData: PaginatedOrders = {
       order_due_date: null,
       is_paid: true,
       paid_at: '2024-01-02T00:00:00Z',
+      deposit_amount_cents: null,
+      paid_amount_cents: 7500,
+      payment_status: 'paid',
       created_at: '2024-01-02T00:00:00Z',
       updated_at: '2024-01-02T00:00:00Z',
       client: {
@@ -117,7 +123,7 @@ describe('OrdersList', () => {
     await waitFor(() => {
       expect(screen.getByText('Pending')).toBeInTheDocument();
     });
-    expect(screen.getByText('Completed')).toBeInTheDocument();
+    expect(screen.getByText('Paid')).toBeInTheDocument();
   });
 
   it('should display garment count correctly', async () => {
@@ -193,16 +199,16 @@ describe('OrdersList', () => {
     const statusDropdown = screen.getByText('All Statuses');
     await user.click(statusDropdown);
 
-    // Select 'Completed' from the menu
-    const completedOption = await screen.findByRole('option', {
-      name: 'Completed',
+    // Select 'Paid' from the menu
+    const paidOption = await screen.findByRole('option', {
+      name: 'Paid',
     });
-    await user.click(completedOption);
+    await user.click(paidOption);
 
     await waitFor(() => {
       expect(mockGetOrdersAction).toHaveBeenCalledWith(1, 10, {
         search: '',
-        status: 'completed',
+        status: 'paid',
         sortBy: 'created_at',
         sortOrder: 'desc',
       });
@@ -370,6 +376,9 @@ describe('OrdersList', () => {
           order_due_date: null,
           is_paid: false,
           paid_at: null,
+          deposit_amount_cents: null,
+          paid_amount_cents: null,
+          payment_status: 'pending',
           created_at: '2024-01-01T00:00:00Z',
           updated_at: '2024-01-01T00:00:00Z',
           client: null,

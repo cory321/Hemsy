@@ -1,87 +1,47 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import Step1ClientSelection from '@/components/orders/steps/Step1ClientSelection';
 import { OrderFlowProvider } from '@/contexts/OrderFlowContext';
 
 // Mock ClientSearchField to avoid external calls
 jest.mock('@/components/appointments/ClientSearchField', () => ({
-  ClientSearchField: ({ onChange }: any) => (
-    <input aria-label="Client" onChange={(e) => onChange(null)} />
+  ClientSearchField: ({ placeholder }: any) => (
+    <input aria-label="Client" placeholder={placeholder} />
   ),
 }));
 
-// Mock ClientCreateDialog to make open state testable
-jest.mock('@/components/clients/ClientCreateDialog', () => ({
-  __esModule: true,
-  default: ({ open }: { open: boolean }) => (
-    <div data-testid="client-create-dialog" data-open={open} />
-  ),
-}));
-
-jest.mock('@/lib/actions/clients', () => ({
-  getClient: jest.fn(async () => ({
-    id: 'c1',
-    first_name: 'John',
-    last_name: 'Doe',
-    email: 'john@example.com',
-    phone_number: '5551234567',
-    notes: null,
-  })),
-}));
-
-const renderWithProvider = (props?: { initialClientId?: string }) =>
+const renderWithProvider = () =>
   render(
-    <OrderFlowProvider {...props}>
+    <OrderFlowProvider>
       <Step1ClientSelection />
     </OrderFlowProvider>
   );
 
-describe('Step1ClientSelection layout', () => {
-  it('renders centered search-first layout with or-separator and Add New Client', () => {
+describe('Step1ClientSelection layout (current UI)', () => {
+  it('renders heading and radio toggle', () => {
     renderWithProvider();
-
-    // Heading
-    expect(screen.getByText('Select Client')).toBeInTheDocument();
-    // Separator and add button present
-    expect(screen.getByTestId('or-separator')).toHaveTextContent('- or -');
-    expect(screen.getByTestId('add-new-client-button')).toBeInTheDocument();
+    expect(screen.getByText('Add Client')).toBeInTheDocument();
+    expect(screen.getByLabelText('Existing client')).toBeChecked();
+    expect(screen.getByLabelText('Create new client')).toBeInTheDocument();
   });
 
-  it('opens create dialog when clicking Add New Client', () => {
+  it('switches between existing and new client modes', async () => {
+    const user = userEvent.setup();
     renderWithProvider();
 
-    const addBtn = screen.getByTestId('add-new-client-button');
-    expect(screen.getByTestId('client-create-dialog')).toHaveAttribute(
-      'data-open',
-      'false'
-    );
-    fireEvent.click(addBtn);
-    expect(screen.getByTestId('client-create-dialog')).toHaveAttribute(
-      'data-open',
-      'true'
-    );
-  });
+    // Default: existing client search visible
+    expect(
+      screen.getByPlaceholderText('Find client by name')
+    ).toBeInTheDocument();
 
-  it('shows only the Selected Client card when a client is selected, with controls to clear', async () => {
-    renderWithProvider({ initialClientId: 'c1' });
-
-    // Selected client card should appear
-    await waitFor(() =>
-      expect(screen.getByTestId('selected-client-card')).toBeInTheDocument()
-    );
-    expect(screen.getByText('Selected Client')).toBeInTheDocument();
-    expect(screen.getByText('John Doe')).toBeInTheDocument();
-
-    // Change controls present
-    expect(screen.getByTestId('close-selected-client')).toBeInTheDocument();
-    expect(screen.getByTestId('choose-different-client')).toBeInTheDocument();
-
-    // Clear via the text button and return to search/add view
-    fireEvent.click(screen.getByTestId('choose-different-client'));
-    await waitFor(() =>
-      expect(
-        screen.queryByTestId('selected-client-card')
-      ).not.toBeInTheDocument()
-    );
-    expect(screen.getByTestId('or-separator')).toBeInTheDocument();
+    // Switch to create new client
+    await user.click(screen.getByLabelText('Create new client'));
+    expect(screen.getByLabelText('Create new client')).toBeChecked();
+    expect(
+      screen.queryByPlaceholderText('Find client by name')
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /add client/i })
+    ).toBeInTheDocument();
   });
 });
