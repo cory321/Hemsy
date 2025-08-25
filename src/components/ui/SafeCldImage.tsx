@@ -35,6 +35,12 @@ export default function SafeCldImage({
   fallbackIconColor,
   onError,
 }: SafeCldImageProps) {
+  console.log('[SafeCldImage] Component rendered with:', {
+    src,
+    fallbackIconKey,
+    fallbackIconColor,
+  });
+
   const [hasError, setHasError] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const mountedRef = useRef(true);
@@ -73,11 +79,13 @@ export default function SafeCldImage({
 
   // Silently handle errors without logging to console
   const handleError = (e: SyntheticEvent<HTMLImageElement, Event>) => {
+    console.log('[SafeCldImage] Image failed to load:', src);
     // Prevent the error from bubbling up
     e.preventDefault();
     e.stopPropagation();
 
     if (mountedRef.current) {
+      console.log('[SafeCldImage] Setting hasError to true');
       setHasError(true);
       onError?.();
     }
@@ -113,11 +121,18 @@ export default function SafeCldImage({
     let iconUrl: string | null = null;
     if (fallbackIconKey) {
       iconUrl = getPresetIconUrl(fallbackIconKey);
+      console.log(
+        '[SafeCldImage] Fallback icon from key:',
+        fallbackIconKey,
+        '->',
+        iconUrl
+      );
     }
 
     // If no fallback icon key or it didn't resolve, use default
     if (!iconUrl) {
       iconUrl = '/presets/garments/select-garment.svg';
+      console.log('[SafeCldImage] Using default fallback icon:', iconUrl);
     }
 
     return (
@@ -131,6 +146,7 @@ export default function SafeCldImage({
           alignItems: 'center',
           justifyContent: 'center',
           bgcolor: 'grey.100',
+          border: '2px solid red', // Debug border
         }}
         style={style}
       >
@@ -155,6 +171,7 @@ export default function SafeCldImage({
 
   // Show fallback if there's an error
   if (hasError) {
+    console.log('[SafeCldImage] Rendering fallback for:', src);
     return renderFallback();
   }
 
