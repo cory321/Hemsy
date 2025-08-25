@@ -40,6 +40,9 @@ export const metadata: Metadata = {
     'Manage your payment settings and connect your Stripe account to receive payments directly',
 };
 
+// Force dynamic rendering since we use cookies() in Server Actions
+export const dynamic = 'force-dynamic';
+
 async function ConnectContent() {
   const { success, connectInfo, error } = await getCurrentShopConnectInfo();
 
