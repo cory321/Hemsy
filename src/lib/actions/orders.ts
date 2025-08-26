@@ -9,7 +9,7 @@ import type { Tables } from '@/types/supabase';
 
 export interface PaginatedOrders {
   data: Array<
-    Tables<'orders'> & {
+    Omit<Tables<'orders'>, 'paid_amount_cents'> & {
       client: {
         id: string;
         first_name: string;
