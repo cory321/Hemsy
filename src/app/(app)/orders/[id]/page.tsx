@@ -377,6 +377,7 @@ export default async function OrderDetailPage({
           payments={invoice?.payments || []}
           orderStatus={order?.status || null}
           paidAt={order?.paid_at || null}
+          clientEmail={client?.email || undefined}
         />
       </Box>
     </Container>

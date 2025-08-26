@@ -29,13 +29,40 @@ const mockGarment = {
   name: 'Test Garment',
   preset_icon_key: 'test-icon',
   preset_fill_color: '#000000',
+  due_date: '2024-12-31',
+  event_date: null,
+  preset_outline_color: '#000000',
+  notes: null,
+  stage: 'Measuring',
+  measurements: null,
+  photo_url: null,
+  image_cloud_id: null,
+  is_removed: false,
+  shop_id: 'test-shop',
+  order_id: 'test-order',
+  created_at: '2024-01-01T00:00:00Z',
+  updated_at: '2024-01-01T00:00:00Z',
+  garment_services: [],
+  totalPriceCents: 0,
 };
 
 const mockGarmentContext = {
   garment: mockGarment,
+  updateGarmentOptimistic: jest.fn(),
   updateGarmentIcon: jest.fn(),
   updateGarmentPhoto: jest.fn(),
   deleteGarmentPhoto: jest.fn(),
+  addService: jest.fn(),
+  removeService: jest.fn(),
+  restoreService: jest.fn(),
+  updateService: jest.fn(),
+  toggleServiceComplete: jest.fn(),
+  markAsPickedUp: jest.fn(),
+  refreshGarment: jest.fn(),
+  refreshHistory: jest.fn(),
+  historyKey: 0,
+  optimisticHistoryEntry: null,
+  historyRefreshSignal: 0,
 };
 
 describe('GarmentImageHoverOverlay', () => {
@@ -77,7 +104,10 @@ describe('GarmentImageHoverOverlay', () => {
 
       // Try clicking the button - should not crash
       // Since the button is disabled, we need to force the click event
-      fireEvent.click(uploadButtons[0], { force: true });
+      const firstButton = uploadButtons[0];
+      if (firstButton) {
+        fireEvent.click(firstButton, { force: true });
+      }
 
       // The button being disabled is the correct behavior when open is undefined
       // We can verify this by checking the disabled state
@@ -113,8 +143,11 @@ describe('GarmentImageHoverOverlay', () => {
       });
 
       // Click should call the open function
-      fireEvent.click(uploadButtons[0]);
-      expect(mockOpen).toHaveBeenCalled();
+      const firstButton = uploadButtons[0];
+      if (firstButton) {
+        fireEvent.click(firstButton);
+        expect(mockOpen).toHaveBeenCalled();
+      }
     });
   });
 });

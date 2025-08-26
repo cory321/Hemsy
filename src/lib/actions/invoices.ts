@@ -55,8 +55,8 @@ const CreateInvoiceSchema = z.object({
 
 const RecordPaymentSchema = z.object({
   invoiceId: z.string().uuid(),
-  paymentType: z.enum(['deposit', 'remainder', 'full']),
-  paymentMethod: z.enum(['stripe', 'cash', 'external_pos']),
+  paymentType: z.enum(['remainder', 'custom']),
+  paymentMethod: z.enum(['stripe', 'cash', 'external_pos', 'check']),
   amountCents: z.number().int().positive(),
   externalReference: z.string().optional(),
   notes: z.string().optional(),

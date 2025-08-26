@@ -5,10 +5,7 @@ import Stripe from 'stripe';
 import { createClient } from '@/lib/supabase/server';
 import { ensureUserAndShop } from './users';
 import { revalidatePath } from 'next/cache';
-import {
-  sendInvoiceReceiptEmail,
-  sendDepositReceiptEmail,
-} from './emails/invoice-emails';
+import { sendInvoiceReceiptEmail } from './emails/invoice-emails';
 import { checkPaymentStatus } from './payment-status';
 
 // Initialize Stripe
@@ -23,12 +20,15 @@ export interface PaymentIntentResult {
   paymentIntentId: string;
   amountCents: number;
   currency: string;
+  // For direct charges with connected accounts
+  connectedAccountId?: string;
+  isDirectCharge?: boolean;
 }
 
 // Validation schemas
 const CreatePaymentIntentSchema = z.object({
   invoiceId: z.string().uuid(),
-  paymentType: z.enum(['deposit', 'remainder', 'full']),
+  paymentType: z.enum(['remainder', 'custom']),
   amountCents: z.number().int().positive().optional(), // Optional, will calculate from invoice if not provided
   returnUrl: z.string().url().optional(),
 });
@@ -197,17 +197,12 @@ export async function createPaymentIntent(
     } else {
       // Calculate based on payment type
       switch (validated.paymentType) {
-        case 'deposit':
-          if (!invoice.deposit_amount_cents) {
-            throw new Error('No deposit amount set for this invoice');
-          }
-          amountToCharge = invoice.deposit_amount_cents;
+        case 'custom':
+          amountToCharge =
+            validated.amountCents || invoice.amount_cents - totalPaid;
           break;
         case 'remainder':
           amountToCharge = invoice.amount_cents - totalPaid;
-          break;
-        case 'full':
-          amountToCharge = invoice.amount_cents;
           break;
       }
     }
@@ -232,6 +227,9 @@ export async function createPaymentIntent(
         ? 'destination_charge_to_seamstress'
         : 'platform_payment',
     });
+
+    // Determine charge type based on configuration
+    const USE_DIRECT_CHARGES = true; // Set to true to offload compliance to seamstresses
 
     // Base PaymentIntent configuration
     const paymentIntentConfig: Stripe.PaymentIntentCreateParams = {
@@ -277,38 +275,64 @@ export async function createPaymentIntent(
       statement_descriptor_suffix: `SHP${invoice.invoice_number.slice(-3)}`, // "SHP" + last 3 digits
     };
 
-    // Add Connect-specific configuration for destination charges
-    if (useConnectAccount && shopSettings?.stripe_connect_account_id) {
-      // Use destination charges - funds go directly to connected account
-      paymentIntentConfig.transfer_data = {
-        destination: shopSettings.stripe_connect_account_id,
-        // Transfer the full amount to the seamstress (connected account)
-        // Platform can take fees via application_fee_amount if needed
+    // Create PaymentIntent based on charge type
+    let paymentIntent: Stripe.PaymentIntent;
+
+    if (
+      USE_DIRECT_CHARGES &&
+      useConnectAccount &&
+      shopSettings?.stripe_connect_account_id
+    ) {
+      // DIRECT CHARGES - Seamstress is merchant of record (offloads compliance)
+      // The charge happens directly on the connected account
+
+      // Add platform fee if you want to monetize (optional)
+      const PLATFORM_FEE_PERCENTAGE = 0; // Set to 0 to disable platform fee (e.g., 0.025 for 2.5% fee)
+      if (PLATFORM_FEE_PERCENTAGE > 0) {
+        paymentIntentConfig.application_fee_amount = Math.round(
+          amountToCharge * PLATFORM_FEE_PERCENTAGE
+        );
+      }
+
+      // Enhanced metadata
+      paymentIntentConfig.metadata = {
+        ...paymentIntentConfig.metadata,
+        connect_flow_type: 'direct_charge',
+        merchant_account_id: shopSettings.stripe_connect_account_id,
+        payment_scenario: 'seamstress_is_merchant_of_record',
       };
 
-      // Optional: Add application fee (platform commission)
-      // paymentIntentConfig.application_fee_amount = Math.round(amountToCharge * 0.025); // 2.5% fee
+      // Create payment on the CONNECTED ACCOUNT (seamstress)
+      paymentIntent = await stripe.paymentIntents.create(paymentIntentConfig, {
+        stripeAccount: shopSettings.stripe_connect_account_id, // Key difference!
+      });
+    } else if (useConnectAccount && shopSettings?.stripe_connect_account_id) {
+      // DESTINATION CHARGES - Platform is merchant of record (current approach)
+      // Keep existing logic for backwards compatibility or fallback
 
-      // Enhanced metadata for Connect transactions
+      paymentIntentConfig.transfer_data = {
+        destination: shopSettings.stripe_connect_account_id,
+      };
+
+      // Optional: Add application fee (currently disabled, set to desired percentage to enable)
+      // const PLATFORM_FEE_PERCENTAGE = 0; // e.g., 0.025 for 2.5% fee
+      // if (PLATFORM_FEE_PERCENTAGE > 0) {
+      //   paymentIntentConfig.application_fee_amount = Math.round(amountToCharge * PLATFORM_FEE_PERCENTAGE);
+      // }
+
       paymentIntentConfig.metadata = {
         ...paymentIntentConfig.metadata,
         connect_flow_type: 'destination_charge',
         merchant_account_id: shopSettings.stripe_connect_account_id,
-        payment_scenario: 'seamstress_charges_client',
-        card_holder: 'client', // The card belongs to the client
-        merchant: 'seamstress', // The seamstress is the merchant
+        payment_scenario: 'platform_is_merchant_of_record',
       };
-    }
 
-    // Create the PaymentIntent
-    // For destination charges, we create the PaymentIntent on the platform account
-    // but specify the connected account as the destination via transfer_data
-    const paymentIntent = await stripe.paymentIntents.create(
-      paymentIntentConfig
-      // NOTE: For destination charges, we DON'T use stripeAccount parameter
-      // The payment is created on the platform account, but funds are transferred
-      // to the connected account via transfer_data.destination
-    );
+      // Create payment on PLATFORM account
+      paymentIntent = await stripe.paymentIntents.create(paymentIntentConfig);
+    } else {
+      // No Connect account - regular platform payment
+      paymentIntent = await stripe.paymentIntents.create(paymentIntentConfig);
+    }
 
     // Create pending payment record
     const { error: paymentError } = await supabase.from('payments').insert({
@@ -330,6 +354,12 @@ export async function createPaymentIntent(
       throw new Error('Failed to record payment intent');
     }
 
+    // Include connected account ID if this was a direct charge
+    const isDirectCharge =
+      USE_DIRECT_CHARGES &&
+      useConnectAccount &&
+      shopSettings?.stripe_connect_account_id;
+
     return {
       success: true,
       data: {
@@ -337,6 +367,14 @@ export async function createPaymentIntent(
         paymentIntentId: paymentIntent.id,
         amountCents: amountToCharge,
         currency: paymentIntent.currency,
+        // CRITICAL: Include connected account ID for direct charges
+        // Frontend needs this to initialize Stripe Elements correctly
+        ...(isDirectCharge && shopSettings?.stripe_connect_account_id
+          ? {
+              connectedAccountId: shopSettings.stripe_connect_account_id,
+              isDirectCharge: true,
+            }
+          : {}),
       },
     };
   } catch (error) {
@@ -452,11 +490,8 @@ export async function handleSuccessfulPayment(
 
   // Send receipt email
   try {
-    if (payment.payment_type === 'deposit' && newStatus !== 'paid') {
-      // Send deposit receipt
-      await sendDepositReceiptEmail(payment.invoice_id);
-    } else if (newStatus === 'paid') {
-      // Send full invoice receipt
+    if (newStatus === 'paid') {
+      // Send invoice receipt
       await sendInvoiceReceiptEmail(payment.invoice_id);
     }
   } catch (emailError) {
@@ -647,13 +682,19 @@ export async function refundPayment(
       throw new Error('Refund amount cannot exceed payment amount');
     }
 
+    // Check if this was a direct charge (need to refund on connected account)
+    const paymentMetadata = payment.stripe_metadata as any;
+    const isDirectCharge =
+      paymentMetadata?.connect_flow_type === 'direct_charge';
+    const connectedAccountId = paymentMetadata?.merchant_account_id;
+
     // Create Stripe refund with enhanced metadata
     let refund;
     try {
-      refund = await stripe.refunds.create({
+      const refundParams = {
         payment_intent: payment.stripe_payment_intent_id,
         amount: refundAmount,
-        reason: 'requested_by_customer',
+        reason: 'requested_by_customer' as const,
         metadata: {
           payment_id: payment.id,
           invoice_id: payment.invoice_id,
@@ -666,7 +707,19 @@ export async function refundPayment(
           original_amount_cents: payment.amount_cents.toString(),
           refund_amount_cents: refundAmount.toString(),
         },
-      });
+      };
+
+      if (isDirectCharge && connectedAccountId) {
+        // For direct charges, refund on the connected account
+        // If there was an application fee, you might want to refund it too:
+        // refundParams.refund_application_fee = true; // Uncomment if platform fees are enabled
+        refund = await stripe.refunds.create(refundParams, {
+          stripeAccount: connectedAccountId,
+        });
+      } else {
+        // For destination charges or platform payments
+        refund = await stripe.refunds.create(refundParams);
+      }
     } catch (stripeError: any) {
       console.error('Stripe refund error:', stripeError);
       throw new Error(`Stripe refund failed: ${stripeError.message}`);

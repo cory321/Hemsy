@@ -38,22 +38,34 @@ export async function processStripeEvent(event: Stripe.Event): Promise<void> {
     console.error('Error checking for duplicate event:', error);
   }
 
+  // Check if event is from a connected account (for direct charges)
+  const isConnectedAccountEvent = !!event.account;
+
   switch (event.type) {
     case 'payment_intent.succeeded': {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
-      console.log('PaymentIntent was successful:', paymentIntent.id);
+      console.log('PaymentIntent was successful:', paymentIntent.id, {
+        from_connected_account: isConnectedAccountEvent,
+        account: event.account,
+      });
 
-      // Check if this is a Connect payment (has transfer_data or on_behalf_of)
-      const isConnectPayment =
-        paymentIntent.transfer_data?.destination || paymentIntent.on_behalf_of;
+      // For DIRECT charges, events come from connected account
+      // For DESTINATION charges, events come from platform account
+      const isDestinationCharge =
+        !isConnectedAccountEvent &&
+        (paymentIntent.transfer_data?.destination ||
+          paymentIntent.on_behalf_of);
 
-      if (isConnectPayment) {
+      const isDirectCharge = isConnectedAccountEvent;
+
+      if (isDestinationCharge || isDirectCharge) {
         console.log('Connect payment detected:', {
           payment_intent: paymentIntent.id,
+          type: isDirectCharge ? 'direct_charge' : 'destination_charge',
           connected_account:
-            paymentIntent.transfer_data?.destination ||
+            event.account || // For direct charges
+            paymentIntent.transfer_data?.destination || // For destination charges
             paymentIntent.on_behalf_of,
-          account_from_event: event.account || 'platform',
         });
       }
 
@@ -64,9 +76,15 @@ export async function processStripeEvent(event: Stripe.Event): Promise<void> {
           currency: paymentIntent.currency,
           payment_method: paymentIntent.payment_method,
           receipt_email: paymentIntent.receipt_email,
-          is_connect_payment: isConnectPayment,
+          is_connect_payment: isDestinationCharge || isDirectCharge,
+          charge_type: isDirectCharge
+            ? 'direct'
+            : isDestinationCharge
+              ? 'destination'
+              : 'platform',
           connected_account:
-            paymentIntent.transfer_data?.destination ||
+            event.account || // For direct charges
+            paymentIntent.transfer_data?.destination || // For destination charges
             paymentIntent.on_behalf_of,
           event_account: event.account,
         });
@@ -74,6 +92,34 @@ export async function processStripeEvent(event: Stripe.Event): Promise<void> {
         console.error('Error processing successful payment:', error);
         throw error; // Let Stripe retry
       }
+      return;
+    }
+
+    case 'payment_intent.created': {
+      // For destination charges, this is created on platform account
+      // Just log it - no action needed unless you want to track creation
+      const createdIntent = event.data.object as Stripe.PaymentIntent;
+      console.log('PaymentIntent created:', createdIntent.id);
+      return;
+    }
+
+    case 'charge.succeeded': {
+      // For destination charges, charge succeeds on platform account
+      // The payment_intent.succeeded event handles the main processing
+      // This is just for logging/tracking if needed
+      const charge = event.data.object as Stripe.Charge;
+      console.log('Charge succeeded:', charge.id);
+      return;
+    }
+
+    case 'transfer.created': {
+      // Automatic transfer to connected account for destination charges
+      const transfer = event.data.object as Stripe.Transfer;
+      console.log('Transfer created to connected account:', {
+        transfer_id: transfer.id,
+        destination: transfer.destination,
+        amount: transfer.amount,
+      });
       return;
     }
 
@@ -286,7 +332,23 @@ export async function processStripeEvent(event: Stripe.Event): Promise<void> {
     }
 
     default: {
-      console.log(`Unhandled event type: ${event.type}`);
+      // Some events we explicitly don't need to handle for destination charges:
+      // - payment.created: This comes from connected account perspective, redundant
+      // - payment.updated: Usually not needed unless tracking specific changes
+      // - charge.updated: Minor updates we don't need to track
+
+      // List events we intentionally skip to reduce log noise
+      const intentionallySkippedEvents = [
+        'payment.created', // Connected account view of payment (redundant)
+        'payment.updated', // Minor payment updates
+        'charge.updated', // Minor charge updates
+        'customer.created', // Customer management events
+        'customer.updated',
+      ];
+
+      if (!intentionallySkippedEvents.includes(event.type)) {
+        console.log(`Unhandled event type: ${event.type}`);
+      }
       return;
     }
   }

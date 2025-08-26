@@ -47,6 +47,9 @@ export default function PaymentFormClient({
   const [paymentIntent, setPaymentIntent] = useState<string | null>(
     clientSecret || null
   );
+  const [connectedAccountId, setConnectedAccountId] = useState<string | null>(
+    null
+  );
   const [creatingIntent, setCreatingIntent] = useState(false);
 
   useEffect(() => {
@@ -82,15 +85,8 @@ export default function PaymentFormClient({
           ?.filter((p: any) => p.status === 'completed')
           .reduce((sum: number, p: any) => sum + p.amount_cents, 0) || 0;
 
-      const isFirstPayment = totalPaid === 0;
-      const hasDeposit = invoiceData.deposit_amount_cents > 0;
-
-      let paymentType: 'deposit' | 'remainder' | 'full' = 'full';
-      if (hasDeposit && isFirstPayment) {
-        paymentType = 'deposit';
-      } else if (totalPaid > 0) {
-        paymentType = 'remainder';
-      }
+      const paymentType: 'remainder' | 'custom' =
+        totalPaid > 0 ? 'custom' : 'remainder';
 
       const result = await createPaymentIntent({
         invoiceId,
@@ -99,6 +95,14 @@ export default function PaymentFormClient({
 
       if (result.success && result.data) {
         setPaymentIntent(result.data.clientSecret);
+        // Store connected account ID if using direct charges
+        if (result.data.isDirectCharge && result.data.connectedAccountId) {
+          setConnectedAccountId(result.data.connectedAccountId);
+          console.log(
+            'Using direct charge on connected account:',
+            result.data.connectedAccountId
+          );
+        }
       } else {
         toast.error(result.error || 'Failed to initialize payment');
       }
@@ -165,18 +169,10 @@ export default function PaymentFormClient({
       ?.filter((p: any) => p.status === 'completed')
       .reduce((sum: number, p: any) => sum + p.amount_cents, 0) || 0;
   const remainingAmount = invoice.amount_cents - totalPaid;
-  const isFirstPayment = totalPaid === 0;
-  const hasDeposit = invoice.deposit_amount_cents > 0;
 
-  let amountDue = remainingAmount;
-  let paymentDescription = 'Full Payment';
-
-  if (hasDeposit && isFirstPayment) {
-    amountDue = Math.min(invoice.deposit_amount_cents, remainingAmount);
-    paymentDescription = 'Deposit Payment';
-  } else if (totalPaid > 0) {
-    paymentDescription = 'Remaining Balance';
-  }
+  const amountDue = remainingAmount;
+  const paymentDescription =
+    totalPaid > 0 ? 'Remaining Balance' : 'Full Payment';
 
   return (
     <Container maxWidth="sm">
@@ -252,7 +248,13 @@ export default function PaymentFormClient({
             ) : (
               <Box>
                 <Elements
-                  stripe={stripePromise!}
+                  stripe={
+                    connectedAccountId
+                      ? loadStripe(publishableKey, {
+                          stripeAccount: connectedAccountId,
+                        })
+                      : stripePromise!
+                  }
                   options={{ clientSecret: paymentIntent }}
                 >
                   <PaymentForm

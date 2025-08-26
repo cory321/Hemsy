@@ -261,7 +261,7 @@ describe('GarmentEditDialogOptimistic', () => {
     renderComponent({
       ...mockGarment,
       due_date: today,
-      event_date: null, // No event date to avoid conflicts
+      // Remove event_date to avoid conflicts
     });
 
     // Uncheck special event to avoid event date validation

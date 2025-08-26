@@ -513,7 +513,7 @@ export default function OrderFlowStepper() {
               firstName: orderDraft.client.first_name,
               lastName: orderDraft.client.last_name,
             }}
-            paymentType={createdOrder.depositAmount ? 'deposit' : 'full'}
+            paymentType={createdOrder.depositAmount ? 'custom' : 'remainder'}
             depositAmount={createdOrder.depositAmount}
             onPaymentSuccess={handlePaymentSuccess}
           />

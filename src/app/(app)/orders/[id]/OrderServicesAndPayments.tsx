@@ -1,11 +1,12 @@
 'use client';
 
-import { Box, Card, CardContent, Typography } from '@mui/material';
+import { Box, Card, CardContent, Typography, Alert } from '@mui/material';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import EnhancedInvoiceLineItems from '@/components/invoices/EnhancedInvoiceLineItems';
 import PaymentManagement from '@/components/invoices/PaymentManagement';
+import RecordPaymentDialog from '@/components/orders/RecordPaymentDialog';
 import { restoreRemovedService } from '@/lib/actions/garments';
 import type { Database } from '@/types/supabase';
 
@@ -52,8 +53,9 @@ interface OrderServicesAndPaymentsProps {
     processed_at?: string | null;
     notes?: string | null;
   }>;
-  orderStatus?: string | null;
-  paidAt?: string | null;
+  orderStatus?: string | null | undefined;
+  paidAt?: string | null | undefined;
+  clientEmail?: string | undefined; // Add client email for Stripe payments
 }
 
 export default function OrderServicesAndPayments({
@@ -63,8 +65,10 @@ export default function OrderServicesAndPayments({
   payments,
   orderStatus,
   paidAt,
+  clientEmail,
 }: OrderServicesAndPaymentsProps) {
   const router = useRouter();
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
 
   const handleRestoreService = async (serviceId: string, garmentId: string) => {
     try {
@@ -88,6 +92,20 @@ export default function OrderServicesAndPayments({
     router.refresh();
   };
 
+  const handleRecordPayment = () => {
+    // This should never be called if no invoice, but add safety check
+    if (!invoice) {
+      toast.error('Please create an invoice first to record payment');
+      return;
+    }
+    setPaymentDialogOpen(true);
+  };
+
+  const handlePaymentSuccess = () => {
+    setPaymentDialogOpen(false);
+    router.refresh();
+  };
+
   // Transform garment services to match EnhancedInvoiceLineItems format
   const lineItems = garmentServices.map((service) => ({
     id: service.id,
@@ -102,6 +120,17 @@ export default function OrderServicesAndPayments({
     ...(service.removal_reason && { removal_reason: service.removal_reason }),
   }));
 
+  // Calculate total amount due
+  const totalAmount = lineItems
+    .filter((item) => !item.is_removed)
+    .reduce((sum, item) => sum + (item.line_total_cents || 0), 0);
+
+  const totalPaid = payments
+    .filter((p) => p.status === 'completed')
+    .reduce((sum, p) => sum + p.amount_cents, 0);
+
+  const amountDue = totalAmount - totalPaid;
+
   return (
     <Box sx={{ mt: 4 }}>
       {/* Services Section */}
@@ -111,6 +140,15 @@ export default function OrderServicesAndPayments({
             <Typography variant="h6" gutterBottom>
               All Services for this Order
             </Typography>
+            {!invoice && amountDue > 0 && (
+              <Alert severity="info" sx={{ mb: 2 }}>
+                <Typography variant="body2">
+                  An invoice must be created before payments can be recorded.
+                  Use the &ldquo;Create Invoice&rdquo; button above to generate
+                  an invoice for this order.
+                </Typography>
+              </Alert>
+            )}
             <EnhancedInvoiceLineItems
               items={lineItems}
               garments={garments}
@@ -120,6 +158,8 @@ export default function OrderServicesAndPayments({
               payments={payments}
               orderStatus={orderStatus}
               paidAt={paidAt}
+              // Only allow recording payment if invoice exists
+              onRecordPayment={invoice ? handleRecordPayment : undefined}
               {...(garmentServices[0]?.garments?.order_id && {
                 orderId: garmentServices[0].garments.order_id,
               })}
@@ -145,6 +185,19 @@ export default function OrderServicesAndPayments({
             ...(payment.notes && { notes: payment.notes }),
           }))}
           onPaymentUpdate={handlePaymentUpdate}
+        />
+      )}
+
+      {/* Record Payment Dialog */}
+      {invoice && (
+        <RecordPaymentDialog
+          open={paymentDialogOpen}
+          onClose={() => setPaymentDialogOpen(false)}
+          orderId={garmentServices[0]?.garments?.order_id || ''}
+          invoiceId={invoice.id}
+          amountDue={amountDue}
+          onPaymentSuccess={handlePaymentSuccess}
+          clientEmail={clientEmail}
         />
       )}
     </Box>

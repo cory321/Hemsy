@@ -21,14 +21,23 @@ import {
   InputLabel,
   CircularProgress,
   Backdrop,
+  ToggleButton,
+  ToggleButtonGroup,
+  Tooltip,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import PersonIcon from '@mui/icons-material/Person';
+import ViewListIcon from '@mui/icons-material/ViewList';
+import ViewAgendaIcon from '@mui/icons-material/ViewAgenda';
+import DashboardIcon from '@mui/icons-material/Dashboard';
 import { useRouter } from 'next/navigation';
 import { useDebounce } from '@/hooks/useDebounce';
 import { format } from 'date-fns';
 import type { PaginatedOrders, OrdersFilters } from '@/lib/actions/orders';
+import OrderCardMinimal from './OrderCardMinimal';
+import OrderCardCompact from './OrderCardCompact';
+import OrderCardDetailed from './OrderCardDetailed';
 
 interface OrdersListProps {
   initialData: PaginatedOrders;
@@ -68,6 +77,8 @@ const getStatusLabel = (status: string) => {
     .join(' ');
 };
 
+type ViewMode = 'minimal' | 'compact' | 'detailed';
+
 export default function OrdersList({
   initialData,
   getOrdersAction,
@@ -83,8 +94,19 @@ export default function OrdersList({
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isFiltering, setIsFiltering] = useState(false);
 
+  // View mode state with localStorage persistence
+  const [viewMode, setViewMode] = useState<ViewMode>('compact');
+
   const debouncedSearch = useDebounce(search, 300);
   const getOrdersActionRef = useRef(getOrdersAction);
+
+  // Load view preference from localStorage on mount
+  useEffect(() => {
+    const savedView = localStorage.getItem('orderListViewMode') as ViewMode;
+    if (savedView && ['minimal', 'compact', 'detailed'].includes(savedView)) {
+      setViewMode(savedView);
+    }
+  }, []);
 
   useEffect(() => {
     getOrdersActionRef.current = getOrdersAction;
@@ -147,24 +169,77 @@ export default function OrdersList({
     router.push(`/orders/${orderId}`);
   };
 
+  const handleViewModeChange = (
+    _event: React.MouseEvent<HTMLElement>,
+    newMode: ViewMode | null
+  ) => {
+    if (newMode !== null) {
+      setViewMode(newMode);
+      localStorage.setItem('orderListViewMode', newMode);
+    }
+  };
+
+  // Calculate paid amount for each order (for the card components)
+  const ordersWithPaymentInfo = data.data.map((order) => {
+    // In a real implementation, this would come from the server
+    // For now, we'll calculate based on status
+    let paidAmount = 0;
+    if (order.status === 'paid') {
+      paidAmount = order.total_cents;
+    } else if (order.status === 'partially_paid') {
+      // Estimate 50% paid for partially paid orders
+      paidAmount = Math.floor((order.total_cents || 0) * 0.5);
+    }
+    return {
+      ...order,
+      paid_amount_cents: paidAmount,
+    };
+  });
+
   return (
     <Box data-testid="orders-list">
       {/* Filters */}
       <Stack spacing={2} sx={{ mb: 3 }}>
-        <TextField
-          fullWidth
-          variant="outlined"
-          placeholder="Search by order number or notes..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-          }}
-        />
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Search by order number or notes..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+          />
+          {/* View Mode Toggle */}
+          <ToggleButtonGroup
+            value={viewMode}
+            exclusive
+            onChange={handleViewModeChange}
+            aria-label="view mode"
+            size="small"
+          >
+            <ToggleButton value="minimal" aria-label="minimal view">
+              <Tooltip title="Minimal View">
+                <ViewListIcon />
+              </Tooltip>
+            </ToggleButton>
+            <ToggleButton value="compact" aria-label="compact view">
+              <Tooltip title="Compact View">
+                <ViewAgendaIcon />
+              </Tooltip>
+            </ToggleButton>
+            <ToggleButton value="detailed" aria-label="detailed view">
+              <Tooltip title="Detailed View">
+                <DashboardIcon />
+              </Tooltip>
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
         <FormControl size="small" sx={{ minWidth: 200 }}>
           <InputLabel>Status</InputLabel>
           <Select
@@ -235,76 +310,36 @@ export default function OrdersList({
               </CardContent>
             </Card>
           ) : (
-            data.data.map((order) => (
-              <Card
-                key={order.id}
-                data-testid={`order-card-${order.id}`}
-                sx={{
-                  cursor: 'pointer',
-                  '&:hover': {
-                    bgcolor: 'action.hover',
-                  },
-                }}
-                onClick={() => handleCardClick(order.id)}
-              >
-                <CardContent>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-start',
-                      mb: 2,
-                    }}
-                  >
-                    <Typography variant="h6">
-                      Order #{order.order_number || 'N/A'}
-                    </Typography>
-                    <IconButton size="small">
-                      <ChevronRightIcon />
-                    </IconButton>
-                  </Box>
-
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <PersonIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                    <Typography variant="body2">
-                      {order.client
-                        ? `${order.client.first_name} ${order.client.last_name}`
-                        : 'No Client'}
-                    </Typography>
-                  </Box>
-
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Chip
-                        label={getStatusLabel(order.status || 'pending')}
-                        color={getStatusColor(order.status || 'pending')}
-                        size="small"
-                      />
-                      <Typography variant="body2" color="text.secondary">
-                        {order.garments?.length || 0} garment
-                        {order.garments?.length !== 1 ? 's' : ''}
-                      </Typography>
-                    </Stack>
-                    <Stack alignItems="flex-end" spacing={0.5}>
-                      <Typography variant="h6">
-                        {formatUSD(order.total_cents)}
-                      </Typography>
-                      {order.created_at && (
-                        <Typography variant="caption" color="text.secondary">
-                          {format(new Date(order.created_at), 'MMM d, yyyy')}
-                        </Typography>
-                      )}
-                    </Stack>
-                  </Box>
-                </CardContent>
-              </Card>
-            ))
+            ordersWithPaymentInfo.map((order) => {
+              // Render different card component based on view mode
+              switch (viewMode) {
+                case 'minimal':
+                  return (
+                    <OrderCardMinimal
+                      key={order.id}
+                      order={order}
+                      onClick={handleCardClick}
+                    />
+                  );
+                case 'detailed':
+                  return (
+                    <OrderCardDetailed
+                      key={order.id}
+                      order={order}
+                      onClick={handleCardClick}
+                    />
+                  );
+                case 'compact':
+                default:
+                  return (
+                    <OrderCardCompact
+                      key={order.id}
+                      order={order}
+                      onClick={handleCardClick}
+                    />
+                  );
+              }
+            })
           )}
         </Stack>
       </Box>

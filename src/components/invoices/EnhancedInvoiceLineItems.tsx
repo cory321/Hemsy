@@ -14,6 +14,7 @@ import {
   Tooltip,
   IconButton,
   Collapse,
+  Button,
 } from '@mui/material';
 import {
   RestoreFromTrash as RestoreIcon,
@@ -21,6 +22,7 @@ import {
   ExpandMore as ExpandMoreIcon,
   ChevronRight as ChevronRightIcon,
   OpenInNew as OpenInNewIcon,
+  Payment as PaymentIcon,
 } from '@mui/icons-material';
 import { formatCentsAsCurrency } from '@/lib/utils/currency';
 import { useRouter } from 'next/navigation';
@@ -69,10 +71,11 @@ interface EnhancedInvoiceLineItemsProps {
   showRemoved?: boolean;
   onRestoreItem?: (itemId: string, garmentId: string) => void;
   readonly?: boolean;
-  orderId?: string; // Optional order ID for navigation context
-  payments?: Payment[]; // Optional payments array for calculating amount due
-  orderStatus?: string | null; // Optional order status
-  paidAt?: string | null; // Optional paid date
+  orderId?: string | undefined; // Optional order ID for navigation context
+  payments?: Payment[] | undefined; // Optional payments array for calculating amount due
+  orderStatus?: string | null | undefined; // Optional order status
+  paidAt?: string | null | undefined; // Optional paid date
+  onRecordPayment?: (() => void) | undefined; // Optional callback to trigger payment recording
 }
 
 export default function EnhancedInvoiceLineItems({
@@ -85,6 +88,7 @@ export default function EnhancedInvoiceLineItems({
   payments = [],
   orderStatus,
   paidAt,
+  onRecordPayment,
 }: EnhancedInvoiceLineItemsProps) {
   const router = useRouter();
   const [expandedGarments, setExpandedGarments] = useState<Set<string>>(
@@ -743,20 +747,48 @@ export default function EnhancedInvoiceLineItems({
                 )}
             </TableCell>
             <TableCell align="right" sx={{ borderBottom: 'none' }}>
-              <Typography
-                variant="h6"
-                fontWeight="bold"
+              <Box
                 sx={{
-                  color:
-                    paymentStatus === 'paid' || paymentStatus === 'overpaid'
-                      ? 'white'
-                      : 'primary.contrastText',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-end',
+                  gap: 2,
                 }}
               >
-                {paymentStatus === 'overpaid'
-                  ? formatCentsAsCurrency(Math.abs(amountDue))
-                  : formatCentsAsCurrency(Math.max(0, amountDue))}
-              </Typography>
+                <Typography
+                  variant="h6"
+                  fontWeight="bold"
+                  sx={{
+                    color:
+                      paymentStatus === 'paid' || paymentStatus === 'overpaid'
+                        ? 'white'
+                        : 'primary.contrastText',
+                  }}
+                >
+                  {paymentStatus === 'overpaid'
+                    ? formatCentsAsCurrency(Math.abs(amountDue))
+                    : formatCentsAsCurrency(Math.max(0, amountDue))}
+                </Typography>
+                {paymentStatus !== 'paid' &&
+                  paymentStatus !== 'overpaid' &&
+                  onRecordPayment && (
+                    <Button
+                      variant="contained"
+                      size="small"
+                      startIcon={<PaymentIcon />}
+                      onClick={onRecordPayment}
+                      sx={{
+                        backgroundColor: 'white',
+                        color: 'primary.main',
+                        '&:hover': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                        },
+                      }}
+                    >
+                      Record Payment
+                    </Button>
+                  )}
+              </Box>
             </TableCell>
           </TableRow>
 

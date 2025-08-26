@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 const CreateIntentSchema = z.object({
   invoiceId: z.string().uuid(),
-  paymentType: z.enum(['deposit', 'remainder', 'full']),
+  paymentType: z.enum(['remainder', 'custom']),
   amountCents: z.number().int().positive().optional(),
   metadata: z.record(z.string()).optional(),
 });

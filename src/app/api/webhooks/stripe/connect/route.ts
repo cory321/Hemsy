@@ -54,8 +54,14 @@ export async function POST(request: Request) {
     }
 
     // Only process Connect-specific events in this endpoint
+    // For destination charges, payment events come through the platform webhook
+    //
+    // IMPORTANT: With destination charges, all payment-related events
+    // (payment_intent.*, charge.*, transfer.created for payments) come through
+    // the platform webhook. This Connect webhook should ONLY handle events
+    // about the connected account itself, not payment events.
     const connectEvents = [
-      // Account events
+      // Account events - track onboarding and account status
       'account.updated',
       'account.application.deauthorized',
       'capability.updated',
@@ -65,20 +71,15 @@ export async function POST(request: Request) {
       'person.created',
       'person.updated',
       'person.deleted',
-      // Payment events on connected accounts
-      'payment_intent.succeeded',
-      'payment_intent.payment_failed',
-      'payment_intent.canceled',
-      'charge.succeeded',
-      'charge.failed',
-      'charge.refunded',
-      'refund.created',
-      'refund.updated',
-      // Transfer events
-      'transfer.created',
-      'transfer.updated',
-      'transfer.paid',
-      'transfer.failed',
+      // Payout events - track payouts FROM connected account TO their bank
+      // (not transfers from platform to connected account)
+      'payout.created',
+      'payout.updated',
+      'payout.paid',
+      'payout.failed',
+      'payout.canceled',
+      // Note: We do NOT handle transfer events here for destination charges
+      // transfer.created for payments comes through platform webhook
     ];
 
     if (!connectEvents.includes(event.type)) {

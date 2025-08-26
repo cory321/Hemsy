@@ -75,7 +75,7 @@ export default function InvoiceDetailClient({
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [paymentForm, setPaymentForm] = useState({
-    paymentType: 'full' as 'deposit' | 'remainder' | 'full',
+    paymentType: 'remainder' as 'remainder' | 'custom',
     paymentMethod: 'cash' as 'cash' | 'external_pos',
     amountCents: 0,
     externalReference: '',
@@ -233,7 +233,7 @@ export default function InvoiceDetailClient({
       // Create payment intent
       const result = await createPaymentIntent({
         invoiceId,
-        paymentType: invoice.deposit_amount_cents > 0 ? 'deposit' : 'full',
+        paymentType: 'remainder',
       });
 
       if (result.success && result.data) {
@@ -726,14 +726,7 @@ export default function InvoiceDetailClient({
                   onChange={(e) => {
                     const type = e.target
                       .value as typeof paymentForm.paymentType;
-                    let amount = Math.max(0, remainingAmount); // Don't allow negative amounts
-
-                    if (type === 'deposit' && invoice.deposit_amount_cents) {
-                      amount = Math.min(
-                        invoice.deposit_amount_cents,
-                        Math.max(0, remainingAmount)
-                      );
-                    }
+                    const amount = Math.max(0, remainingAmount); // Don't allow negative amounts
 
                     setPaymentForm((prev) => ({
                       ...prev,
@@ -742,13 +735,8 @@ export default function InvoiceDetailClient({
                     }));
                   }}
                 >
-                  {invoice.deposit_amount_cents > 0 && totalPaid === 0 && (
-                    <MenuItem value="deposit">Deposit</MenuItem>
-                  )}
-                  {isPartiallyPaid && (
-                    <MenuItem value="remainder">Remainder</MenuItem>
-                  )}
-                  <MenuItem value="full">Full Payment</MenuItem>
+                  <MenuItem value="remainder">Pay Remaining Balance</MenuItem>
+                  <MenuItem value="custom">Custom Amount</MenuItem>
                 </Select>
               </FormControl>
 

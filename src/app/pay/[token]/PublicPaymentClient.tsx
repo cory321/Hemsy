@@ -90,12 +90,8 @@ export default function PublicPaymentClient({
       const isFirstPayment = totalPaid === 0;
       const hasDeposit = invoice.deposit_amount_cents > 0;
 
-      let paymentType: 'deposit' | 'remainder' | 'full' = 'full';
-      if (hasDeposit && isFirstPayment) {
-        paymentType = 'deposit';
-      } else if (totalPaid > 0) {
-        paymentType = 'remainder';
-      }
+      const paymentType: 'remainder' | 'custom' =
+        totalPaid > 0 ? 'custom' : 'remainder';
 
       const result = await createPaymentIntent({
         invoiceId: invoice.id,

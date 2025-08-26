@@ -97,8 +97,8 @@ export async function createOrderWithPayment(
             const paymentResult = await createPaymentIntent({
               invoiceId: invoice.id,
               paymentType: validatedInput.paymentIntent.depositAmount
-                ? 'deposit'
-                : 'full',
+                ? 'custom'
+                : 'remainder',
               amountCents: amountToCollect,
             });
 
@@ -124,8 +124,8 @@ export async function createOrderWithPayment(
             p_payment_method: validatedInput.paymentIntent.method,
             p_amount_cents: amountToCollect,
             p_payment_type: validatedInput.paymentIntent.depositAmount
-              ? 'deposit'
-              : 'full',
+              ? 'custom'
+              : 'remainder',
             p_external_reference:
               validatedInput.paymentIntent.externalReference || '',
             p_notes: validatedInput.paymentIntent.notes || '',

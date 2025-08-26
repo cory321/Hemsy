@@ -42,7 +42,7 @@ interface OrderPaymentDialogProps {
     firstName: string;
     lastName: string;
   };
-  paymentType: 'deposit' | 'full';
+  paymentType: 'remainder' | 'custom';
   depositAmount?: number;
   onPaymentSuccess: () => void;
 }
@@ -59,10 +59,13 @@ export default function OrderPaymentDialog({
 }: OrderPaymentDialogProps) {
   const [loading, setLoading] = useState(true);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [connectedAccountId, setConnectedAccountId] = useState<string | null>(
+    null
+  );
   const [error, setError] = useState<string | null>(null);
 
   const amountToCharge =
-    paymentType === 'deposit' && depositAmount ? depositAmount : order.total;
+    paymentType === 'custom' && depositAmount ? depositAmount : order.total;
 
   useEffect(() => {
     if (open) {
@@ -83,6 +86,14 @@ export default function OrderPaymentDialog({
 
       if (result.success && result.data) {
         setClientSecret(result.data.clientSecret);
+        // Store connected account ID if using direct charges
+        if (result.data.isDirectCharge && result.data.connectedAccountId) {
+          setConnectedAccountId(result.data.connectedAccountId);
+          console.log(
+            'Using direct charge on connected account:',
+            result.data.connectedAccountId
+          );
+        }
       } else {
         throw new Error(result.error || 'Failed to initialize payment');
       }
@@ -145,7 +156,7 @@ export default function OrderPaymentDialog({
               {formatCurrency(amountToCharge / 100)}
             </Typography>
           </Box>
-          {paymentType === 'deposit' && (
+          {paymentType === 'custom' && depositAmount && (
             <Typography
               variant="caption"
               color="text.secondary"
@@ -167,7 +178,13 @@ export default function OrderPaymentDialog({
           <Alert severity="error">{error}</Alert>
         ) : clientSecret ? (
           <Elements
-            stripe={stripePromise!}
+            stripe={
+              connectedAccountId
+                ? loadStripe(publishableKey, {
+                    stripeAccount: connectedAccountId,
+                  })
+                : stripePromise!
+            }
             options={{
               clientSecret,
               appearance: {
