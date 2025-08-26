@@ -22,6 +22,10 @@ export interface PaginatedOrders {
         stage?: string | null;
         due_date?: string | null;
         event_date?: string | null;
+        image_cloud_id?: string | null;
+        photo_url?: string | null;
+        preset_icon_key?: string | null;
+        preset_fill_color?: string | null;
       }>;
       invoices?: Array<{
         id: string;
@@ -65,7 +69,7 @@ export async function getOrdersPaginated(
       `
       *,
       client:clients(id, first_name, last_name, phone_number),
-      garments(id, name, stage, due_date, event_date),
+      garments(id, name, stage, due_date, event_date, image_cloud_id, photo_url, preset_icon_key, preset_fill_color),
       invoices(
         id,
         status,

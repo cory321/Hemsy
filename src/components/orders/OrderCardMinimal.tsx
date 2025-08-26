@@ -43,7 +43,24 @@ function getPaymentStatusChip(
   }
 }
 
-function getDueDateInfo(dueDate: string | null) {
+function getDueDateInfo(orderDueDate: string | null, garments: any[]) {
+  // First try order due date, then fall back to earliest garment due date
+  let dueDate: string | null = orderDueDate;
+
+  if (!dueDate) {
+    // Find earliest garment due date
+    const garmentDueDates = garments
+      .map((g) => g.due_date)
+      .filter((date) => date != null)
+      .map((date) => new Date(date))
+      .sort((a, b) => a.getTime() - b.getTime());
+
+    if (garmentDueDates.length > 0 && garmentDueDates[0]) {
+      const isoString = garmentDueDates[0].toISOString().split('T')[0];
+      dueDate = isoString || null; // Convert back to YYYY-MM-DD format
+    }
+  }
+
   if (!dueDate) return null;
 
   const due = new Date(dueDate);
@@ -113,7 +130,10 @@ export default function OrderCardMinimal({
     order.garments?.filter((g: any) => g.stage === 'In Progress').length || 0;
 
   // Get due date info
-  const dueDateInfo = getDueDateInfo(order.order_due_date);
+  const dueDateInfo = getDueDateInfo(
+    order.order_due_date,
+    order.garments || []
+  );
 
   // Get event date info
   const eventDateInfo = getEarliestEventDate(order.garments || []);

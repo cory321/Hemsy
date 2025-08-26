@@ -26,6 +26,8 @@ import { format, differenceInDays, isToday, isTomorrow } from 'date-fns';
 import { formatPhoneNumber } from '@/lib/utils/phone';
 import { getStageColor, GARMENT_STAGES } from '@/constants/garmentStages';
 import type { GarmentStage } from '@/types';
+import SafeCldImage from '@/components/ui/SafeCldImage';
+import { resolveGarmentDisplayImage } from '@/utils/displayImage';
 
 interface OrderCardDetailedProps {
   order: any;
@@ -60,20 +62,63 @@ function GarmentProgress({ garment }: GarmentProgressProps) {
   const stageColor = getStageColor(stage);
   const fillColor = garment.preset_fill_color || stageColor;
 
+  // Resolve garment image
+  const resolved = resolveGarmentDisplayImage({
+    photoUrl: garment.photo_url ?? undefined,
+    cloudPublicId: garment.image_cloud_id ?? undefined,
+    presetIconKey: garment.preset_icon_key ?? undefined,
+  });
+
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-      {/* Garment Icon */}
-      <Avatar
+      {/* Garment Image/Icon */}
+      <Box
         sx={{
-          width: 24,
-          height: 24,
-          bgcolor: fillColor + '20',
-          color: fillColor,
-          fontSize: '0.875rem',
+          width: 32,
+          height: 32,
+          borderRadius: 1,
+          overflow: 'hidden',
+          position: 'relative',
+          bgcolor: 'grey.100',
+          border: '1px solid',
+          borderColor: 'grey.300',
         }}
       >
-        {garment.name?.[0] || '?'}
-      </Avatar>
+        {resolved.kind === 'cloud' ? (
+          <SafeCldImage
+            src={garment.image_cloud_id as string}
+            alt={garment.name || 'Garment'}
+            fill
+            style={{ objectFit: 'cover' }}
+            sizes="32px"
+            fallbackIconKey={garment.preset_icon_key}
+            fallbackIconColor={fillColor}
+          />
+        ) : resolved.kind === 'photo' ? (
+          <Box
+            component="img"
+            src={resolved.src as string}
+            alt={garment.name || 'Garment'}
+            sx={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+            }}
+          />
+        ) : (
+          <Box
+            component="img"
+            src={resolved.src as string}
+            alt={garment.name || 'Garment'}
+            sx={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              p: 0.5,
+            }}
+          />
+        )}
+      </Box>
 
       {/* Garment Name */}
       <Typography variant="body2" sx={{ flex: 1, minWidth: 0 }} noWrap>
@@ -120,7 +165,24 @@ function GarmentProgress({ garment }: GarmentProgressProps) {
   );
 }
 
-function getDueDateDisplay(dueDate: string | null) {
+function getDueDateDisplay(orderDueDate: string | null, garments: any[]) {
+  // First try order due date, then fall back to earliest garment due date
+  let dueDate: string | null = orderDueDate;
+
+  if (!dueDate) {
+    // Find earliest garment due date
+    const garmentDueDates = garments
+      .map((g) => g.due_date)
+      .filter((date) => date != null)
+      .map((date) => new Date(date))
+      .sort((a, b) => a.getTime() - b.getTime());
+
+    if (garmentDueDates.length > 0 && garmentDueDates[0]) {
+      const isoString = garmentDueDates[0].toISOString().split('T')[0];
+      dueDate = isoString || null; // Convert back to YYYY-MM-DD format
+    }
+  }
+
   if (!dueDate)
     return {
       text: 'No due date',
@@ -244,7 +306,7 @@ export default function OrderCardDetailed({
   const doneCount = garments.filter((g: any) => g.stage === 'Done').length;
 
   // Get due date display
-  const dueDateDisplay = getDueDateDisplay(order.order_due_date);
+  const dueDateDisplay = getDueDateDisplay(order.order_due_date, garments);
 
   // Get event date display
   const eventDateDisplay = getEventDateDisplay(garments);
