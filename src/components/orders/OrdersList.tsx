@@ -179,22 +179,9 @@ export default function OrdersList({
     }
   };
 
-  // Calculate paid amount for each order (for the card components)
-  const ordersWithPaymentInfo = data.data.map((order) => {
-    // In a real implementation, this would come from the server
-    // For now, we'll calculate based on status
-    let paidAmount = 0;
-    if (order.status === 'paid') {
-      paidAmount = order.total_cents;
-    } else if (order.status === 'partially_paid') {
-      // Estimate 50% paid for partially paid orders
-      paidAmount = Math.floor((order.total_cents || 0) * 0.5);
-    }
-    return {
-      ...order,
-      paid_amount_cents: paidAmount,
-    };
-  });
+  // The paid amount is now calculated on the server from actual invoice payments
+  // No need to estimate here anymore
+  const ordersWithPaymentInfo = data.data;
 
   return (
     <Box data-testid="orders-list">

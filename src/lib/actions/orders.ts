@@ -10,8 +10,31 @@ import type { Tables } from '@/types/supabase';
 export interface PaginatedOrders {
   data: Array<
     Tables<'orders'> & {
-      client: { id: string; first_name: string; last_name: string } | null;
-      garments: Array<{ id: string }>;
+      client: {
+        id: string;
+        first_name: string;
+        last_name: string;
+        phone_number?: string | null;
+      } | null;
+      garments: Array<{
+        id: string;
+        name?: string | null;
+        stage?: string | null;
+        due_date?: string | null;
+        event_date?: string | null;
+      }>;
+      invoices?: Array<{
+        id: string;
+        status: string | null;
+        amount_cents: number;
+        payments?: Array<{
+          id: string;
+          amount_cents: number;
+          status: string;
+          payment_method: string;
+        }>;
+      }>;
+      paid_amount_cents?: number;
     }
   >;
   count: number;
@@ -35,14 +58,25 @@ export async function getOrdersPaginated(
   const { shop } = await ensureUserAndShop();
   const supabase = await createSupabaseClient();
 
-  // Build the base query
+  // Build the base query with invoice and payment data
   let query = supabase
     .from('orders')
     .select(
       `
       *,
-      client:clients(id, first_name, last_name),
-      garments(id)
+      client:clients(id, first_name, last_name, phone_number),
+      garments(id, name, stage, due_date, event_date),
+      invoices(
+        id,
+        status,
+        amount_cents,
+        payments(
+          id,
+          amount_cents,
+          status,
+          payment_method
+        )
+      )
     `,
       { count: 'exact' }
     )
@@ -79,8 +113,32 @@ export async function getOrdersPaginated(
     throw new Error(`Failed to fetch orders: ${error.message}`);
   }
 
+  // Calculate paid amount from invoice payments
+  const ordersWithPaymentInfo = (data || []).map((order) => {
+    let paidAmount = 0;
+
+    // Calculate from actual invoice payments
+    if (order.invoices && order.invoices.length > 0) {
+      order.invoices.forEach((invoice: any) => {
+        if (invoice.payments) {
+          invoice.payments.forEach((payment: any) => {
+            if (payment.status === 'completed') {
+              paidAmount += payment.amount_cents || 0;
+            }
+          });
+        }
+      });
+    }
+
+    // Add the calculated paid_amount_cents
+    return {
+      ...order,
+      paid_amount_cents: paidAmount,
+    };
+  });
+
   return {
-    data: data || [],
+    data: ordersWithPaymentInfo,
     count: count || 0,
     page,
     pageSize,

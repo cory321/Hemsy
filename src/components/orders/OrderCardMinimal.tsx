@@ -48,13 +48,44 @@ function getDueDateInfo(dueDate: string | null) {
 
   const due = new Date(dueDate);
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  due.setHours(0, 0, 0, 0);
   const daysUntilDue = differenceInDays(due, today);
 
   return {
     date: format(due, 'MMM d'),
+    fullDate: format(due, 'MMM d, yyyy'),
     daysUntilDue,
     isOverdue: daysUntilDue < 0,
     isUrgent: daysUntilDue >= 0 && daysUntilDue <= 3,
+    isToday: daysUntilDue === 0,
+    isTomorrow: daysUntilDue === 1,
+  };
+}
+
+function getEarliestEventDate(garments: any[]) {
+  const eventDates = garments
+    .map((g) => g.event_date)
+    .filter((date) => date != null)
+    .map((date) => new Date(date))
+    .sort((a, b) => a.getTime() - b.getTime());
+
+  if (eventDates.length === 0) return null;
+
+  const event = eventDates[0];
+  if (!event) return null; // Type guard
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  event.setHours(0, 0, 0, 0);
+  const daysUntil = differenceInDays(event, today);
+
+  return {
+    date: format(event, 'MMM d'),
+    daysUntil,
+    isToday: daysUntil === 0,
+    isTomorrow: daysUntil === 1,
+    isUrgent: daysUntil >= 0 && daysUntil <= 3,
   };
 }
 
@@ -73,14 +104,19 @@ export default function OrderCardMinimal({
     totalAmount > 0 ? (paidAmount / totalAmount) * 100 : 0;
   const paymentStatus = getPaymentStatusChip(paidAmount, totalAmount);
 
-  // Get garment status
+  // Get garment status using the correct stages
   const garmentCount = order.garments?.length || 0;
   const readyCount =
     order.garments?.filter((g: any) => g.stage === 'Ready For Pickup').length ||
     0;
+  const inProgressCount =
+    order.garments?.filter((g: any) => g.stage === 'In Progress').length || 0;
 
   // Get due date info
   const dueDateInfo = getDueDateInfo(order.order_due_date);
+
+  // Get event date info
+  const eventDateInfo = getEarliestEventDate(order.garments || []);
 
   return (
     <Card
@@ -122,49 +158,102 @@ export default function OrderCardMinimal({
             </Typography>
           </Box>
 
-          {/* Due Date with urgency */}
+          {/* Due Date with urgency (or Event Date if more urgent) */}
           <Box sx={{ textAlign: 'center', minWidth: 60 }}>
-            {dueDateInfo ? (
-              <>
-                <Typography
-                  variant="body2"
-                  color={
-                    dueDateInfo.isOverdue
-                      ? 'error.main'
-                      : dueDateInfo.isUrgent
-                        ? 'warning.main'
-                        : 'text.primary'
-                  }
-                  fontWeight={
-                    dueDateInfo.isUrgent || dueDateInfo.isOverdue
-                      ? 'bold'
-                      : 'normal'
-                  }
-                >
-                  {dueDateInfo.date}
-                </Typography>
-                <Typography
-                  variant="caption"
-                  color={
-                    dueDateInfo.isOverdue
-                      ? 'error.main'
-                      : dueDateInfo.isUrgent
-                        ? 'warning.main'
-                        : 'text.secondary'
-                  }
-                >
-                  {dueDateInfo.isOverdue
-                    ? `${Math.abs(dueDateInfo.daysUntilDue)} overdue`
-                    : dueDateInfo.daysUntilDue === 0
-                      ? 'Today'
-                      : `${dueDateInfo.daysUntilDue} days`}
-                </Typography>
-              </>
-            ) : (
-              <Typography variant="body2" color="text.secondary">
-                No date
-              </Typography>
-            )}
+            {(() => {
+              // Show event date if it's more urgent than due date or if there's no due date
+              const showEventInstead =
+                eventDateInfo &&
+                (!dueDateInfo ||
+                  ((eventDateInfo.isToday || eventDateInfo.isTomorrow) &&
+                    !(dueDateInfo.isOverdue || dueDateInfo.isToday)));
+
+              if (showEventInstead && eventDateInfo) {
+                return (
+                  <>
+                    <Typography
+                      variant="body2"
+                      color={
+                        eventDateInfo.isToday
+                          ? 'error.main'
+                          : eventDateInfo.isTomorrow
+                            ? 'warning.main'
+                            : eventDateInfo.isUrgent
+                              ? 'warning.main'
+                              : 'text.primary'
+                      }
+                      fontWeight={
+                        eventDateInfo.isToday || eventDateInfo.isTomorrow
+                          ? 'bold'
+                          : 'normal'
+                      }
+                    >
+                      EVENT
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      color={
+                        eventDateInfo.isToday
+                          ? 'error.main'
+                          : eventDateInfo.isTomorrow
+                            ? 'warning.main'
+                            : 'text.secondary'
+                      }
+                    >
+                      {eventDateInfo.isToday
+                        ? 'Today!'
+                        : eventDateInfo.isTomorrow
+                          ? 'Tomorrow'
+                          : eventDateInfo.date}
+                    </Typography>
+                  </>
+                );
+              } else if (dueDateInfo) {
+                return (
+                  <>
+                    <Typography
+                      variant="body2"
+                      color={
+                        dueDateInfo.isOverdue
+                          ? 'error.main'
+                          : dueDateInfo.isUrgent
+                            ? 'warning.main'
+                            : 'text.primary'
+                      }
+                      fontWeight={
+                        dueDateInfo.isUrgent || dueDateInfo.isOverdue
+                          ? 'bold'
+                          : 'normal'
+                      }
+                    >
+                      {dueDateInfo.date}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      color={
+                        dueDateInfo.isOverdue
+                          ? 'error.main'
+                          : dueDateInfo.isUrgent
+                            ? 'warning.main'
+                            : 'text.secondary'
+                      }
+                    >
+                      {dueDateInfo.isOverdue
+                        ? `${Math.abs(dueDateInfo.daysUntilDue)} overdue`
+                        : dueDateInfo.daysUntilDue === 0
+                          ? 'Today'
+                          : `${dueDateInfo.daysUntilDue} days`}
+                    </Typography>
+                  </>
+                );
+              } else {
+                return (
+                  <Typography variant="body2" color="text.secondary">
+                    No date
+                  </Typography>
+                );
+              }
+            })()}
           </Box>
 
           {/* Payment Progress */}

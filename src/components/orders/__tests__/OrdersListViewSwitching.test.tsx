@@ -47,7 +47,6 @@ const mockInitialData = {
       is_paid: false,
       paid_at: null,
       notes: null,
-      payment_status: 'partially_paid',
       client: {
         id: 'client-1',
         first_name: 'Jane',
@@ -80,7 +79,6 @@ const mockInitialData = {
       is_paid: true,
       paid_at: new Date().toISOString(),
       notes: null,
-      payment_status: 'paid',
       client: {
         id: 'client-2',
         first_name: 'John',

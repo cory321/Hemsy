@@ -311,7 +311,7 @@ export default function GarmentServicesManagerOptimistic() {
                     key={service.id}
                     divider={index < garmentServices.length - 1}
                     sx={{
-                      opacity: isRemoved || service.is_done ? 0.6 : 1,
+                      opacity: isRemoved ? 0.6 : 1,
                       backgroundColor:
                         service.payment_status === 'refunded'
                           ? 'error.50'
@@ -491,7 +491,10 @@ export default function GarmentServicesManagerOptimistic() {
                       {service.is_done &&
                         !isRemoved &&
                         !service.payment_status?.includes('refund') && (
-                          <CheckCircleIcon color="success" />
+                          <CheckCircleIcon
+                            color="success"
+                            sx={{ opacity: 0.6 }}
+                          />
                         )}
 
                       <ListItemText
@@ -501,6 +504,7 @@ export default function GarmentServicesManagerOptimistic() {
                               display: 'flex',
                               alignItems: 'center',
                               gap: 1,
+                              opacity: service.is_done && !isRemoved ? 0.6 : 1,
                             }}
                           >
                             <Typography
@@ -532,6 +536,8 @@ export default function GarmentServicesManagerOptimistic() {
                                 color: isRemoved
                                   ? 'text.secondary'
                                   : 'text.secondary',
+                                opacity:
+                                  service.is_done && !isRemoved ? 0.6 : 1,
                               }}
                             >
                               {service.unit === 'flat_rate'

@@ -24,6 +24,8 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import { format, differenceInDays, isToday, isTomorrow } from 'date-fns';
 import { formatPhoneNumber } from '@/lib/utils/phone';
+import { getStageColor, GARMENT_STAGES } from '@/constants/garmentStages';
+import type { GarmentStage } from '@/types';
 
 interface OrderCardDetailedProps {
   order: any;
@@ -42,22 +44,21 @@ function formatUSD(cents: number) {
 }
 
 function getStageProgress(stage: string): number {
-  const stageMap: Record<string, number> = {
-    'Not Started': 0,
-    Cutting: 20,
-    Sewing: 40,
-    Fitting: 60,
-    Finishing: 80,
-    'Ready For Pickup': 100,
-    Completed: 100,
+  // Map the actual stages used in the app to progress percentages
+  const stageMap: Record<GarmentStage, number> = {
+    New: 0,
+    'In Progress': 40,
+    'Ready For Pickup': 80,
+    Done: 100,
   };
-  return stageMap[stage] || 0;
+  return stageMap[stage as GarmentStage] || 0;
 }
 
 function GarmentProgress({ garment }: GarmentProgressProps) {
-  const progress = getStageProgress(garment.stage || 'Not Started');
-  const iconKey = garment.preset_icon_key || 'dress';
-  const fillColor = garment.preset_fill_color || '#666';
+  const stage = (garment.stage || 'New') as GarmentStage;
+  const progress = getStageProgress(stage);
+  const stageColor = getStageColor(stage);
+  const fillColor = garment.preset_fill_color || stageColor;
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -79,16 +80,20 @@ function GarmentProgress({ garment }: GarmentProgressProps) {
         {garment.name || 'Unnamed garment'}
       </Typography>
 
-      {/* Stage */}
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        sx={{ minWidth: 100 }}
-      >
-        {garment.stage || 'Not Started'}
-      </Typography>
+      {/* Stage with proper color */}
+      <Chip
+        label={stage}
+        size="small"
+        sx={{
+          backgroundColor: stageColor,
+          color: 'white',
+          fontWeight: 500,
+          minWidth: 100,
+          fontSize: '0.75rem',
+        }}
+      />
 
-      {/* Progress Bar */}
+      {/* Progress Bar with stage color */}
       <LinearProgress
         variant="determinate"
         value={progress}
@@ -98,7 +103,7 @@ function GarmentProgress({ garment }: GarmentProgressProps) {
           borderRadius: 2,
           bgcolor: 'grey.200',
           '& .MuiLinearProgress-bar': {
-            bgcolor: progress === 100 ? 'success.main' : 'primary.main',
+            bgcolor: stageColor,
           },
         }}
       />
@@ -117,10 +122,17 @@ function GarmentProgress({ garment }: GarmentProgressProps) {
 
 function getDueDateDisplay(dueDate: string | null) {
   if (!dueDate)
-    return { text: 'No due date', color: 'text.secondary', icon: null };
+    return {
+      text: 'No due date',
+      color: 'text.secondary',
+      icon: null,
+      urgent: false,
+    };
 
   const due = new Date(dueDate);
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  due.setHours(0, 0, 0, 0);
   const daysUntilDue = differenceInDays(due, today);
 
   if (daysUntilDue < 0) {
@@ -161,6 +173,49 @@ function getDueDateDisplay(dueDate: string | null) {
   }
 }
 
+function getEventDateDisplay(garments: any[]) {
+  // Find the earliest event date from all garments
+  const eventDates = garments
+    .map((g) => g.event_date)
+    .filter((date) => date != null)
+    .map((date) => new Date(date))
+    .sort((a, b) => a.getTime() - b.getTime());
+
+  if (eventDates.length === 0) {
+    return null;
+  }
+
+  const earliestEvent = eventDates[0];
+  if (!earliestEvent) return null; // Type guard
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  earliestEvent.setHours(0, 0, 0, 0);
+  const daysUntilEvent = differenceInDays(earliestEvent, today);
+
+  let text: string;
+  let color: string;
+
+  if (daysUntilEvent < 0) {
+    text = `Event was ${format(earliestEvent, 'MMM d')}`;
+    color = 'text.secondary';
+  } else if (isToday(earliestEvent)) {
+    text = 'Event today!';
+    color = 'error.main';
+  } else if (isTomorrow(earliestEvent)) {
+    text = 'Event tomorrow';
+    color = 'warning.main';
+  } else if (daysUntilEvent <= 7) {
+    text = `Event in ${daysUntilEvent} days`;
+    color = 'warning.main';
+  } else {
+    text = `Event: ${format(earliestEvent, 'MMM d, yyyy')}`;
+    color = 'text.primary';
+  }
+
+  return { text, color };
+}
+
 export default function OrderCardDetailed({
   order,
   onClick,
@@ -177,23 +232,29 @@ export default function OrderCardDetailed({
   const paymentProgress =
     totalAmount > 0 ? (paidAmount / totalAmount) * 100 : 0;
 
-  // Get garment status summary
+  // Get garment status summary using the correct stages
   const garments = order.garments || [];
   const readyCount = garments.filter(
     (g: any) => g.stage === 'Ready For Pickup'
   ).length;
   const inProgressCount = garments.filter(
-    (g: any) =>
-      g.stage !== 'Ready For Pickup' &&
-      g.stage !== 'Completed' &&
-      g.stage !== 'Not Started'
+    (g: any) => g.stage === 'In Progress'
   ).length;
+  const newCount = garments.filter((g: any) => g.stage === 'New').length;
+  const doneCount = garments.filter((g: any) => g.stage === 'Done').length;
 
   // Get due date display
   const dueDateDisplay = getDueDateDisplay(order.order_due_date);
 
-  // Determine if we should show urgency indicators
-  const showUrgencyBanner = dueDateDisplay.urgent;
+  // Get event date display
+  const eventDateDisplay = getEventDateDisplay(garments);
+
+  // Determine if we should show urgency indicators (from either due date or event date)
+  const showUrgencyBanner =
+    dueDateDisplay.urgent ||
+    (eventDateDisplay &&
+      (eventDateDisplay.text.includes('today') ||
+        eventDateDisplay.text.includes('tomorrow')));
 
   return (
     <Card
@@ -237,16 +298,43 @@ export default function OrderCardDetailed({
               ORDER #{order.order_number || order.id.slice(0, 8)}
             </Typography>
             <Box
-              sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2,
+                mt: 0.5,
+                flexWrap: 'wrap',
+              }}
             >
-              {dueDateDisplay.icon}
-              <Typography
-                variant="body2"
-                color={dueDateDisplay.color}
-                fontWeight={dueDateDisplay.urgent ? 'bold' : 'normal'}
-              >
-                DUE: {dueDateDisplay.text}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                {dueDateDisplay.icon}
+                <Typography
+                  variant="body2"
+                  color={dueDateDisplay.color}
+                  fontWeight={dueDateDisplay.urgent ? 'bold' : 'normal'}
+                >
+                  DUE: {dueDateDisplay.text}
+                </Typography>
+              </Box>
+              {eventDateDisplay && (
+                <>
+                  <Typography variant="body2" color="text.secondary">
+                    •
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color={eventDateDisplay.color}
+                    fontWeight={
+                      eventDateDisplay.text.includes('today') ||
+                      eventDateDisplay.text.includes('tomorrow')
+                        ? 'bold'
+                        : 'normal'
+                    }
+                  >
+                    {eventDateDisplay.text}
+                  </Typography>
+                </>
+              )}
             </Box>
           </Box>
           <IconButton>
@@ -414,27 +502,59 @@ export default function OrderCardDetailed({
           }}
         >
           <Stack direction="row" spacing={1}>
-            {readyCount > 0 && (
+            {newCount > 0 && (
               <Chip
-                label={`${readyCount} ready for pickup`}
-                color="success"
+                label={`${newCount} new`}
+                sx={{
+                  backgroundColor: getStageColor('New'),
+                  color: 'white',
+                  fontSize: '0.7rem',
+                  height: 24,
+                }}
                 size="small"
-                variant="outlined"
               />
             )}
             {inProgressCount > 0 && (
               <Chip
                 label={`${inProgressCount} in progress`}
-                color="info"
+                sx={{
+                  backgroundColor: getStageColor('In Progress'),
+                  color: 'white',
+                  fontSize: '0.7rem',
+                  height: 24,
+                }}
                 size="small"
-                variant="outlined"
+              />
+            )}
+            {readyCount > 0 && (
+              <Chip
+                label={`${readyCount} ready`}
+                sx={{
+                  backgroundColor: getStageColor('Ready For Pickup'),
+                  color: 'white',
+                  fontSize: '0.7rem',
+                  height: 24,
+                }}
+                size="small"
+              />
+            )}
+            {doneCount > 0 && (
+              <Chip
+                label={`${doneCount} done`}
+                sx={{
+                  backgroundColor: getStageColor('Done'),
+                  color: 'white',
+                  fontSize: '0.7rem',
+                  height: 24,
+                }}
+                size="small"
               />
             )}
           </Stack>
           <Typography variant="caption" color="text.secondary">
             Created{' '}
             {order.created_at
-              ? format(new Date(order.created_at), 'MMM d')
+              ? format(new Date(order.created_at), 'MMM d, yyyy')
               : 'N/A'}
           </Typography>
         </Box>

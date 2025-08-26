@@ -18,6 +18,8 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { format, differenceInDays } from 'date-fns';
 import { formatPhoneNumber } from '@/lib/utils/phone';
+import { getStageColor } from '@/constants/garmentStages';
+import type { GarmentStage } from '@/types';
 
 interface OrderCardCompactProps {
   order: any;
@@ -55,6 +57,8 @@ function getDueDateInfo(dueDate: string | null) {
 
   const due = new Date(dueDate);
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  due.setHours(0, 0, 0, 0);
   const daysUntilDue = differenceInDays(due, today);
 
   return {
@@ -64,6 +68,38 @@ function getDueDateInfo(dueDate: string | null) {
     isOverdue: daysUntilDue < 0,
     isUrgent: daysUntilDue >= 0 && daysUntilDue <= 3,
     isToday: daysUntilDue === 0,
+    isTomorrow: daysUntilDue === 1,
+  };
+}
+
+function getEventDateInfo(garments: any[]) {
+  // Find the earliest event date from all garments
+  const eventDates = garments
+    .map((g) => g.event_date)
+    .filter((date) => date != null)
+    .map((date) => new Date(date))
+    .sort((a, b) => a.getTime() - b.getTime());
+
+  if (eventDates.length === 0) {
+    return null;
+  }
+
+  const earliestEvent = eventDates[0];
+  if (!earliestEvent) return null; // Type guard
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  earliestEvent.setHours(0, 0, 0, 0);
+  const daysUntilEvent = differenceInDays(earliestEvent, today);
+
+  return {
+    date: format(earliestEvent, 'MMM d, yyyy'),
+    shortDate: format(earliestEvent, 'MMM d'),
+    daysUntilEvent,
+    isPast: daysUntilEvent < 0,
+    isUrgent: daysUntilEvent >= 0 && daysUntilEvent <= 3,
+    isToday: daysUntilEvent === 0,
+    isTomorrow: daysUntilEvent === 1,
   };
 }
 
@@ -84,22 +120,28 @@ export default function OrderCardCompact({
   const remainingAmount = totalAmount - paidAmount;
   const paymentStatus = getPaymentStatus(paidAmount, totalAmount);
 
-  // Get garment status
+  // Get garment status using the correct stages
   const garmentCount = order.garments?.length || 0;
   const readyCount =
     order.garments?.filter((g: any) => g.stage === 'Ready For Pickup').length ||
     0;
   const inProgressCount =
-    order.garments?.filter(
-      (g: any) => g.stage !== 'Ready For Pickup' && g.stage !== 'Completed'
-    ).length || 0;
+    order.garments?.filter((g: any) => g.stage === 'In Progress').length || 0;
+  const newCount =
+    order.garments?.filter((g: any) => g.stage === 'New').length || 0;
+  const doneCount =
+    order.garments?.filter((g: any) => g.stage === 'Done').length || 0;
 
   // Get due date info
   const dueDateInfo = getDueDateInfo(order.order_due_date);
 
-  // Determine urgency
+  // Get event date info
+  const eventDateInfo = getEventDateInfo(order.garments || []);
+
+  // Determine urgency (from either due date or event date)
   const showUrgentBanner =
-    dueDateInfo && (dueDateInfo.isOverdue || dueDateInfo.isUrgent);
+    (dueDateInfo && (dueDateInfo.isOverdue || dueDateInfo.isUrgent)) ||
+    (eventDateInfo && (eventDateInfo.isToday || eventDateInfo.isTomorrow));
 
   return (
     <Card
@@ -187,6 +229,34 @@ export default function OrderCardCompact({
           )}
         </Box>
 
+        {/* Dates Row */}
+        {(dueDateInfo || eventDateInfo) && (
+          <Box sx={{ mb: 2, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+            {dueDateInfo && !showUrgentBanner && (
+              <Typography variant="body2" color="text.secondary">
+                Due: {dueDateInfo.date}
+              </Typography>
+            )}
+            {eventDateInfo && (
+              <Typography
+                variant="body2"
+                color={
+                  eventDateInfo.isToday || eventDateInfo.isTomorrow
+                    ? 'warning.main'
+                    : 'text.secondary'
+                }
+                fontWeight={
+                  eventDateInfo.isToday || eventDateInfo.isTomorrow
+                    ? 'medium'
+                    : 'normal'
+                }
+              >
+                Event: {eventDateInfo.date}
+              </Typography>
+            )}
+          </Box>
+        )}
+
         {/* Status Row */}
         <Box
           sx={{
@@ -205,22 +275,40 @@ export default function OrderCardCompact({
               <Typography variant="body2" color="text.secondary">
                 |
               </Typography>
-              {readyCount > 0 && (
+              {newCount > 0 && (
                 <Chip
-                  icon={<CheckCircleOutlineIcon />}
-                  label={`${readyCount} ready`}
-                  color="success"
+                  label={`${newCount} new`}
                   size="small"
-                  sx={{ height: 24 }}
+                  sx={{
+                    height: 24,
+                    backgroundColor: getStageColor('New'),
+                    color: 'white',
+                    fontSize: '0.75rem',
+                  }}
                 />
               )}
               {inProgressCount > 0 && (
                 <Chip
-                  icon={<AccessTimeIcon />}
                   label={`${inProgressCount} in progress`}
-                  color="info"
                   size="small"
-                  sx={{ height: 24 }}
+                  sx={{
+                    height: 24,
+                    backgroundColor: getStageColor('In Progress'),
+                    color: 'white',
+                    fontSize: '0.75rem',
+                  }}
+                />
+              )}
+              {readyCount > 0 && (
+                <Chip
+                  label={`${readyCount} ready`}
+                  size="small"
+                  sx={{
+                    height: 24,
+                    backgroundColor: getStageColor('Ready For Pickup'),
+                    color: 'white',
+                    fontSize: '0.75rem',
+                  }}
                 />
               )}
             </Stack>
