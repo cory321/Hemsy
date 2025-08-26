@@ -107,7 +107,7 @@ describe('GarmentServicesManagerOptimistic - Quantity Updates', () => {
     });
 
     // Check that quantity field is visible and editable
-    const quantityField = screen.getByLabelText('Hours');
+    const quantityField = screen.getByLabelText('Qty');
     expect(quantityField).toBeInTheDocument();
     expect(quantityField).toHaveValue(2);
     expect(quantityField).not.toBeDisabled();
@@ -144,7 +144,7 @@ describe('GarmentServicesManagerOptimistic - Quantity Updates', () => {
     });
 
     // Change quantity
-    const quantityField = screen.getByLabelText('Hours');
+    const quantityField = screen.getByLabelText('Qty');
     fireEvent.change(quantityField, { target: { value: '3' } });
 
     // Check that quantity is updated
@@ -177,7 +177,7 @@ describe('GarmentServicesManagerOptimistic - Quantity Updates', () => {
     });
 
     // Initially shows quantity field for hourly
-    expect(screen.getByLabelText('Hours')).toHaveValue(2);
+    expect(screen.getByLabelText('Qty')).toHaveValue(2);
 
     // Change unit to flat rate
     const unitSelect = screen.getByText('per hour');
@@ -232,7 +232,7 @@ describe('GarmentServicesManagerOptimistic - Quantity Updates', () => {
     fireEvent.click(hourOption);
 
     // Set quantity
-    const quantityField = screen.getByLabelText('Hours');
+    const quantityField = screen.getByLabelText('Qty');
     fireEvent.change(quantityField, { target: { value: '3' } });
 
     // Set price

@@ -6,11 +6,7 @@ import Grid from '@mui/material/Grid2';
 import { toast } from 'react-hot-toast';
 
 import ServiceItem from '@/components/services/ServiceItem';
-import {
-  editService,
-  deleteService,
-  duplicateService,
-} from '@/lib/actions/services';
+import { editService, deleteService } from '@/lib/actions/services';
 import {
   Service,
   ServiceFormData,
@@ -81,45 +77,15 @@ export default function ServiceList({
     }
   };
 
-  const handleDuplicate = async (id: string) => {
-    setIsLoading((prev) => ({ ...prev, [id]: true }));
-
-    try {
-      const duplicated = await duplicateService(id);
-
-      // Map database result to Service type from serviceUtils
-      const duplicatedForState: Service = {
-        id: duplicated.id,
-        name: duplicated.name,
-        description: duplicated.description,
-        default_qty: duplicated.default_qty,
-        default_unit: duplicated.default_unit as any,
-        default_unit_price_cents: duplicated.default_unit_price_cents,
-        frequently_used: duplicated.frequently_used,
-        frequently_used_position: duplicated.frequently_used_position,
-      };
-
-      setServices((prevServices) => [...prevServices, duplicatedForState]);
-      toast.success('Service duplicated successfully');
-    } catch (error) {
-      toast.error(
-        `Error duplicating service: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-    } finally {
-      setIsLoading((prev) => ({ ...prev, [id]: false }));
-    }
-  };
-
   return (
     <Box>
-      <Grid container spacing={2}>
+      <Grid container spacing={3}>
         {services.map((service) => (
-          <Grid size={12} key={service.id}>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }} key={service.id}>
             <ServiceItem
               service={service}
               onEdit={handleEdit}
               onDelete={handleDelete}
-              onDuplicate={handleDuplicate}
               isLoading={isLoading[service.id!] || false}
             />
           </Grid>

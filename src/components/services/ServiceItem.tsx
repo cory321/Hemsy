@@ -1,25 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  IconButton,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
-  Chip,
-} from '@mui/material';
-import Grid from '@mui/material/Grid2';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import DuplicateIcon from '@mui/icons-material/FileCopy';
+import { Box, Card, CardContent, Typography, Chip } from '@mui/material';
 import StarIcon from '@mui/icons-material/Star';
-import StarBorderIcon from '@mui/icons-material/StarBorder';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 
 import EditServiceDialog from '@/components/services/EditServiceDialog';
 import {
@@ -33,7 +18,6 @@ interface ServiceItemProps {
   service: Service;
   onDelete: (id: string) => Promise<void>;
   onEdit: (id: string, updatedService: ServiceFormData) => Promise<void>;
-  onDuplicate: (id: string) => Promise<void>;
   isLoading?: boolean;
 }
 
@@ -41,39 +25,12 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
   service,
   onDelete,
   onEdit,
-  onDuplicate,
   isLoading = false,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
-  const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
-    // Prevent card click from triggering when opening the menu
-    event.stopPropagation();
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleEdit = () => {
-    setIsEditing(true);
-    handleMenuClose();
-  };
-
-  const handleDelete = async () => {
-    handleMenuClose();
-    if (service.id) {
-      await onDelete(service.id);
-    }
-  };
-
-  const handleDuplicate = async () => {
-    handleMenuClose();
-    if (service.id) {
-      await onDuplicate(service.id);
-    }
+  const handleDelete = async (id: string) => {
+    await onDelete(id);
   };
 
   const handleSave = async (updatedService: ServiceFormData) => {
@@ -83,112 +40,160 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
     setIsEditing(false);
   };
 
-  const open = Boolean(anchorEl);
-
   return (
     <>
       <Card
         variant="outlined"
         sx={{
-          mb: 2,
-          width: '100%',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
           cursor: 'pointer',
-          transition: 'box-shadow 0.1s',
+          transition: 'all 0.2s ease-in-out',
           opacity: isLoading ? 0.6 : 1,
+          position: 'relative',
           '&:hover': {
-            boxShadow: 3,
+            boxShadow: (theme) => theme.shadows[4],
+            transform: 'translateY(-2px)',
+            borderColor: 'primary.main',
           },
         }}
-        onClick={(event) => {
-          // If the kebab menu is open, ignore card clicks so dismissing the menu
-          // doesn't also open the edit dialog.
-          if (open) {
-            event.stopPropagation();
-            return;
-          }
+        onClick={() => {
           setIsEditing(true);
         }}
       >
-        <CardContent>
-          <Grid container spacing={2} alignItems="center">
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <Box display="flex" alignItems="center" gap={1}>
-                <Typography variant="h6">{service.name}</Typography>
-                {service.frequently_used && (
-                  <Chip
-                    icon={<StarIcon />}
-                    label="Frequently Used"
-                    size="small"
-                    color="primary"
-                    variant="outlined"
-                  />
-                )}
-              </Box>
-              {service.description && (
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mt: 0.5 }}
-                >
-                  {service.description}
-                </Typography>
-              )}
-            </Grid>
-
-            <Grid size={{ xs: 12, sm: 3 }}>
-              <Typography variant="body2" color="text.secondary">
-                {service.default_unit === 'flat_rate'
-                  ? 'Flat rate service'
-                  : `Default: ${service.default_qty} ${pluralizeUnit(service.default_unit, service.default_qty)}`}
+        <CardContent
+          sx={{
+            flexGrow: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            p: 3,
+            '&:last-child': { pb: 3 },
+          }}
+        >
+          {/* Header: Service Name + Price */}
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              mb: 2,
+            }}
+          >
+            {/* Left: Service Name */}
+            <Box sx={{ flexGrow: 1, minWidth: 0, mr: 2 }}>
+              <Typography
+                variant="h5"
+                sx={{
+                  fontWeight: 700,
+                  lineHeight: 1.2,
+                  color: 'text.primary',
+                  wordBreak: 'break-word',
+                  mb: 0.5,
+                }}
+              >
+                {service.name}
               </Typography>
-            </Grid>
+            </Box>
 
-            <Grid size={{ xs: 12, sm: 2 }}>
-              <Typography variant="h6" align="right">
+            {/* Right: Price */}
+            <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
+              <Typography
+                variant="h5"
+                color="primary.main"
+                sx={{
+                  fontWeight: 700,
+                  lineHeight: 1.2,
+                }}
+              >
                 {calculateTotalPrice(service)}
               </Typography>
-            </Grid>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                  fontWeight: 500,
+                  display: 'block',
+                }}
+              >
+                {service.default_unit === 'flat_rate'
+                  ? 'Flat Rate'
+                  : `$${(service.default_unit_price_cents / 100).toFixed(2)}/${service.default_unit}`}
+              </Typography>
+            </Box>
+          </Box>
 
-            <Grid size={{ xs: 12, sm: 1 }}>
-              <Box display="flex" justifyContent="flex-end">
-                <IconButton onClick={handleMenuClick} disabled={isLoading}>
-                  <MoreVertIcon />
-                </IconButton>
-                <Menu
-                  anchorEl={anchorEl}
-                  open={open}
-                  onClose={handleMenuClose}
-                  anchorOrigin={{
-                    vertical: 'top',
-                    horizontal: 'right',
-                  }}
-                  transformOrigin={{
-                    vertical: 'top',
-                    horizontal: 'right',
-                  }}
-                >
-                  <MenuItem onClick={handleEdit}>
-                    <ListItemIcon>
-                      <EditIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText primary="Edit service" />
-                  </MenuItem>
-                  <MenuItem onClick={handleDuplicate}>
-                    <ListItemIcon>
-                      <DuplicateIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText primary="Duplicate" />
-                  </MenuItem>
-                  <MenuItem onClick={handleDelete}>
-                    <ListItemIcon>
-                      <DeleteIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText primary="Delete" />
-                  </MenuItem>
-                </Menu>
-              </Box>
-            </Grid>
-          </Grid>
+          {/* Secondary Info: Badges + Unit Details */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              mb: service.description ? 2 : 'auto',
+              flexWrap: 'wrap',
+            }}
+          >
+            {/* Frequently Used Badge */}
+            {service.frequently_used && (
+              <Chip
+                icon={<StarIcon sx={{ fontSize: '14px !important' }} />}
+                label="Frequently Used"
+                size="small"
+                color="primary"
+                variant="filled"
+                sx={{
+                  fontWeight: 600,
+                  fontSize: '0.75rem',
+                  height: 24,
+                  '& .MuiChip-icon': {
+                    color: 'primary.contrastText',
+                  },
+                }}
+              />
+            )}
+
+            {/* Unit Details */}
+            {service.default_unit !== 'flat_rate' && (
+              <Chip
+                icon={
+                  service.default_unit === 'hour' ? (
+                    <AccessTimeIcon sx={{ fontSize: '14px !important' }} />
+                  ) : (
+                    <AttachMoneyIcon sx={{ fontSize: '14px !important' }} />
+                  )
+                }
+                label={`${service.default_qty} ${pluralizeUnit(service.default_unit, service.default_qty)}`}
+                size="small"
+                variant="outlined"
+                sx={{
+                  fontSize: '0.75rem',
+                  height: 24,
+                  color: 'text.secondary',
+                  borderColor: 'divider',
+                }}
+              />
+            )}
+          </Box>
+
+          {/* Description */}
+          {service.description && (
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{
+                mt: 'auto',
+                lineHeight: 1.5,
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+              }}
+            >
+              {service.description}
+            </Typography>
+          )}
         </CardContent>
       </Card>
 
@@ -198,6 +203,7 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
           open={isEditing}
           onClose={() => setIsEditing(false)}
           onSave={handleSave}
+          onDelete={handleDelete}
         />
       )}
     </>

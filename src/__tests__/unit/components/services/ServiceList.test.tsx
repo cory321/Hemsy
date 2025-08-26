@@ -64,16 +64,9 @@ describe('ServiceList', () => {
         <ServiceList services={mockServices} setServices={mockSetServices} />
       );
 
-      // Find and click the menu button for the first service
-      const menuButtons = screen.getAllByTestId('MoreVertIcon');
-      expect(menuButtons[0]).toBeDefined();
-      const menuButton = menuButtons[0]?.closest('button');
-      expect(menuButton).not.toBeNull();
-      fireEvent.click(menuButton!);
-
-      // Click edit
-      const editButton = screen.getByText('Edit service');
-      fireEvent.click(editButton);
+      // Click on the first service card to open edit dialog
+      const serviceCard = screen.getByText('Hem Pants');
+      fireEvent.click(serviceCard);
 
       // The edit dialog should open
       await waitFor(() => {
@@ -129,16 +122,9 @@ describe('ServiceList', () => {
         <ServiceList services={mockServices} setServices={mockSetServices} />
       );
 
-      // Find and click the menu button for the second service (which is frequently used)
-      const menuButtons = screen.getAllByTestId('MoreVertIcon');
-      expect(menuButtons[1]).toBeDefined();
-      const menuButton = menuButtons[1]?.closest('button');
-      expect(menuButton).not.toBeNull();
-      fireEvent.click(menuButton!);
-
-      // Click edit
-      const editButton = screen.getByText('Edit service');
-      fireEvent.click(editButton);
+      // Click on the second service card (which is frequently used) to open edit dialog
+      const serviceCard = screen.getByText('Take In Waist');
+      fireEvent.click(serviceCard);
 
       // The edit dialog should open
       await waitFor(() => {

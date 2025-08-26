@@ -95,15 +95,20 @@ export default function ServicePriceInput({
   const priceNum = parseFloatFromCurrency(price || '0');
   const total = priceNum * localQuantity;
 
-  // Get quantity label based on unit
+  // Get quantity label - use short label that fits in small field
   const getQuantityLabel = () => {
+    return 'Qty';
+  };
+
+  // Get unit display name for the total text
+  const getUnitDisplayName = () => {
     switch (unit) {
       case 'hour':
-        return 'Hours';
+        return localQuantity === 1 ? 'hour' : 'hours';
       case 'day':
-        return 'Days';
+        return localQuantity === 1 ? 'day' : 'days';
       default:
-        return 'Quantity';
+        return 'unit';
     }
   };
 
@@ -125,6 +130,7 @@ export default function ServicePriceInput({
         {unit !== 'flat_rate' && (
           <TextField
             label={getQuantityLabel()}
+            placeholder="1"
             type="number"
             value={localQuantity}
             onChange={handleQuantityChange}
@@ -154,7 +160,7 @@ export default function ServicePriceInput({
         <Typography variant="h6" sx={{ mt: 2 }}>
           Total: ${total.toFixed(2)}
           {unit !== 'flat_rate' &&
-            ` (${localQuantity} ${getQuantityLabel().toLowerCase()})`}
+            ` (${localQuantity} ${getUnitDisplayName()})`}
         </Typography>
       )}
     </Box>

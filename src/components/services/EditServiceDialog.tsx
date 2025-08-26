@@ -17,6 +17,7 @@ import {
   Checkbox,
   useMediaQuery,
   useTheme,
+  DialogContentText,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 
@@ -39,6 +40,7 @@ interface EditServiceDialogProps {
   open: boolean;
   onClose: () => void;
   onSave: (updatedService: ServiceFormData) => Promise<void>;
+  onDelete?: (id: string) => Promise<void>;
 }
 
 const EditServiceDialog: React.FC<EditServiceDialogProps> = ({
@@ -46,6 +48,7 @@ const EditServiceDialog: React.FC<EditServiceDialogProps> = ({
   open,
   onClose,
   onSave,
+  onDelete,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -58,6 +61,7 @@ const EditServiceDialog: React.FC<EditServiceDialogProps> = ({
   );
   const [price, setPrice] = useState('0.00');
   const [isLoading, setIsLoading] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     const formData = convertServiceForForm(service);
@@ -111,6 +115,27 @@ const EditServiceDialog: React.FC<EditServiceDialogProps> = ({
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (onDelete && service.id) {
+      setIsLoading(true);
+      try {
+        await onDelete(service.id);
+        setShowDeleteConfirm(false);
+        onClose();
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirm(false);
   };
 
   return (
@@ -184,14 +209,58 @@ const EditServiceDialog: React.FC<EditServiceDialogProps> = ({
         </Box>
       </DialogContent>
 
-      <DialogActions>
-        <Button onClick={onClose} disabled={isLoading}>
-          Cancel
-        </Button>
-        <Button onClick={handleSave} variant="contained" disabled={isLoading}>
-          {isLoading ? 'Saving...' : 'Save'}
-        </Button>
+      <DialogActions sx={{ justifyContent: 'space-between' }}>
+        <Box>
+          {onDelete && (
+            <Button
+              onClick={handleDeleteClick}
+              disabled={isLoading}
+              color="error"
+              sx={{ textTransform: 'none' }}
+            >
+              Delete Service
+            </Button>
+          )}
+        </Box>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button onClick={onClose} disabled={isLoading}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} variant="contained" disabled={isLoading}>
+            {isLoading ? 'Saving...' : 'Save'}
+          </Button>
+        </Box>
       </DialogActions>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={showDeleteConfirm}
+        onClose={handleDeleteCancel}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Delete Service</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete &ldquo;{service.name}&rdquo;? This
+            action cannot be undone and will permanently remove this service
+            from your catalog.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} disabled={isLoading}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleDeleteConfirm}
+            color="error"
+            variant="contained"
+            disabled={isLoading}
+          >
+            {isLoading ? 'Deleting...' : 'Delete Service'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Dialog>
   );
 };

@@ -50,11 +50,6 @@ const defaultActions: QuickAction[] = [
     icon: 'ri-service-line',
     text: 'New Service',
   },
-  {
-    id: 'new-invoice',
-    icon: 'ri-file-list-line',
-    text: 'New Invoice',
-  },
 ];
 
 export function QuickActions({

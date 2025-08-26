@@ -24,7 +24,7 @@ describe('ServicePriceInput', () => {
     expect(screen.getByLabelText('Price')).toBeInTheDocument();
     expect(screen.getByText('flat rate')).toBeInTheDocument();
     // Quantity field should not be visible for flat_rate
-    expect(screen.queryByLabelText('Quantity')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Qty')).not.toBeInTheDocument();
   });
 
   it('renders all fields correctly for hour unit', () => {
@@ -32,20 +32,20 @@ describe('ServicePriceInput', () => {
 
     expect(screen.getByLabelText('Price')).toBeInTheDocument();
     expect(screen.getByText('per hour')).toBeInTheDocument();
-    expect(screen.getByLabelText('Hours')).toBeInTheDocument();
+    expect(screen.getByLabelText('Qty')).toBeInTheDocument();
   });
 
   it('hides quantity field when unit is flat_rate', () => {
     render(<ServicePriceInput {...defaultProps} />);
 
-    const quantityField = screen.queryByLabelText('Quantity');
+    const quantityField = screen.queryByLabelText('Qty');
     expect(quantityField).not.toBeInTheDocument();
   });
 
   it('shows quantity field when unit is hour', () => {
     render(<ServicePriceInput {...defaultProps} unit="hour" />);
 
-    const quantityField = screen.getByLabelText('Hours');
+    const quantityField = screen.getByLabelText('Qty');
     expect(quantityField).toBeInTheDocument();
     expect(quantityField).not.toBeDisabled();
   });
@@ -53,7 +53,7 @@ describe('ServicePriceInput', () => {
   it('shows quantity field when unit is day', () => {
     render(<ServicePriceInput {...defaultProps} unit="day" />);
 
-    const quantityField = screen.getByLabelText('Days');
+    const quantityField = screen.getByLabelText('Qty');
     expect(quantityField).toBeInTheDocument();
     expect(quantityField).not.toBeDisabled();
   });
@@ -61,7 +61,7 @@ describe('ServicePriceInput', () => {
   it('calls onQuantityChange when quantity is updated', () => {
     render(<ServicePriceInput {...defaultProps} unit="hour" />);
 
-    const quantityField = screen.getByLabelText('Hours');
+    const quantityField = screen.getByLabelText('Qty');
     fireEvent.change(quantityField, { target: { value: '5' } });
 
     expect(defaultProps.onQuantityChange).toHaveBeenCalledWith(5);
@@ -118,7 +118,7 @@ describe('ServicePriceInput', () => {
   it('ensures quantity is at least 1 on blur', () => {
     render(<ServicePriceInput {...defaultProps} unit="hour" />);
 
-    const quantityField = screen.getByLabelText('Hours');
+    const quantityField = screen.getByLabelText('Qty');
 
     // Set quantity to 0
     fireEvent.change(quantityField, { target: { value: '0' } });
@@ -163,6 +163,6 @@ describe('ServicePriceInput', () => {
 
     expect(screen.getByLabelText('Price')).toBeDisabled();
     expect(screen.getByText('per hour')).toBeInTheDocument();
-    expect(screen.getByLabelText('Hours')).toBeDisabled();
+    expect(screen.getByLabelText('Qty')).toBeDisabled();
   });
 });
