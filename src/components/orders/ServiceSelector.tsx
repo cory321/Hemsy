@@ -215,75 +215,6 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
 
   return (
     <Box>
-      {/* Frequently Used Services */}
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="subtitle2" gutterBottom>
-          {frequentServices.length > 0
-            ? 'Frequently Used Services'
-            : 'Services'}
-        </Typography>
-        <Grid container spacing={1}>
-          {frequentServices.map((service) => (
-            <Grid size={{ xs: 6, sm: 4, md: 3 }} key={service.id}>
-              <Button
-                variant="outlined"
-                fullWidth
-                onClick={() => handleAddService(service)}
-                sx={{
-                  p: 1.5,
-                  justifyContent: 'flex-start',
-                  textAlign: 'left',
-                  height: '100%',
-                }}
-              >
-                <Box>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    {service.name}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {formatCurrency(service.default_unit_price_cents / 100)} /{' '}
-                    {service.default_unit}
-                  </Typography>
-                </Box>
-              </Button>
-            </Grid>
-          ))}
-          {/* Quick Add Service Button */}
-          <Grid size={{ xs: 6, sm: 4, md: 3 }}>
-            <Button
-              variant="outlined"
-              fullWidth
-              onClick={() => setShowQuickAdd(true)}
-              sx={{
-                p: 1.5,
-                justifyContent: 'center',
-                height: '100%',
-                borderStyle: 'dashed',
-              }}
-            >
-              <Box sx={{ textAlign: 'center' }}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 0.5,
-                  }}
-                >
-                  <AddIcon fontSize="small" />
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    Quick Add Service
-                  </Typography>
-                </Box>
-                <Typography variant="caption" color="text.secondary">
-                  Add custom service
-                </Typography>
-              </Box>
-            </Button>
-          </Grid>
-        </Grid>
-      </Box>
-
       {/* Search Services */}
       <Box sx={{ mb: 3 }}>
         <TextField
@@ -330,10 +261,14 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
                   }}
                   onClick={() => handleAddService(service)}
                 >
-                  <Typography variant="body2">{service.name}</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    {service.name}
+                  </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {formatCurrency(service.default_unit_price_cents / 100)} per{' '}
-                    {service.default_unit}
+                    {formatCurrency(service.default_unit_price_cents / 100)} /{' '}
+                    {service.default_unit === 'flat_rate'
+                      ? 'Flat Rate'
+                      : service.default_unit}
                   </Typography>
                 </Box>
               ))
@@ -344,6 +279,139 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
             )}
           </Paper>
         )}
+      </Box>
+
+      {/* Frequently Used Services */}
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="subtitle2" gutterBottom>
+          {frequentServices.length > 0
+            ? 'Frequently Used Services'
+            : 'Services'}
+        </Typography>
+        <Grid container spacing={2}>
+          {frequentServices.map((service) => (
+            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={service.id}>
+              <Card
+                variant="outlined"
+                sx={{
+                  height: '100%',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    boxShadow: (theme) => theme.shadows[4],
+                    transform: 'translateY(-2px)',
+                    borderColor: 'primary.main',
+                  },
+                }}
+                onClick={() => handleAddService(service)}
+              >
+                <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                  {/* Header: Service Name + Price */}
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      mb: 0.5,
+                    }}
+                  >
+                    {/* Left: Service Name */}
+                    <Box sx={{ flexGrow: 1, minWidth: 0, mr: 1.5 }}>
+                      <Typography
+                        variant="body1"
+                        sx={{
+                          fontWeight: 600,
+                          lineHeight: 1.2,
+                          color: 'text.primary',
+                          wordBreak: 'break-word',
+                        }}
+                      >
+                        {service.name}
+                      </Typography>
+                    </Box>
+
+                    {/* Right: Price */}
+                    <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
+                      <Typography
+                        variant="body1"
+                        color="primary.main"
+                        sx={{
+                          fontWeight: 600,
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        {formatCurrency(service.default_unit_price_cents / 100)}
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  {/* Unit Info */}
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{
+                      textTransform: 'uppercase',
+                      letterSpacing: 0.5,
+                      fontWeight: 500,
+                      display: 'block',
+                    }}
+                  >
+                    {service.default_unit === 'flat_rate'
+                      ? 'Flat Rate'
+                      : `Per ${service.default_unit}`}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+          {/* Quick Add Service Button */}
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+            <Card
+              variant="outlined"
+              sx={{
+                height: '100%',
+                cursor: 'pointer',
+                borderStyle: 'dashed',
+                borderColor: 'primary.main',
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                  boxShadow: (theme) => theme.shadows[2],
+                  transform: 'translateY(-1px)',
+                  backgroundColor: 'primary.50',
+                },
+              }}
+              onClick={() => setShowQuickAdd(true)}
+            >
+              <CardContent
+                sx={{
+                  p: 2,
+                  '&:last-child': { pb: 2 },
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  textAlign: 'center',
+                  minHeight: 60,
+                }}
+              >
+                <AddIcon
+                  sx={{
+                    fontSize: 20,
+                    color: 'primary.main',
+                    mb: 0.5,
+                  }}
+                />
+                <Typography
+                  variant="body2"
+                  color="primary.main"
+                  sx={{ fontWeight: 500 }}
+                >
+                  Add New Service
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
       </Box>
 
       {/* Service Lines */}

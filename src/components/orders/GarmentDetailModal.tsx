@@ -99,17 +99,46 @@ export default function GarmentDetailModal({
     if (localGarment) {
       // Clear any previous errors
       setShowServicesError(false);
+      setDateValidationError({});
 
-      // Validate dates
-      if (localGarment.eventDate && localGarment.dueDate) {
-        const eventDate = new Date(localGarment.eventDate);
-        const dueDate = new Date(localGarment.dueDate);
-        if (eventDate <= dueDate) {
+      const today = dayjs().startOf('day');
+      let hasValidationError = false;
+
+      // Validate due date is not in the past
+      if (localGarment.dueDate) {
+        const dueDate = dayjs(localGarment.dueDate);
+        if (dueDate.isBefore(today)) {
+          setDateValidationError({
+            dueDate: 'Due date cannot be in the past',
+          });
+          hasValidationError = true;
+        }
+      }
+
+      // Validate event date if special event is enabled
+      if (
+        localGarment.specialEvent &&
+        localGarment.eventDate &&
+        localGarment.dueDate
+      ) {
+        const eventDate = dayjs(localGarment.eventDate);
+        const dueDate = dayjs(localGarment.dueDate);
+
+        if (eventDate.isBefore(today)) {
+          setDateValidationError({
+            eventDate: 'Event date cannot be in the past',
+          });
+          hasValidationError = true;
+        } else if (eventDate.isBefore(dueDate) || eventDate.isSame(dueDate)) {
           setDateValidationError({
             eventDate: 'Event date must be after the due date',
           });
-          return;
+          hasValidationError = true;
         }
+      }
+
+      if (hasValidationError) {
+        return;
       }
 
       // Check if no services are attached
@@ -237,17 +266,6 @@ export default function GarmentDetailModal({
         <DialogContent dividers>
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <Grid container spacing={3}>
-              {/* Date Validation Alert */}
-              {(dateValidationError.dueDate ||
-                dateValidationError.eventDate) && (
-                <Grid size={12}>
-                  <Alert severity="warning">
-                    {dateValidationError.dueDate ||
-                      dateValidationError.eventDate}
-                  </Alert>
-                </Grid>
-              )}
-
               {/* Left Column - Visual & Basic Info */}
               <Grid size={{ xs: 12, sm: 4 }}>
                 <Stack spacing={2}>
@@ -358,6 +376,35 @@ export default function GarmentDetailModal({
                         }
                         onChange={(newValue) => {
                           if (newValue) {
+                            const today = dayjs().startOf('day');
+                            const selectedDate = newValue.startOf('day');
+                            const eventDate = localGarment.eventDate
+                              ? dayjs(localGarment.eventDate).startOf('day')
+                              : null;
+
+                            // Validate due date
+                            if (selectedDate.isBefore(today)) {
+                              setDateValidationError({
+                                dueDate: 'Due date cannot be in the past',
+                              });
+                            } else if (
+                              localGarment.specialEvent &&
+                              eventDate &&
+                              (selectedDate.isAfter(eventDate) ||
+                                selectedDate.isSame(eventDate))
+                            ) {
+                              setDateValidationError({
+                                dueDate:
+                                  'Due date must be before the event date',
+                              });
+                            } else {
+                              // Clear due date error if valid
+                              setDateValidationError((prev) => {
+                                const { dueDate, ...rest } = prev;
+                                return rest;
+                              });
+                            }
+
                             setLocalGarment({
                               ...localGarment,
                               dueDate: formatDate(
@@ -365,36 +412,151 @@ export default function GarmentDetailModal({
                                 'yyyy-MM-dd'
                               ),
                             });
-                            setDateValidationError({});
                           }
                         }}
+                        minDate={dayjs()}
+                        {...(localGarment.specialEvent &&
+                          localGarment.eventDate && {
+                            maxDate: dayjs(localGarment.eventDate).subtract(
+                              1,
+                              'day'
+                            ),
+                          })}
                         slotProps={{
-                          textField: { fullWidth: true },
+                          textField: {
+                            fullWidth: true,
+                            error: !!dateValidationError.dueDate,
+                            helperText: dateValidationError.dueDate,
+                          },
                         }}
                       />
                     </Grid>
-                    <Grid size={{ xs: 12, sm: 6 }}>
-                      <DatePicker
-                        label="Event Date (Optional)"
-                        value={
-                          localGarment.eventDate
-                            ? dayjs(localGarment.eventDate)
-                            : null
-                        }
-                        onChange={(newValue) => {
-                          setLocalGarment({
-                            ...localGarment,
-                            eventDate: newValue
-                              ? formatDate(newValue.toDate(), 'yyyy-MM-dd')
-                              : undefined,
-                          });
-                          setDateValidationError({});
-                        }}
-                        slotProps={{
-                          textField: { fullWidth: true },
-                        }}
-                      />
-                    </Grid>
+                    {localGarment.specialEvent && (
+                      <Grid size={{ xs: 12, sm: 6 }}>
+                        <DatePicker
+                          label="Event Date"
+                          value={
+                            localGarment.eventDate
+                              ? dayjs(localGarment.eventDate)
+                              : null
+                          }
+                          onChange={(newValue) => {
+                            if (newValue) {
+                              const today = dayjs().startOf('day');
+                              const selectedDate = newValue.startOf('day');
+                              const dueDate = localGarment.dueDate
+                                ? dayjs(localGarment.dueDate).startOf('day')
+                                : null;
+
+                              // Validate event date
+                              if (selectedDate.isBefore(today)) {
+                                setDateValidationError({
+                                  eventDate: 'Event date cannot be in the past',
+                                });
+                              } else if (
+                                dueDate &&
+                                (selectedDate.isBefore(dueDate) ||
+                                  selectedDate.isSame(dueDate))
+                              ) {
+                                setDateValidationError({
+                                  eventDate:
+                                    'Event date must be after the due date',
+                                });
+                              } else {
+                                // Clear event date error if valid, but also check if due date is now invalid
+                                setDateValidationError((prev) => {
+                                  const { eventDate, ...rest } = prev;
+                                  let newErrors = rest;
+
+                                  // Check if due date is now invalid due to new event date
+                                  if (
+                                    dueDate &&
+                                    (dueDate.isAfter(selectedDate) ||
+                                      dueDate.isSame(selectedDate))
+                                  ) {
+                                    newErrors = {
+                                      ...newErrors,
+                                      dueDate:
+                                        'Due date must be before the event date',
+                                    };
+                                  } else {
+                                    // Clear due date error if it was about event date conflict
+                                    const {
+                                      dueDate: dueDateError,
+                                      ...restWithoutDueDate
+                                    } = newErrors;
+                                    if (
+                                      dueDateError ===
+                                      'Due date must be before the event date'
+                                    ) {
+                                      newErrors = restWithoutDueDate;
+                                    } else if (dueDateError) {
+                                      newErrors = {
+                                        ...restWithoutDueDate,
+                                        dueDate: dueDateError,
+                                      };
+                                    }
+                                  }
+
+                                  return newErrors;
+                                });
+                              }
+                            } else {
+                              // Clear error when clearing the date, and also clear due date errors related to event date
+                              setDateValidationError((prev) => {
+                                const {
+                                  eventDate,
+                                  dueDate: dueDateError,
+                                  ...rest
+                                } = prev;
+                                let newErrors = rest;
+
+                                // Clear due date error if it was about event date conflict
+                                if (
+                                  dueDateError &&
+                                  dueDateError !==
+                                    'Due date cannot be in the past'
+                                ) {
+                                  // Keep the error if it's about past date, clear if it's about event date conflict
+                                  if (
+                                    dueDateError ===
+                                    'Due date must be before the event date'
+                                  ) {
+                                    // Don't add it back
+                                  } else {
+                                    newErrors = {
+                                      ...newErrors,
+                                      dueDate: dueDateError,
+                                    };
+                                  }
+                                }
+
+                                return newErrors;
+                              });
+                            }
+
+                            setLocalGarment({
+                              ...localGarment,
+                              eventDate: newValue
+                                ? formatDate(newValue.toDate(), 'yyyy-MM-dd')
+                                : undefined,
+                            });
+                          }}
+                          minDate={
+                            localGarment.dueDate
+                              ? dayjs(localGarment.dueDate).add(1, 'day')
+                              : dayjs()
+                          }
+                          slotProps={{
+                            textField: {
+                              fullWidth: true,
+                              error: !!dateValidationError.eventDate,
+                              helperText: dateValidationError.eventDate,
+                            },
+                          }}
+                        />
+                      </Grid>
+                    )}
                   </Grid>
 
                   {/* Special Event Checkbox */}
@@ -403,10 +565,22 @@ export default function GarmentDetailModal({
                       <Checkbox
                         checked={localGarment.specialEvent}
                         onChange={(e) => {
+                          const isChecked = e.target.checked;
                           setLocalGarment({
                             ...localGarment,
-                            specialEvent: e.target.checked,
+                            specialEvent: isChecked,
+                            // Clear event date when unchecking special event
+                            eventDate: isChecked
+                              ? localGarment.eventDate
+                              : undefined,
                           });
+                          // Clear any event date validation errors when unchecking
+                          if (!isChecked) {
+                            setDateValidationError((prev) => {
+                              const { eventDate, ...rest } = prev;
+                              return rest;
+                            });
+                          }
                         }}
                       />
                     }
