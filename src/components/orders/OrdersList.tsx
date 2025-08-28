@@ -57,11 +57,13 @@ function formatUSD(cents: number) {
 
 const getStatusColor = (status: string) => {
   switch (status) {
-    case 'pending':
-      return 'warning';
-    case 'partially_paid':
+    case 'new':
+      return 'default';
+    case 'active':
       return 'info';
-    case 'paid':
+    case 'ready':
+      return 'warning';
+    case 'completed':
       return 'success';
     case 'cancelled':
       return 'error';
@@ -71,10 +73,20 @@ const getStatusColor = (status: string) => {
 };
 
 const getStatusLabel = (status: string) => {
-  return status
-    .split('_')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+  switch (status) {
+    case 'new':
+      return 'New';
+    case 'active':
+      return 'Active';
+    case 'ready':
+      return 'Ready';
+    case 'completed':
+      return 'Completed';
+    case 'cancelled':
+      return 'Cancelled';
+    default:
+      return status.charAt(0).toUpperCase() + status.slice(1);
+  }
 };
 
 type ViewMode = 'minimal' | 'compact' | 'detailed';
@@ -89,6 +101,7 @@ export default function OrdersList({
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('all');
   const [page, setPage] = useState(initialData.page - 1);
   const [rowsPerPage, setRowsPerPage] = useState(initialData.pageSize);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -122,7 +135,9 @@ export default function OrdersList({
     const fetchData = async () => {
       // Use isFiltering for search/status changes, loading for pagination
       const isSearchOrStatusChange =
-        debouncedSearch !== '' || statusFilter !== 'all';
+        debouncedSearch !== '' ||
+        statusFilter !== 'all' ||
+        paymentStatusFilter !== 'all';
       if (isSearchOrStatusChange) {
         setIsFiltering(true);
       } else {
@@ -131,9 +146,12 @@ export default function OrdersList({
       setError(null);
       try {
         const status = statusFilter === 'all' ? undefined : statusFilter;
+        const paymentStatus =
+          paymentStatusFilter === 'all' ? undefined : paymentStatusFilter;
         const filters: OrdersFilters = {
           search: debouncedSearch,
           ...(status && { status }),
+          ...(paymentStatus && { paymentStatus }),
           sortBy: 'created_at',
           sortOrder: 'desc',
         };
@@ -152,7 +170,14 @@ export default function OrdersList({
     };
 
     fetchData();
-  }, [page, rowsPerPage, debouncedSearch, statusFilter, isInitialLoad]);
+  }, [
+    page,
+    rowsPerPage,
+    debouncedSearch,
+    statusFilter,
+    paymentStatusFilter,
+    isInitialLoad,
+  ]);
 
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
@@ -227,20 +252,37 @@ export default function OrdersList({
             </ToggleButton>
           </ToggleButtonGroup>
         </Box>
-        <FormControl size="small" sx={{ minWidth: 200 }}>
-          <InputLabel>Status</InputLabel>
-          <Select
-            value={statusFilter}
-            label="Status"
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <MenuItem value="all">All Statuses</MenuItem>
-            <MenuItem value="pending">Pending</MenuItem>
-            <MenuItem value="partially_paid">Partially Paid</MenuItem>
-            <MenuItem value="paid">Paid</MenuItem>
-            <MenuItem value="cancelled">Cancelled</MenuItem>
-          </Select>
-        </FormControl>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <FormControl size="small" sx={{ minWidth: 200 }}>
+            <InputLabel>Order Status</InputLabel>
+            <Select
+              value={statusFilter}
+              label="Order Status"
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <MenuItem value="all">All Order Statuses</MenuItem>
+              <MenuItem value="new">New</MenuItem>
+              <MenuItem value="active">Active</MenuItem>
+              <MenuItem value="ready">Ready</MenuItem>
+              <MenuItem value="completed">Completed</MenuItem>
+              <MenuItem value="cancelled">Cancelled</MenuItem>
+            </Select>
+          </FormControl>
+          <FormControl size="small" sx={{ minWidth: 200 }}>
+            <InputLabel>Payment Status</InputLabel>
+            <Select
+              value={paymentStatusFilter}
+              label="Payment Status"
+              onChange={(e) => setPaymentStatusFilter(e.target.value)}
+            >
+              <MenuItem value="all">All Payment Statuses</MenuItem>
+              <MenuItem value="unpaid">Unpaid</MenuItem>
+              <MenuItem value="partially_paid">Partially Paid</MenuItem>
+              <MenuItem value="paid">Paid</MenuItem>
+              <MenuItem value="overpaid">Overpaid</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
       </Stack>
 
       {error && (

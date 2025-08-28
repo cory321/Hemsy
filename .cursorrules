@@ -155,6 +155,47 @@ Check the latest progress against the roadmap in `PRD.md` Section 12.
 - Check database: Use Supabase MCP server
 - Check GitHub: Use GitHub MCP server
 
+### 🎭 **Playwright MCP Tools (Manual Testing):**
+
+> **Note**: This section only applies if Playwright MCP tools are available and enabled in your environment. If these tools are not available, ignore this section and also the automated testing approach described below.
+
+#### **🔐 Authentication Credentials:**
+
+When using Playwright MCP tools for manual testing or debugging (if available):
+
+- **Dev Server**: `npm run dev:host` (runs on http://localhost:3001)
+- **Test Email**: `cory@bytelogic.agency`
+- **Test Password**: `testTEST!!!`
+
+#### **🚀 Manual Login Flow:**
+
+```typescript
+// 1. Start dev server (if not running)
+npm run dev:host
+
+// 2. Navigate and login
+mcp_playwright_playwright_navigate(url: "http://localhost:3001/sign-in")
+mcp_playwright_playwright_fill(selector: "input[name='identifier']", value: "cory@bytelogic.agency")
+mcp_playwright_playwright_click(selector: "button[data-localization-key='formButtonPrimary']")
+mcp_playwright_playwright_fill(selector: "input[name='password']", value: "testTEST!!!")
+mcp_playwright_playwright_click(selector: "button[data-localization-key='formButtonPrimary']")
+
+// 3. Should redirect to /dashboard automatically
+```
+
+#### **📋 Automated Testing (Preferred):**
+
+For automated testing, use the Clerk testing tokens setup:
+
+- **Documentation**: `docs/PLAYWRIGHT_CLERK_TESTING.md`
+- **Test Helpers**: `src/__tests__/e2e/helpers/clerk-auth.helper.ts`
+- **Run Tests**: `npm run test:e2e`
+
+#### **🔧 When to Use Each:**
+
+- **Manual Playwright MCP**: Debugging, exploring UI, taking screenshots
+- **Automated Tests**: CI/CD, regression testing, development workflow
+
 ### 📚 **Context7 Documentation Tools (ALWAYS USE WHEN APPROPRIATE):**
 
 #### **🎯 When to Use Context7:**

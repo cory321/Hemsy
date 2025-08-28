@@ -12,6 +12,11 @@ import {
 import { toggleServiceCompletion } from '@/lib/actions/garment-services';
 import { markGarmentAsPickedUp } from '@/lib/actions/garment-pickup';
 import { getGarmentWithInvoiceData } from '@/lib/actions/orders';
+import {
+  calculateGarmentStageClient,
+  shouldUpdateStageOptimistically,
+  type GarmentStage,
+} from '@/lib/utils/garmentStageCalculator';
 
 interface Service {
   id: string;
@@ -374,14 +379,31 @@ export function GarmentProvider({
           (input.customService?.quantity || 1) *
           (input.customService?.unitPriceCents || 0),
         description: input.customService?.description,
+        is_done: false, // New services start as not done
+        is_removed: false, // New services are not removed
       };
+
+      // Calculate optimistic stage with the new service
+      const updatedServices = [...garment.garment_services, tempService];
+      const stageCalculation = calculateGarmentStageClient(updatedServices);
+      const currentStage = garment.stage as GarmentStage;
+
+      // Determine if we should update the stage optimistically
+      const shouldUpdateStage = shouldUpdateStageOptimistically(
+        currentStage,
+        stageCalculation.stage
+      );
+      const optimisticStage = shouldUpdateStage
+        ? stageCalculation.stage
+        : currentStage;
 
       // Optimistically update the UI
       const previousGarment = garment;
       setGarment((prev) => ({
         ...prev,
-        garment_services: [...prev.garment_services, tempService],
+        garment_services: updatedServices,
         totalPriceCents: prev.totalPriceCents + tempService.line_total_cents,
+        stage: optimisticStage,
       }));
 
       // Create optimistic history entry
@@ -437,18 +459,34 @@ export function GarmentProvider({
 
       // Optimistically update the UI (mark as removed instead of filtering out)
       const previousGarment = garment;
+      const updatedServices = garment.garment_services.map((s) =>
+        s.id === serviceId
+          ? {
+              ...s,
+              is_removed: true,
+              removed_at: new Date().toISOString(),
+              removal_reason: removalReason || 'Service removed by user',
+            }
+          : s
+      );
+
+      // Calculate optimistic stage with the removed service
+      const stageCalculation = calculateGarmentStageClient(updatedServices);
+      const currentStage = garment.stage as GarmentStage;
+
+      // Determine if we should update the stage optimistically
+      const shouldUpdateStage = shouldUpdateStageOptimistically(
+        currentStage,
+        stageCalculation.stage
+      );
+      const optimisticStage = shouldUpdateStage
+        ? stageCalculation.stage
+        : currentStage;
+
       setGarment((prev) => ({
         ...prev,
-        garment_services: prev.garment_services.map((s) =>
-          s.id === serviceId
-            ? {
-                ...s,
-                is_removed: true,
-                removed_at: new Date().toISOString(),
-                removal_reason: removalReason || 'Service removed by user',
-              }
-            : s
-        ),
+        garment_services: updatedServices,
+        stage: optimisticStage,
         // Subtract from total since removed services don't count
         totalPriceCents:
           prev.totalPriceCents - serviceToRemove.line_total_cents,
@@ -519,23 +557,23 @@ export function GarmentProvider({
           : s
       );
 
-      // Calculate new stage based on active services after restoration
-      const activeServices = updatedServices.filter((s) => !s.is_removed);
-      const completedCount = activeServices.filter((s) => s.is_done).length;
-      const totalCount = activeServices.length;
-      let newStage: string;
-      if (completedCount === 0) {
-        newStage = 'New';
-      } else if (completedCount === totalCount && totalCount > 0) {
-        newStage = 'Ready For Pickup';
-      } else {
-        newStage = 'In Progress';
-      }
+      // Calculate optimistic stage with the restored service
+      const stageCalculation = calculateGarmentStageClient(updatedServices);
+      const currentStage = garment.stage as GarmentStage;
+
+      // Determine if we should update the stage optimistically
+      const shouldUpdateStage = shouldUpdateStageOptimistically(
+        currentStage,
+        stageCalculation.stage
+      );
+      const optimisticStage = shouldUpdateStage
+        ? stageCalculation.stage
+        : currentStage;
 
       setGarment((prev) => ({
         ...prev,
         garment_services: updatedServices,
-        stage: newStage,
+        stage: optimisticStage,
         // Add back to total since restored services count again
         totalPriceCents:
           prev.totalPriceCents + serviceToRestore.line_total_cents,
@@ -666,23 +704,23 @@ export function GarmentProvider({
         is_done: isDone,
       } as Service;
 
-      // Calculate new stage based on service completion (exclude soft-deleted services)
-      const activeServices = updatedServices.filter((s) => !s.is_removed);
-      const completedCount = activeServices.filter((s) => s.is_done).length;
-      const totalCount = activeServices.length;
-      let newStage: string;
-      if (completedCount === 0) {
-        newStage = 'New';
-      } else if (completedCount === totalCount && totalCount > 0) {
-        newStage = 'Ready For Pickup';
-      } else {
-        newStage = 'In Progress';
-      }
+      // Calculate optimistic stage with the updated service
+      const stageCalculation = calculateGarmentStageClient(updatedServices);
+      const currentStage = garment.stage as GarmentStage;
+
+      // Determine if we should update the stage optimistically
+      const shouldUpdateStage = shouldUpdateStageOptimistically(
+        currentStage,
+        stageCalculation.stage
+      );
+      const optimisticStage = shouldUpdateStage
+        ? stageCalculation.stage
+        : currentStage;
 
       setGarment((prev) => ({
         ...prev,
         garment_services: updatedServices,
-        stage: newStage,
+        stage: optimisticStage,
       }));
 
       try {

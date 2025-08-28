@@ -1,25 +1,77 @@
 import * as React from 'react';
+import {
+  TextField,
+  TextFieldProps,
+  InputBaseComponentProps,
+} from '@mui/material';
+import { styled } from '@mui/material/styles';
 
-import { cn } from '@/lib/utils';
+// Custom styled TextField to match previous input styling
+const StyledTextField = styled(TextField)(({ theme }) => ({
+  '& .MuiInputBase-root': {
+    fontSize: '0.875rem',
+    minHeight: 40,
+    '& input': {
+      padding: '8px 12px',
+    },
+    '&.Mui-disabled': {
+      cursor: 'not-allowed',
+      opacity: 0.5,
+    },
+  },
+  '& .MuiOutlinedInput-root': {
+    '& fieldset': {
+      borderColor: theme.palette.divider,
+    },
+    '&:hover fieldset': {
+      borderColor: theme.palette.text.primary,
+    },
+    '&.Mui-focused fieldset': {
+      borderColor: theme.palette.primary.main,
+      borderWidth: 2,
+    },
+    '&.Mui-error fieldset': {
+      borderColor: theme.palette.error.main,
+    },
+  },
+  '& .MuiInputBase-input': {
+    '&::placeholder': {
+      color: theme.palette.text.secondary,
+      opacity: 0.7,
+    },
+    '&::-webkit-file-upload-button': {
+      border: 0,
+      background: 'transparent',
+      fontSize: '0.875rem',
+      fontWeight: 500,
+    },
+  },
+}));
 
-export interface InputProps
-  extends React.InputHTMLAttributes<HTMLInputElement> {}
+export interface InputProps extends Omit<TextFieldProps, 'variant'> {
+  type?: React.HTMLInputTypeAttribute;
+  className?: string;
+}
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, ...props }, ref) => {
     return (
-      <input
+      <StyledTextField
+        inputRef={ref}
         type={type}
-        className={cn(
-          'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
-          className
-        )}
-        ref={ref}
+        variant="outlined"
+        size="small"
+        fullWidth
+        className={className || ''}
+        InputProps={{
+          ...props.InputProps,
+        }}
         {...props}
       />
     );
   }
 );
+
 Input.displayName = 'Input';
 
 export { Input };

@@ -155,7 +155,12 @@ export interface OrderWithGarmentCount extends Order {
 
 // UI/UX types
 export type GarmentStage = 'New' | 'In Progress' | 'Ready For Pickup' | 'Done';
-export type OrderStatus = 'pending' | 'partially_paid' | 'paid' | 'cancelled';
+export type OrderStatus =
+  | 'new'
+  | 'active'
+  | 'ready'
+  | 'completed'
+  | 'cancelled';
 export type InvoiceStatus = Invoice['status'];
 export type AppointmentType = Appointment['type'];
 export type AppointmentStatus = Appointment['status'];

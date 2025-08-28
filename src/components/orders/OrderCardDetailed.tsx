@@ -25,6 +25,10 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import { format, differenceInDays, isToday, isTomorrow } from 'date-fns';
 import { formatPhoneNumber } from '@/lib/utils/phone';
 import { getStageColor, GARMENT_STAGES } from '@/constants/garmentStages';
+import {
+  getOrderStatusColor,
+  getOrderStatusLabel,
+} from '@/lib/utils/orderStatus';
 import type { GarmentStage } from '@/types';
 import SafeCldImage from '@/components/ui/SafeCldImage';
 import { resolveGarmentDisplayImage } from '@/utils/displayImage';
@@ -278,6 +282,55 @@ function getEventDateDisplay(garments: any[]) {
   return { text, color };
 }
 
+// Get urgency banner text and color (same as compact card)
+function getUrgencyInfo(dueDateDisplay: any, eventDateDisplay: any) {
+  if (dueDateDisplay.urgent) {
+    if (dueDateDisplay.text.includes('overdue')) {
+      return {
+        text: dueDateDisplay.text.toUpperCase(),
+        color: 'error.main',
+        icon: <ErrorIcon sx={{ fontSize: 16 }} />,
+      };
+    }
+    if (dueDateDisplay.text.includes('today')) {
+      return {
+        text: 'DUE TODAY',
+        color: 'warning.main',
+        icon: <WarningAmberIcon sx={{ fontSize: 16 }} />,
+      };
+    }
+    if (dueDateDisplay.text.includes('tomorrow')) {
+      return {
+        text: 'DUE TOMORROW',
+        color: 'warning.main',
+        icon: <WarningAmberIcon sx={{ fontSize: 16 }} />,
+      };
+    }
+    if (dueDateDisplay.text.includes('days')) {
+      return {
+        text: dueDateDisplay.text.toUpperCase(),
+        color: 'warning.main',
+        icon: <WarningAmberIcon sx={{ fontSize: 16 }} />,
+      };
+    }
+  }
+  if (eventDateDisplay?.text.includes('today')) {
+    return {
+      text: 'EVENT TODAY',
+      color: 'error.main',
+      icon: <CalendarTodayIcon sx={{ fontSize: 16 }} />,
+    };
+  }
+  if (eventDateDisplay?.text.includes('tomorrow')) {
+    return {
+      text: 'EVENT TOMORROW',
+      color: 'warning.main',
+      icon: <CalendarTodayIcon sx={{ fontSize: 16 }} />,
+    };
+  }
+  return null;
+}
+
 export default function OrderCardDetailed({
   order,
   onClick,
@@ -311,41 +364,49 @@ export default function OrderCardDetailed({
   // Get event date display
   const eventDateDisplay = getEventDateDisplay(garments);
 
-  // Determine if we should show urgency indicators (from either due date or event date)
-  const showUrgencyBanner =
-    dueDateDisplay.urgent ||
-    (eventDateDisplay &&
-      (eventDateDisplay.text.includes('today') ||
-        eventDateDisplay.text.includes('tomorrow')));
+  // Get urgency info for banner (same as compact card)
+  const urgencyInfo = getUrgencyInfo(dueDateDisplay, eventDateDisplay);
+  const showUrgencyBanner = urgencyInfo !== null;
 
   return (
     <Card
       sx={{
         cursor: 'pointer',
+        transition: 'all 0.2s ease-in-out',
         '&:hover': {
           bgcolor: 'action.hover',
+          transform: 'translateY(-1px)',
+          boxShadow: 2,
         },
-        border: showUrgencyBanner ? 2 : 1,
-        borderColor: showUrgencyBanner ? dueDateDisplay.color : 'divider',
+        border: 1,
+        borderColor: 'divider',
         position: 'relative',
       }}
       onClick={() => onClick(order.id)}
     >
-      {/* Urgency Banner */}
-      {showUrgencyBanner && (
+      {/* Urgent Banner - Full Width (same as compact card) */}
+      {showUrgencyBanner && urgencyInfo && (
         <Box
           sx={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: 4,
-            height: '100%',
-            bgcolor: dueDateDisplay.color,
+            bgcolor: urgencyInfo.color,
+            color: 'white',
+            py: 0.5,
+            px: 2,
+            fontSize: '0.75rem',
+            fontWeight: 'bold',
+            textAlign: 'center',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 0.5,
           }}
-        />
+        >
+          {urgencyInfo.icon}
+          {urgencyInfo.text}
+        </Box>
       )}
 
-      <CardContent sx={{ pl: showUrgencyBanner ? 3 : 2 }}>
+      <CardContent sx={{ p: 2 }}>
         {/* Header Row */}
         <Box
           sx={{
@@ -356,9 +417,21 @@ export default function OrderCardDetailed({
           }}
         >
           <Box>
-            <Typography variant="h6" component="div">
-              ORDER #{order.order_number || order.id.slice(0, 8)}
-            </Typography>
+            <Box
+              sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}
+            >
+              <Typography variant="h6" component="div">
+                ORDER #{order.order_number || order.id.slice(0, 8)}
+              </Typography>
+              <Chip
+                label={getOrderStatusLabel(order.status || 'new')}
+                color={getOrderStatusColor(order.status || 'new')}
+                size="small"
+                sx={{
+                  fontWeight: 'bold',
+                }}
+              />
+            </Box>
             <Box
               sx={{
                 display: 'flex',
@@ -524,20 +597,25 @@ export default function OrderCardDetailed({
               }}
             >
               <Chip
-                {...(paymentProgress >= 100 && { icon: <CheckCircleIcon /> })}
+                {...(paymentProgress >= 100 &&
+                  paidAmount <= totalAmount && { icon: <CheckCircleIcon /> })}
                 label={
-                  paymentProgress >= 100
-                    ? 'PAID IN FULL'
-                    : paymentProgress > 0
-                      ? 'PARTIAL PAID'
-                      : 'UNPAID'
+                  paidAmount > totalAmount && totalAmount > 0
+                    ? 'REFUND REQUIRED'
+                    : paymentProgress >= 100
+                      ? 'PAID IN FULL'
+                      : paymentProgress > 0
+                        ? 'PARTIAL PAID'
+                        : 'UNPAID'
                 }
                 color={
-                  paymentProgress >= 100
-                    ? 'success'
-                    : paymentProgress > 0
-                      ? 'warning'
-                      : 'error'
+                  paidAmount > totalAmount && totalAmount > 0
+                    ? 'warning'
+                    : paymentProgress >= 100
+                      ? 'success'
+                      : paymentProgress > 0
+                        ? 'warning'
+                        : 'error'
                 }
                 size="small"
               />
@@ -548,6 +626,15 @@ export default function OrderCardDetailed({
                   color="error.main"
                 >
                   {formatUSD(remainingAmount)} DUE
+                </Typography>
+              )}
+              {paidAmount > totalAmount && totalAmount > 0 && (
+                <Typography
+                  variant="body2"
+                  fontWeight="bold"
+                  color="warning.main"
+                >
+                  {formatUSD(paidAmount - totalAmount)} CREDIT
                 </Typography>
               )}
             </Box>

@@ -317,7 +317,7 @@ export async function getGarmentServicesWithPaymentInfo(garmentId: string) {
           orderPaymentStatus: order.payment_status,
           hasPaidInvoices,
           isPaid: order.payment_status === 'paid',
-          isPartiallyPaid: order.payment_status === 'deposit_paid',
+          isPartiallyPaid: order.payment_status === 'partially_paid',
           paymentMethods: [], // Would need to query payments if needed
         },
       };

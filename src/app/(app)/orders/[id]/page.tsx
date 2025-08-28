@@ -7,10 +7,17 @@ import {
   Button,
   Chip,
   Divider,
+  LinearProgress,
+  Alert,
+  Avatar,
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import EditIcon from '@mui/icons-material/Edit';
 import ReceiptIcon from '@mui/icons-material/Receipt';
+import PersonIcon from '@mui/icons-material/Person';
+import EmailIcon from '@mui/icons-material/Email';
+import PhoneIcon from '@mui/icons-material/Phone';
+import WarningIcon from '@mui/icons-material/Warning';
 import Link from 'next/link';
 import { createClient as createSupabaseClient } from '@/lib/supabase/server';
 import { ensureUserAndShop } from '@/lib/actions/users';
@@ -29,6 +36,14 @@ function formatUSD(cents: number) {
   }).format((cents || 0) / 100);
 }
 
+function getClientInitials(firstName: string, lastName: string) {
+  const f = firstName?.trim() || '';
+  const l = lastName?.trim() || '';
+  const fi = f ? f[0] : '';
+  const li = l ? l[0] : '';
+  return `${fi}${li}`.toUpperCase() || '?';
+}
+
 export default async function OrderDetailPage({
   params,
 }: {
@@ -41,7 +56,7 @@ export default async function OrderDetailPage({
   const { data: order } = (await supabase
     .from('orders')
     .select(
-      'id, client_id, status, order_due_date, subtotal_cents, discount_cents, tax_cents, total_cents, created_at, order_number, is_paid, paid_at, notes'
+      'id, client_id, status, order_due_date, subtotal_cents, discount_cents, tax_cents, total_cents, created_at, order_number, is_paid, paid_at, paid_amount_cents, notes'
     )
     .eq('id', id)
     .single()) as {
@@ -189,11 +204,13 @@ export default async function OrderDetailPage({
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending':
-        return 'warning';
-      case 'partially_paid':
+      case 'new':
+        return 'default';
+      case 'active':
         return 'info';
-      case 'paid':
+      case 'ready':
+        return 'warning';
+      case 'completed':
         return 'success';
       case 'cancelled':
         return 'error';
@@ -201,6 +218,105 @@ export default async function OrderDetailPage({
         return 'default';
     }
   };
+
+  // Calculate the actual active total (excluding removed services)
+  const calculateActiveTotal = () => {
+    if (!lines || lines.length === 0) {
+      return order?.total_cents || 0;
+    }
+
+    // Sum up only non-removed services
+    const activeServicesTotal = lines
+      .filter((service: any) => !service.is_removed)
+      .reduce((sum: number, service: any) => {
+        const lineTotal =
+          service.line_total_cents ||
+          service.quantity * service.unit_price_cents;
+        return sum + lineTotal;
+      }, 0);
+
+    return activeServicesTotal;
+  };
+
+  const activeTotal = calculateActiveTotal();
+
+  // Calculate payment status based on amounts
+  const getPaymentStatus = () => {
+    // Use active total (excluding removed services) instead of original total
+    const total = activeTotal;
+    const paid = order?.paid_amount_cents || 0;
+
+    // Calculate percentage for more detailed status
+    const percentage = total > 0 ? (paid / total) * 100 : 0;
+    const amountDue = total - paid;
+
+    if (total === 0)
+      return {
+        label: 'No Charges',
+        color: 'default',
+        percentage: 0,
+        amountDue: 0,
+        isRefundRequired: false,
+      };
+
+    // Handle overpayment/refund situation
+    if (paid > total) {
+      const creditAmount = paid - total;
+      return {
+        label: 'Refund Required',
+        color: 'warning',
+        percentage,
+        amountDue: -creditAmount, // negative indicates credit
+        isRefundRequired: true,
+        creditAmount,
+      };
+    }
+
+    if (paid === total)
+      return {
+        label: 'Paid in Full',
+        color: 'success',
+        percentage: 100,
+        amountDue: 0,
+        isRefundRequired: false,
+      };
+
+    // Partial payment statuses
+    if (percentage >= 75)
+      return {
+        label: `${Math.round(percentage)}% Paid`,
+        color: 'info',
+        percentage,
+        amountDue,
+        isRefundRequired: false,
+      };
+    if (percentage >= 50)
+      return {
+        label: `${Math.round(percentage)}% Paid`,
+        color: 'warning',
+        percentage,
+        amountDue,
+        isRefundRequired: false,
+      };
+    if (percentage > 0)
+      return {
+        label: `${Math.round(percentage)}% Paid`,
+        color: 'warning',
+        percentage,
+        amountDue,
+        isRefundRequired: false,
+      };
+
+    return {
+      label: 'Unpaid',
+      color: 'error',
+      percentage: 0,
+      amountDue,
+      isRefundRequired: false,
+    };
+  };
+
+  const paymentStatus = getPaymentStatus();
 
   return (
     <Container maxWidth="lg">
@@ -241,122 +357,290 @@ export default async function OrderDetailPage({
           </Box>
         </Box>
 
-        {/* Order Info */}
-        <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 8 }}>
-            {/* From and Bill To Information */}
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
-                <Grid container spacing={3}>
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <Typography variant="h6" gutterBottom>
-                      From
-                    </Typography>
-                    <Typography variant="body1" fontWeight="bold">
-                      {shop?.name || 'Your Shop'}
-                    </Typography>
-                    {shop?.mailing_address && (
-                      <Typography variant="body2">
-                        {shop.mailing_address}
-                      </Typography>
+        {/* Condensed Order Overview */}
+        <Card
+          sx={{
+            mb: 3,
+            borderRadius: 2,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            border: '1px solid',
+            borderColor: 'grey.200',
+          }}
+        >
+          <CardContent sx={{ p: 3 }}>
+            <Grid container spacing={4} alignItems="center">
+              {/* Client Information with Avatar */}
+              <Grid size={{ xs: 12, md: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Avatar
+                    sx={{
+                      width: 48,
+                      height: 48,
+                      bgcolor: 'primary.main',
+                      color: 'primary.contrastText',
+                      fontSize: '1.1rem',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {client ? (
+                      getClientInitials(client.first_name, client.last_name)
+                    ) : (
+                      <PersonIcon />
                     )}
-                    {shop?.email && (
-                      <Typography variant="body2">{shop.email}</Typography>
-                    )}
-                    {shop?.phone_number && (
-                      <Typography variant="body2">
-                        {shop.phone_number}
-                      </Typography>
-                    )}
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <Typography variant="h6" gutterBottom>
-                      Bill To
+                  </Avatar>
+                  <Box sx={{ minWidth: 0, flex: 1 }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{
+                        textTransform: 'uppercase',
+                        letterSpacing: 0.5,
+                        fontWeight: 500,
+                        fontSize: '0.7rem',
+                      }}
+                    >
+                      Client
                     </Typography>
-                    <Typography variant="body1" fontWeight="bold">
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        fontWeight: 600,
+                        lineHeight: 1.2,
+                        mb: 0.5,
+                      }}
+                    >
                       <Link
                         href={`/clients/${client?.id}`}
-                        style={{ textDecoration: 'none', color: 'inherit' }}
+                        style={{
+                          textDecoration: 'none',
+                          color: 'inherit',
+                        }}
                       >
                         {client
                           ? `${client.first_name} ${client.last_name}`
-                          : 'Client'}
+                          : 'Unknown Client'}
                       </Link>
                     </Typography>
-                    {client?.mailing_address && (
-                      <Typography variant="body2">
-                        {client.mailing_address}
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        flexWrap: 'wrap',
+                      }}
+                    >
+                      {client?.email && (
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.5,
+                          }}
+                        >
+                          <EmailIcon
+                            sx={{ fontSize: 14, color: 'text.secondary' }}
+                          />
+                          <Typography variant="caption" color="text.secondary">
+                            {client.email}
+                          </Typography>
+                        </Box>
+                      )}
+                      {client?.phone_number && (
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.5,
+                          }}
+                        >
+                          <PhoneIcon
+                            sx={{ fontSize: 14, color: 'text.secondary' }}
+                          />
+                          <Typography variant="caption" color="text.secondary">
+                            {formatPhoneNumber(client.phone_number)}
+                          </Typography>
+                        </Box>
+                      )}
+                    </Box>
+                  </Box>
+                </Box>
+              </Grid>
+
+              {/* Payment Status */}
+              <Grid size={{ xs: 12, md: 5 }}>
+                <Box>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{
+                      textTransform: 'uppercase',
+                      letterSpacing: 0.5,
+                      fontWeight: 500,
+                      fontSize: '0.7rem',
+                      display: 'block',
+                      mb: 0.5,
+                    }}
+                  >
+                    Payment Status
+                  </Typography>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 2,
+                      mb: 1,
+                    }}
+                  >
+                    <Chip
+                      label={paymentStatus.label}
+                      color={paymentStatus.color as any}
+                      size="medium"
+                      {...(paymentStatus.isRefundRequired && {
+                        icon: <WarningIcon />,
+                      })}
+                      sx={{
+                        fontWeight: 600,
+                        fontSize: '0.8rem',
+                        height: 32,
+                      }}
+                    />
+                    <Typography variant="h6" fontWeight="600">
+                      {formatUSD(order?.paid_amount_cents || 0)} /{' '}
+                      {formatUSD(activeTotal)}
+                    </Typography>
+                    {activeTotal !== (order?.total_cents || 0) && (
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ textDecoration: 'line-through' }}
+                      >
+                        {formatUSD(order?.total_cents || 0)}
                       </Typography>
                     )}
-                    <Typography variant="body2">
-                      {client?.email || ''}
-                    </Typography>
-                    <Typography variant="body2">
-                      {client?.phone_number
-                        ? formatPhoneNumber(client.phone_number)
-                        : ''}
-                    </Typography>
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid size={{ xs: 12, md: 4 }}>
-            {/* Order Summary */}
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Order Summary
-                </Typography>
-                <Box sx={{ mb: 2 }}>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      mb: 1,
-                    }}
-                  >
-                    <Typography color="text.secondary">Status</Typography>
-                    <Chip
-                      label={(order?.status || 'pending')
-                        .toString()
-                        .toUpperCase()}
-                      color={getStatusColor(order?.status || 'pending') as any}
-                      size="small"
-                    />
                   </Box>
-                  <Box
+
+                  {/* Progress Bar */}
+                  {activeTotal > 0 && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <LinearProgress
+                        variant="determinate"
+                        value={Math.min(paymentStatus.percentage || 0, 100)}
+                        sx={{
+                          flex: 1,
+                          height: 8,
+                          borderRadius: 4,
+                          bgcolor: 'grey.200',
+                          '& .MuiLinearProgress-bar': {
+                            bgcolor: paymentStatus.isRefundRequired
+                              ? 'warning.main'
+                              : paymentStatus.percentage >= 100
+                                ? 'success.main'
+                                : paymentStatus.percentage >= 50
+                                  ? 'info.main'
+                                  : 'error.main',
+                            borderRadius: 4,
+                          },
+                        }}
+                      />
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ minWidth: 40, fontWeight: 500 }}
+                      >
+                        {Math.round(paymentStatus.percentage || 0)}%
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              </Grid>
+
+              {/* Actions & Alerts */}
+              <Grid size={{ xs: 12, md: 2 }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-end',
+                    gap: 1,
+                  }}
+                >
+                  {/* Order Notes Indicator */}
+                  {order?.notes && (
+                    <Chip
+                      label="📝 Notes"
+                      variant="outlined"
+                      size="small"
+                      sx={{ fontSize: '0.7rem' }}
+                    />
+                  )}
+                </Box>
+              </Grid>
+
+              {/* Order Status - Far Right */}
+              <Grid size={{ xs: 12, md: 2 }}>
+                <Box sx={{ textAlign: 'right' }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
                     sx={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
+                      textTransform: 'uppercase',
+                      letterSpacing: 0.5,
+                      fontWeight: 500,
+                      fontSize: '0.7rem',
+                      display: 'block',
+                      mb: 0.5,
+                    }}
+                  >
+                    Order Status
+                  </Typography>
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      fontWeight: 700,
+                      lineHeight: 1.2,
+                      color:
+                        getStatusColor(order?.status || 'new') === 'success'
+                          ? 'success.main'
+                          : getStatusColor(order?.status || 'new') === 'warning'
+                            ? 'warning.main'
+                            : getStatusColor(order?.status || 'new') === 'info'
+                              ? 'info.main'
+                              : getStatusColor(order?.status || 'new') ===
+                                  'error'
+                                ? 'error.main'
+                                : 'text.primary',
+                      textTransform: 'capitalize',
                       mb: 1,
                     }}
                   >
-                    <Typography color="text.secondary">Due Date</Typography>
-                    <Typography>
+                    {(order?.status || 'new').toString().replace('_', ' ')}
+                  </Typography>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 0.25,
+                      alignItems: 'flex-end',
+                    }}
+                  >
+                    <Typography variant="caption" color="text.secondary">
+                      Created:{' '}
+                      {order?.created_at
+                        ? new Date(order.created_at).toLocaleDateString()
+                        : '-'}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Due:{' '}
                       {order?.order_due_date
                         ? new Date(order.order_due_date).toLocaleDateString()
-                        : '-'}
+                        : 'Not set'}
                     </Typography>
                   </Box>
                 </Box>
-              </CardContent>
-            </Card>
-
-            {/* Order Notes */}
-            {order?.notes && (
-              <Card sx={{ mt: 3 }}>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Order Notes
-                  </Typography>
-                  <Typography variant="body2">{order.notes}</Typography>
-                </CardContent>
-              </Card>
-            )}
-          </Grid>
-        </Grid>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
 
         {/* Services and Payment History Sections */}
         <OrderServicesAndPayments

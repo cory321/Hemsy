@@ -1,58 +1,120 @@
 import * as React from 'react';
-import { cva, type VariantProps } from 'class-variance-authority';
+import {
+  Alert as MuiAlert,
+  AlertTitle as MuiAlertTitle,
+  AlertProps as MuiAlertProps,
+  Typography,
+  Box,
+} from '@mui/material';
+import { styled } from '@mui/material/styles';
 
-import { cn } from '@/lib/utils';
+// Map shadcn alert variants to MUI severity
+type AlertVariant = 'default' | 'destructive';
 
-const alertVariants = cva(
-  'relative w-full rounded-lg border p-4 [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground',
-  {
-    variants: {
-      variant: {
-        default: 'bg-background text-foreground',
-        destructive:
-          'border-destructive/50 text-destructive dark:border-destructive [&>svg]:text-destructive',
+export interface AlertProps
+  extends Omit<MuiAlertProps, 'severity' | 'variant'> {
+  variant?: AlertVariant;
+  children?: React.ReactNode;
+}
+
+// Custom styled Alert to match previous styling
+const StyledAlert = styled(MuiAlert, {
+  shouldForwardProp: (prop) => prop !== 'alertVariant',
+})<{ alertVariant?: AlertVariant }>(({ theme, alertVariant }) => {
+  const baseStyles = {
+    borderRadius: theme.shape.borderRadius,
+    padding: theme.spacing(2),
+    position: 'relative' as const,
+    width: '100%',
+    '& .MuiAlert-icon': {
+      alignItems: 'flex-start',
+      paddingTop: theme.spacing(0.5),
+    },
+    '& .MuiAlert-message': {
+      width: '100%',
+    },
+  };
+
+  const variantStyles = {
+    default: {
+      backgroundColor: theme.palette.background.paper,
+      color: theme.palette.text.primary,
+      border: `1px solid ${theme.palette.divider}`,
+    },
+    destructive: {
+      backgroundColor: theme.palette.error.light + '20',
+      color: theme.palette.error.main,
+      border: `1px solid ${theme.palette.error.main}50`,
+      '& .MuiAlert-icon': {
+        color: theme.palette.error.main,
       },
     },
-    defaultVariants: {
-      variant: 'default',
-    },
+  };
+
+  return {
+    ...baseStyles,
+    ...variantStyles[alertVariant || 'default'],
+  };
+});
+
+const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
+  ({ className, variant = 'default', children, ...props }, ref) => {
+    // Map variant to MUI severity
+    const severity = variant === 'destructive' ? 'error' : 'info';
+
+    return (
+      <StyledAlert
+        ref={ref}
+        className={className || ''}
+        alertVariant={variant}
+        severity={severity}
+        variant="standard"
+        {...props}
+      >
+        {children}
+      </StyledAlert>
+    );
   }
 );
-
-const Alert = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof alertVariants>
->(({ className, variant, ...props }, ref) => (
-  <div
-    ref={ref}
-    role="alert"
-    className={cn(alertVariants({ variant }), className)}
-    {...props}
-  />
-));
 Alert.displayName = 'Alert';
 
 const AlertTitle = React.forwardRef<
-  HTMLParagraphElement,
+  HTMLHeadingElement,
   React.HTMLAttributes<HTMLHeadingElement>
->(({ className, ...props }, ref) => (
-  <h5
-    ref={ref}
-    className={cn('mb-1 font-medium leading-none tracking-tight', className)}
-    {...props}
-  />
+>(({ className, children, ...props }, ref) => (
+  <MuiAlertTitle
+    ref={ref as any}
+    className={className || ''}
+    sx={{
+      marginBottom: 0.5,
+      fontWeight: 500,
+      lineHeight: 1.2,
+      letterSpacing: -0.25,
+    }}
+  >
+    {children}
+  </MuiAlertTitle>
 ));
 AlertTitle.displayName = 'AlertTitle';
 
 const AlertDescription = React.forwardRef<
-  HTMLParagraphElement,
-  React.HTMLAttributes<HTMLParagraphElement>
->(({ className, ...props }, ref) => (
-  <div
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, children, ...props }, ref) => (
+  <Box
     ref={ref}
-    className={cn('text-sm [&_p]:leading-relaxed', className)}
+    className={className}
+    sx={{
+      fontSize: '0.875rem',
+      lineHeight: 1.5,
+      '& p': {
+        lineHeight: 'inherit',
+      },
+    }}
     {...props}
-  />
+  >
+    {children}
+  </Box>
 ));
 AlertDescription.displayName = 'AlertDescription';
 

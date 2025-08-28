@@ -13,6 +13,10 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { format, differenceInDays } from 'date-fns';
+import {
+  getOrderStatusColor,
+  getOrderStatusLabel,
+} from '@/lib/utils/orderStatus';
 
 interface OrderCardMinimalProps {
   order: any;
@@ -34,7 +38,10 @@ function getPaymentStatusChip(
 ): { label: string; color: 'success' | 'warning' | 'error' | 'default' } {
   const percentage = totalAmount > 0 ? (paidAmount / totalAmount) * 100 : 0;
 
-  if (percentage >= 100) {
+  // Handle overpayment
+  if (paidAmount > totalAmount && totalAmount > 0) {
+    return { label: '⚠ REFUND', color: 'warning' };
+  } else if (percentage >= 100) {
     return { label: '✓ PAID', color: 'success' };
   } else if (percentage > 0) {
     return { label: '◉ PARTIAL', color: 'warning' };
@@ -155,7 +162,7 @@ export default function OrderCardMinimal({
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: 'auto 1fr auto auto auto 40px',
+            gridTemplateColumns: 'auto 1fr auto auto auto auto 40px',
             gap: 2,
             alignItems: 'center',
           }}
@@ -310,6 +317,23 @@ export default function OrderCardMinimal({
             <Chip
               label={paymentStatus.label}
               color={paymentStatus.color}
+              size="small"
+              sx={{
+                height: 22,
+                fontSize: '0.7rem',
+                fontWeight: 'bold',
+                '& .MuiChip-label': {
+                  px: 1,
+                },
+              }}
+            />
+          </Box>
+
+          {/* Order Status */}
+          <Box>
+            <Chip
+              label={getOrderStatusLabel(order.status || 'new')}
+              color={getOrderStatusColor(order.status || 'new')}
               size="small"
               sx={{
                 height: 22,

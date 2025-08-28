@@ -17,15 +17,15 @@ export function OrderListItem({ order, garmentCount }: OrderListItemProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'new':
+        return 'default';
+      case 'active':
         return 'info';
-      case 'in_progress':
+      case 'ready':
         return 'warning';
       case 'completed':
         return 'success';
       case 'cancelled':
         return 'error';
-      case 'draft':
-        return 'default';
       default:
         return 'default';
     }
@@ -35,16 +35,16 @@ export function OrderListItem({ order, garmentCount }: OrderListItemProps) {
     switch (status) {
       case 'new':
         return 'New';
-      case 'in_progress':
-        return 'In Progress';
+      case 'active':
+        return 'Active';
+      case 'ready':
+        return 'Ready';
       case 'completed':
         return 'Completed';
       case 'cancelled':
         return 'Cancelled';
-      case 'draft':
-        return 'Draft';
       default:
-        return status;
+        return status.charAt(0).toUpperCase() + status.slice(1);
     }
   };
 
@@ -88,8 +88,8 @@ export function OrderListItem({ order, garmentCount }: OrderListItemProps) {
               Order #{(order as any).order_number ?? order.id.slice(0, 8)}
             </Typography>
             <Chip
-              label={getStatusLabel(order.status || 'pending')}
-              color={getStatusColor(order.status || 'pending')}
+              label={getStatusLabel(order.status || 'new')}
+              color={getStatusColor(order.status || 'new')}
               size="small"
             />
             {(order as any).is_paid && (

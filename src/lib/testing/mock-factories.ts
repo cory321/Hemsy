@@ -277,9 +277,10 @@ export const APPOINTMENT_STATUSES: AppointmentStatus[] = [
   'no_show',
 ];
 export const ORDER_STATUSES: OrderStatus[] = [
-  'pending',
-  'partially_paid',
-  'paid',
+  'new',
+  'active',
+  'ready',
+  'completed',
   'cancelled',
 ];
 export const GARMENT_STAGES: GarmentStage[] = [

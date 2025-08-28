@@ -1,7 +1,12 @@
 // Payment and refund tracking types
-export type OrderStatus = 'pending' | 'partially_paid' | 'paid' | 'cancelled';
+export type OrderStatus =
+  | 'new'
+  | 'active'
+  | 'ready'
+  | 'completed'
+  | 'cancelled';
 
-export type PaymentStatus = 'unpaid' | 'deposit_paid' | 'paid' | 'overpaid';
+export type PaymentStatus = 'unpaid' | 'partially_paid' | 'paid' | 'overpaid';
 
 // DEPRECATED: Service-level payment status no longer used
 // Payment status is now tracked at order/invoice level only

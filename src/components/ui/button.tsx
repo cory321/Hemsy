@@ -1,56 +1,191 @@
 import * as React from 'react';
-import { Slot } from '@radix-ui/react-slot';
-import { cva, type VariantProps } from 'class-variance-authority';
+import {
+  Button as MuiButton,
+  ButtonProps as MuiButtonProps,
+} from '@mui/material';
+import { styled } from '@mui/material/styles';
 
-import { cn } from '@/lib/utils';
+// Map shadcn variants to MUI variants
+type ButtonVariant =
+  | 'default'
+  | 'destructive'
+  | 'outline'
+  | 'secondary'
+  | 'ghost'
+  | 'link';
+type ButtonSize = 'default' | 'sm' | 'lg' | 'icon';
 
-const buttonVariants = cva(
-  'inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
-  {
-    variants: {
-      variant: {
-        default: 'bg-primary text-primary-foreground hover:bg-primary/90',
-        destructive:
-          'bg-destructive text-destructive-foreground hover:bg-destructive/90',
-        outline:
-          'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
-        secondary:
-          'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-        ghost: 'hover:bg-accent hover:text-accent-foreground',
-        link: 'text-primary underline-offset-4 hover:underline',
-      },
-      size: {
-        default: 'h-10 px-4 py-2',
-        sm: 'h-9 rounded-md px-3',
-        lg: 'h-11 rounded-md px-8',
-        icon: 'h-10 w-10',
-      },
-    },
-    defaultVariants: {
-      variant: 'default',
-      size: 'default',
-    },
-  }
-);
-
-export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+export interface ButtonProps extends Omit<MuiButtonProps, 'variant' | 'size'> {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
   asChild?: boolean;
 }
 
+// Custom styled button to match the previous styling
+const StyledButton = styled(MuiButton, {
+  shouldForwardProp: (prop) =>
+    prop !== 'buttonVariant' && prop !== 'buttonSize',
+})<{ buttonVariant?: ButtonVariant; buttonSize?: ButtonSize }>(({
+  theme,
+  buttonVariant,
+  buttonSize,
+}) => {
+  const baseStyles = {
+    textTransform: 'none' as const,
+    fontWeight: 500,
+    fontSize: '0.875rem',
+    transition: 'all 0.2s',
+    borderRadius: theme.shape.borderRadius,
+    whiteSpace: 'nowrap' as const,
+  };
+
+  // Size styles
+  const sizeStyles = {
+    default: {
+      minHeight: 40,
+      padding: '8px 16px',
+    },
+    sm: {
+      minHeight: 36,
+      padding: '6px 12px',
+      fontSize: '0.875rem',
+    },
+    lg: {
+      minHeight: 44,
+      padding: '10px 32px',
+    },
+    icon: {
+      minHeight: 40,
+      minWidth: 40,
+      padding: '8px',
+    },
+  };
+
+  // Variant styles
+  const variantStyles = {
+    default: {
+      backgroundColor: theme.palette.primary.main,
+      color: theme.palette.primary.contrastText,
+      '&:hover': {
+        backgroundColor: theme.palette.primary.dark,
+      },
+      '&:disabled': {
+        backgroundColor: theme.palette.action.disabledBackground,
+        color: theme.palette.action.disabled,
+      },
+    },
+    destructive: {
+      backgroundColor: theme.palette.error.main,
+      color: theme.palette.error.contrastText,
+      '&:hover': {
+        backgroundColor: theme.palette.error.dark,
+      },
+      '&:disabled': {
+        backgroundColor: theme.palette.action.disabledBackground,
+        color: theme.palette.action.disabled,
+      },
+    },
+    outline: {
+      backgroundColor: 'transparent',
+      border: `1px solid ${theme.palette.divider}`,
+      color: theme.palette.text.primary,
+      '&:hover': {
+        backgroundColor: theme.palette.action.hover,
+      },
+      '&:disabled': {
+        borderColor: theme.palette.action.disabledBackground,
+        color: theme.palette.action.disabled,
+      },
+    },
+    secondary: {
+      backgroundColor: theme.palette.grey[200],
+      color: theme.palette.text.primary,
+      '&:hover': {
+        backgroundColor: theme.palette.grey[300],
+      },
+      '&:disabled': {
+        backgroundColor: theme.palette.action.disabledBackground,
+        color: theme.palette.action.disabled,
+      },
+    },
+    ghost: {
+      backgroundColor: 'transparent',
+      color: theme.palette.text.primary,
+      '&:hover': {
+        backgroundColor: theme.palette.action.hover,
+      },
+      '&:disabled': {
+        color: theme.palette.action.disabled,
+      },
+    },
+    link: {
+      backgroundColor: 'transparent',
+      color: theme.palette.primary.main,
+      textDecoration: 'underline',
+      textUnderlineOffset: '4px',
+      '&:hover': {
+        backgroundColor: 'transparent',
+        textDecoration: 'underline',
+      },
+      '&:disabled': {
+        color: theme.palette.action.disabled,
+      },
+    },
+  };
+
+  return {
+    ...baseStyles,
+    ...sizeStyles[buttonSize || 'default'],
+    ...variantStyles[buttonVariant || 'default'],
+  };
+});
+
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? Slot : 'button';
+  (
+    {
+      className,
+      variant = 'default',
+      size = 'default',
+      asChild = false,
+      children,
+      ...props
+    },
+    ref
+  ) => {
+    // If asChild is true, just render children with props
+    if (asChild && React.isValidElement(children)) {
+      return React.cloneElement(children as React.ReactElement<any>, {
+        ...props,
+        ref,
+      });
+    }
+
     return (
-      <Comp
-        className={cn(buttonVariants({ variant, size, className }))}
+      <StyledButton
         ref={ref}
+        className={className || ''}
+        buttonVariant={variant}
+        buttonSize={size}
         {...props}
-      />
+      >
+        {children}
+      </StyledButton>
     );
   }
 );
+
 Button.displayName = 'Button';
 
-export { Button, buttonVariants };
+// Export a compatibility function for buttonVariants (if needed by existing code)
+export const buttonVariants = ({
+  variant,
+  size,
+}: {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+}) => {
+  // This is a compatibility shim, actual styling is handled by StyledButton
+  return '';
+};
+
+export { Button };

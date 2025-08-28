@@ -50,6 +50,7 @@ export interface PaginatedOrders {
 export interface OrdersFilters {
   search?: string;
   status?: string;
+  paymentStatus?: string;
   sortBy?: 'created_at' | 'order_due_date' | 'total_cents' | 'status';
   sortOrder?: 'asc' | 'desc';
 }
@@ -61,6 +62,11 @@ export async function getOrdersPaginated(
 ): Promise<PaginatedOrders> {
   const { shop } = await ensureUserAndShop();
   const supabase = await createSupabaseClient();
+
+  // First, if we need to filter by payment status, we need to get all orders
+  // and calculate payment status, then apply pagination
+  const needsPaymentStatusFilter =
+    filters?.paymentStatus && filters.paymentStatus !== 'all';
 
   // Build the base query with invoice and payment data
   let query = supabase
@@ -106,10 +112,12 @@ export async function getOrdersPaginated(
   const sortOrder = filters?.sortOrder || 'desc';
   query = query.order(sortBy, { ascending: sortOrder === 'asc' });
 
-  // Apply pagination
-  const start = (page - 1) * pageSize;
-  const end = start + pageSize - 1;
-  query = query.range(start, end);
+  // If no payment status filter, apply pagination normally
+  if (!needsPaymentStatusFilter) {
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize - 1;
+    query = query.range(start, end);
+  }
 
   const { data, error, count } = await query;
 
@@ -117,11 +125,11 @@ export async function getOrdersPaginated(
     throw new Error(`Failed to fetch orders: ${error.message}`);
   }
 
-  // Calculate paid amount from invoice payments
+  // Calculate paid amount and payment status from invoice payments
   const ordersWithPaymentInfo = (data || []).map((order) => {
     let paidAmount = 0;
 
-    // Calculate from actual invoice payments
+    // Calculate total paid amount from actual invoice payments
     if (order.invoices && order.invoices.length > 0) {
       order.invoices.forEach((invoice: any) => {
         if (invoice.payments) {
@@ -134,15 +142,50 @@ export async function getOrdersPaginated(
       });
     }
 
-    // Add the calculated paid_amount_cents
+    // Use the order's total_cents for comparison, not invoice amounts
+    const orderTotal = order.total_cents || 0;
+
+    // Determine payment status
+    let paymentStatus: 'unpaid' | 'partially_paid' | 'paid' | 'overpaid';
+    if (paidAmount === 0) {
+      paymentStatus = 'unpaid';
+    } else if (paidAmount >= orderTotal) {
+      paymentStatus = paidAmount > orderTotal ? 'overpaid' : 'paid';
+    } else {
+      paymentStatus = 'partially_paid';
+    }
+
+    // Add the calculated paid_amount_cents and payment_status
     return {
       ...order,
       paid_amount_cents: paidAmount,
+      payment_status: paymentStatus,
     };
   });
 
+  // Apply payment status filter if specified
+  let filteredOrders = ordersWithPaymentInfo;
+  if (needsPaymentStatusFilter && filters?.paymentStatus) {
+    filteredOrders = ordersWithPaymentInfo.filter(
+      (order) => order.payment_status === filters.paymentStatus
+    );
+
+    // Apply pagination to filtered results
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+    const paginatedOrders = filteredOrders.slice(start, end);
+
+    return {
+      data: paginatedOrders,
+      count: filteredOrders.length,
+      page,
+      pageSize,
+      totalPages: Math.ceil(filteredOrders.length / pageSize),
+    };
+  }
+
   return {
-    data: ordersWithPaymentInfo,
+    data: filteredOrders,
     count: count || 0,
     page,
     pageSize,

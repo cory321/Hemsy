@@ -7,18 +7,21 @@ import {
   Typography,
   LinearProgress,
   Chip,
-  IconButton,
-  Stack,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import ErrorIcon from '@mui/icons-material/Error';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PersonIcon from '@mui/icons-material/Person';
-import PhoneIcon from '@mui/icons-material/Phone';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import CheckroomIcon from '@mui/icons-material/Checkroom';
 import { format, differenceInDays } from 'date-fns';
 import { formatPhoneNumber } from '@/lib/utils/phone';
 import { getStageColor } from '@/constants/garmentStages';
+import {
+  getOrderStatusColor,
+  getOrderStatusLabel,
+} from '@/lib/utils/orderStatus';
 import type { GarmentStage } from '@/types';
 
 interface OrderCardCompactProps {
@@ -41,7 +44,10 @@ function getPaymentStatus(
 ): { label: string; color: 'success' | 'warning' | 'error' | 'info' } {
   const percentage = totalAmount > 0 ? (paidAmount / totalAmount) * 100 : 0;
 
-  if (percentage >= 100) {
+  // Handle overpayment
+  if (paidAmount > totalAmount && totalAmount > 0) {
+    return { label: 'REFUND DUE', color: 'warning' };
+  } else if (percentage >= 100) {
     return { label: 'PAID IN FULL', color: 'success' };
   } else if (percentage > 50) {
     return { label: 'MOSTLY PAID', color: 'info' };
@@ -120,10 +126,78 @@ function getEventDateInfo(garments: any[]) {
   };
 }
 
+// Calculate overall garment progress based on stages
+function calculateGarmentProgress(garments: any[]): number {
+  if (!garments.length) return 0;
+
+  const stageWeights: Record<string, number> = {
+    New: 0,
+    'In Progress': 40,
+    'Ready For Pickup': 80,
+    Done: 100,
+  };
+
+  const totalProgress = garments.reduce((sum, garment) => {
+    return sum + (stageWeights[garment.stage] || 0);
+  }, 0);
+
+  return totalProgress / garments.length;
+}
+
+// Get progress bar color based on completion percentage
+function getProgressColor(progress: number): string {
+  if (progress >= 80) return 'success.main';
+  if (progress >= 40) return 'warning.main';
+  return 'info.main';
+}
+
+// Get urgency banner text and color
+function getUrgencyInfo(dueDateInfo: any, eventDateInfo: any) {
+  if (dueDateInfo?.isOverdue) {
+    return {
+      text: `${Math.abs(dueDateInfo.daysUntilDue)} DAYS OVERDUE`,
+      color: 'error.main',
+      icon: <ErrorIcon sx={{ fontSize: 16 }} />,
+    };
+  }
+  if (dueDateInfo?.isToday) {
+    return {
+      text: 'DUE TODAY',
+      color: 'warning.main',
+      icon: <WarningAmberIcon sx={{ fontSize: 16 }} />,
+    };
+  }
+  if (dueDateInfo?.isTomorrow) {
+    return {
+      text: 'DUE TOMORROW',
+      color: 'warning.main',
+      icon: <WarningAmberIcon sx={{ fontSize: 16 }} />,
+    };
+  }
+  if (eventDateInfo?.isToday) {
+    return {
+      text: 'EVENT TODAY',
+      color: 'error.main',
+      icon: <CalendarTodayIcon sx={{ fontSize: 16 }} />,
+    };
+  }
+  if (eventDateInfo?.isTomorrow) {
+    return {
+      text: 'EVENT TOMORROW',
+      color: 'warning.main',
+      icon: <CalendarTodayIcon sx={{ fontSize: 16 }} />,
+    };
+  }
+  return null;
+}
+
 export default function OrderCardCompact({
   order,
   onClick,
 }: OrderCardCompactProps) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   const clientName = order.client
     ? `${order.client.first_name} ${order.client.last_name}`
     : 'No Client';
@@ -137,17 +211,9 @@ export default function OrderCardCompact({
   const remainingAmount = totalAmount - paidAmount;
   const paymentStatus = getPaymentStatus(paidAmount, totalAmount);
 
-  // Get garment status using the correct stages
+  // Calculate garment progress
   const garmentCount = order.garments?.length || 0;
-  const readyCount =
-    order.garments?.filter((g: any) => g.stage === 'Ready For Pickup').length ||
-    0;
-  const inProgressCount =
-    order.garments?.filter((g: any) => g.stage === 'In Progress').length || 0;
-  const newCount =
-    order.garments?.filter((g: any) => g.stage === 'New').length || 0;
-  const doneCount =
-    order.garments?.filter((g: any) => g.stage === 'Done').length || 0;
+  const garmentProgress = calculateGarmentProgress(order.garments || []);
 
   // Get due date info
   const dueDateInfo = getDueDateInfo(
@@ -158,232 +224,270 @@ export default function OrderCardCompact({
   // Get event date info
   const eventDateInfo = getEventDateInfo(order.garments || []);
 
-  // Determine urgency (from either due date or event date)
-  const showUrgentBanner =
-    (dueDateInfo && (dueDateInfo.isOverdue || dueDateInfo.isUrgent)) ||
-    (eventDateInfo && (eventDateInfo.isToday || eventDateInfo.isTomorrow));
+  // Get urgency info for banner
+  const urgencyInfo = getUrgencyInfo(dueDateInfo, eventDateInfo);
+  const showUrgentBanner = urgencyInfo !== null;
+
+  // Format client info for display
+  const clientDisplayText = clientPhone
+    ? `${clientName} • ${formatPhoneNumber(clientPhone)}`
+    : clientName;
+
+  // Format due date for display
+  const dueDateDisplay = dueDateInfo
+    ? dueDateInfo.shortDate
+    : eventDateInfo
+      ? `Event ${eventDateInfo.shortDate}`
+      : 'No date';
 
   return (
     <Card
+      role="button"
+      tabIndex={0}
+      aria-label={`Order ${order.order_number} for ${clientName}, ${paymentStatus.label}`}
       sx={{
         cursor: 'pointer',
+        transition: 'all 0.2s ease-in-out',
         '&:hover': {
           bgcolor: 'action.hover',
+          transform: 'translateY(-1px)',
+          boxShadow: 2,
         },
-        border: showUrgentBanner ? 2 : 1,
-        borderColor: showUrgentBanner
-          ? dueDateInfo?.isOverdue
-            ? 'error.main'
-            : 'warning.main'
-          : 'divider',
+        '&:focus': {
+          outline: '2px solid',
+          outlineColor: 'primary.main',
+          outlineOffset: '2px',
+        },
+        border: 1,
+        borderColor: 'divider',
+        position: 'relative',
       }}
       onClick={() => onClick(order.id)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick(order.id);
+        }
+      }}
     >
-      <CardContent>
-        {/* Header with Order Number and Due Date Alert */}
+      {/* Urgent Banner - Full Width */}
+      {showUrgentBanner && urgencyInfo && (
         <Box
           sx={{
+            bgcolor: urgencyInfo.color,
+            color: 'white',
+            py: 0.5,
+            px: 2,
+            fontSize: '0.75rem',
+            fontWeight: 'bold',
+            textAlign: 'center',
             display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            mb: 2,
-          }}
-        >
-          <Typography variant="subtitle1" fontWeight="bold">
-            #{order.order_number || order.id.slice(0, 8)}
-          </Typography>
-
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {showUrgentBanner && (
-              <Chip
-                icon={<WarningAmberIcon />}
-                label={
-                  dueDateInfo?.isOverdue
-                    ? `${Math.abs(dueDateInfo.daysUntilDue)} DAYS OVERDUE`
-                    : dueDateInfo?.isToday
-                      ? 'DUE TODAY'
-                      : `DUE IN ${dueDateInfo?.daysUntilDue} DAYS`
-                }
-                color={dueDateInfo?.isOverdue ? 'error' : 'warning'}
-                size="small"
-                sx={{ fontWeight: 'bold' }}
-              />
-            )}
-            <IconButton size="small">
-              <ChevronRightIcon />
-            </IconButton>
-          </Box>
-        </Box>
-
-        {/* Divider Line */}
-        <Box
-          sx={{
-            height: 2,
-            bgcolor: showUrgentBanner
-              ? dueDateInfo?.isOverdue
-                ? 'error.main'
-                : 'warning.main'
-              : 'divider',
-            mx: -2,
-            mb: 2,
-          }}
-        />
-
-        {/* Client Info */}
-        <Box sx={{ mb: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-            <PersonIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-            <Typography variant="body1" fontWeight="medium">
-              {clientName}
-            </Typography>
-          </Box>
-          {clientPhone && (
-            <Box
-              sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 3.25 }}
-            >
-              <PhoneIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-              <Typography variant="body2" color="text.secondary">
-                {formatPhoneNumber(clientPhone)}
-              </Typography>
-            </Box>
-          )}
-        </Box>
-
-        {/* Dates Row */}
-        {(dueDateInfo || eventDateInfo) && (
-          <Box sx={{ mb: 2, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            {dueDateInfo && !showUrgentBanner && (
-              <Typography variant="body2" color="text.secondary">
-                Due: {dueDateInfo.date}
-              </Typography>
-            )}
-            {eventDateInfo && (
-              <Typography
-                variant="body2"
-                color={
-                  eventDateInfo.isToday || eventDateInfo.isTomorrow
-                    ? 'warning.main'
-                    : 'text.secondary'
-                }
-                fontWeight={
-                  eventDateInfo.isToday || eventDateInfo.isTomorrow
-                    ? 'medium'
-                    : 'normal'
-                }
-              >
-                Event: {eventDateInfo.date}
-              </Typography>
-            )}
-          </Box>
-        )}
-
-        {/* Status Row */}
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
             alignItems: 'center',
-            gap: 2,
+            justifyContent: 'center',
+            gap: 0.5,
           }}
         >
-          {/* Garment Status */}
-          <Box sx={{ flex: 1 }}>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Typography variant="body2" fontWeight="medium">
-                {garmentCount} garment{garmentCount !== 1 ? 's' : ''}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                |
-              </Typography>
-              {newCount > 0 && (
-                <Chip
-                  label={`${newCount} new`}
-                  size="small"
-                  sx={{
-                    height: 24,
-                    backgroundColor: getStageColor('New'),
-                    color: 'white',
-                    fontSize: '0.75rem',
-                  }}
-                />
-              )}
-              {inProgressCount > 0 && (
-                <Chip
-                  label={`${inProgressCount} in progress`}
-                  size="small"
-                  sx={{
-                    height: 24,
-                    backgroundColor: getStageColor('In Progress'),
-                    color: 'white',
-                    fontSize: '0.75rem',
-                  }}
-                />
-              )}
-              {readyCount > 0 && (
-                <Chip
-                  label={`${readyCount} ready`}
-                  size="small"
-                  sx={{
-                    height: 24,
-                    backgroundColor: getStageColor('Ready For Pickup'),
-                    color: 'white',
-                    fontSize: '0.75rem',
-                  }}
-                />
-              )}
-            </Stack>
-          </Box>
+          {urgencyInfo.icon}
+          {urgencyInfo.text}
+        </Box>
+      )}
 
-          {/* Payment Status */}
-          <Box sx={{ textAlign: 'right' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <LinearProgress
-                variant="determinate"
-                value={Math.min(paymentProgress, 100)}
-                sx={{
-                  width: 80,
-                  height: 6,
-                  borderRadius: 3,
-                  bgcolor: 'grey.200',
-                  '& .MuiLinearProgress-bar': {
-                    bgcolor:
-                      paymentProgress >= 100
-                        ? 'success.main'
-                        : paymentProgress > 50
-                          ? 'info.main'
-                          : paymentProgress > 0
-                            ? 'warning.main'
-                            : 'error.main',
-                  },
-                }}
-              />
-              <Typography variant="body2" fontWeight="bold">
-                {formatUSD(paidAmount)}/{formatUSD(totalAmount)}
+      <CardContent sx={{ py: isMobile ? 1.5 : 2 }}>
+        {isMobile ? (
+          // Mobile Layout - Stacked
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            {/* Row 1: Order Number and Status Chips */}
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <Typography variant="subtitle1" fontWeight="bold">
+                #{order.order_number || order.id.slice(0, 8)}
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                <Chip
+                  label={getOrderStatusLabel(order.status || 'new')}
+                  color={getOrderStatusColor(order.status || 'new')}
+                  size="small"
+                  sx={{ fontWeight: 'bold' }}
+                />
+                <Chip
+                  label={paymentStatus.label}
+                  color={paymentStatus.color}
+                  size="small"
+                  sx={{ fontWeight: 'bold' }}
+                />
+              </Box>
+            </Box>
+
+            {/* Row 2: Client Info */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <PersonIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+              <Typography variant="body2" fontWeight="medium" noWrap>
+                {clientDisplayText}
               </Typography>
             </Box>
-            <Box sx={{ mt: 0.5 }}>
-              <Chip
-                label={paymentStatus.label}
-                color={paymentStatus.color}
-                size="small"
-                sx={{
-                  height: 20,
-                  fontSize: '0.7rem',
-                  fontWeight: 'bold',
-                }}
-              />
+
+            {/* Row 3: Date and Progress */}
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <CalendarTodayIcon
+                  sx={{ fontSize: 16, color: 'text.secondary' }}
+                />
+                <Typography variant="body2" color="text.secondary">
+                  {dueDateDisplay}
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <CheckroomIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                <Typography variant="body2" fontWeight="medium">
+                  {garmentCount} items • {Math.round(garmentProgress)}%
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* Row 4: Payment Amount */}
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <Typography variant="body2" fontWeight="bold">
+                {formatUSD(paidAmount)} / {formatUSD(totalAmount)}
+              </Typography>
               {remainingAmount > 0 && (
                 <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ ml: 1 }}
+                  variant="body2"
+                  color="error.main"
+                  fontWeight="bold"
                 >
                   {formatUSD(remainingAmount)} due
                 </Typography>
               )}
             </Box>
           </Box>
-        </Box>
+        ) : (
+          // Desktop Layout - Grid
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            {/* Row 1: Primary Information */}
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: 'auto 1fr auto auto',
+                gap: 2,
+                alignItems: 'center',
+              }}
+            >
+              {/* Order Number */}
+              <Typography variant="subtitle1" fontWeight="bold">
+                #{order.order_number || order.id.slice(0, 8)}
+              </Typography>
+
+              {/* Client Info - Condensed */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <PersonIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                <Typography variant="body1" fontWeight="medium" noWrap>
+                  {clientDisplayText}
+                </Typography>
+              </Box>
+
+              {/* Order Status */}
+              <Chip
+                label={getOrderStatusLabel(order.status || 'new')}
+                color={getOrderStatusColor(order.status || 'new')}
+                sx={{
+                  fontWeight: 'bold',
+                  minWidth: 85,
+                }}
+              />
+
+              {/* Payment Status - Prominent */}
+              <Chip
+                label={paymentStatus.label}
+                color={paymentStatus.color}
+                sx={{
+                  fontWeight: 'bold',
+                  minWidth: 100,
+                }}
+              />
+            </Box>
+
+            {/* Row 2: Secondary Information */}
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: 'auto 1fr auto',
+                gap: 2,
+                alignItems: 'center',
+              }}
+            >
+              {/* Due Date */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <CalendarTodayIcon
+                  sx={{ fontSize: 16, color: 'text.secondary' }}
+                />
+                <Typography variant="body2" color="text.secondary">
+                  {dueDateDisplay}
+                </Typography>
+              </Box>
+
+              {/* Garment Progress - Unified */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  justifyContent: 'center',
+                }}
+              >
+                <CheckroomIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                <Typography variant="body2" fontWeight="medium">
+                  {garmentCount} items • {Math.round(garmentProgress)}% complete
+                </Typography>
+                <LinearProgress
+                  variant="determinate"
+                  value={garmentProgress}
+                  sx={{
+                    width: 100,
+                    height: 6,
+                    borderRadius: 3,
+                    bgcolor: 'grey.200',
+                    '& .MuiLinearProgress-bar': {
+                      bgcolor: getProgressColor(garmentProgress),
+                    },
+                  }}
+                />
+              </Box>
+
+              {/* Payment Amount */}
+              <Box sx={{ textAlign: 'right' }}>
+                <Typography variant="body2" fontWeight="bold">
+                  {formatUSD(paidAmount)} / {formatUSD(totalAmount)}
+                </Typography>
+                {remainingAmount > 0 && (
+                  <Typography
+                    variant="caption"
+                    color="error.main"
+                    fontWeight="bold"
+                  >
+                    {formatUSD(remainingAmount)} due
+                  </Typography>
+                )}
+              </Box>
+            </Box>
+          </Box>
+        )}
       </CardContent>
     </Card>
   );

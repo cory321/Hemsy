@@ -94,28 +94,16 @@ export default function OrderDetailClient({
   return (
     <>
       {/* Invoice Section */}
-      <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         {invoice ? (
-          <>
-            <Button
-              variant="outlined"
-              startIcon={<ReceiptIcon />}
-              component="a"
-              href={`/invoices/${invoice.id}`}
-            >
-              View Invoice
-            </Button>
-            <Chip
-              label={invoice.status.toUpperCase().replace('_', ' ')}
-              color={getInvoiceStatusColor(invoice.status) as any}
-              size="small"
-            />
-            {invoice.status === 'paid' && (
-              <Typography variant="body2" color="success.main">
-                Paid {formatCurrency(invoice.amount_cents)}
-              </Typography>
-            )}
-          </>
+          <Button
+            variant="outlined"
+            startIcon={<ReceiptIcon />}
+            component="a"
+            href={`/invoices/${invoice.id}`}
+          >
+            View Invoice
+          </Button>
         ) : (
           <Button
             variant="contained"

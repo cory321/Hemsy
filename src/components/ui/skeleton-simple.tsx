@@ -1,13 +1,19 @@
-import { cn } from '@/lib/utils';
+import * as React from 'react';
+import { Skeleton as MuiSkeleton, SkeletonProps } from '@mui/material';
 
-function Skeleton({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+function Skeleton(props: SkeletonProps) {
+  const { className = '', sx, ...rest } = props;
+
   return (
-    <div
-      className={cn('animate-pulse rounded-md bg-muted', className)}
-      {...props}
+    <MuiSkeleton
+      animation="pulse"
+      className={className}
+      sx={{
+        backgroundColor: 'grey.300',
+        borderRadius: 1,
+        ...sx,
+      }}
+      {...rest}
     />
   );
 }

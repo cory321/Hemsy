@@ -267,8 +267,8 @@ ${d.recommendations.map((rec) => `• ${rec}`).join('\n')}
               <Label htmlFor="businessType">Business Type</Label>
               <Select
                 value={businessType}
-                onValueChange={(value: 'individual' | 'company') =>
-                  setBusinessType(value)
+                onValueChange={(value) =>
+                  setBusinessType(value as 'individual' | 'company')
                 }
               >
                 <SelectTrigger>
