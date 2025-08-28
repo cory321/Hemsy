@@ -1,3 +1,95 @@
+import { formatDistanceToNow } from 'date-fns';
+
+/**
+ * Format relative time with smart fallback to absolute date for older entries
+ * Shows relative time (e.g., "2h 30m ago") for recent entries,
+ * but switches to absolute date (e.g., "Jan 15, 2024") for entries older than 7 days
+ */
+export function formatRelativeTime(
+  date: string | Date,
+  options?: {
+    maxRelativeDays?: number;
+    includeTime?: boolean;
+  }
+): string {
+  const { maxRelativeDays = 7, includeTime = false } = options || {};
+
+  try {
+    const targetDate = new Date(date);
+
+    // Check if the date is valid
+    if (isNaN(targetDate.getTime())) {
+      throw new Error('Invalid date');
+    }
+
+    const now = new Date();
+    const diffInDays = Math.floor(
+      (now.getTime() - targetDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    // For entries older than maxRelativeDays, show absolute date
+    if (diffInDays > maxRelativeDays) {
+      if (includeTime) {
+        return formatDateTime(targetDate);
+      } else {
+        return formatDate(targetDate);
+      }
+    }
+
+    // For recent entries, show relative time
+    return formatDistanceToNow(targetDate, { addSuffix: true });
+  } catch (error) {
+    console.error('Invalid date in formatRelativeTime:', date);
+    return 'Invalid date';
+  }
+}
+
+/**
+ * Format payment age with better UX for different time ranges
+ * - Under 1 hour: "45m ago"
+ * - Under 24 hours: "3h 15m ago"
+ * - Under 7 days: "2 days ago"
+ * - Older: absolute date
+ */
+export function formatPaymentAge(date: string | Date): string {
+  try {
+    const targetDate = new Date(date);
+
+    // Check if the date is valid
+    if (isNaN(targetDate.getTime())) {
+      throw new Error('Invalid date');
+    }
+
+    const now = new Date();
+    const diffInMs = now.getTime() - targetDate.getTime();
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    const diffInDays = Math.floor(diffInHours / 24);
+
+    // Less than 1 hour: show minutes
+    if (diffInHours < 1) {
+      return `${diffInMinutes}m ago`;
+    }
+
+    // Less than 24 hours: show hours and minutes
+    if (diffInDays < 1) {
+      const remainingMinutes = diffInMinutes % 60;
+      return `${diffInHours}h ${remainingMinutes}m ago`;
+    }
+
+    // 7 days or less: use relative format like "2 days ago"
+    if (diffInDays <= 7) {
+      return formatDistanceToNow(targetDate, { addSuffix: true });
+    }
+
+    // Older than 7 days: show absolute date
+    return formatDate(targetDate);
+  } catch (error) {
+    console.error('Invalid date in formatPaymentAge:', date);
+    return 'Invalid date';
+  }
+}
+
 /**
  * Format a number as currency
  */

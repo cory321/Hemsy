@@ -46,6 +46,7 @@ import {
 import {
   createPaymentIntent,
   cancelPendingPayment,
+  getInvoicePaymentHistory,
 } from '@/lib/actions/payments';
 import {
   sendPaymentRequestEmail,
@@ -72,6 +73,7 @@ export default function InvoiceDetailClient({
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [invoice, setInvoice] = useState<any>(null);
+  const [paymentHistory, setPaymentHistory] = useState<any[]>([]);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [paymentForm, setPaymentForm] = useState({
@@ -92,25 +94,34 @@ export default function InvoiceDetailClient({
       const data = await getInvoiceById(invoiceId);
       setInvoice(data);
 
-      // Calculate default payment amount accounting for refunds
-      const totalPaid =
-        data.payments
-          ?.filter((p: any) => p.status === 'completed')
-          .reduce((sum: number, p: any) => sum + p.amount_cents, 0) || 0;
-      const totalRefunded =
-        data.payments
-          ?.filter((p: any) => p.status === 'completed')
-          .reduce(
-            (sum: number, p: any) => sum + (p.refunded_amount_cents || 0),
-            0
-          ) || 0;
-      const netPaid = totalPaid - totalRefunded;
-      const remaining = data.amount_cents - netPaid;
+      // Fetch payment history (payments + refunds)
+      try {
+        const history = await getInvoicePaymentHistory(invoiceId);
+        setPaymentHistory(history);
 
-      setPaymentForm((prev) => ({
-        ...prev,
-        amountCents: remaining,
-      }));
+        // Calculate default payment amount from the combined history
+        const totalPaid = history
+          .filter((t: any) => t.type === 'payment' && t.status === 'completed')
+          .reduce((sum: number, t: any) => sum + t.amount_cents, 0);
+        const totalRefunded = history
+          .filter((t: any) => t.type === 'refund' && t.status === 'succeeded')
+          .reduce((sum: number, t: any) => sum + Math.abs(t.amount_cents), 0);
+        const netPaid = totalPaid - totalRefunded;
+        const remaining = data.amount_cents - netPaid;
+
+        setPaymentForm((prev) => ({
+          ...prev,
+          amountCents: remaining > 0 ? remaining : 0,
+        }));
+      } catch (historyError) {
+        console.error('Error fetching payment history:', historyError);
+        // Fallback to empty payment history
+        setPaymentHistory([]);
+        setPaymentForm((prev) => ({
+          ...prev,
+          amountCents: data.amount_cents,
+        }));
+      }
     } catch (error) {
       console.error('Error fetching invoice:', error);
       toast.error('Failed to load invoice');
@@ -623,7 +634,7 @@ export default function InvoiceDetailClient({
 
             {/* Payment Management */}
             <PaymentManagement
-              payments={invoice.payments || []}
+              payments={paymentHistory}
               onPaymentUpdate={fetchInvoice}
             />
           </Grid>

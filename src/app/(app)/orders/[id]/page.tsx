@@ -21,6 +21,7 @@ import WarningIcon from '@mui/icons-material/Warning';
 import Link from 'next/link';
 import { createClient as createSupabaseClient } from '@/lib/supabase/server';
 import { ensureUserAndShop } from '@/lib/actions/users';
+import { getInvoicePaymentHistory } from '@/lib/actions/payments';
 import OrderDetailClient from './OrderDetailClient';
 import OrderServicesAndPayments from './OrderServicesAndPayments';
 import type { Database } from '@/types/supabase';
@@ -83,17 +84,24 @@ export default async function OrderDetailPage({
     .eq('order_id', id)
     .order('created_at', { ascending: true });
 
-  // Get invoice with payments if exists
+  // Get invoice without payments first
   const { data: invoice } = await supabase
     .from('invoices')
-    .select(
-      `
-			*,
-			payments(*)
-		`
-    )
+    .select('*')
     .eq('order_id', id)
     .single();
+
+  // Get payment history (payments + refunds) if invoice exists
+  let paymentHistory: any[] = [];
+  if (invoice) {
+    try {
+      paymentHistory = await getInvoicePaymentHistory(invoice.id);
+    } catch (error) {
+      console.error('Error fetching payment history:', error);
+      // Fallback to empty array if there's an error
+      paymentHistory = [];
+    }
+  }
 
   // Get shop settings
   const { data: shopSettings, error: shopSettingsError } = await supabase
@@ -658,7 +666,7 @@ export default async function OrderDetailPage({
             })) || []
           }
           invoice={invoice}
-          payments={invoice?.payments || []}
+          payments={paymentHistory}
           orderStatus={order?.status || null}
           paidAt={order?.paid_at || null}
           clientEmail={client?.email || undefined}

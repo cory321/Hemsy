@@ -84,7 +84,8 @@ export async function getOrdersPaginated(
           id,
           amount_cents,
           status,
-          payment_method
+          payment_method,
+          refunded_amount_cents
         )
       )
     `,
@@ -129,13 +130,16 @@ export async function getOrdersPaginated(
   const ordersWithPaymentInfo = (data || []).map((order) => {
     let paidAmount = 0;
 
-    // Calculate total paid amount from actual invoice payments
+    // Calculate total paid amount from actual invoice payments (net of refunds)
     if (order.invoices && order.invoices.length > 0) {
       order.invoices.forEach((invoice: any) => {
         if (invoice.payments) {
           invoice.payments.forEach((payment: any) => {
             if (payment.status === 'completed') {
-              paidAmount += payment.amount_cents || 0;
+              const paymentAmount = payment.amount_cents || 0;
+              const refundedAmount = payment.refunded_amount_cents || 0;
+              // Add net payment amount (payment minus any refunds)
+              paidAmount += paymentAmount - refundedAmount;
             }
           });
         }

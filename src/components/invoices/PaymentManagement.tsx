@@ -32,14 +32,20 @@ import {
   Info as InfoIcon,
   Undo as RefundIcon,
 } from '@mui/icons-material';
-import { formatCurrency, formatDateTime } from '@/lib/utils/formatting';
+import {
+  formatCurrency,
+  formatDateTime,
+  formatPaymentAge,
+} from '@/lib/utils/formatting';
 import { cancelPendingPayment } from '@/lib/actions/payments';
 import { getPaymentStatusMessage } from '@/lib/actions/payment-status';
 import RefundManagement from './RefundManagement';
+import ManualRefundManagement from './ManualRefundManagement';
 import toast from 'react-hot-toast';
 
 interface Payment {
   id: string;
+  type?: 'payment' | 'refund';
   payment_type: string;
   payment_method: string;
   amount_cents: number;
@@ -48,6 +54,10 @@ interface Payment {
   created_at: string;
   processed_at?: string;
   notes?: string;
+  refund_method?: string;
+  refund_type?: string;
+  original_payment_id?: string;
+  merchant_notes?: string;
 }
 
 interface PaymentManagementProps {
@@ -88,27 +98,41 @@ export default function PaymentManagement({
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
+  const getStatusIcon = (payment: Payment) => {
+    // Special handling for refunds
+    if (payment.type === 'refund') {
+      return <RefundIcon color="info" fontSize="small" />;
+    }
+
+    switch (payment.status) {
       case 'completed':
         return <CheckCircleIcon color="success" fontSize="small" />;
       case 'pending':
         return <ScheduleIcon color="warning" fontSize="small" />;
       case 'failed':
         return <ErrorIcon color="error" fontSize="small" />;
+      case 'succeeded': // For refunds
+        return <RefundIcon color="info" fontSize="small" />;
       default:
         return <InfoIcon color="info" fontSize="small" />;
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
+  const getStatusColor = (payment: Payment) => {
+    // Special handling for refunds
+    if (payment.type === 'refund') {
+      return 'info';
+    }
+
+    switch (payment.status) {
       case 'completed':
         return 'success';
       case 'pending':
         return 'warning';
       case 'failed':
         return 'error';
+      case 'succeeded': // For refunds
+        return 'info';
       default:
         return 'default';
     }
@@ -116,6 +140,7 @@ export default function PaymentManagement({
 
   const canCancelPayment = (payment: Payment) => {
     return (
+      payment.type !== 'refund' &&
       payment.status === 'pending' &&
       payment.payment_method === 'stripe' &&
       payment.stripe_payment_intent_id
@@ -124,22 +149,58 @@ export default function PaymentManagement({
 
   const canRefundPayment = (payment: Payment) => {
     return (
+      payment.type !== 'refund' &&
       payment.status === 'completed' &&
       payment.payment_method === 'stripe' &&
       payment.stripe_payment_intent_id
     );
   };
 
-  const getPaymentAge = (payment: Payment) => {
-    const age = Date.now() - new Date(payment.created_at).getTime();
-    const minutes = Math.floor(age / (1000 * 60));
-    const hours = Math.floor(minutes / 60);
-
-    if (hours > 0) {
-      return `${hours}h ${minutes % 60}m ago`;
-    }
-    return `${minutes}m ago`;
+  const canManualRefund = (payment: Payment) => {
+    return (
+      payment.type !== 'refund' &&
+      payment.status === 'completed' &&
+      payment.payment_method !== 'stripe' &&
+      !isAlreadyRefunded(payment)
+    );
   };
+
+  const isAlreadyRefunded = (payment: Payment) => {
+    return (
+      payment.status === 'refunded' || payment.status === 'partially_refunded'
+    );
+  };
+
+  const getDisplayStatus = (payment: Payment) => {
+    if (payment.type === 'refund') {
+      return 'refund';
+    }
+    return payment.status;
+  };
+
+  const getDisplayType = (payment: Payment) => {
+    if (payment.type === 'refund') {
+      return `${payment.refund_type || 'refund'} refund`;
+    }
+    return payment.payment_type;
+  };
+
+  const getRefundMethodLabel = (method: string) => {
+    switch (method) {
+      case 'stripe':
+        return 'Stripe Refund';
+      case 'cash':
+        return 'Cash Refund';
+      case 'external_pos':
+        return 'POS Refund';
+      case 'other':
+        return 'Other Refund';
+      default:
+        return method;
+    }
+  };
+
+  // Use the improved formatPaymentAge utility function
 
   const pendingPayments = payments.filter((p) => p.status === 'pending');
   const completedPayments = payments.filter((p) => p.status === 'completed');
@@ -223,7 +284,9 @@ export default function PaymentManagement({
                           backgroundColor:
                             payment.status === 'pending'
                               ? 'warning.light'
-                              : 'inherit',
+                              : payment.type === 'refund'
+                                ? 'info.light'
+                                : 'inherit',
                           opacity: payment.status === 'failed' ? 0.7 : 1,
                         }}
                       >
@@ -239,19 +302,41 @@ export default function PaymentManagement({
                                 variant="caption"
                                 color="text.secondary"
                               >
-                                {getPaymentAge(payment)}
+                                {formatPaymentAge(payment.created_at)}
                               </Typography>
                             )}
                           </Box>
                         </TableCell>
                         <TableCell sx={{ textTransform: 'capitalize' }}>
-                          {payment.payment_type}
+                          {getDisplayType(payment)}
                         </TableCell>
                         <TableCell sx={{ textTransform: 'capitalize' }}>
-                          {payment.payment_method.replace('_', ' ')}
+                          {payment.type === 'refund' && payment.refund_method
+                            ? getRefundMethodLabel(payment.refund_method)
+                            : payment.payment_method.replace('_', ' ')}
                         </TableCell>
-                        <TableCell align="right">
-                          {formatCurrency(payment.amount_cents)}
+                        <TableCell
+                          align="right"
+                          sx={{
+                            color:
+                              payment.type === 'refund'
+                                ? 'info.main'
+                                : 'inherit',
+                            fontWeight:
+                              payment.type === 'refund' ? 'bold' : 'normal',
+                          }}
+                        >
+                          {payment.type === 'refund' && '- '}
+                          {formatCurrency(Math.abs(payment.amount_cents))}
+                          {payment.type === 'refund' && (
+                            <Typography
+                              variant="caption"
+                              display="block"
+                              color="text.secondary"
+                            >
+                              Credit
+                            </Typography>
+                          )}
                         </TableCell>
                         <TableCell>
                           <Box
@@ -261,20 +346,20 @@ export default function PaymentManagement({
                               gap: 1,
                             }}
                           >
-                            {getStatusIcon(payment.status)}
+                            {getStatusIcon(payment)}
                             <Chip
-                              label={payment.status}
+                              label={getDisplayStatus(payment)}
                               size="small"
-                              color={getStatusColor(payment.status) as any}
+                              color={getStatusColor(payment) as any}
                             />
                           </Box>
-                          {payment.notes && (
+                          {(payment.notes || payment.merchant_notes) && (
                             <Typography
                               variant="caption"
                               display="block"
                               color="text.secondary"
                             >
-                              {payment.notes}
+                              {payment.notes || payment.merchant_notes}
                             </Typography>
                           )}
                         </TableCell>
@@ -293,6 +378,12 @@ export default function PaymentManagement({
                             )}
                             {canRefundPayment(payment) && (
                               <RefundManagement
+                                payment={payment}
+                                onRefundComplete={onPaymentUpdate}
+                              />
+                            )}
+                            {canManualRefund(payment) && (
+                              <ManualRefundManagement
                                 payment={payment}
                                 onRefundComplete={onPaymentUpdate}
                               />
@@ -333,7 +424,8 @@ export default function PaymentManagement({
                 <strong>Type:</strong> {selectedPayment.payment_type}
               </Typography>
               <Typography variant="body2">
-                <strong>Created:</strong> {getPaymentAge(selectedPayment)}
+                <strong>Created:</strong>{' '}
+                {formatPaymentAge(selectedPayment.created_at)}
               </Typography>
               {selectedPayment.stripe_payment_intent_id && (
                 <Typography variant="body2">

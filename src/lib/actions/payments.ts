@@ -641,6 +641,111 @@ export async function getInvoicePayments(invoiceId: string) {
 }
 
 /**
+ * Get all payments and refunds for an invoice as a combined transaction history
+ */
+export async function getInvoicePaymentHistory(invoiceId: string) {
+  const { shop } = await ensureUserAndShop();
+  const supabase = await createClient();
+
+  // Verify the invoice belongs to the shop first
+  const { data: invoice } = await supabase
+    .from('invoices')
+    .select('shop_id')
+    .eq('id', invoiceId)
+    .single();
+
+  if (!invoice || invoice.shop_id !== shop.id) {
+    throw new Error('Invoice not found');
+  }
+
+  // Get payments
+  const { data: payments, error: paymentsError } = await supabase
+    .from('payments')
+    .select('*')
+    .eq('invoice_id', invoiceId);
+
+  if (paymentsError) {
+    console.error('Error fetching payments:', paymentsError);
+    throw new Error('Failed to fetch payment history');
+  }
+
+  // Get refunds for these payments
+  const paymentIds = payments.map((p) => p.id);
+  let refunds: any[] = [];
+
+  if (paymentIds.length > 0) {
+    const { data: refundsData, error: refundsError } = await supabase
+      .from('refunds')
+      .select(
+        `
+				*,
+				payment:payments!inner(
+					id,
+					payment_method,
+					payment_type,
+					invoice_id
+				)
+			`
+      )
+      .in('payment_id', paymentIds);
+
+    if (refundsError) {
+      console.error('Error fetching refunds:', refundsError);
+      throw new Error('Failed to fetch refund history');
+    }
+
+    refunds = refundsData || [];
+  }
+
+  // Combine payments and refunds into a unified transaction history
+  const transactions = [
+    // Add payments as positive transactions
+    ...payments.map((payment) => ({
+      id: payment.id,
+      type: 'payment' as const,
+      payment_type: payment.payment_type,
+      payment_method: payment.payment_method,
+      amount_cents: payment.amount_cents,
+      status: payment.status,
+      stripe_payment_intent_id: payment.stripe_payment_intent_id,
+      created_at: payment.created_at,
+      processed_at: payment.processed_at,
+      notes: payment.notes,
+      stripe_metadata: payment.stripe_metadata,
+      refunded_amount_cents: payment.refunded_amount_cents,
+      refunded_at: payment.refunded_at,
+      refund_reason: payment.refund_reason,
+    })),
+    // Add refunds as negative transactions (credits)
+    ...refunds.map((refund) => ({
+      id: refund.id,
+      type: 'refund' as const,
+      payment_type: 'refund',
+      payment_method: refund.payment.payment_method,
+      amount_cents: -refund.amount_cents, // Negative for credits
+      status: refund.status,
+      stripe_payment_intent_id: refund.stripe_refund_id,
+      created_at: refund.created_at,
+      processed_at: refund.processed_at,
+      notes: refund.reason,
+      stripe_metadata: refund.stripe_metadata,
+      refund_method: refund.refund_method,
+      refund_type: refund.refund_type,
+      original_payment_id: refund.payment_id,
+      merchant_notes: refund.merchant_notes,
+    })),
+  ];
+
+  // Sort by creation date, most recent first
+  transactions.sort(
+    (a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+
+  return transactions;
+}
+
+/**
  * Refund a payment
  */
 export async function refundPayment(
@@ -838,6 +943,170 @@ export async function refundPayment(
       success: false,
       error:
         error instanceof Error ? error.message : 'Failed to process refund',
+    };
+  }
+}
+
+/**
+ * Process a manual refund for cash or external POS payments
+ * This creates a refund record and updates payment status without processing through Stripe
+ */
+export async function processManualRefund(
+  paymentId: string,
+  amountCents: number,
+  reason: string,
+  refundMethod: 'cash' | 'external_pos' | 'other' = 'cash'
+) {
+  try {
+    const { shop, user } = await ensureUserAndShop();
+    const supabase = await createClient();
+
+    // Get payment details
+    const { data: payment, error: paymentError } = await supabase
+      .from('payments')
+      .select('*, invoice:invoices!inner(shop_id, invoice_number)')
+      .eq('id', paymentId)
+      .eq('invoice.shop_id', shop.id)
+      .single();
+
+    if (paymentError || !payment) {
+      throw new Error('Payment not found');
+    }
+
+    if (payment.status !== 'completed') {
+      throw new Error('Can only refund completed payments');
+    }
+
+    // Only allow manual refunds for non-Stripe payments
+    if (payment.payment_method === 'stripe') {
+      throw new Error('Use the Stripe refund process for credit card payments');
+    }
+
+    // Validate refund amount
+    if (amountCents <= 0) {
+      throw new Error('Refund amount must be greater than $0');
+    }
+
+    if (amountCents > payment.amount_cents) {
+      throw new Error('Refund amount cannot exceed payment amount');
+    }
+
+    // Reason is optional for manual refunds, but we'll use a default if not provided
+    const refundReason =
+      reason && reason.trim().length > 0
+        ? reason.trim()
+        : 'Manual refund processed';
+
+    // Create refund record
+    const { data: refundRecord, error: refundInsertError } = await supabase
+      .from('refunds')
+      .insert({
+        payment_id: payment.id,
+        amount_cents: amountCents,
+        reason: refundReason,
+        refund_type: amountCents === payment.amount_cents ? 'full' : 'partial',
+        initiated_by: user.id,
+        merchant_notes: refundReason,
+        status: 'succeeded', // Manual refunds are immediately considered successful
+        processed_at: new Date().toISOString(),
+        refund_method: refundMethod,
+        stripe_metadata: null, // No Stripe involvement for manual refunds
+      })
+      .select()
+      .single();
+
+    if (refundInsertError) {
+      console.error('Manual refund insert error:', refundInsertError);
+      throw new Error(
+        `Failed to record refund details: ${refundInsertError.message}`
+      );
+    }
+
+    // Update payment record
+    const { error: updateError } = await supabase
+      .from('payments')
+      .update({
+        status:
+          amountCents === payment.amount_cents
+            ? 'refunded'
+            : 'partially_refunded',
+        refunded_amount_cents: amountCents,
+        refunded_at: new Date().toISOString(),
+        refunded_by: user.id,
+        refund_reason: refundReason,
+        // Add manual refund info to metadata
+        stripe_metadata: {
+          ...((payment.stripe_metadata as object) || {}),
+          manual_refund: true,
+          refund_method: refundMethod,
+          refunded_amount_cents: amountCents,
+          refunded_at: new Date().toISOString(),
+          refund_reason: refundReason,
+        },
+      })
+      .eq('id', paymentId);
+
+    if (updateError) {
+      throw new Error('Failed to update payment record');
+    }
+
+    // Update invoice status if needed
+    const { data: invoice } = await supabase
+      .from('invoices')
+      .select('*, payments(*)')
+      .eq('id', payment.invoice_id)
+      .single();
+
+    if (invoice) {
+      const totalPaid =
+        invoice.payments
+          .filter((p: any) => p.status === 'completed' && p.id !== paymentId)
+          .reduce((sum: number, p: any) => sum + p.amount_cents, 0) +
+        (amountCents === payment.amount_cents
+          ? 0
+          : payment.amount_cents - amountCents);
+
+      let newStatus = invoice.status;
+      if (totalPaid === 0) {
+        newStatus = 'pending';
+      } else if (totalPaid < invoice.amount_cents) {
+        newStatus = 'partially_paid';
+      }
+
+      if (newStatus !== invoice.status) {
+        await supabase
+          .from('invoices')
+          .update({ status: newStatus })
+          .eq('id', invoice.id);
+
+        await supabase.from('invoice_status_history').insert({
+          invoice_id: invoice.id,
+          previous_status: invoice.status,
+          new_status: newStatus,
+          changed_by: user.id,
+          reason: `Manual refund of $${(amountCents / 100).toFixed(2)} processed (${refundMethod})`,
+        });
+      }
+    }
+
+    revalidatePath('/invoices');
+    revalidatePath(`/invoices/${payment.invoice_id}`);
+
+    return {
+      success: true,
+      data: {
+        refundId: refundRecord.id,
+        refundMethod,
+        amountRefunded: amountCents,
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Failed to process manual refund',
     };
   }
 }
