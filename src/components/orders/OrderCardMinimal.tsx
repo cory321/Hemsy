@@ -17,6 +17,10 @@ import {
   getOrderStatusColor,
   getOrderStatusLabel,
 } from '@/lib/utils/orderStatus';
+import {
+  calculatePaymentStatus,
+  type PaymentInfo,
+} from '@/lib/utils/payment-calculations';
 
 interface OrderCardMinimalProps {
   order: any;
@@ -32,21 +36,20 @@ function formatUSD(cents: number) {
   }).format((cents || 0) / 100);
 }
 
-function getPaymentStatusChip(
-  paidAmount: number,
-  totalAmount: number
-): { label: string; color: 'success' | 'warning' | 'error' | 'default' } {
-  const percentage = totalAmount > 0 ? (paidAmount / totalAmount) * 100 : 0;
-
-  // Handle overpayment
-  if (paidAmount > totalAmount && totalAmount > 0) {
-    return { label: '⚠ REFUND', color: 'warning' };
-  } else if (percentage >= 100) {
-    return { label: '✓ PAID', color: 'success' };
-  } else if (percentage > 0) {
-    return { label: '◉ PARTIAL', color: 'warning' };
-  } else {
-    return { label: '○ UNPAID', color: 'error' };
+function getPaymentStatusChip(paymentStatus: string): {
+  label: string;
+  color: 'success' | 'warning' | 'error' | 'default';
+} {
+  switch (paymentStatus) {
+    case 'paid':
+      return { label: '✓ PAID', color: 'success' };
+    case 'partially_paid':
+      return { label: '◉ PARTIAL', color: 'warning' };
+    case 'overpaid':
+      return { label: '⚠ REFUND', color: 'warning' };
+    case 'unpaid':
+    default:
+      return { label: '○ UNPAID', color: 'error' };
   }
 }
 
@@ -121,12 +124,23 @@ export default function OrderCardMinimal({
     ? `${order.client.first_name} ${order.client.last_name}`
     : 'No Client';
 
-  // Calculate payment progress
+  // Calculate payment progress using centralized utility
   const totalAmount = order.total_cents || 0;
   const paidAmount = order.paid_amount_cents || 0;
-  const paymentProgress =
-    totalAmount > 0 ? (paidAmount / totalAmount) * 100 : 0;
-  const paymentStatus = getPaymentStatusChip(paidAmount, totalAmount);
+
+  // Create a simplified payment info for the card (server already calculated net amount)
+  const paymentInfo: PaymentInfo[] = [
+    {
+      id: 'summary',
+      amount_cents: paidAmount,
+      refunded_amount_cents: 0,
+      status: 'completed',
+    },
+  ];
+
+  const paymentCalc = calculatePaymentStatus(totalAmount, paymentInfo);
+  const { netPaid, percentage: paymentProgress, paymentStatus } = paymentCalc;
+  const paymentStatusChip = getPaymentStatusChip(paymentStatus);
 
   // Get garment status using the correct stages
   const garmentCount = order.garments?.length || 0;
@@ -286,7 +300,7 @@ export default function OrderCardMinimal({
           {/* Payment Progress */}
           <Box sx={{ minWidth: 120 }}>
             <Typography variant="body2" textAlign="right">
-              {formatUSD(paidAmount)}/{formatUSD(totalAmount)}
+              {formatUSD(netPaid)}/{formatUSD(totalAmount)}
             </Typography>
             <Box
               sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}
@@ -315,8 +329,8 @@ export default function OrderCardMinimal({
           {/* Payment Status */}
           <Box>
             <Chip
-              label={paymentStatus.label}
-              color={paymentStatus.color}
+              label={paymentStatusChip.label}
+              color={paymentStatusChip.color}
               size="small"
               sx={{
                 height: 22,

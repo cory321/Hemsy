@@ -110,9 +110,9 @@ describe('getInvoicePaymentHistory', () => {
     expect(result).toHaveLength(3); // 2 payments + 1 refund
 
     // Check sorting (most recent first)
-    expect(result[0].created_at).toBe('2025-08-28T12:00:00Z'); // Refund (most recent)
-    expect(result[1].created_at).toBe('2025-08-28T11:00:00Z'); // Payment 2
-    expect(result[2].created_at).toBe('2025-08-28T10:00:00Z'); // Payment 1
+    expect(result[0]?.created_at).toBe('2025-08-28T12:00:00Z'); // Refund (most recent)
+    expect(result[1]?.created_at).toBe('2025-08-28T11:00:00Z'); // Payment 2
+    expect(result[2]?.created_at).toBe('2025-08-28T10:00:00Z'); // Payment 1
 
     // Check refund transactions (should be negative amounts) - first in sorted order
     expect(result[0]).toMatchObject({
@@ -194,7 +194,7 @@ describe('getInvoicePaymentHistory', () => {
     const result = await getInvoicePaymentHistory(invoiceId);
 
     expect(result).toHaveLength(1);
-    expect(result[0].type).toBe('payment');
+    expect(result[0]?.type).toBe('payment');
   });
 
   it('should throw error for invoice not belonging to shop', async () => {

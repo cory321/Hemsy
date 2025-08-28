@@ -29,6 +29,10 @@ import {
   getOrderStatusColor,
   getOrderStatusLabel,
 } from '@/lib/utils/orderStatus';
+import {
+  calculatePaymentStatus,
+  type PaymentInfo,
+} from '@/lib/utils/payment-calculations';
 import type { GarmentStage } from '@/types';
 import SafeCldImage from '@/components/ui/SafeCldImage';
 import { resolveGarmentDisplayImage } from '@/utils/displayImage';
@@ -340,12 +344,27 @@ export default function OrderCardDetailed({
     : 'No Client';
   const clientPhone = order.client?.phone_number;
 
-  // Calculate payment info
+  // Calculate payment info using centralized utility
   const totalAmount = order.total_cents || 0;
   const paidAmount = order.paid_amount_cents || 0;
-  const remainingAmount = totalAmount - paidAmount;
-  const paymentProgress =
-    totalAmount > 0 ? (paidAmount / totalAmount) * 100 : 0;
+
+  // Create a simplified payment info for the card (server already calculated net amount)
+  const paymentInfo: PaymentInfo[] = [
+    {
+      id: 'summary',
+      amount_cents: paidAmount,
+      refunded_amount_cents: 0,
+      status: 'completed',
+    },
+  ];
+
+  const paymentCalc = calculatePaymentStatus(totalAmount, paymentInfo);
+  const {
+    netPaid,
+    amountDue,
+    percentage: paymentProgress,
+    paymentStatus,
+  } = paymentCalc;
 
   // Get garment status summary using the correct stages
   const garments = order.garments || [];
@@ -556,7 +575,7 @@ export default function OrderCardDetailed({
                 </Typography>
               </Box>
               <Typography variant="h6" fontWeight="bold">
-                {formatUSD(paidAmount)} / {formatUSD(totalAmount)}
+                {formatUSD(netPaid)} / {formatUSD(totalAmount)}
               </Typography>
             </Box>
 
@@ -597,44 +616,43 @@ export default function OrderCardDetailed({
               }}
             >
               <Chip
-                {...(paymentProgress >= 100 &&
-                  paidAmount <= totalAmount && { icon: <CheckCircleIcon /> })}
+                {...(paymentStatus === 'paid' && { icon: <CheckCircleIcon /> })}
                 label={
-                  paidAmount > totalAmount && totalAmount > 0
+                  paymentStatus === 'overpaid'
                     ? 'REFUND REQUIRED'
-                    : paymentProgress >= 100
+                    : paymentStatus === 'paid'
                       ? 'PAID IN FULL'
-                      : paymentProgress > 0
+                      : paymentStatus === 'partial'
                         ? 'PARTIAL PAID'
                         : 'UNPAID'
                 }
                 color={
-                  paidAmount > totalAmount && totalAmount > 0
+                  paymentStatus === 'overpaid'
                     ? 'warning'
-                    : paymentProgress >= 100
+                    : paymentStatus === 'paid'
                       ? 'success'
-                      : paymentProgress > 0
+                      : paymentStatus === 'partial'
                         ? 'warning'
                         : 'error'
                 }
                 size="small"
               />
-              {remainingAmount > 0 && (
+              {amountDue > 0 && (
                 <Typography
                   variant="body2"
                   fontWeight="bold"
                   color="error.main"
                 >
-                  {formatUSD(remainingAmount)} DUE
+                  {formatUSD(amountDue)} DUE
                 </Typography>
               )}
-              {paidAmount > totalAmount && totalAmount > 0 && (
+              {paymentStatus === 'overpaid' && (
                 <Typography
                   variant="body2"
                   fontWeight="bold"
                   color="warning.main"
                 >
-                  {formatUSD(paidAmount - totalAmount)} CREDIT
+                  {formatUSD(Math.abs(amountDue))} CREDIT
                 </Typography>
               )}
             </Box>

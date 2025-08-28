@@ -8,6 +8,10 @@ import EnhancedInvoiceLineItems from '@/components/invoices/EnhancedInvoiceLineI
 import PaymentManagement from '@/components/invoices/PaymentManagement';
 import RecordPaymentDialog from '@/components/orders/RecordPaymentDialog';
 import { restoreRemovedService } from '@/lib/actions/garments';
+import {
+  calculatePaymentStatus,
+  type PaymentInfo,
+} from '@/lib/utils/payment-calculations';
 import type { Database } from '@/types/supabase';
 
 interface OrderServicesAndPaymentsProps {
@@ -47,6 +51,7 @@ interface OrderServicesAndPaymentsProps {
     payment_type: string;
     payment_method: string;
     amount_cents: number;
+    refunded_amount_cents?: number;
     status: string;
     stripe_payment_intent_id?: string | null;
     created_at: string | null;
@@ -56,6 +61,37 @@ interface OrderServicesAndPaymentsProps {
   orderStatus?: string | null | undefined;
   paidAt?: string | null | undefined;
   clientEmail?: string | undefined; // Add client email for Stripe payments
+  // Optimistic update functions
+  onOptimisticPayment?: (
+    paymentData: Omit<
+      {
+        id: string;
+        payment_type: string;
+        payment_method: string;
+        amount_cents: number;
+        refunded_amount_cents?: number;
+        status: string;
+        created_at: string;
+        stripe_payment_intent_id?: string;
+        notes?: string;
+      },
+      'id' | 'created_at'
+    >,
+    serverAction: () => Promise<any>
+  ) => void;
+  onOptimisticRefund?: (
+    paymentId: string,
+    refundAmount: number,
+    serverAction: () => Promise<any>
+  ) => void;
+  optimisticPaymentStatus?: {
+    totalPaid: number;
+    totalRefunded: number;
+    netPaid: number;
+    amountDue: number;
+    percentage: number;
+  };
+  isPending?: boolean;
 }
 
 export default function OrderServicesAndPayments({
@@ -66,6 +102,10 @@ export default function OrderServicesAndPayments({
   orderStatus,
   paidAt,
   clientEmail,
+  onOptimisticPayment,
+  onOptimisticRefund,
+  optimisticPaymentStatus,
+  isPending,
 }: OrderServicesAndPaymentsProps) {
   const router = useRouter();
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
@@ -125,11 +165,12 @@ export default function OrderServicesAndPayments({
     .filter((item) => !item.is_removed)
     .reduce((sum, item) => sum + (item.line_total_cents || 0), 0);
 
-  const totalPaid = payments
-    .filter((p) => p.status === 'completed')
-    .reduce((sum, p) => sum + p.amount_cents, 0);
+  // Use optimistic payment status if available, otherwise calculate from payments
+  const paymentCalculation =
+    optimisticPaymentStatus ||
+    calculatePaymentStatus(totalAmount, (payments as PaymentInfo[]) || []);
 
-  const amountDue = totalAmount - totalPaid;
+  const { totalPaid, totalRefunded, netPaid, amountDue } = paymentCalculation;
 
   return (
     <Box sx={{ mt: 4 }}>
@@ -176,6 +217,10 @@ export default function OrderServicesAndPayments({
             payment_type: payment.payment_type,
             payment_method: payment.payment_method,
             amount_cents: payment.amount_cents,
+            ...(payment.refunded_amount_cents !== null &&
+              payment.refunded_amount_cents !== undefined && {
+                refunded_amount_cents: payment.refunded_amount_cents,
+              }),
             status: payment.status,
             ...(payment.stripe_payment_intent_id && {
               stripe_payment_intent_id: payment.stripe_payment_intent_id,
@@ -185,6 +230,7 @@ export default function OrderServicesAndPayments({
             ...(payment.notes && { notes: payment.notes }),
           }))}
           onPaymentUpdate={handlePaymentUpdate}
+          {...(onOptimisticRefund && { onOptimisticRefund })}
         />
       )}
 
@@ -198,6 +244,7 @@ export default function OrderServicesAndPayments({
           amountDue={amountDue}
           onPaymentSuccess={handlePaymentSuccess}
           clientEmail={clientEmail}
+          {...(onOptimisticPayment && { onOptimisticPayment })}
         />
       )}
     </Box>

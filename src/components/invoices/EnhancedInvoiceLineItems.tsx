@@ -28,6 +28,10 @@ import { formatCentsAsCurrency } from '@/lib/utils/currency';
 import { useRouter } from 'next/navigation';
 import InlinePresetSvg from '@/components/ui/InlinePresetSvg';
 import { getPresetIconUrl } from '@/utils/presetIcons';
+import {
+  calculatePaymentStatus,
+  type PaymentInfo,
+} from '@/lib/utils/payment-calculations';
 import { getStageColor } from '@/constants/garmentStages';
 import type { GarmentStage } from '@/types';
 
@@ -146,26 +150,20 @@ export default function EnhancedInvoiceLineItems({
     { activeTotal: 0, removedTotal: 0, activeCount: 0, removedCount: 0 }
   );
 
-  // Calculate payment totals and amount due
-  const completedPayments = payments.filter((p) => p.status === 'completed');
-  const totalPaid = completedPayments.reduce(
-    (sum, payment) => sum + payment.amount_cents,
-    0
+  // Calculate payment totals and amount due using shared utility
+  const paymentCalc = calculatePaymentStatus(
+    overallTotals.activeTotal,
+    (payments as PaymentInfo[]) || []
   );
-  const amountDue = overallTotals.activeTotal - totalPaid;
-  const paymentProgress =
-    overallTotals.activeTotal > 0
-      ? (totalPaid / overallTotals.activeTotal) * 100
-      : 0;
 
-  const paymentStatus =
-    totalPaid === 0
-      ? 'unpaid'
-      : totalPaid < overallTotals.activeTotal
-        ? 'partial'
-        : totalPaid === overallTotals.activeTotal
-          ? 'paid'
-          : 'overpaid';
+  const {
+    totalPaid,
+    totalRefunded,
+    netPaid,
+    amountDue,
+    percentage: paymentProgress,
+    paymentStatus,
+  } = paymentCalc;
 
   const toggleGarment = (garmentId: string) => {
     setExpandedGarments((prev) => {
@@ -677,17 +675,27 @@ export default function EnhancedInvoiceLineItems({
                 {paymentProgress > 0 && (
                   <Typography variant="body2" color="text.secondary">
                     {Math.round(paymentProgress)}% of total
+                    {totalRefunded > 0 &&
+                      ` (${formatCentsAsCurrency(totalRefunded)} refunded)`}
                   </Typography>
                 )}
               </TableCell>
               <TableCell align="right">
-                <Typography
-                  variant="subtitle1"
-                  fontWeight="bold"
-                  color="success.main"
-                >
-                  {formatCentsAsCurrency(totalPaid)}
-                </Typography>
+                <Box>
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight="bold"
+                    color="success.main"
+                  >
+                    {formatCentsAsCurrency(netPaid)}
+                  </Typography>
+                  {totalRefunded > 0 && (
+                    <Typography variant="caption" color="text.secondary">
+                      ({formatCentsAsCurrency(totalPaid)} paid -{' '}
+                      {formatCentsAsCurrency(totalRefunded)} refunded)
+                    </Typography>
+                  )}
+                </Box>
               </TableCell>
             </TableRow>
           )}
@@ -741,8 +749,10 @@ export default function EnhancedInvoiceLineItems({
                     variant="body2"
                     sx={{ color: 'white', opacity: 0.9 }}
                   >
-                    {formatCentsAsCurrency(totalPaid)} paid of{' '}
+                    {formatCentsAsCurrency(netPaid)} paid of{' '}
                     {formatCentsAsCurrency(overallTotals.activeTotal)}
+                    {totalRefunded > 0 &&
+                      ` (${formatCentsAsCurrency(totalRefunded)} refunded)`}
                   </Typography>
                 )}
             </TableCell>

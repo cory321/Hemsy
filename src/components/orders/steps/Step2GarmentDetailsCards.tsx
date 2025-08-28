@@ -5,7 +5,7 @@ import { Box, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import { useOrderFlow, GarmentDraft } from '@/contexts/OrderFlowContext';
 import GarmentCard from '../GarmentCard';
-import GarmentDetailModal from '../GarmentDetailModal';
+import MultiStepGarmentModal from '../MultiStepGarmentModal';
 import { assignDefaultGarmentNames } from '@/lib/utils/order-normalization';
 import { getFrequentlyUsedServices } from '@/lib/actions/services';
 
@@ -135,13 +135,13 @@ export default function Step2GarmentDetailsCards() {
         </Box>
       </Box>
 
-      {/* Garment Detail Modal */}
-      <GarmentDetailModal
+      {/* Multi-Step Garment Modal */}
+      <MultiStepGarmentModal
         open={modalOpen}
         onClose={handleCloseModal}
         garment={selectedGarment}
         onSave={handleSaveGarment}
-        onDelete={isNewGarment ? () => {} : handleDeleteGarment}
+        {...(!isNewGarment && { onDelete: handleDeleteGarment })}
         isNew={isNewGarment}
         index={
           selectedGarment

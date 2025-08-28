@@ -20,7 +20,9 @@ export interface PaymentIntentResult {
   paymentIntentId: string;
   amountCents: number;
   currency: string;
-  // For direct charges with connected accounts
+  // Account type for tracking
+  accountType?: string;
+  // For direct charges with connected accounts (legacy)
   connectedAccountId?: string;
   isDirectCharge?: boolean;
 }
@@ -334,6 +336,37 @@ export async function createPaymentIntent(
       paymentIntent = await stripe.paymentIntents.create(paymentIntentConfig);
     }
 
+    // Validate that the payment intent was created successfully
+    if (!paymentIntent.id || !paymentIntent.client_secret) {
+      throw new Error(
+        'Invalid payment intent created - missing ID or client secret'
+      );
+    }
+
+    // Determine if this was a direct charge for verification
+    const isDirectCharge =
+      USE_DIRECT_CHARGES &&
+      useConnectAccount &&
+      shopSettings?.stripe_connect_account_id;
+
+    // Verify the payment intent exists in Stripe (additional safety check)
+    try {
+      if (isDirectCharge && shopSettings?.stripe_connect_account_id) {
+        // For direct charges, verify on the connected account
+        await stripe.paymentIntents.retrieve(paymentIntent.id, {
+          stripeAccount: shopSettings.stripe_connect_account_id,
+        });
+      } else {
+        // For destination charges or platform payments, verify on platform account
+        await stripe.paymentIntents.retrieve(paymentIntent.id);
+      }
+    } catch (retrieveError: any) {
+      console.error('Failed to verify payment intent exists:', retrieveError);
+      throw new Error(
+        'Payment intent verification failed - may indicate account mismatch'
+      );
+    }
+
     // Create pending payment record
     const { error: paymentError } = await supabase.from('payments').insert({
       invoice_id: invoice.id,
@@ -345,6 +378,7 @@ export async function createPaymentIntent(
       stripe_metadata: {
         client_secret: paymentIntent.client_secret,
         created_at: new Date().toISOString(),
+        verified_at: new Date().toISOString(), // Track when we verified it exists
       },
     });
 
@@ -354,11 +388,7 @@ export async function createPaymentIntent(
       throw new Error('Failed to record payment intent');
     }
 
-    // Include connected account ID if this was a direct charge
-    const isDirectCharge =
-      USE_DIRECT_CHARGES &&
-      useConnectAccount &&
-      shopSettings?.stripe_connect_account_id;
+    // Include connected account ID if this was a direct charge (already defined above)
 
     return {
       success: true,
@@ -483,7 +513,8 @@ export async function handleSuccessfulPayment(
       .update({
         is_paid: true,
         paid_at: new Date().toISOString(),
-        status: 'active', // Move from draft to active
+        // Note: Order status should be determined by garment stages, not payment status
+        // The calculate_order_status() function and triggers handle this properly
       })
       .eq('id', payment.invoice.order_id);
   }
@@ -769,8 +800,13 @@ export async function refundPayment(
       throw new Error('Payment not found');
     }
 
-    if (payment.status !== 'completed') {
-      throw new Error('Can only refund completed payments');
+    if (
+      payment.status !== 'completed' &&
+      payment.status !== 'partially_refunded'
+    ) {
+      throw new Error(
+        'Can only refund completed or partially refunded payments'
+      );
     }
 
     if (payment.payment_method !== 'stripe') {
@@ -781,17 +817,71 @@ export async function refundPayment(
       throw new Error('No Stripe payment intent found');
     }
 
-    // Calculate refund amount
+    // Get shop settings to check for connected account
+    const { data: shopSettings } = await supabase
+      .from('shop_settings')
+      .select('stripe_connect_account_id, stripe_connect_status')
+      .eq('shop_id', shop.id)
+      .single();
+
+    // Calculate refund amount and check limits
     const refundAmount = amountCents || payment.amount_cents;
-    if (refundAmount > payment.amount_cents) {
-      throw new Error('Refund amount cannot exceed payment amount');
+    const previouslyRefunded = payment.refunded_amount_cents || 0;
+    const totalAfterRefund = previouslyRefunded + refundAmount;
+
+    if (refundAmount <= 0) {
+      throw new Error('Refund amount must be greater than $0');
+    }
+
+    if (totalAfterRefund > payment.amount_cents) {
+      const remainingRefundable = payment.amount_cents - previouslyRefunded;
+      throw new Error(
+        `Refund amount exceeds remaining refundable amount. ` +
+          `Maximum refundable: $${(remainingRefundable / 100).toFixed(2)}`
+      );
     }
 
     // Check if this was a direct charge (need to refund on connected account)
     const paymentMetadata = payment.stripe_metadata as any;
+
+    // Get connected account ID - prioritize shop settings over metadata
+    const connectedAccountId =
+      shopSettings?.stripe_connect_account_id ||
+      paymentMetadata?.merchant_account_id ||
+      paymentMetadata?.connected_account ||
+      paymentMetadata?.connect_account_id ||
+      paymentMetadata?.event_account;
+
+    // Determine if this is a direct charge
+    // If we have a connected account ID (from shop settings or metadata), assume it's a direct charge
+    // This handles older payments that might not have the newer metadata fields
     const isDirectCharge =
-      paymentMetadata?.connect_flow_type === 'direct_charge';
-    const connectedAccountId = paymentMetadata?.merchant_account_id;
+      paymentMetadata?.connect_flow_type === 'direct_charge' ||
+      paymentMetadata?.charge_type === 'direct' ||
+      paymentMetadata?.is_connect_payment === true ||
+      paymentMetadata?.payment_flow === 'connect_transfer' ||
+      // If we have a connected account ID and shop has Connect enabled, it's likely a direct charge
+      (connectedAccountId && shopSettings?.stripe_connect_status === 'active');
+
+    // Log for debugging
+    console.log('Refund processing:', {
+      paymentId: payment.id,
+      paymentIntentId: payment.stripe_payment_intent_id,
+      isDirectCharge,
+      connectedAccountId,
+      shopSettingsAccountId: shopSettings?.stripe_connect_account_id,
+      metadataAccountId: paymentMetadata?.merchant_account_id,
+      connectFlowType: paymentMetadata?.connect_flow_type,
+    });
+
+    // Validate we have the necessary info for direct charges
+    if (isDirectCharge && !connectedAccountId) {
+      console.error('Direct charge detected but no connected account ID found');
+      throw new Error(
+        'Unable to process refund: Connected account information missing. ' +
+          'Please contact support.'
+      );
+    }
 
     // Create Stripe refund with enhanced metadata
     let refund;
@@ -814,19 +904,97 @@ export async function refundPayment(
         },
       };
 
+      // Try to refund based on our best guess of where the payment lives
+      let refundError: any = null;
+
       if (isDirectCharge && connectedAccountId) {
-        // For direct charges, refund on the connected account
-        // If there was an application fee, you might want to refund it too:
-        // refundParams.refund_application_fee = true; // Uncomment if platform fees are enabled
-        refund = await stripe.refunds.create(refundParams, {
-          stripeAccount: connectedAccountId,
-        });
+        console.log(
+          'Processing refund on connected account:',
+          connectedAccountId
+        );
+        try {
+          // For direct charges, refund on the connected account
+          refund = await stripe.refunds.create(refundParams, {
+            stripeAccount: connectedAccountId,
+          });
+          console.log('Successfully refunded on connected account');
+        } catch (error: any) {
+          console.log('Failed to refund on connected account:', error.message);
+          refundError = error;
+
+          // If payment not found on connected account, try platform account as fallback
+          if (
+            error.code === 'resource_missing' ||
+            error.message.includes('No such payment_intent')
+          ) {
+            console.log('Attempting fallback refund on platform account');
+            try {
+              refund = await stripe.refunds.create(refundParams);
+              console.log(
+                'Successfully refunded on platform account (fallback)'
+              );
+            } catch (platformError: any) {
+              console.error(
+                'Fallback refund on platform also failed:',
+                platformError.message
+              );
+              throw refundError; // Throw original error
+            }
+          } else {
+            throw error;
+          }
+        }
       } else {
-        // For destination charges or platform payments
-        refund = await stripe.refunds.create(refundParams);
+        console.log('Processing refund on platform account');
+        try {
+          // For destination charges or platform payments
+          refund = await stripe.refunds.create(refundParams);
+          console.log('Successfully refunded on platform account');
+        } catch (error: any) {
+          console.log('Failed to refund on platform account:', error.message);
+          refundError = error;
+
+          // If payment not found on platform and we have a connected account, try it as fallback
+          if (
+            connectedAccountId &&
+            (error.code === 'resource_missing' ||
+              error.message.includes('No such payment_intent'))
+          ) {
+            console.log(
+              'Attempting fallback refund on connected account:',
+              connectedAccountId
+            );
+            try {
+              refund = await stripe.refunds.create(refundParams, {
+                stripeAccount: connectedAccountId,
+              });
+              console.log(
+                'Successfully refunded on connected account (fallback)'
+              );
+            } catch (connectedError: any) {
+              console.error(
+                'Fallback refund on connected account also failed:',
+                connectedError.message
+              );
+              throw refundError; // Throw original error
+            }
+          } else {
+            throw error;
+          }
+        }
+      }
+
+      if (!refund) {
+        throw new Error('Failed to create refund');
       }
     } catch (stripeError: any) {
       console.error('Stripe refund error:', stripeError);
+      console.error('Refund attempt details:', {
+        paymentIntentId: payment.stripe_payment_intent_id,
+        isDirectCharge,
+        connectedAccountId,
+        refundAmount,
+      });
       throw new Error(`Stripe refund failed: ${stripeError.message}`);
     }
 
@@ -868,25 +1036,28 @@ export async function refundPayment(
       );
     }
 
-    // Update payment record
+    // Update payment record with accumulated refund amount
     const { error: updateError } = await supabase
       .from('payments')
       .update({
         status:
-          refundAmount === payment.amount_cents
+          totalAfterRefund === payment.amount_cents
             ? 'refunded'
             : 'partially_refunded',
         refund_id: refund.id,
-        refunded_amount_cents: refundAmount,
+        refunded_amount_cents: totalAfterRefund, // Use accumulated total
         refunded_at: new Date().toISOString(),
         refunded_by: user.id,
         refund_reason: reason || null,
         stripe_metadata: {
           ...((payment.stripe_metadata as object) || {}),
           refund_id: refund.id,
-          refunded_amount_cents: refundAmount,
+          refunded_amount_cents: totalAfterRefund, // Use accumulated total
+          last_refund_amount: refundAmount, // Track the last refund separately
           refunded_at: new Date().toISOString(),
           refund_reason: reason || null,
+          refund_count:
+            ((payment.stripe_metadata as any)?.refund_count || 0) + 1,
         },
       })
       .eq('id', paymentId);
@@ -973,8 +1144,13 @@ export async function processManualRefund(
       throw new Error('Payment not found');
     }
 
-    if (payment.status !== 'completed') {
-      throw new Error('Can only refund completed payments');
+    if (
+      payment.status !== 'completed' &&
+      payment.status !== 'partially_refunded'
+    ) {
+      throw new Error(
+        'Can only refund completed or partially refunded payments'
+      );
     }
 
     // Only allow manual refunds for non-Stripe payments
@@ -987,8 +1163,15 @@ export async function processManualRefund(
       throw new Error('Refund amount must be greater than $0');
     }
 
-    if (amountCents > payment.amount_cents) {
-      throw new Error('Refund amount cannot exceed payment amount');
+    const previouslyRefunded = payment.refunded_amount_cents || 0;
+    const totalAfterRefund = previouslyRefunded + amountCents;
+
+    if (totalAfterRefund > payment.amount_cents) {
+      const remainingRefundable = payment.amount_cents - previouslyRefunded;
+      throw new Error(
+        `Refund amount exceeds remaining refundable amount. ` +
+          `Maximum refundable: $${(remainingRefundable / 100).toFixed(2)}`
+      );
     }
 
     // Reason is optional for manual refunds, but we'll use a default if not provided
@@ -1022,15 +1205,15 @@ export async function processManualRefund(
       );
     }
 
-    // Update payment record
+    // Update payment record with accumulated refund amount
     const { error: updateError } = await supabase
       .from('payments')
       .update({
         status:
-          amountCents === payment.amount_cents
+          totalAfterRefund === payment.amount_cents
             ? 'refunded'
             : 'partially_refunded',
-        refunded_amount_cents: amountCents,
+        refunded_amount_cents: totalAfterRefund, // Use accumulated total
         refunded_at: new Date().toISOString(),
         refunded_by: user.id,
         refund_reason: refundReason,
@@ -1039,9 +1222,12 @@ export async function processManualRefund(
           ...((payment.stripe_metadata as object) || {}),
           manual_refund: true,
           refund_method: refundMethod,
-          refunded_amount_cents: amountCents,
+          refunded_amount_cents: totalAfterRefund, // Use accumulated total
+          last_refund_amount: amountCents, // Track the last refund separately
           refunded_at: new Date().toISOString(),
           refund_reason: refundReason,
+          refund_count:
+            ((payment.stripe_metadata as any)?.refund_count || 0) + 1,
         },
       })
       .eq('id', paymentId);

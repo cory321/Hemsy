@@ -43,6 +43,19 @@ interface RecordPaymentDialogProps {
   amountDue: number; // in cents
   onPaymentSuccess?: () => void;
   clientEmail?: string | undefined;
+  // Optimistic update function
+  onOptimisticPayment?: (
+    paymentData: {
+      payment_type: string;
+      payment_method: string;
+      amount_cents: number;
+      refunded_amount_cents?: number;
+      status: string;
+      stripe_payment_intent_id?: string;
+      notes?: string;
+    },
+    serverAction: () => Promise<any>
+  ) => void;
 }
 
 export default function RecordPaymentDialog({
@@ -53,6 +66,7 @@ export default function RecordPaymentDialog({
   amountDue,
   onPaymentSuccess,
   clientEmail,
+  onOptimisticPayment,
 }: RecordPaymentDialogProps) {
   const [paymentType, setPaymentType] = useState<'balance_due' | 'custom'>(
     'balance_due'
@@ -184,8 +198,19 @@ export default function RecordPaymentDialog({
     }
 
     setProcessing(true);
-    try {
-      const result = await recordManualPayment({
+
+    // Prepare payment data for optimistic update
+    const paymentData = {
+      payment_type: paymentType === 'balance_due' ? 'remainder' : 'custom',
+      payment_method: paymentMethod,
+      amount_cents: paymentAmount,
+      status: 'completed',
+      ...(notes && { notes }),
+    };
+
+    // Server action function
+    const serverAction = () =>
+      recordManualPayment({
         invoiceId,
         paymentType: paymentType === 'balance_due' ? 'remainder' : 'custom',
         amountCents: paymentAmount,
@@ -194,12 +219,23 @@ export default function RecordPaymentDialog({
         ...(notes && { notes }),
       });
 
-      if (result.success) {
+    try {
+      if (onOptimisticPayment) {
+        // Use optimistic update
+        onOptimisticPayment(paymentData, serverAction);
         toast.success('Payment recorded successfully');
         onPaymentSuccess?.();
         handleClose();
       } else {
-        toast.error(result.error || 'Failed to record payment');
+        // Fallback to direct server action
+        const result = await serverAction();
+        if (result.success) {
+          toast.success('Payment recorded successfully');
+          onPaymentSuccess?.();
+          handleClose();
+        } else {
+          toast.error(result.error || 'Failed to record payment');
+        }
       }
     } catch (error) {
       toast.error('Failed to record payment');

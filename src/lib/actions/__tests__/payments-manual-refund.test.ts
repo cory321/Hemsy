@@ -8,7 +8,7 @@ jest.mock('@/lib/supabase/client');
 jest.mock('@/lib/auth/user-shop');
 jest.mock('next/cache');
 
-const mockSupabase = {
+const mockSupabase: any = {
   from: jest.fn(() => mockSupabase),
   select: jest.fn(() => mockSupabase),
   eq: jest.fn(() => mockSupabase),
@@ -45,10 +45,10 @@ describe('processManualRefund', () => {
     jest.clearAllMocks();
     (
       createClient as jest.MockedFunction<typeof createClient>
-    ).mockResolvedValue(mockSupabase as any);
+    ).mockResolvedValue(mockSupabase as never);
     (
       ensureUserAndShop as jest.MockedFunction<typeof ensureUserAndShop>
-    ).mockResolvedValue({ user: mockUser, shop: mockShop });
+    ).mockResolvedValue({ user: mockUser as any, shop: mockShop as any });
     (
       revalidatePath as jest.MockedFunction<typeof revalidatePath>
     ).mockImplementation(() => {});

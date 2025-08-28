@@ -135,7 +135,12 @@ export async function getOrdersPaginated(
       order.invoices.forEach((invoice: any) => {
         if (invoice.payments) {
           invoice.payments.forEach((payment: any) => {
-            if (payment.status === 'completed') {
+            // Include all successful payments regardless of refund status
+            if (
+              payment.status === 'completed' ||
+              payment.status === 'partially_refunded' ||
+              payment.status === 'refunded'
+            ) {
               const paymentAmount = payment.amount_cents || 0;
               const refundedAmount = payment.refunded_amount_cents || 0;
               // Add net payment amount (payment minus any refunds)
@@ -304,7 +309,7 @@ export async function createOrder(
       .insert({
         shop_id: shop.id,
         client_id: input.clientId,
-        status: 'pending',
+        status: 'new',
         discount_cents: input.discountCents ?? 0,
         notes: input.notes ?? null,
         order_number: orderNumberData as string,

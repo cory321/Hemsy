@@ -535,6 +535,13 @@ export type Database = {
             foreignKeyName: 'garment_services_invoice_id_fkey';
             columns: ['invoice_id'];
             isOneToOne: false;
+            referencedRelation: 'invoice_payment_summary';
+            referencedColumns: ['invoice_id'];
+          },
+          {
+            foreignKeyName: 'garment_services_invoice_id_fkey';
+            columns: ['invoice_id'];
+            isOneToOne: false;
             referencedRelation: 'invoices';
             referencedColumns: ['id'];
           },
@@ -709,6 +716,13 @@ export type Database = {
           reason?: string | null;
         };
         Relationships: [
+          {
+            foreignKeyName: 'invoice_status_history_invoice_id_fkey';
+            columns: ['invoice_id'];
+            isOneToOne: false;
+            referencedRelation: 'invoice_payment_summary';
+            referencedColumns: ['invoice_id'];
+          },
           {
             foreignKeyName: 'invoice_status_history_invoice_id_fkey';
             columns: ['invoice_id'];
@@ -922,6 +936,13 @@ export type Database = {
             foreignKeyName: 'payment_audit_log_payment_id_fkey';
             columns: ['payment_id'];
             isOneToOne: false;
+            referencedRelation: 'payment_reconciliation';
+            referencedColumns: ['payment_id'];
+          },
+          {
+            foreignKeyName: 'payment_audit_log_payment_id_fkey';
+            columns: ['payment_id'];
+            isOneToOne: false;
             referencedRelation: 'payments';
             referencedColumns: ['id'];
           },
@@ -944,6 +965,7 @@ export type Database = {
           payment_id: string;
           timestamp: string;
           user_agent: string | null;
+          user_id: string | null;
         };
         Insert: {
           action: string;
@@ -954,6 +976,7 @@ export type Database = {
           payment_id: string;
           timestamp?: string;
           user_agent?: string | null;
+          user_id?: string | null;
         };
         Update: {
           action?: string;
@@ -964,13 +987,28 @@ export type Database = {
           payment_id?: string;
           timestamp?: string;
           user_agent?: string | null;
+          user_id?: string | null;
         };
         Relationships: [
           {
             foreignKeyName: 'payment_audit_logs_payment_id_fkey';
             columns: ['payment_id'];
             isOneToOne: false;
+            referencedRelation: 'payment_reconciliation';
+            referencedColumns: ['payment_id'];
+          },
+          {
+            foreignKeyName: 'payment_audit_logs_payment_id_fkey';
+            columns: ['payment_id'];
+            isOneToOne: false;
             referencedRelation: 'payments';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'payment_audit_logs_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
             referencedColumns: ['id'];
           },
         ];
@@ -1013,6 +1051,13 @@ export type Database = {
           used_at?: string | null;
         };
         Relationships: [
+          {
+            foreignKeyName: 'payment_links_invoice_id_fkey';
+            columns: ['invoice_id'];
+            isOneToOne: false;
+            referencedRelation: 'invoice_payment_summary';
+            referencedColumns: ['invoice_id'];
+          },
           {
             foreignKeyName: 'payment_links_invoice_id_fkey';
             columns: ['invoice_id'];
@@ -1085,6 +1130,13 @@ export type Database = {
             foreignKeyName: 'payments_invoice_id_fkey';
             columns: ['invoice_id'];
             isOneToOne: false;
+            referencedRelation: 'invoice_payment_summary';
+            referencedColumns: ['invoice_id'];
+          },
+          {
+            foreignKeyName: 'payments_invoice_id_fkey';
+            columns: ['invoice_id'];
+            isOneToOne: false;
             referencedRelation: 'invoices';
             referencedColumns: ['id'];
           },
@@ -1107,6 +1159,7 @@ export type Database = {
           payment_id: string;
           processed_at: string | null;
           reason: string | null;
+          refund_method: string;
           refund_type: string;
           status: string;
           stripe_metadata: Json | null;
@@ -1121,6 +1174,7 @@ export type Database = {
           payment_id: string;
           processed_at?: string | null;
           reason?: string | null;
+          refund_method?: string;
           refund_type: string;
           status?: string;
           stripe_metadata?: Json | null;
@@ -1135,6 +1189,7 @@ export type Database = {
           payment_id?: string;
           processed_at?: string | null;
           reason?: string | null;
+          refund_method?: string;
           refund_type?: string;
           status?: string;
           stripe_metadata?: Json | null;
@@ -1147,6 +1202,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: 'users';
             referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'refunds_payment_id_fkey';
+            columns: ['payment_id'];
+            isOneToOne: false;
+            referencedRelation: 'payment_reconciliation';
+            referencedColumns: ['payment_id'];
           },
           {
             foreignKeyName: 'refunds_payment_id_fkey';
@@ -1203,8 +1265,22 @@ export type Database = {
             foreignKeyName: 'service_payment_allocations_invoice_id_fkey';
             columns: ['invoice_id'];
             isOneToOne: false;
+            referencedRelation: 'invoice_payment_summary';
+            referencedColumns: ['invoice_id'];
+          },
+          {
+            foreignKeyName: 'service_payment_allocations_invoice_id_fkey';
+            columns: ['invoice_id'];
+            isOneToOne: false;
             referencedRelation: 'invoices';
             referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'service_payment_allocations_payment_id_fkey';
+            columns: ['payment_id'];
+            isOneToOne: false;
+            referencedRelation: 'payment_reconciliation';
+            referencedColumns: ['payment_id'];
           },
           {
             foreignKeyName: 'service_payment_allocations_payment_id_fkey';
@@ -1266,6 +1342,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: 'garment_services';
             referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'service_refund_history_payment_id_fkey';
+            columns: ['payment_id'];
+            isOneToOne: false;
+            referencedRelation: 'payment_reconciliation';
+            referencedColumns: ['payment_id'];
           },
           {
             foreignKeyName: 'service_refund_history_payment_id_fkey';
@@ -1627,11 +1710,71 @@ export type Database = {
           },
         ];
       };
+      invoice_payment_summary: {
+        Row: {
+          amount_due: number | null;
+          invoice_id: string | null;
+          invoice_status: string | null;
+          invoice_total: number | null;
+          last_payment_date: string | null;
+          last_refund_date: string | null;
+          net_paid: number | null;
+          order_id: string | null;
+          payment_count: number | null;
+          total_paid: number | null;
+          total_refunded: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'invoices_order_id_fkey';
+            columns: ['order_id'];
+            isOneToOne: false;
+            referencedRelation: 'orders';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      payment_reconciliation: {
+        Row: {
+          amount_cents: number | null;
+          consistency_status: string | null;
+          discrepancy_amount: number | null;
+          invoice_id: string | null;
+          last_refund_at: string | null;
+          payment_created_at: string | null;
+          payment_id: string | null;
+          payment_method: string | null;
+          payment_table_refunds: number | null;
+          refund_count: number | null;
+          refunds_table_total: number | null;
+          status: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'payments_invoice_id_fkey';
+            columns: ['invoice_id'];
+            isOneToOne: false;
+            referencedRelation: 'invoice_payment_summary';
+            referencedColumns: ['invoice_id'];
+          },
+          {
+            foreignKeyName: 'payments_invoice_id_fkey';
+            columns: ['invoice_id'];
+            isOneToOne: false;
+            referencedRelation: 'invoices';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Functions: {
       calculate_order_status: {
         Args: { p_order_id: string };
         Returns: Database['public']['Enums']['order_status'];
+      };
+      calculate_total_refunded_amount: {
+        Args: { payment_uuid: string };
+        Returns: number;
       };
       check_appointment_conflict: {
         Args: {
@@ -1642,6 +1785,17 @@ export type Database = {
           p_start_time: string;
         };
         Returns: boolean;
+      };
+      check_payment_discrepancies: {
+        Args: { p_shop_id?: string };
+        Returns: {
+          consistency_status: string;
+          details: string;
+          discrepancy_amount: number;
+          invoice_id: string;
+          payment_id: string;
+          payment_method: string;
+        }[];
       };
       check_within_working_hours: {
         Args: {
@@ -1715,12 +1869,14 @@ export type Database = {
         };
       };
       create_order_with_payment_transaction: {
-        Args: {
-          p_order_data: Json;
-          p_payment_intent: Json;
-          p_shop_id: string;
-          p_user_id: string;
-        };
+        Args:
+          | { p_order_data: Json; p_payment_intent?: Json; p_shop_id: string }
+          | {
+              p_order_data: Json;
+              p_payment_intent?: Json;
+              p_shop_id: string;
+              p_user_id?: string;
+            };
         Returns: Json;
       };
       generate_order_number: {

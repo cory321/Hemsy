@@ -22,6 +22,10 @@ import {
   getOrderStatusColor,
   getOrderStatusLabel,
 } from '@/lib/utils/orderStatus';
+import {
+  calculatePaymentStatus,
+  type PaymentInfo,
+} from '@/lib/utils/payment-calculations';
 import type { GarmentStage } from '@/types';
 
 interface OrderCardCompactProps {
@@ -38,23 +42,20 @@ function formatUSD(cents: number) {
   }).format((cents || 0) / 100);
 }
 
-function getPaymentStatus(
-  paidAmount: number,
-  totalAmount: number
-): { label: string; color: 'success' | 'warning' | 'error' | 'info' } {
-  const percentage = totalAmount > 0 ? (paidAmount / totalAmount) * 100 : 0;
-
-  // Handle overpayment
-  if (paidAmount > totalAmount && totalAmount > 0) {
-    return { label: 'REFUND DUE', color: 'warning' };
-  } else if (percentage >= 100) {
-    return { label: 'PAID IN FULL', color: 'success' };
-  } else if (percentage > 50) {
-    return { label: 'MOSTLY PAID', color: 'info' };
-  } else if (percentage > 0) {
-    return { label: 'PARTIAL PAID', color: 'warning' };
-  } else {
-    return { label: 'UNPAID', color: 'error' };
+function getPaymentStatusDisplay(paymentStatus: string): {
+  label: string;
+  color: 'success' | 'warning' | 'error' | 'info';
+} {
+  switch (paymentStatus) {
+    case 'paid':
+      return { label: 'PAID IN FULL', color: 'success' };
+    case 'partially_paid':
+      return { label: 'PARTIAL PAID', color: 'warning' };
+    case 'overpaid':
+      return { label: 'REFUND DUE', color: 'warning' };
+    case 'unpaid':
+    default:
+      return { label: 'UNPAID', color: 'error' };
   }
 }
 
@@ -203,13 +204,28 @@ export default function OrderCardCompact({
     : 'No Client';
   const clientPhone = order.client?.phone_number;
 
-  // Calculate payment progress
+  // Calculate payment progress using centralized utility
   const totalAmount = order.total_cents || 0;
   const paidAmount = order.paid_amount_cents || 0;
-  const paymentProgress =
-    totalAmount > 0 ? (paidAmount / totalAmount) * 100 : 0;
-  const remainingAmount = totalAmount - paidAmount;
-  const paymentStatus = getPaymentStatus(paidAmount, totalAmount);
+
+  // Create a simplified payment info for the card (server already calculated net amount)
+  const paymentInfo: PaymentInfo[] = [
+    {
+      id: 'summary',
+      amount_cents: paidAmount,
+      refunded_amount_cents: 0,
+      status: 'completed',
+    },
+  ];
+
+  const paymentCalc = calculatePaymentStatus(totalAmount, paymentInfo);
+  const {
+    netPaid,
+    amountDue,
+    percentage: paymentProgress,
+    paymentStatus,
+  } = paymentCalc;
+  const paymentStatusDisplay = getPaymentStatusDisplay(paymentStatus);
 
   // Calculate garment progress
   const garmentCount = order.garments?.length || 0;
@@ -244,7 +260,7 @@ export default function OrderCardCompact({
     <Card
       role="button"
       tabIndex={0}
-      aria-label={`Order ${order.order_number} for ${clientName}, ${paymentStatus.label}`}
+      aria-label={`Order ${order.order_number} for ${clientName}, ${paymentStatusDisplay.label}`}
       sx={{
         cursor: 'pointer',
         transition: 'all 0.2s ease-in-out',
@@ -315,8 +331,8 @@ export default function OrderCardCompact({
                   sx={{ fontWeight: 'bold' }}
                 />
                 <Chip
-                  label={paymentStatus.label}
-                  color={paymentStatus.color}
+                  label={paymentStatusDisplay.label}
+                  color={paymentStatusDisplay.color}
                   size="small"
                   sx={{ fontWeight: 'bold' }}
                 />
@@ -364,15 +380,15 @@ export default function OrderCardCompact({
               }}
             >
               <Typography variant="body2" fontWeight="bold">
-                {formatUSD(paidAmount)} / {formatUSD(totalAmount)}
+                {formatUSD(netPaid)} / {formatUSD(totalAmount)}
               </Typography>
-              {remainingAmount > 0 && (
+              {amountDue > 0 && (
                 <Typography
                   variant="body2"
                   color="error.main"
                   fontWeight="bold"
                 >
-                  {formatUSD(remainingAmount)} due
+                  {formatUSD(amountDue)} due
                 </Typography>
               )}
             </Box>
@@ -414,8 +430,8 @@ export default function OrderCardCompact({
 
               {/* Payment Status - Prominent */}
               <Chip
-                label={paymentStatus.label}
-                color={paymentStatus.color}
+                label={paymentStatusDisplay.label}
+                color={paymentStatusDisplay.color}
                 sx={{
                   fontWeight: 'bold',
                   minWidth: 100,
@@ -473,15 +489,15 @@ export default function OrderCardCompact({
               {/* Payment Amount */}
               <Box sx={{ textAlign: 'right' }}>
                 <Typography variant="body2" fontWeight="bold">
-                  {formatUSD(paidAmount)} / {formatUSD(totalAmount)}
+                  {formatUSD(netPaid)} / {formatUSD(totalAmount)}
                 </Typography>
-                {remainingAmount > 0 && (
+                {amountDue > 0 && (
                   <Typography
                     variant="caption"
                     color="error.main"
                     fontWeight="bold"
                   >
-                    {formatUSD(remainingAmount)} due
+                    {formatUSD(amountDue)} due
                   </Typography>
                 )}
               </Box>

@@ -89,7 +89,7 @@ export default function OrderDetailClient({
   };
 
   const needsPaymentBeforeWork =
-    true && order.status === 'pending' && !order.is_paid;
+    true && order.status === 'new' && !order.is_paid;
 
   return (
     <>

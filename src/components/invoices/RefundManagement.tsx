@@ -42,6 +42,7 @@ interface Payment {
   payment_type: string;
   payment_method: string;
   amount_cents: number;
+  refunded_amount_cents?: number;
   status: string;
   stripe_payment_intent_id?: string;
   created_at: string;
@@ -53,11 +54,17 @@ interface Payment {
 interface RefundManagementProps {
   payment: Payment;
   onRefundComplete: () => void;
+  onOptimisticRefund?: (
+    paymentId: string,
+    refundAmount: number,
+    serverAction: () => Promise<any>
+  ) => void;
 }
 
 export default function RefundManagement({
   payment,
   onRefundComplete,
+  onOptimisticRefund,
 }: RefundManagementProps) {
   const [refundDialogOpen, setRefundDialogOpen] = useState(false);
   const [refunding, setRefunding] = useState(false);
@@ -69,23 +76,41 @@ export default function RefundManagement({
 
   const canRefund = () => {
     return (
-      payment.status === 'completed' &&
+      (payment.status === 'completed' ||
+        payment.status === 'partially_refunded') &&
       payment.payment_method === 'stripe' &&
       payment.stripe_payment_intent_id
     );
   };
 
-  const isAlreadyRefunded = () => {
-    return (
-      payment.status === 'refunded' || payment.status === 'partially_refunded'
-    );
+  const getRemainingRefundableAmount = () => {
+    const refundedAmount = payment.refunded_amount_cents || 0;
+    return payment.amount_cents - refundedAmount;
+  };
+
+  const getRemainingRefundableAmountInDollars = () => {
+    return getRemainingRefundableAmount() / 100;
+  };
+
+  // Show previous refunds count if any
+  const getPreviousRefundsInfo = () => {
+    const refundedAmount = payment.refunded_amount_cents || 0;
+    if (refundedAmount === 0) return null;
+
+    const refundCount = (payment.stripe_metadata as any)?.refund_count || 1;
+    return {
+      count: refundCount,
+      amount: refundedAmount,
+      isPartial: refundedAmount < payment.amount_cents,
+    };
   };
 
   const handleRefundClick = () => {
+    const remainingAmount = getRemainingRefundableAmountInDollars();
     setRefundForm({
-      amount: payment.amount_cents / 100,
+      amount: remainingAmount,
       reason: '',
-      type: 'full',
+      type: remainingAmount === payment.amount_cents / 100 ? 'full' : 'partial',
     });
     setRefundDialogOpen(true);
   };
@@ -94,7 +119,7 @@ export default function RefundManagement({
     setRefundForm((prev) => ({
       ...prev,
       type,
-      amount: type === 'full' ? payment.amount_cents / 100 : 0,
+      amount: type === 'full' ? getRemainingRefundableAmountInDollars() : 0,
     }));
   };
 
@@ -102,34 +127,51 @@ export default function RefundManagement({
     if (!payment.id) return;
 
     setRefunding(true);
-    try {
-      const refundAmountCents = Math.round(refundForm.amount * 100);
 
-      // Validate refund amount
-      if (refundAmountCents <= 0) {
-        toast.error('Refund amount must be greater than $0');
-        return;
-      }
+    const refundAmountCents = Math.round(refundForm.amount * 100);
 
-      if (refundAmountCents > payment.amount_cents) {
-        toast.error('Refund amount cannot exceed payment amount');
-        return;
-      }
+    // Validate refund amount
+    if (refundAmountCents <= 0) {
+      toast.error('Refund amount must be greater than $0');
+      setRefunding(false);
+      return;
+    }
 
-      const result = await refundPayment(
+    if (refundAmountCents > getRemainingRefundableAmount()) {
+      toast.error('Refund amount cannot exceed remaining refundable amount');
+      setRefunding(false);
+      return;
+    }
+
+    // Server action function
+    const serverAction = () =>
+      refundPayment(
         payment.id,
         refundForm.type === 'full' ? undefined : refundAmountCents,
         refundForm.reason || undefined
       );
 
-      if (result.success) {
+    try {
+      if (onOptimisticRefund) {
+        // Use optimistic update
+        onOptimisticRefund(payment.id, refundAmountCents, serverAction);
         toast.success(
           `${refundForm.type === 'full' ? 'Full' : 'Partial'} refund processed successfully`
         );
         setRefundDialogOpen(false);
         onRefundComplete();
       } else {
-        toast.error(result.error || 'Failed to process refund');
+        // Fallback to direct server action
+        const result = await serverAction();
+        if (result.success) {
+          toast.success(
+            `${refundForm.type === 'full' ? 'Full' : 'Partial'} refund processed successfully`
+          );
+          setRefundDialogOpen(false);
+          onRefundComplete();
+        } else {
+          toast.error(result.error || 'Failed to process refund');
+        }
       }
     } catch (error) {
       toast.error('Failed to process refund');
@@ -165,8 +207,10 @@ export default function RefundManagement({
   return (
     <Box>
       {/* Refund Action Button */}
-      {canRefund() && !isAlreadyRefunded() && (
-        <Tooltip title="Process a refund for this payment">
+      {canRefund() && getRemainingRefundableAmount() > 0 && (
+        <Tooltip
+          title={`Process a refund (Max: ${formatCurrency(getRemainingRefundableAmount())})`}
+        >
           <IconButton size="small" color="warning" onClick={handleRefundClick}>
             <RefundIcon fontSize="small" />
           </IconButton>
@@ -209,6 +253,30 @@ export default function RefundManagement({
                       {formatCurrency(payment.amount_cents)}
                     </TableCell>
                   </TableRow>
+                  {getPreviousRefundsInfo() && (
+                    <>
+                      <TableRow>
+                        <TableCell>
+                          <strong>Previously Refunded:</strong>
+                        </TableCell>
+                        <TableCell sx={{ color: 'error.main' }}>
+                          -{formatCurrency(getPreviousRefundsInfo()!.amount)}
+                          {getPreviousRefundsInfo()!.count > 1 &&
+                            ` (${getPreviousRefundsInfo()!.count} refunds)`}
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>
+                          <strong>Remaining Refundable:</strong>
+                        </TableCell>
+                        <TableCell
+                          sx={{ fontWeight: 'bold', color: 'primary.main' }}
+                        >
+                          {formatCurrency(getRemainingRefundableAmount())}
+                        </TableCell>
+                      </TableRow>
+                    </>
+                  )}
                   <TableRow>
                     <TableCell>
                       <strong>Payment Method:</strong>
@@ -279,8 +347,8 @@ export default function RefundManagement({
               }}
               helperText={
                 refundForm.type === 'full'
-                  ? 'Full refund amount is automatically set'
-                  : `Maximum: ${formatCurrency(payment.amount_cents)}`
+                  ? `Full refund amount: ${formatCurrency(getRemainingRefundableAmount())}`
+                  : `Maximum refundable: ${formatCurrency(getRemainingRefundableAmount())}`
               }
             />
 

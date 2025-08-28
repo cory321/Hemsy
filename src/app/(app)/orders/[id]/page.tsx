@@ -23,9 +23,13 @@ import { createClient as createSupabaseClient } from '@/lib/supabase/server';
 import { ensureUserAndShop } from '@/lib/actions/users';
 import { getInvoicePaymentHistory } from '@/lib/actions/payments';
 import OrderDetailClient from './OrderDetailClient';
-import OrderServicesAndPayments from './OrderServicesAndPayments';
+import OptimisticOrderWrapper from './OptimisticOrderWrapper';
 import type { Database } from '@/types/supabase';
 import { formatPhoneNumber } from '@/lib/utils/phone';
+import {
+  calculatePaymentStatus,
+  type PaymentInfo,
+} from '@/lib/utils/payment-calculations';
 
 // Force dynamic rendering since this page uses authentication
 export const dynamic = 'force-dynamic';
@@ -248,17 +252,24 @@ export default async function OrderDetailPage({
 
   const activeTotal = calculateActiveTotal();
 
-  // Calculate payment status based on amounts
+  // Calculate payment status using the shared utility with actual payment history
+  const paymentCalc = calculatePaymentStatus(
+    activeTotal,
+    (paymentHistory as PaymentInfo[]) || []
+  );
+
+  const {
+    totalPaid,
+    totalRefunded,
+    netPaid,
+    amountDue,
+    percentage,
+    paymentStatus: calcPaymentStatus,
+  } = paymentCalc;
+
+  // Create a getPaymentStatus function that returns the expected format for the UI
   const getPaymentStatus = () => {
-    // Use active total (excluding removed services) instead of original total
-    const total = activeTotal;
-    const paid = order?.paid_amount_cents || 0;
-
-    // Calculate percentage for more detailed status
-    const percentage = total > 0 ? (paid / total) * 100 : 0;
-    const amountDue = total - paid;
-
-    if (total === 0)
+    if (activeTotal === 0)
       return {
         label: 'No Charges',
         color: 'default',
@@ -268,8 +279,8 @@ export default async function OrderDetailPage({
       };
 
     // Handle overpayment/refund situation
-    if (paid > total) {
-      const creditAmount = paid - total;
+    if (calcPaymentStatus === 'overpaid') {
+      const creditAmount = -amountDue;
       return {
         label: 'Refund Required',
         color: 'warning',
@@ -280,7 +291,7 @@ export default async function OrderDetailPage({
       };
     }
 
-    if (paid === total)
+    if (calcPaymentStatus === 'paid')
       return {
         label: 'Paid in Full',
         color: 'success',
@@ -290,30 +301,32 @@ export default async function OrderDetailPage({
       };
 
     // Partial payment statuses
-    if (percentage >= 75)
-      return {
-        label: `${Math.round(percentage)}% Paid`,
-        color: 'info',
-        percentage,
-        amountDue,
-        isRefundRequired: false,
-      };
-    if (percentage >= 50)
-      return {
-        label: `${Math.round(percentage)}% Paid`,
-        color: 'warning',
-        percentage,
-        amountDue,
-        isRefundRequired: false,
-      };
-    if (percentage > 0)
-      return {
-        label: `${Math.round(percentage)}% Paid`,
-        color: 'warning',
-        percentage,
-        amountDue,
-        isRefundRequired: false,
-      };
+    if (calcPaymentStatus === 'partial') {
+      if (percentage >= 75)
+        return {
+          label: `${Math.round(percentage)}% Paid`,
+          color: 'info',
+          percentage,
+          amountDue,
+          isRefundRequired: false,
+        };
+      if (percentage >= 50)
+        return {
+          label: `${Math.round(percentage)}% Paid`,
+          color: 'warning',
+          percentage,
+          amountDue,
+          isRefundRequired: false,
+        };
+      if (percentage > 0)
+        return {
+          label: `${Math.round(percentage)}% Paid`,
+          color: 'warning',
+          percentage,
+          amountDue,
+          isRefundRequired: false,
+        };
+    }
 
     return {
       label: 'Unpaid',
@@ -513,9 +526,18 @@ export default async function OrderDetailPage({
                       }}
                     />
                     <Typography variant="h6" fontWeight="600">
-                      {formatUSD(order?.paid_amount_cents || 0)} /{' '}
-                      {formatUSD(activeTotal)}
+                      {formatUSD(netPaid)} / {formatUSD(activeTotal)}
                     </Typography>
+                    {totalRefunded > 0 && (
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ display: 'block' }}
+                      >
+                        ({formatUSD(totalPaid)} paid -{' '}
+                        {formatUSD(totalRefunded)} refunded)
+                      </Typography>
+                    )}
                     {activeTotal !== (order?.total_cents || 0) && (
                       <Typography
                         variant="body2"
@@ -651,7 +673,7 @@ export default async function OrderDetailPage({
         </Card>
 
         {/* Services and Payment History Sections */}
-        <OrderServicesAndPayments
+        <OptimisticOrderWrapper
           garmentServices={lines || []}
           garments={
             garments?.map((g: any) => ({
@@ -666,10 +688,12 @@ export default async function OrderDetailPage({
             })) || []
           }
           invoice={invoice}
-          payments={paymentHistory}
+          initialPayments={paymentHistory}
           orderStatus={order?.status || null}
           paidAt={order?.paid_at || null}
-          clientEmail={client?.email || undefined}
+          {...(client?.email && { clientEmail: client.email })}
+          orderId={order?.id || ''}
+          orderTotal={activeTotal}
         />
       </Box>
     </Container>

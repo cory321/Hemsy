@@ -188,10 +188,12 @@ describe('ManualRefundManagement', () => {
       );
       expect(screen.getByText('Process Manual Refund')).toBeInTheDocument();
 
-      await user.click(screen.getByRole('button', { name: /close/i }));
-      expect(
-        screen.queryByText('Process Manual Refund')
-      ).not.toBeInTheDocument();
+      await user.click(screen.getByLabelText('close'));
+      await waitFor(() => {
+        expect(
+          screen.queryByText('Process Manual Refund')
+        ).not.toBeInTheDocument();
+      });
     });
   });
 
@@ -260,22 +262,22 @@ describe('ManualRefundManagement', () => {
       // Change to external POS
       const methodSelect = screen.getByLabelText('Refund Method');
       await user.click(methodSelect);
-      await user.click(screen.getByText('External POS Refund'));
+      await user.click(screen.getAllByText('External POS Refund')[0]!);
 
       expect(screen.getByDisplayValue('external_pos')).toBeInTheDocument();
     });
 
-    it('should require refund reason', async () => {
+    it('should allow refund without reason', async () => {
       const user = userEvent.setup();
 
       const reasonField = screen.getByLabelText(/refund reason/i);
-      expect(reasonField).toBeRequired();
+      expect(reasonField).not.toBeRequired();
 
-      // Button should be disabled without reason
+      // Button should be enabled even without reason
       const submitButton = screen.getByRole('button', {
         name: /record full refund/i,
       });
-      expect(submitButton).toBeDisabled();
+      expect(submitButton).not.toBeDisabled();
 
       // Enter reason
       await user.type(reasonField, 'Customer not satisfied');
@@ -368,7 +370,10 @@ describe('ManualRefundManagement', () => {
       // Set method to external POS
       const methodSelect = screen.getByLabelText('Refund Method');
       await user.click(methodSelect);
-      await user.click(screen.getByText('External POS Refund'));
+      await user.click(screen.getAllByText('External POS Refund')[0]!);
+
+      // Force dropdown to close by pressing Escape
+      await user.keyboard('{Escape}');
 
       // Fill in reason
       const reasonField = screen.getByLabelText(/refund reason/i);
@@ -376,7 +381,7 @@ describe('ManualRefundManagement', () => {
 
       // Submit
       const submitButton = screen.getByRole('button', {
-        name: /record partial refund/i,
+        name: 'Record Partial Refund',
       });
       await user.click(submitButton);
 
@@ -400,12 +405,18 @@ describe('ManualRefundManagement', () => {
 
       mockProcessManualRefund.mockResolvedValueOnce({
         success: false,
-        error: 'Refund amount cannot exceed payment amount',
+        error: 'Refund amount cannot exceed remaining refundable amount',
       });
+
+      // Use a payment that has already been partially refunded
+      const partiallyRefundedPayment = {
+        ...mockCashPayment,
+        refunded_amount_cents: 4000, // $40.00 already refunded, $10.00 remaining
+      };
 
       render(
         <ManualRefundManagement
-          payment={mockCashPayment}
+          payment={partiallyRefundedPayment}
           onRefundComplete={mockOnRefundComplete}
         />
       );
@@ -420,13 +431,13 @@ describe('ManualRefundManagement', () => {
 
       // Submit
       const submitButton = screen.getByRole('button', {
-        name: /record full refund/i,
+        name: 'Record Partial Refund',
       });
       await user.click(submitButton);
 
       await waitFor(() => {
         expect(mockToast.error).toHaveBeenCalledWith(
-          'Refund amount cannot exceed payment amount'
+          'Refund amount cannot exceed remaining refundable amount'
         );
       });
 
@@ -440,7 +451,18 @@ describe('ManualRefundManagement', () => {
       mockProcessManualRefund.mockImplementationOnce(
         () =>
           new Promise((resolve) =>
-            setTimeout(() => resolve({ success: true, data: {} }), 100)
+            setTimeout(
+              () =>
+                resolve({
+                  success: true,
+                  data: {
+                    refundId: 'test',
+                    refundMethod: 'cash',
+                    amountRefunded: 5000,
+                  },
+                }),
+              100
+            )
           )
       );
 
@@ -461,12 +483,14 @@ describe('ManualRefundManagement', () => {
 
       // Submit
       const submitButton = screen.getByRole('button', {
-        name: /record full refund/i,
+        name: 'Record Full Refund',
       });
       await user.click(submitButton);
 
       // Should show loading state
-      expect(screen.getByText('Recording Refund...')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Recording Refund...')).toBeInTheDocument();
+      });
       expect(submitButton).toBeDisabled();
 
       // Wait for completion
@@ -519,7 +543,7 @@ describe('ManualRefundManagement', () => {
 
       mockProcessManualRefund.mockResolvedValueOnce({
         success: false,
-        error: 'Refund amount cannot exceed payment amount',
+        error: 'Refund amount cannot exceed remaining refundable amount',
       });
 
       render(
@@ -555,7 +579,7 @@ describe('ManualRefundManagement', () => {
 
       await waitFor(() => {
         expect(mockToast.error).toHaveBeenCalledWith(
-          'Refund amount cannot exceed payment amount'
+          'Refund amount cannot exceed remaining refundable amount'
         );
       });
     });

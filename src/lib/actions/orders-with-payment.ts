@@ -194,7 +194,7 @@ BEGIN
     p_shop_id,
     (p_order_data->>'clientId')::UUID,
     v_order_number,
-    'pending',
+            'new',
     0, -- Will update after calculating
     (p_order_data->>'discountCents')::INTEGER,
     0, -- Will update after calculating

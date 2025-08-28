@@ -31,6 +31,8 @@ import {
   Schedule as ScheduleIcon,
   Info as InfoIcon,
   Undo as RefundIcon,
+  ArrowDownward as ArrowDownIcon,
+  ArrowUpward as ArrowUpIcon,
 } from '@mui/icons-material';
 import {
   formatCurrency,
@@ -41,6 +43,7 @@ import { cancelPendingPayment } from '@/lib/actions/payments';
 import { getPaymentStatusMessage } from '@/lib/actions/payment-status';
 import RefundManagement from './RefundManagement';
 import ManualRefundManagement from './ManualRefundManagement';
+import RefundHistoryTooltip from './RefundHistoryTooltip';
 import toast from 'react-hot-toast';
 
 interface Payment {
@@ -49,6 +52,7 @@ interface Payment {
   payment_type: string;
   payment_method: string;
   amount_cents: number;
+  refunded_amount_cents?: number;
   status: string;
   stripe_payment_intent_id?: string;
   created_at: string;
@@ -63,11 +67,17 @@ interface Payment {
 interface PaymentManagementProps {
   payments: Payment[];
   onPaymentUpdate: () => void;
+  onOptimisticRefund?: (
+    paymentId: string,
+    refundAmount: number,
+    serverAction: () => Promise<any>
+  ) => void;
 }
 
 export default function PaymentManagement({
   payments,
   onPaymentUpdate,
+  onOptimisticRefund,
 }: PaymentManagementProps) {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
@@ -148,27 +158,47 @@ export default function PaymentManagement({
   };
 
   const canRefundPayment = (payment: Payment) => {
-    return (
-      payment.type !== 'refund' &&
-      payment.status === 'completed' &&
-      payment.payment_method === 'stripe' &&
-      payment.stripe_payment_intent_id
-    );
+    if (payment.type === 'refund') return false;
+    if (
+      payment.payment_method !== 'stripe' ||
+      !payment.stripe_payment_intent_id
+    )
+      return false;
+    if (
+      payment.status !== 'completed' &&
+      payment.status !== 'partially_refunded'
+    )
+      return false;
+
+    // Check if there's remaining amount to refund
+    const refundedAmount = payment.refunded_amount_cents || 0;
+    const remainingRefundable = payment.amount_cents - refundedAmount;
+    return remainingRefundable > 0;
   };
 
   const canManualRefund = (payment: Payment) => {
-    return (
-      payment.type !== 'refund' &&
-      payment.status === 'completed' &&
-      payment.payment_method !== 'stripe' &&
-      !isAlreadyRefunded(payment)
-    );
+    if (payment.type === 'refund') return false;
+    if (payment.payment_method === 'stripe') return false;
+    if (
+      payment.status !== 'completed' &&
+      payment.status !== 'partially_refunded'
+    )
+      return false;
+
+    // Check if there's remaining amount to refund
+    const refundedAmount = payment.refunded_amount_cents || 0;
+    const remainingRefundable = payment.amount_cents - refundedAmount;
+    return remainingRefundable > 0;
   };
 
   const isAlreadyRefunded = (payment: Payment) => {
     return (
       payment.status === 'refunded' || payment.status === 'partially_refunded'
     );
+  };
+
+  const isFullyRefunded = (payment: Payment) => {
+    return payment.status === 'refunded';
   };
 
   const getDisplayStatus = (payment: Payment) => {
@@ -320,23 +350,112 @@ export default function PaymentManagement({
                           sx={{
                             color:
                               payment.type === 'refund'
-                                ? 'info.main'
-                                : 'inherit',
-                            fontWeight:
-                              payment.type === 'refund' ? 'bold' : 'normal',
+                                ? 'error.main'
+                                : payment.status === 'completed' ||
+                                    payment.status === 'partially_refunded'
+                                  ? 'success.main'
+                                  : payment.status === 'pending'
+                                    ? 'warning.main'
+                                    : payment.status === 'failed'
+                                      ? 'text.disabled'
+                                      : 'text.primary',
+                            fontWeight: 'bold',
                           }}
                         >
-                          {payment.type === 'refund' && '- '}
-                          {formatCurrency(Math.abs(payment.amount_cents))}
-                          {payment.type === 'refund' && (
-                            <Typography
-                              variant="caption"
-                              display="block"
-                              color="text.secondary"
+                          <Box>
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'flex-end',
+                                gap: 0.5,
+                              }}
                             >
-                              Credit
-                            </Typography>
-                          )}
+                              {payment.type === 'refund' ? (
+                                <Tooltip
+                                  title="Money refunded to customer"
+                                  arrow
+                                >
+                                  <ArrowUpIcon
+                                    sx={{
+                                      fontSize: '1.25rem',
+                                      color: 'error.main',
+                                      mr: 0.5,
+                                    }}
+                                  />
+                                </Tooltip>
+                              ) : payment.status === 'completed' ||
+                                payment.status === 'partially_refunded' ? (
+                                <Tooltip
+                                  title="Payment received from customer"
+                                  arrow
+                                >
+                                  <ArrowDownIcon
+                                    sx={{
+                                      fontSize: '1.25rem',
+                                      color: 'success.main',
+                                      mr: 0.5,
+                                    }}
+                                  />
+                                </Tooltip>
+                              ) : payment.status === 'pending' ? (
+                                <Tooltip title="Payment pending" arrow>
+                                  <ScheduleIcon
+                                    sx={{
+                                      fontSize: '1.25rem',
+                                      color: 'warning.main',
+                                      mr: 0.5,
+                                    }}
+                                  />
+                                </Tooltip>
+                              ) : null}
+                              {payment.type === 'refund' && '- '}
+                              {formatCurrency(Math.abs(payment.amount_cents))}
+                            </Box>
+                            {payment.type === 'refund' && (
+                              <Typography
+                                variant="caption"
+                                display="block"
+                                color="text.secondary"
+                                sx={{ textAlign: 'right' }}
+                              >
+                                Credit
+                              </Typography>
+                            )}
+                          </Box>
+                          {/* Show refund info for payments */}
+                          {payment.type !== 'refund' &&
+                            payment.refunded_amount_cents &&
+                            payment.refunded_amount_cents > 0 && (
+                              <Box>
+                                <Typography
+                                  variant="caption"
+                                  display="block"
+                                  color="error.main"
+                                >
+                                  Refunded:{' '}
+                                  {formatCurrency(
+                                    payment.refunded_amount_cents
+                                  )}
+                                </Typography>
+                                {payment.refunded_amount_cents &&
+                                  payment.amount_cents >
+                                    payment.refunded_amount_cents && (
+                                    <Typography
+                                      variant="caption"
+                                      display="block"
+                                      color="primary.main"
+                                      fontWeight="bold"
+                                    >
+                                      Remaining:{' '}
+                                      {formatCurrency(
+                                        payment.amount_cents -
+                                          (payment.refunded_amount_cents || 0)
+                                      )}
+                                    </Typography>
+                                  )}
+                              </Box>
+                            )}
                         </TableCell>
                         <TableCell>
                           <Box
@@ -364,7 +483,13 @@ export default function PaymentManagement({
                           )}
                         </TableCell>
                         <TableCell align="center">
-                          <Box sx={{ display: 'flex', gap: 0.5 }}>
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              gap: 0.5,
+                              justifyContent: 'center',
+                            }}
+                          >
                             {canCancelPayment(payment) && (
                               <Tooltip title="Cancel this payment attempt">
                                 <IconButton
@@ -380,14 +505,32 @@ export default function PaymentManagement({
                               <RefundManagement
                                 payment={payment}
                                 onRefundComplete={onPaymentUpdate}
+                                {...(onOptimisticRefund && {
+                                  onOptimisticRefund,
+                                })}
                               />
                             )}
                             {canManualRefund(payment) && (
                               <ManualRefundManagement
                                 payment={payment}
                                 onRefundComplete={onPaymentUpdate}
+                                {...(onOptimisticRefund && {
+                                  onOptimisticRefund,
+                                })}
                               />
                             )}
+                            {/* Show refund history for refunded payments */}
+                            {payment.type !== 'refund' &&
+                              payment.refunded_amount_cents &&
+                              payment.refunded_amount_cents > 0 && (
+                                <RefundHistoryTooltip
+                                  paymentId={payment.id}
+                                  paymentAmount={payment.amount_cents}
+                                  refundedAmount={
+                                    payment.refunded_amount_cents || 0
+                                  }
+                                />
+                              )}
                           </Box>
                         </TableCell>
                       </TableRow>

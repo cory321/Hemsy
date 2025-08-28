@@ -80,7 +80,7 @@ export default function GarmentImageOverlay({
             justifyContent: 'center',
             opacity: 0,
             transition: 'opacity 0.2s ease-in-out',
-            borderRadius: 'inherit',
+            borderRadius: 3,
           }}
         >
           <Stack

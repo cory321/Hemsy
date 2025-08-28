@@ -42,6 +42,7 @@ interface Payment {
   payment_type: string;
   payment_method: string;
   amount_cents: number;
+  refunded_amount_cents?: number;
   status: string;
   stripe_payment_intent_id?: string;
   created_at: string;
@@ -53,11 +54,17 @@ interface Payment {
 interface ManualRefundManagementProps {
   payment: Payment;
   onRefundComplete: () => void;
+  onOptimisticRefund?: (
+    paymentId: string,
+    refundAmount: number,
+    serverAction: () => Promise<any>
+  ) => void;
 }
 
 export default function ManualRefundManagement({
   payment,
   onRefundComplete,
+  onOptimisticRefund,
 }: ManualRefundManagementProps) {
   const [refundDialogOpen, setRefundDialogOpen] = useState(false);
   const [refunding, setRefunding] = useState(false);
@@ -73,23 +80,27 @@ export default function ManualRefundManagement({
 
   const canManualRefund = () => {
     return (
-      payment.status === 'completed' &&
-      payment.payment_method !== 'stripe' &&
-      !isAlreadyRefunded()
+      (payment.status === 'completed' ||
+        payment.status === 'partially_refunded') &&
+      payment.payment_method !== 'stripe'
     );
   };
 
-  const isAlreadyRefunded = () => {
-    return (
-      payment.status === 'refunded' || payment.status === 'partially_refunded'
-    );
+  const getRemainingRefundableAmount = () => {
+    const refundedAmount = payment.refunded_amount_cents || 0;
+    return payment.amount_cents - refundedAmount;
+  };
+
+  const getRemainingRefundableAmountInDollars = () => {
+    return getRemainingRefundableAmount() / 100;
   };
 
   const handleRefundClick = () => {
+    const remainingAmount = getRemainingRefundableAmountInDollars();
     setRefundForm({
-      amount: payment.amount_cents / 100,
+      amount: remainingAmount,
       reason: '',
-      type: 'full',
+      type: remainingAmount === payment.amount_cents / 100 ? 'full' : 'partial',
       method: payment.payment_method === 'cash' ? 'cash' : 'external_pos',
     });
     setRefundDialogOpen(true);
@@ -99,7 +110,7 @@ export default function ManualRefundManagement({
     setRefundForm((prev) => ({
       ...prev,
       type,
-      amount: type === 'full' ? payment.amount_cents / 100 : 0,
+      amount: type === 'full' ? getRemainingRefundableAmountInDollars() : 0,
     }));
   };
 
@@ -107,37 +118,52 @@ export default function ManualRefundManagement({
     if (!payment.id) return;
 
     setRefunding(true);
-    try {
-      const refundAmountCents = Math.round(refundForm.amount * 100);
 
-      // Validate refund amount
-      if (refundAmountCents <= 0) {
-        toast.error('Refund amount must be greater than $0');
-        return;
-      }
+    const refundAmountCents = Math.round(refundForm.amount * 100);
 
-      if (refundAmountCents > payment.amount_cents) {
-        toast.error('Refund amount cannot exceed payment amount');
-        return;
-      }
+    // Validate refund amount
+    if (refundAmountCents <= 0) {
+      toast.error('Refund amount must be greater than $0');
+      setRefunding(false);
+      return;
+    }
 
-      // Reason is optional - will use default if not provided
+    if (refundAmountCents > getRemainingRefundableAmount()) {
+      toast.error('Refund amount cannot exceed remaining refundable amount');
+      setRefunding(false);
+      return;
+    }
 
-      const result = await processManualRefund(
+    // Server action function
+    const serverAction = () =>
+      processManualRefund(
         payment.id,
         refundAmountCents,
         refundForm.reason.trim(),
         refundForm.method
       );
 
-      if (result.success) {
+    try {
+      if (onOptimisticRefund) {
+        // Use optimistic update
+        onOptimisticRefund(payment.id, refundAmountCents, serverAction);
         toast.success(
           `${refundForm.type === 'full' ? 'Full' : 'Partial'} refund recorded successfully`
         );
         setRefundDialogOpen(false);
         onRefundComplete();
       } else {
-        toast.error(result.error || 'Failed to process refund');
+        // Fallback to direct server action
+        const result = await serverAction();
+        if (result.success) {
+          toast.success(
+            `${refundForm.type === 'full' ? 'Full' : 'Partial'} refund recorded successfully`
+          );
+          setRefundDialogOpen(false);
+          onRefundComplete();
+        } else {
+          toast.error(result.error || 'Failed to process refund');
+        }
       }
     } catch (error) {
       toast.error('Failed to process refund');
@@ -208,8 +234,10 @@ export default function ManualRefundManagement({
   return (
     <Box>
       {/* Manual Refund Action Button */}
-      {canManualRefund() && (
-        <Tooltip title="Process a manual refund for this payment">
+      {canManualRefund() && getRemainingRefundableAmount() > 0 && (
+        <Tooltip
+          title={`Process a manual refund (Max: ${formatCurrency(getRemainingRefundableAmount())})`}
+        >
           <IconButton size="small" color="warning" onClick={handleRefundClick}>
             <RefundIcon fontSize="small" />
           </IconButton>
@@ -284,8 +312,10 @@ export default function ManualRefundManagement({
           {/* Refund Options */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <FormControl fullWidth>
-              <InputLabel>Refund Type</InputLabel>
+              <InputLabel id="refund-type-label">Refund Type</InputLabel>
               <Select
+                labelId="refund-type-label"
+                id="refund-type-select"
                 value={refundForm.type}
                 label="Refund Type"
                 onChange={(e) =>
@@ -320,8 +350,10 @@ export default function ManualRefundManagement({
             />
 
             <FormControl fullWidth>
-              <InputLabel>Refund Method</InputLabel>
+              <InputLabel id="refund-method-label">Refund Method</InputLabel>
               <Select
+                labelId="refund-method-label"
+                id="refund-method-select"
                 value={refundForm.method}
                 label="Refund Method"
                 onChange={(e) =>
