@@ -78,7 +78,7 @@ describe('ClientStatsCards', () => {
     expect(screen.getByText('Outstanding')).toBeInTheDocument();
     expect(screen.getByText('$125.00')).toBeInTheDocument();
 
-    expect(screen.getByText('Ready for Pickup')).toBeInTheDocument();
+    expect(screen.getByText('Ready For Pickup')).toBeInTheDocument();
     expect(screen.getByText('2')).toBeInTheDocument();
   });
 
@@ -92,7 +92,7 @@ describe('ClientStatsCards', () => {
       />
     );
 
-    expect(screen.getByText('Ready for Pickup')).toBeInTheDocument();
+    expect(screen.getByText('Ready For Pickup')).toBeInTheDocument();
     expect(screen.getByText('7')).toBeInTheDocument();
   });
 
@@ -105,7 +105,7 @@ describe('ClientStatsCards', () => {
       />
     );
 
-    expect(screen.getByText('Ready for Pickup')).toBeInTheDocument();
+    expect(screen.getByText('Ready For Pickup')).toBeInTheDocument();
     expect(screen.getByText('0')).toBeInTheDocument();
   });
 });

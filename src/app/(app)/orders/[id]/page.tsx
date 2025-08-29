@@ -22,6 +22,7 @@ import Link from 'next/link';
 import { createClient as createSupabaseClient } from '@/lib/supabase/server';
 import { ensureUserAndShop } from '@/lib/actions/users';
 import { getInvoicePaymentHistory } from '@/lib/actions/payments';
+import { getOrderStatusLabel } from '@/lib/utils/orderStatus';
 import OrderDetailClient from './OrderDetailClient';
 import OptimisticOrderWrapper from './OptimisticOrderWrapper';
 import type { Database } from '@/types/supabase';
@@ -220,7 +221,7 @@ export default async function OrderDetailPage({
         return 'default';
       case 'active':
         return 'info';
-      case 'ready':
+      case 'ready_for_pickup':
         return 'warning';
       case 'completed':
         return 'success';
@@ -575,7 +576,7 @@ export default async function OrderDetailPage({
               </Grid>
 
               {/* Actions & Alerts */}
-              <Grid size={{ xs: 12, md: 2 }}>
+              <Grid size={{ xs: 12, md: 1 }}>
                 <Box
                   sx={{
                     display: 'flex',
@@ -597,7 +598,7 @@ export default async function OrderDetailPage({
               </Grid>
 
               {/* Order Status - Far Right */}
-              <Grid size={{ xs: 12, md: 2 }}>
+              <Grid size={{ xs: 12, md: 3 }}>
                 <Box sx={{ textAlign: 'right' }}>
                   <Typography
                     variant="caption"
@@ -633,7 +634,7 @@ export default async function OrderDetailPage({
                       mb: 1,
                     }}
                   >
-                    {(order?.status || 'new').toString().replace('_', ' ')}
+                    {getOrderStatusLabel(order?.status || 'new')}
                   </Typography>
                   <Box
                     sx={{

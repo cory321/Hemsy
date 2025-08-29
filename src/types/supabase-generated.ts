@@ -2000,7 +2000,12 @@ export type Database = {
         | 'canceled'
         | 'no_show';
       garment_stage_enum: 'New' | 'In Progress' | 'Ready For Pickup' | 'Done';
-      order_status: 'new' | 'active' | 'ready' | 'completed' | 'cancelled';
+      order_status:
+        | 'new'
+        | 'active'
+        | 'ready_for_pickup'
+        | 'completed'
+        | 'cancelled';
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -2139,7 +2144,13 @@ export const Constants = {
         'no_show',
       ],
       garment_stage_enum: ['New', 'In Progress', 'Ready For Pickup', 'Done'],
-      order_status: ['new', 'active', 'ready', 'completed', 'cancelled'],
+      order_status: [
+        'new',
+        'active',
+        'ready_for_pickup',
+        'completed',
+        'cancelled',
+      ],
     },
   },
 } as const;

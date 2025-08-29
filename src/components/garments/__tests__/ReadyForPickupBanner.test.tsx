@@ -37,7 +37,7 @@ describe('ReadyForPickupBanner', () => {
 
     expect(screen.getByText('All services complete!')).toBeInTheDocument();
     expect(
-      screen.getByText('This garment is ready for pickup.')
+      screen.getByText('This garment is Ready For Pickup.')
     ).toBeInTheDocument();
     expect(screen.getByText('Mark as Picked Up')).toBeInTheDocument();
   });

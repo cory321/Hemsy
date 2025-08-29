@@ -20,7 +20,7 @@ export function OrderListItem({ order, garmentCount }: OrderListItemProps) {
         return 'default';
       case 'active':
         return 'info';
-      case 'ready':
+      case 'ready_for_pickup':
         return 'warning';
       case 'completed':
         return 'success';
@@ -37,8 +37,8 @@ export function OrderListItem({ order, garmentCount }: OrderListItemProps) {
         return 'New';
       case 'active':
         return 'Active';
-      case 'ready':
-        return 'Ready';
+      case 'ready_for_pickup':
+        return 'Ready For Pickup';
       case 'completed':
         return 'Completed';
       case 'cancelled':

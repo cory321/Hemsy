@@ -2,7 +2,7 @@
 export type OrderStatus =
   | 'new'
   | 'active'
-  | 'ready'
+  | 'ready_for_pickup'
   | 'completed'
   | 'cancelled';
 

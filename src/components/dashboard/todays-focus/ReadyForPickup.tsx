@@ -49,7 +49,7 @@ export function ReadyForPickup({
           sx={{ mb: 2 }}
         >
           <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            Ready for Pickup
+            Ready For Pickup
           </Typography>
           <Badge badgeContent={items.length} color="error">
             <InventoryIcon

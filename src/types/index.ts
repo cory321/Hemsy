@@ -158,7 +158,7 @@ export type GarmentStage = 'New' | 'In Progress' | 'Ready For Pickup' | 'Done';
 export type OrderStatus =
   | 'new'
   | 'active'
-  | 'ready'
+  | 'ready_for_pickup'
   | 'completed'
   | 'cancelled';
 export type InvoiceStatus = Invoice['status'];

@@ -260,7 +260,7 @@ describe('OrderCardDetailed', () => {
       </ThemeProvider>
     );
 
-    expect(screen.getByText('1 ready for pickup')).toBeInTheDocument();
+    expect(screen.getByText('1 Ready For Pickup')).toBeInTheDocument();
     expect(screen.getByText('2 in progress')).toBeInTheDocument();
   });
 
@@ -302,7 +302,7 @@ describe('OrderCardDetailed', () => {
     // Should not show garment section
     expect(screen.queryByText(/Wedding Dress/)).not.toBeInTheDocument();
     // Should not show status tags
-    expect(screen.queryByText(/ready for pickup/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Ready For Pickup/)).not.toBeInTheDocument();
     expect(screen.queryByText(/in progress/)).not.toBeInTheDocument();
   });
 

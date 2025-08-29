@@ -62,10 +62,21 @@ export default function ReadyForPickupBanner({
         }
         sx={{
           mb: 2,
+          width: '100%',
+          display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
+          alignItems: { xs: 'stretch', sm: 'center' },
           '& .MuiAlert-message': {
             display: 'flex',
             alignItems: 'center',
             flex: 1,
+            minWidth: 0,
+            wordBreak: 'keep-all',
+          },
+          '& .MuiAlert-action': {
+            marginLeft: { xs: 0, sm: 'auto' },
+            marginTop: { xs: 1, sm: 0 },
+            paddingLeft: { xs: 0, sm: 2 },
           },
           backgroundColor: (theme) =>
             theme.palette.mode === 'light' ? 'success.light' : 'success.dark',
@@ -78,8 +89,8 @@ export default function ReadyForPickupBanner({
           },
         }}
       >
-        <strong>All services complete!</strong> This garment is ready for
-        pickup.
+        <strong>All services complete!</strong> This garment is Ready For
+        Pickup.
       </Alert>
     </Fade>
   );

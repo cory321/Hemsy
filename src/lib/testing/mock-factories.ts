@@ -279,7 +279,7 @@ export const APPOINTMENT_STATUSES: AppointmentStatus[] = [
 export const ORDER_STATUSES: OrderStatus[] = [
   'new',
   'active',
-  'ready',
+  'ready_for_pickup',
   'completed',
   'cancelled',
 ];

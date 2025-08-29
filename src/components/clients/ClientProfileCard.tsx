@@ -91,7 +91,7 @@ export function ClientStatsCards({
       format: 'currency',
     },
     {
-      title: 'Ready for Pickup',
+      title: 'Ready For Pickup',
       value: stats.readyForPickup,
       icon: 'ri-t-shirt-line',
       color: stats.readyForPickup > 0 ? 'success' : 'primary',
