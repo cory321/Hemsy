@@ -20,12 +20,19 @@ import {
   Skeleton,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
-import PersonIcon from '@mui/icons-material/Person';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { useRouter } from 'next/navigation';
 import { useDebounce } from '@/hooks/useDebounce';
 import { formatPhoneNumber } from '@/lib/utils/phone';
 import type { PaginatedClients, ClientsFilters } from '@/lib/actions/clients';
+
+function getClientInitials(firstName: string, lastName: string) {
+  const f = firstName?.trim() || '';
+  const l = lastName?.trim() || '';
+  const fi = f ? f[0] : '';
+  const li = l ? l[0] : '';
+  return `${fi}${li}`.toUpperCase() || '?';
+}
 
 interface ClientsListProps {
   initialData: PaginatedClients;
@@ -195,8 +202,17 @@ export default function ClientsList({
                 >
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Avatar>
-                        <PersonIcon />
+                      <Avatar
+                        sx={{
+                          width: 40,
+                          height: 40,
+                          bgcolor: 'primary.main',
+                          color: 'primary.contrastText',
+                          fontSize: '0.9rem',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {getClientInitials(client.first_name, client.last_name)}
                       </Avatar>
                       <Typography variant="body2">
                         {client.first_name} {client.last_name}

@@ -24,9 +24,9 @@ export function Dashboard() {
 
       {/* Main Content Grid */}
       <Grid container spacing={3}>
-        {/* Left Column - Today's Focus */}
+        {/* Left Column - Business Overview */}
         <Grid size={{ xs: 12, lg: 3 }}>
-          <TodaysFocus />
+          <BusinessOverview />
         </Grid>
 
         {/* Center Column - Garment Pipeline */}
@@ -34,9 +34,9 @@ export function Dashboard() {
           <GarmentPipeline />
         </Grid>
 
-        {/* Right Column - Business Overview */}
+        {/* Right Column - Today's Focus */}
         <Grid size={{ xs: 12, lg: 3 }}>
-          <BusinessOverview />
+          <TodaysFocus />
         </Grid>
       </Grid>
     </Box>

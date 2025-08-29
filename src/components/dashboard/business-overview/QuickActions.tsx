@@ -33,22 +33,22 @@ const defaultActions: QuickAction[] = [
   {
     id: 'new-order',
     icon: 'ri-file-add-line',
-    text: 'New Order',
+    text: 'Create Order',
   },
   {
     id: 'new-client',
     icon: 'ri-user-add-line',
-    text: 'New Client',
+    text: 'Add Client',
   },
   {
     id: 'new-appointment',
     icon: 'ri-calendar-line',
-    text: 'New Appointment',
+    text: 'Add Appointment',
   },
   {
     id: 'new-service',
     icon: 'ri-service-line',
-    text: 'New Service',
+    text: 'Add Service',
   },
 ];
 
@@ -74,20 +74,24 @@ export function QuickActions({
                 px: 2,
                 justifyContent: 'flex-start',
                 textTransform: 'none',
-                borderRadius: 2,
+                borderRadius: 1,
+                border: '1px solid transparent',
                 color: refinedColors.text.primary,
                 '&:hover': {
-                  bgcolor: alpha('#9c27b0', 0.08),
-                  color: refinedColors.text.primary,
+                  borderColor: 'primary.main',
+                  borderWidth: '2px',
+                  color: 'primary.main',
+                  fontWeight: 600,
+                  // Prevent layout shift by adjusting padding to compensate for border width change
+                  px: 'calc(16px - 1px)', // 16px (2 * 8px) - 1px border difference
+                  py: 'calc(12px - 1px)', // 12px (1.5 * 8px) - 1px border difference
                 },
-                fontWeight: 400,
+                fontWeight: 600,
+                fontSize: '1rem',
+                transition: 'none',
               }}
             >
-              <RemixIcon
-                name={action.icon}
-                size={18}
-                color={refinedColors.text.secondary}
-              />
+              <RemixIcon name={action.icon} size={18} color="inherit" />
               <Box component="span" sx={{ ml: 2 }}>
                 {action.text}
               </Box>
