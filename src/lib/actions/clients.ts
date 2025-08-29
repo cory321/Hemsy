@@ -359,3 +359,80 @@ export async function getRecentClients(
     return [];
   }
 }
+
+/**
+ * Gets the count of active orders for a specific client.
+ * Active orders include: 'new', 'active', 'ready_for_pickup' statuses.
+ * Excludes: 'completed' and 'cancelled' statuses.
+ */
+export async function getClientActiveOrdersCount(
+  clientId: string
+): Promise<number> {
+  try {
+    const { shop } = await ensureUserAndShop();
+    const supabase = await createSupabaseClient();
+
+    const { count, error } = await supabase
+      .from('orders')
+      .select('*', { count: 'exact', head: true })
+      .eq('shop_id', shop.id)
+      .eq('client_id', clientId)
+      .in('status', ['new', 'active', 'ready_for_pickup']);
+
+    if (error) {
+      console.error('Failed to get client active orders count:', error);
+      return 0;
+    }
+
+    return count || 0;
+  } catch (error) {
+    console.error('Error getting client active orders count:', error);
+    return 0;
+  }
+}
+
+/**
+ * Gets the total outstanding balance for a specific client across all their orders.
+ * Outstanding balance = sum of (total_cents - paid_amount_cents) for all orders where the result is positive.
+ * Negative balances (credits/overpayments) are excluded from the total.
+ * Returns the amount in cents.
+ */
+export async function getClientOutstandingBalance(
+  clientId: string
+): Promise<number> {
+  try {
+    const { shop } = await ensureUserAndShop();
+    const supabase = await createSupabaseClient();
+
+    const { data, error } = await supabase
+      .from('orders')
+      .select('total_cents, paid_amount_cents')
+      .eq('shop_id', shop.id)
+      .eq('client_id', clientId);
+
+    if (error) {
+      console.error(
+        'Failed to get client orders for outstanding balance:',
+        error
+      );
+      return 0;
+    }
+
+    if (!data || data.length === 0) {
+      return 0;
+    }
+
+    // Calculate outstanding balance for each order and sum only positive amounts
+    const totalOutstanding = data.reduce((total, order) => {
+      const orderOutstanding =
+        (order.total_cents || 0) - (order.paid_amount_cents || 0);
+      // Only include positive outstanding amounts (exclude credits/overpayments)
+      return total + Math.max(0, orderOutstanding);
+    }, 0);
+
+    return totalOutstanding;
+  } catch (error) {
+    console.error('Error getting client outstanding balance:', error);
+    return 0;
+  }
+}

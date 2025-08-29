@@ -12,6 +12,8 @@ jest.mock('next/navigation', () => ({
 
 jest.mock('@/lib/actions/clients', () => ({
   getClient: jest.fn(),
+  getClientActiveOrdersCount: jest.fn().mockResolvedValue(0),
+  getClientOutstandingBalance: jest.fn().mockResolvedValue(0),
 }));
 
 jest.mock('@clerk/nextjs/server', () => ({
@@ -55,6 +57,11 @@ jest.mock('@/lib/actions/calendar-settings', () => ({
     buffer_time_minutes: 0,
     default_appointment_duration: 30,
   }),
+}));
+
+jest.mock('@/lib/actions/appointments', () => ({
+  getNextClientAppointment: jest.fn().mockResolvedValue(null),
+  getClientReadyForPickupCount: jest.fn().mockResolvedValue(0),
 }));
 
 jest.mock('@/components/clients/ClientEditDialog', () => {

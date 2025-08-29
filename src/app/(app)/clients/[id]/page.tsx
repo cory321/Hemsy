@@ -17,7 +17,11 @@ import PhoneIcon from '@mui/icons-material/Phone';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import NotesIcon from '@mui/icons-material/Notes';
 import PersonIcon from '@mui/icons-material/Person';
-import { getClient } from '@/lib/actions/clients';
+import {
+  getClient,
+  getClientActiveOrdersCount,
+  getClientOutstandingBalance,
+} from '@/lib/actions/clients';
 import { getShopHours } from '@/lib/actions/shop-hours';
 import { getCalendarSettings } from '@/lib/actions/calendar-settings';
 import {
@@ -77,18 +81,26 @@ export default async function ClientDetailPage({
       .eq('owner_user_id', userData.id)
       .single();
 
-    // Fetch shop hours, calendar settings, next appointment, and ready for pickup count
-    const [shopHours, calendarSettings, nextAppointment, readyForPickupCount] =
-      await Promise.all([
-        getShopHours(),
-        getCalendarSettings(),
-        shopData?.id
-          ? getNextClientAppointment(shopData.id, client.id).catch(() => null)
-          : Promise.resolve(null),
-        shopData?.id
-          ? getClientReadyForPickupCount(shopData.id, client.id).catch(() => 0)
-          : Promise.resolve(0),
-      ]);
+    // Fetch shop hours, calendar settings, next appointment, ready for pickup count, active orders count, and outstanding balance
+    const [
+      shopHours,
+      calendarSettings,
+      nextAppointment,
+      readyForPickupCount,
+      activeOrdersCount,
+      outstandingBalanceCents,
+    ] = await Promise.all([
+      getShopHours(),
+      getCalendarSettings(),
+      shopData?.id
+        ? getNextClientAppointment(shopData.id, client.id).catch(() => null)
+        : Promise.resolve(null),
+      shopData?.id
+        ? getClientReadyForPickupCount(shopData.id, client.id).catch(() => 0)
+        : Promise.resolve(0),
+      getClientActiveOrdersCount(client.id).catch(() => 0),
+      getClientOutstandingBalance(client.id).catch(() => 0),
+    ]);
 
     // Remove local formatPhoneNumber function - using imported utility
 
@@ -259,6 +271,8 @@ export default async function ClientDetailPage({
                 client={client}
                 nextAppointment={nextAppointment}
                 readyForPickupCount={readyForPickupCount}
+                activeOrdersCount={activeOrdersCount}
+                outstandingBalanceCents={outstandingBalanceCents}
               />
 
               {shopData?.id ? (

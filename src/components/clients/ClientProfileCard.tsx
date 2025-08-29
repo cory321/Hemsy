@@ -27,6 +27,8 @@ interface ClientStatsCardsProps {
   client: Tables<'clients'>;
   nextAppointment: Appointment | null;
   readyForPickupCount: number;
+  activeOrdersCount: number;
+  outstandingBalanceCents: number;
 }
 
 function getInitials(first: string, last: string) {
@@ -66,12 +68,14 @@ export function ClientStatsCards({
   client,
   nextAppointment,
   readyForPickupCount,
+  activeOrdersCount,
+  outstandingBalanceCents,
 }: ClientStatsCardsProps) {
-  // Static demo stats for UI (replace with real data when wiring up)
+  // Real stats from database
   const stats = {
-    activeOrders: 3,
+    activeOrders: activeOrdersCount,
     nextAppointment: formatAppointmentDateTime(nextAppointment),
-    outstandingBalanceCents: 12500,
+    outstandingBalanceCents: outstandingBalanceCents,
     readyForPickup: readyForPickupCount,
   };
 
