@@ -202,7 +202,7 @@ describe('EnhancedInvoiceLineItems', () => {
       );
 
       const recordButton = screen.getByRole('button', {
-        name: /Record Payment/i,
+        name: /Collect Payment/i,
       });
       expect(recordButton).toBeInTheDocument();
     });
@@ -252,7 +252,7 @@ describe('EnhancedInvoiceLineItems', () => {
       );
 
       const recordButton = screen.getByRole('button', {
-        name: /Record Payment/i,
+        name: /Collect Payment/i,
       });
       fireEvent.click(recordButton);
 
@@ -271,7 +271,7 @@ describe('EnhancedInvoiceLineItems', () => {
       );
 
       const recordButton = screen.getByRole('button', {
-        name: /Record Payment/i,
+        name: /Collect Payment/i,
       });
       expect(recordButton).toBeInTheDocument();
     });

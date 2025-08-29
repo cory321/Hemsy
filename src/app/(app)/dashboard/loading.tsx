@@ -10,7 +10,7 @@ export default function Loading() {
 
         {/* Dashboard Grid */}
         <Grid container spacing={3}>
-          {/* Today's Focus */}
+          {/* Appointments Focus */}
           <Grid size={{ xs: 12, md: 8 }}>
             <Box
               sx={{

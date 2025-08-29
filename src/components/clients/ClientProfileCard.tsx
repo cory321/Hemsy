@@ -88,7 +88,7 @@ export function ClientStatsCards({
       format: 'number',
     },
     {
-      title: 'Outstanding',
+      title: 'Outstanding Balance',
       value: stats.outstandingBalanceCents,
       icon: 'ri-money-dollar-circle-line',
       color: stats.outstandingBalanceCents > 0 ? 'error' : 'primary',

@@ -4,9 +4,15 @@ import { Box } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { DashboardAlerts } from '@/components/dashboard/alerts';
-import { TodaysFocus } from '@/components/dashboard/todays-focus';
+import { AppointmentsFocus } from '@/components/dashboard/todays-focus';
 import { GarmentPipeline } from '@/components/dashboard/garment-pipeline';
 import { BusinessOverview } from '@/components/dashboard/business-overview';
+import {
+  getTodayAppointmentsDetailed,
+  getNextAppointment,
+} from '@/lib/actions/dashboard';
+import { useEffect, useState } from 'react';
+import type { Appointment } from '@/types';
 
 // Refined color palette
 const refinedColors = {
@@ -14,6 +20,31 @@ const refinedColors = {
 };
 
 export function Dashboard() {
+  const [nextAppointment, setNextAppointment] = useState<Appointment | null>(
+    null
+  );
+  const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchAppointmentData() {
+      try {
+        const [next, today] = await Promise.all([
+          getNextAppointment(),
+          getTodayAppointmentsDetailed(),
+        ]);
+        setNextAppointment(next);
+        setTodayAppointments(today);
+      } catch (error) {
+        console.error('Failed to fetch appointment data:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchAppointmentData();
+  }, []);
+
   return (
     <Box sx={{ bgcolor: refinedColors.background, minHeight: '100vh', p: 3 }}>
       {/* Header */}
@@ -34,9 +65,12 @@ export function Dashboard() {
           <GarmentPipeline />
         </Grid>
 
-        {/* Right Column - Today's Focus */}
+        {/* Right Column - Appointments Focus */}
         <Grid size={{ xs: 12, lg: 3 }}>
-          <TodaysFocus />
+          <AppointmentsFocus
+            nextAppointment={nextAppointment}
+            todayAppointments={todayAppointments}
+          />
         </Grid>
       </Grid>
     </Box>

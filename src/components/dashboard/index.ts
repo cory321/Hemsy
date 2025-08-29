@@ -4,9 +4,11 @@ export { DashboardHeader } from './DashboardHeader';
 // Alert components
 export { DashboardAlerts, AlertCard } from './alerts';
 
-// Today's Focus components
+// Appointments Focus components
 export {
-  TodaysFocus,
+  AppointmentsFocus,
+  AppointmentsFocusServer,
+  AppointmentsFocusLoading,
   NextAppointmentCard,
   TodaySchedule,
   WeekOverview,
