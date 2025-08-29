@@ -20,5 +20,17 @@
   "ri-user-add-line",
   "ri-calendar-line",
   "ri-service-line",
-  "ri-file-list-line"
+  "ri-file-list-line",
+  "ri-checkbox-circle-fill",
+  "ri-time-line",
+  "ri-close-circle-fill",
+  "ri-user-unfollow-line",
+  "ri-close-line",
+  "ri-edit-line",
+  "ri-save-line",
+  "ri-bookmark-line",
+  "ri-user-line",
+  "ri-mail-line",
+  "ri-phone-line",
+  "ri-sticky-note-line"
 ]

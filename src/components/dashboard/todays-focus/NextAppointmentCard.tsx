@@ -11,7 +11,12 @@ import {
 import {
   Phone as PhoneIcon,
   LocationOn as LocationIcon,
+  Person as PersonIcon,
+  ContentCopy as CopyIcon,
+  Email as EmailIcon,
+  Visibility as ViewIcon,
 } from '@mui/icons-material';
+import { useResponsive } from '@/hooks/useResponsive';
 
 interface NextAppointmentCardProps {
   time: string;
@@ -19,6 +24,10 @@ interface NextAppointmentCardProps {
   service: string;
   onCall?: () => void;
   onLocation?: () => void;
+  onViewDetails?: () => void;
+  onViewClient?: () => void;
+  onCopyPhone?: () => void;
+  onSendEmail?: () => void;
 }
 
 const refinedColors = {
@@ -36,7 +45,13 @@ export function NextAppointmentCard({
   service,
   onCall,
   onLocation,
+  onViewDetails,
+  onViewClient,
+  onCopyPhone,
+  onSendEmail,
 }: NextAppointmentCardProps) {
+  const { isMobile, isTablet } = useResponsive();
+  const isMobileOrTablet = isMobile || isTablet;
   return (
     <Paper
       sx={{
@@ -71,28 +86,67 @@ export function NextAppointmentCard({
       >
         {service}
       </Typography>
-      <Stack direction="row" spacing={1}>
-        <Button
-          size="small"
-          variant="contained"
-          startIcon={<PhoneIcon sx={{ fontSize: 16 }} />}
-          onClick={onCall}
-          sx={{
-            bgcolor: refinedColors.primary,
-            '&:hover': {
-              bgcolor: alpha(refinedColors.primary, 0.8),
-            },
-          }}
-        >
-          Call
-        </Button>
-        <IconButton
-          size="small"
-          onClick={onLocation}
-          sx={{ border: '1px solid #e0e0e0' }}
-        >
-          <LocationIcon sx={{ fontSize: 18 }} />
-        </IconButton>
+      <Stack direction="row" spacing={1} flexWrap="wrap">
+        {isMobileOrTablet ? (
+          // Mobile/Tablet: Show call button
+          <>
+            <Button
+              size="small"
+              variant="contained"
+              startIcon={<PhoneIcon sx={{ fontSize: 16 }} />}
+              onClick={onCall}
+              sx={{
+                bgcolor: refinedColors.primary,
+                '&:hover': {
+                  bgcolor: alpha(refinedColors.primary, 0.8),
+                },
+              }}
+            >
+              Call
+            </Button>
+            <IconButton
+              size="small"
+              onClick={onLocation}
+              sx={{ border: '1px solid #e0e0e0' }}
+            >
+              <LocationIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          </>
+        ) : (
+          // Desktop: Show desktop-friendly actions
+          <>
+            <Button
+              size="small"
+              variant="contained"
+              startIcon={<ViewIcon sx={{ fontSize: 16 }} />}
+              onClick={onViewDetails}
+              sx={{
+                bgcolor: refinedColors.primary,
+                '&:hover': {
+                  bgcolor: alpha(refinedColors.primary, 0.8),
+                },
+              }}
+            >
+              View Details
+            </Button>
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<PersonIcon sx={{ fontSize: 16 }} />}
+              onClick={onViewClient}
+              sx={{
+                borderColor: refinedColors.primary,
+                color: refinedColors.primary,
+                '&:hover': {
+                  borderColor: alpha(refinedColors.primary, 0.8),
+                  bgcolor: alpha(refinedColors.primary, 0.04),
+                },
+              }}
+            >
+              View Client
+            </Button>
+          </>
+        )}
       </Stack>
     </Paper>
   );

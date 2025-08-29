@@ -11,7 +11,7 @@ export function TodaysFocus() {
   const nextAppointment = {
     time: '10:30 AM',
     clientName: 'Sarah Johnson',
-    service: 'Wedding dress fitting',
+    service: 'Consultation',
   };
 
   const todayAppointments = [
@@ -44,6 +44,14 @@ export function TodaysFocus() {
             service={nextAppointment.service}
             onCall={() => console.log('Call clicked')}
             onLocation={() => console.log('Location clicked')}
+            onViewDetails={() => console.log('View details clicked')}
+            onViewClient={() => console.log('View client clicked')}
+            onCopyPhone={() => {
+              // TODO: Implement actual phone copy functionality
+              navigator.clipboard?.writeText('555-0123'); // placeholder
+              console.log('Phone copied to clipboard');
+            }}
+            onSendEmail={() => console.log('Send email clicked')}
           />
 
           <TodaySchedule appointments={todayAppointments} />

@@ -39,23 +39,11 @@ export function DashboardHeader() {
   const getActivitySummary = () => {
     if (!stats) return null;
 
-    const parts = [];
     if (stats.appointmentsToday > 0) {
-      parts.push(
-        `${stats.appointmentsToday} appointment${stats.appointmentsToday !== 1 ? 's' : ''}`
-      );
-    }
-    if (stats.garmentsDueToday > 0) {
-      parts.push(
-        `${stats.garmentsDueToday} garment${stats.garmentsDueToday !== 1 ? 's' : ''} due`
-      );
+      return `You have ${stats.appointmentsToday} appointment${stats.appointmentsToday !== 1 ? 's' : ''} today`;
     }
 
-    if (parts.length === 0) {
-      return null; // Don't show any text if no appointments or garments due
-    }
-
-    return `You have ${parts.join(' and ')} today`;
+    return null; // Don't show any text if no appointments
   };
 
   return (
@@ -78,14 +66,10 @@ export function DashboardHeader() {
       </Typography>
 
       {/* Activity Summary */}
-      {isStatsLoading ? (
-        <Skeleton width={400} />
-      ) : (
-        getActivitySummary() && (
-          <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-            {getActivitySummary()}
-          </Typography>
-        )
+      {getActivitySummary() && (
+        <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+          {getActivitySummary()}
+        </Typography>
       )}
     </Box>
   );
