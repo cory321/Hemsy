@@ -77,7 +77,8 @@ export default function RefundManagement({
   const canRefund = () => {
     return (
       (payment.status === 'completed' ||
-        payment.status === 'partially_refunded') &&
+        payment.status === 'partially_refunded' ||
+        payment.status === 'refunded') &&
       payment.payment_method === 'stripe' &&
       payment.stripe_payment_intent_id
     );
@@ -208,13 +209,23 @@ export default function RefundManagement({
     <Box>
       {/* Refund Action Button */}
       {canRefund() && getRemainingRefundableAmount() > 0 && (
-        <Tooltip
-          title={`Process a refund (Max: ${formatCurrency(getRemainingRefundableAmount())})`}
+        <Button
+          size="small"
+          color="warning"
+          variant="outlined"
+          onClick={handleRefundClick}
+          startIcon={<RefundIcon fontSize="small" />}
+          sx={{
+            fontWeight: 'medium',
+            '&:hover': {
+              backgroundColor: 'warning.light',
+              borderColor: 'warning.main',
+            },
+          }}
+          aria-label={`Refund ${formatCurrency(getRemainingRefundableAmount())}`}
         >
-          <IconButton size="small" color="warning" onClick={handleRefundClick}>
-            <RefundIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
+          Refund
+        </Button>
       )}
 
       {/* Refund Dialog */}

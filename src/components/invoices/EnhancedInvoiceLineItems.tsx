@@ -784,18 +784,21 @@ export default function EnhancedInvoiceLineItems({
                   onRecordPayment && (
                     <Button
                       variant="contained"
-                      size="small"
+                      size="medium"
                       startIcon={<PaymentIcon />}
                       onClick={onRecordPayment}
                       sx={{
                         backgroundColor: 'white',
                         color: 'primary.main',
+                        fontWeight: 'medium',
+                        whiteSpace: 'nowrap',
+                        minWidth: 'auto',
                         '&:hover': {
                           backgroundColor: 'rgba(255, 255, 255, 0.9)',
                         },
                       }}
                     >
-                      Record Payment
+                      Collect Payment
                     </Button>
                   )}
               </Box>
