@@ -11,12 +11,30 @@ import { useGarment } from '@/contexts/GarmentContext';
 
 interface GarmentDetailContentProps {
   clientName: string;
+  shopId?: string | undefined;
+  shopHours?:
+    | ReadonlyArray<{
+        day_of_week: number;
+        open_time: string | null;
+        close_time: string | null;
+        is_closed: boolean;
+      }>
+    | undefined;
+  calendarSettings?:
+    | {
+        buffer_time_minutes: number;
+        default_appointment_duration: number;
+      }
+    | undefined;
   from?: string;
   orderId?: string;
 }
 
 export default function GarmentDetailContent({
   clientName,
+  shopId,
+  shopHours,
+  calendarSettings,
   from,
   orderId,
 }: GarmentDetailContentProps) {
@@ -49,7 +67,12 @@ export default function GarmentDetailContent({
       <Grid container spacing={3}>
         {/* Left Column - Image and Stage */}
         <Grid size={{ xs: 12, md: 4 }}>
-          <GarmentImageSection clientName={clientName} />
+          <GarmentImageSection
+            clientName={clientName}
+            shopId={shopId}
+            shopHours={shopHours}
+            calendarSettings={calendarSettings}
+          />
         </Grid>
 
         {/* Right Column - Details */}

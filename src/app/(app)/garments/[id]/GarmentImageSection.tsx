@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useCallback, useMemo } from 'react';
 import {
   Box,
   Card,
@@ -7,24 +8,140 @@ import {
   CardContent,
   Typography,
   Link,
+  Button,
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import NextLink from 'next/link';
+import EventIcon from '@mui/icons-material/Event';
+import { toast } from 'sonner';
 import SafeCldImage from '@/components/ui/SafeCldImage';
 import { getStageColor } from '@/constants/garmentStages';
 import InlinePresetSvg from '@/components/ui/InlinePresetSvg';
 import { resolveGarmentDisplayImage } from '@/utils/displayImage';
 import { useGarment } from '@/contexts/GarmentContext';
+import { AppointmentDialog } from '@/components/appointments/AppointmentDialog';
+import { createAppointment } from '@/lib/actions/appointments';
 import GarmentImageHoverOverlay from './GarmentImageHoverOverlay';
+import type { Client } from '@/types';
 
 interface GarmentImageSectionProps {
   clientName: string;
+  shopId?: string | undefined;
+  shopHours?:
+    | ReadonlyArray<{
+        day_of_week: number;
+        open_time: string | null;
+        close_time: string | null;
+        is_closed: boolean;
+      }>
+    | undefined;
+  calendarSettings?:
+    | {
+        buffer_time_minutes: number;
+        default_appointment_duration: number;
+      }
+    | undefined;
 }
 
 export default function GarmentImageSection({
   clientName,
+  shopId,
+  shopHours = [],
+  calendarSettings = {
+    buffer_time_minutes: 0,
+    default_appointment_duration: 30,
+  },
 }: GarmentImageSectionProps) {
   const { garment } = useGarment();
+
+  // Appointment dialog state
+  const [appointmentDialogOpen, setAppointmentDialogOpen] = useState(false);
+
+  // Create a client object for the appointment dialog from the garment's order client
+  const prefilledClient = useMemo(() => {
+    if (!garment.order?.client) return null;
+
+    const client = garment.order.client;
+    return {
+      id: client.id,
+      first_name: client.first_name,
+      last_name: client.last_name,
+      email: client.email,
+      phone_number: client.phone_number,
+      // Use fallback values for properties that might not be available
+      accept_email: (client as any).accept_email ?? false,
+      accept_sms: (client as any).accept_sms ?? false,
+      created_at: (client as any).created_at || new Date().toISOString(),
+      updated_at: (client as any).updated_at || new Date().toISOString(),
+      shop_id: (client as any).shop_id || '',
+    } as Client;
+  }, [garment.order?.client]);
+
+  // Handle appointment creation
+  const handleCreateAppointment = useCallback(
+    async (data: {
+      clientId: string;
+      date: string;
+      startTime: string;
+      endTime: string;
+      type: 'consultation' | 'fitting' | 'pickup' | 'delivery' | 'other';
+      notes?: string;
+      sendEmail?: boolean;
+    }) => {
+      if (!shopId) {
+        console.error('Shop ID is required to create appointments');
+        return;
+      }
+
+      try {
+        await createAppointment({
+          shopId,
+          clientId: data.clientId,
+          date: data.date,
+          startTime: data.startTime,
+          endTime: data.endTime,
+          type: data.type,
+          notes: data.notes,
+          sendEmail: data.sendEmail,
+        });
+        setAppointmentDialogOpen(false);
+
+        // Show success toast
+        const appointmentDate = new Date(`${data.date}T${data.startTime}`);
+        const formattedDate = appointmentDate.toLocaleDateString('en-US', {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric',
+        });
+        const formattedTime = appointmentDate.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true,
+        });
+
+        toast.success(
+          `Appointment scheduled successfully for ${formattedDate} at ${formattedTime}`,
+          {
+            description: `${data.type.charAt(0).toUpperCase() + data.type.slice(1)} appointment with ${clientName}`,
+            duration: 5000,
+          }
+        );
+      } catch (error) {
+        console.error('Failed to create appointment:', error);
+        toast.error('Failed to schedule appointment', {
+          description:
+            'Please try again or contact support if the problem persists.',
+          duration: 5000,
+        });
+      }
+    },
+    [shopId, clientName]
+  );
+
+  // Handle opening the appointment dialog
+  const handleOpenAppointmentDialog = useCallback(() => {
+    setAppointmentDialogOpen(true);
+  }, []);
 
   // Debug logging in development
   if (process.env.NODE_ENV === 'development') {
@@ -220,8 +337,42 @@ export default function GarmentImageSection({
                 </Typography>
               </Grid>
             </Grid>
+
+            {/* Schedule Appointment Button - only show if shopId is available */}
+            {shopId && (
+              <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
+                <Button
+                  variant="contained"
+                  size="large"
+                  startIcon={<EventIcon />}
+                  onClick={handleOpenAppointmentDialog}
+                  sx={{
+                    minWidth: 200,
+                    fontWeight: 500,
+                    bgcolor: 'primary.main',
+                    '&:hover': {
+                      bgcolor: 'primary.dark',
+                    },
+                  }}
+                >
+                  Schedule Appointment
+                </Button>
+              </Box>
+            )}
           </CardContent>
         </Card>
+      )}
+
+      {/* Appointment Dialog */}
+      {shopId && prefilledClient && (
+        <AppointmentDialog
+          open={appointmentDialogOpen}
+          onClose={() => setAppointmentDialogOpen(false)}
+          prefilledClient={prefilledClient}
+          shopHours={shopHours}
+          calendarSettings={calendarSettings}
+          onCreate={handleCreateAppointment}
+        />
       )}
     </>
   );
