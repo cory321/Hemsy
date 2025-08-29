@@ -210,21 +210,22 @@ export default function RefundManagement({
       {/* Refund Action Button */}
       {canRefund() && getRemainingRefundableAmount() > 0 && (
         <Button
-          size="small"
-          color="warning"
+          size="medium"
+          color="primary"
           variant="outlined"
           onClick={handleRefundClick}
-          startIcon={<RefundIcon fontSize="small" />}
           sx={{
-            fontWeight: 'medium',
+            fontWeight: 'bold',
+            fontSize: '1rem',
             '&:hover': {
-              backgroundColor: 'warning.light',
-              borderColor: 'warning.main',
+              backgroundColor: 'primary.main',
+              color: 'white',
+              borderColor: 'primary.main',
             },
           }}
           aria-label={`Refund ${formatCurrency(getRemainingRefundableAmount())}`}
         >
-          Refund
+          Process Refund
         </Button>
       )}
 

@@ -7,7 +7,6 @@ import {
   CardContent,
   Typography,
   Button,
-  Chip,
   Table,
   TableBody,
   TableCell,
@@ -132,32 +131,6 @@ export default function PaymentManagement({
     }
   };
 
-  const getStatusColor = (payment: Payment) => {
-    // Special handling for refunds
-    if (payment.type === 'refund' || payment.payment_type === 'refund') {
-      return 'info';
-    }
-
-    // Treat refunded/partially_refunded as completed for display
-    const displayStatus =
-      payment.status === 'refunded' || payment.status === 'partially_refunded'
-        ? 'completed'
-        : payment.status;
-
-    switch (displayStatus) {
-      case 'completed':
-        return 'success';
-      case 'pending':
-        return 'warning';
-      case 'failed':
-        return 'error';
-      case 'succeeded': // For refunds
-        return 'info';
-      default:
-        return 'default';
-    }
-  };
-
   const canCancelPayment = (payment: Payment) => {
     return (
       payment.type !== 'refund' &&
@@ -218,22 +191,6 @@ export default function PaymentManagement({
 
   const isFullyRefunded = (payment: Payment) => {
     return payment.status === 'refunded';
-  };
-
-  const getDisplayStatus = (payment: Payment) => {
-    if (payment.type === 'refund' || payment.payment_type === 'refund') {
-      // Show succeeded status for refunds instead of just "refund"
-      return payment.status === 'succeeded' ? 'refund' : payment.status;
-    }
-    // Don't show refunded or partially_refunded status for original payments
-    // Keep them as completed for clear audit trail
-    if (
-      payment.status === 'refunded' ||
-      payment.status === 'partially_refunded'
-    ) {
-      return 'completed';
-    }
-    return payment.status;
   };
 
   const getDisplayType = (payment: Payment) => {
@@ -336,6 +293,7 @@ export default function PaymentManagement({
                     <TableCell>Method</TableCell>
                     <TableCell align="right">Amount</TableCell>
                     <TableCell>Status</TableCell>
+                    <TableCell>Notes</TableCell>
                     <TableCell align="center">Actions</TableCell>
                   </TableRow>
                 </TableHead>
@@ -350,10 +308,6 @@ export default function PaymentManagement({
                       <TableRow
                         key={payment.id}
                         sx={{
-                          backgroundColor:
-                            payment.status === 'pending'
-                              ? 'warning.light'
-                              : 'inherit',
                           opacity: payment.status === 'failed' ? 0.7 : 1,
                         }}
                       >
@@ -393,18 +347,6 @@ export default function PaymentManagement({
                               gap: 0.5,
                             }}
                           >
-                            {/* Show pending icon for pending payments */}
-                            {payment.status === 'pending' && (
-                              <Tooltip title="Payment pending" arrow>
-                                <ScheduleIcon
-                                  sx={{
-                                    fontSize: '1.25rem',
-                                    color: 'warning.main',
-                                    mr: 0.5,
-                                  }}
-                                />
-                              </Tooltip>
-                            )}
                             {/* Show amount with + for payments and - for refunds */}
                             <Typography
                               variant="body1"
@@ -428,29 +370,58 @@ export default function PaymentManagement({
                           </Box>
                         </TableCell>
                         <TableCell>
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 1,
-                            }}
+                          <Tooltip
+                            title={
+                              payment.status === 'pending'
+                                ? 'Payment pending'
+                                : payment.status === 'failed'
+                                  ? 'Payment failed'
+                                  : payment.type === 'refund' ||
+                                      payment.payment_type === 'refund'
+                                    ? 'Refund processed'
+                                    : 'Payment completed'
+                            }
                           >
-                            {getStatusIcon(payment)}
-                            <Chip
-                              label={getDisplayStatus(payment)}
-                              size="small"
-                              color={getStatusColor(payment) as any}
-                            />
-                          </Box>
-                          {(payment.notes || payment.merchant_notes) && (
+                            <Box sx={{ display: 'inline-flex' }}>
+                              {getStatusIcon(payment)}
+                            </Box>
+                          </Tooltip>
+                        </TableCell>
+                        <TableCell>
+                          {payment.notes || payment.merchant_notes ? (
                             <Typography
                               variant="caption"
-                              display="block"
                               color="text.secondary"
                             >
                               {payment.notes || payment.merchant_notes}
                             </Typography>
-                          )}
+                          ) : payment.status === 'pending' ? (
+                            <Typography
+                              variant="caption"
+                              color="warning.main"
+                              sx={{ fontWeight: 'medium' }}
+                            >
+                              Payment pending
+                            </Typography>
+                          ) : payment.status === 'completed' &&
+                            payment.type !== 'refund' &&
+                            payment.payment_type !== 'refund' ? (
+                            <Typography
+                              variant="caption"
+                              color="success.main"
+                              sx={{ fontWeight: 'medium' }}
+                            >
+                              Payment received
+                            </Typography>
+                          ) : payment.status === 'failed' ? (
+                            <Typography
+                              variant="caption"
+                              color="error.main"
+                              sx={{ fontWeight: 'medium' }}
+                            >
+                              Payment failed
+                            </Typography>
+                          ) : null}
                         </TableCell>
                         <TableCell align="center">
                           <Box

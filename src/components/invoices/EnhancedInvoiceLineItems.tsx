@@ -675,8 +675,6 @@ export default function EnhancedInvoiceLineItems({
                 {paymentProgress > 0 && (
                   <Typography variant="body2" color="text.secondary">
                     {Math.round(paymentProgress)}% of total
-                    {totalRefunded > 0 &&
-                      ` (${formatCentsAsCurrency(totalRefunded)} refunded)`}
                   </Typography>
                 )}
               </TableCell>

@@ -528,16 +528,6 @@ export default async function OrderDetailPage({
                     <Typography variant="h6" fontWeight="600">
                       {formatUSD(netPaid)} / {formatUSD(activeTotal)}
                     </Typography>
-                    {totalRefunded > 0 && (
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ display: 'block' }}
-                      >
-                        ({formatUSD(totalPaid)} paid -{' '}
-                        {formatUSD(totalRefunded)} refunded)
-                      </Typography>
-                    )}
                     {activeTotal !== (order?.total_cents || 0) && (
                       <Typography
                         variant="body2"

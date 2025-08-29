@@ -189,9 +189,21 @@ export async function createPaymentIntent(
 
     // Calculate amount to charge
     let amountToCharge = 0;
+    // Filter out refund transactions (which have negative amounts) to avoid double-counting
+    // Refunds are already tracked in the payment's refunded_amount_cents field
     const totalPaid = invoice.payments
-      .filter((p: any) => p.status === 'completed')
-      .reduce((sum: number, p: any) => sum + p.amount_cents, 0);
+      .filter(
+        (p: any) =>
+          (p.status === 'completed' ||
+            p.status === 'partially_refunded' ||
+            p.status === 'refunded') &&
+          p.payment_type !== 'refund' // Exclude refund transactions
+      )
+      .reduce((sum: number, p: any) => {
+        // Account for refunds by subtracting the refunded amount from the payment
+        const netPayment = p.amount_cents - (p.refunded_amount_cents || 0);
+        return sum + netPayment;
+      }, 0);
 
     if (validated.amountCents) {
       // Use provided amount (for custom partial payments)
