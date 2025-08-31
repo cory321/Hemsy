@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Stack, Card, CardContent, Typography } from '@mui/material';
 import { NextAppointmentCard } from './NextAppointmentCard';
 import { TodaySchedule } from './TodaySchedule';
@@ -10,6 +10,13 @@ import { AppointmentDetailsDialog } from '@/components/appointments/AppointmentD
 import { AppointmentDialog } from '@/components/appointments/AppointmentDialog';
 import { useRouter } from 'next/navigation';
 import type { Appointment } from '@/types';
+import {
+  formatDateToYYYYMMDD,
+  getCurrentTimeString,
+  normalizeTimeToHHMM,
+  isAppointmentHappeningNow,
+  isAppointmentPast,
+} from '@/lib/utils/date-time-utils';
 
 interface AppointmentsFocusProps {
   nextAppointment: Appointment | null;
@@ -25,6 +32,53 @@ export function AppointmentsFocus({
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] =
     useState<Appointment | null>(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Update current time every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Determine the actual next/current appointment and its status
+  const { displayAppointment, isHappeningNow } = useMemo(() => {
+    if (!nextAppointment && todayAppointments.length === 0) {
+      return { displayAppointment: null, isHappeningNow: false };
+    }
+
+    // Filter today's appointments to only include current and future ones
+    const relevantAppointments = todayAppointments.filter((apt) => {
+      // Exclude past appointments
+      return !isAppointmentPast(apt.date, apt.end_time);
+    });
+
+    // Sort by date and start time
+    relevantAppointments.sort((a, b) => {
+      const dateCompare =
+        new Date(a.date).getTime() - new Date(b.date).getTime();
+      if (dateCompare !== 0) return dateCompare;
+      return a.start_time.localeCompare(b.start_time);
+    });
+
+    // Get the first relevant appointment (could be current or next)
+    const firstRelevant = relevantAppointments[0] || nextAppointment;
+
+    if (!firstRelevant) {
+      return { displayAppointment: null, isHappeningNow: false };
+    }
+
+    // Check if this appointment is happening now
+    const isHappeningNow = isAppointmentHappeningNow(
+      firstRelevant.date,
+      firstRelevant.start_time,
+      firstRelevant.end_time
+    );
+
+    return { displayAppointment: firstRelevant, isHappeningNow };
+  }, [nextAppointment, todayAppointments, currentTime]);
 
   return (
     <Stack spacing={3}>
@@ -36,38 +90,42 @@ export function AppointmentsFocus({
           </Typography>
 
           <NextAppointmentCard
-            appointment={nextAppointment}
+            appointment={displayAppointment}
+            isHappeningNow={isHappeningNow}
             onCall={() => {
-              if (nextAppointment?.client?.phone_number) {
+              if (displayAppointment?.client?.phone_number) {
                 window.open(
-                  `tel:${nextAppointment.client.phone_number}`,
+                  `tel:${displayAppointment.client.phone_number}`,
                   '_self'
                 );
               }
             }}
             onLocation={() => console.log('Location clicked')}
             onViewDetails={() => {
-              if (nextAppointment) {
-                setSelectedAppointment(nextAppointment);
+              if (displayAppointment) {
+                setSelectedAppointment(displayAppointment);
                 setDetailsDialogOpen(true);
               }
             }}
             onViewClient={() => {
-              if (nextAppointment?.client?.id) {
-                router.push(`/clients/${nextAppointment.client.id}`);
+              if (displayAppointment?.client?.id) {
+                router.push(`/clients/${displayAppointment.client.id}`);
               }
             }}
             onCopyPhone={() => {
-              if (nextAppointment?.client?.phone_number) {
+              if (displayAppointment?.client?.phone_number) {
                 navigator.clipboard?.writeText(
-                  nextAppointment.client.phone_number
+                  displayAppointment.client.phone_number
                 );
                 console.log('Phone copied to clipboard');
               }
             }}
             onSendEmail={() => {
-              if (nextAppointment?.client?.email) {
-                window.open(`mailto:${nextAppointment.client.email}`, '_self');
+              if (displayAppointment?.client?.email) {
+                window.open(
+                  `mailto:${displayAppointment.client.email}`,
+                  '_self'
+                );
               }
             }}
           />

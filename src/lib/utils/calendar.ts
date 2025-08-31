@@ -70,12 +70,14 @@ export function to24HourFormat(time12: string): string {
 export function generateTimeSlots(
   interval: number = 15,
   startHour: number = 8,
-  endHour: number = 18
+  endHour: number = 18,
+  endMinute: number = 0
 ): string[] {
   const slots = [];
 
-  for (let hour = startHour; hour < endHour; hour++) {
-    for (let minute = 0; minute < 60; minute += interval) {
+  for (let hour = startHour; hour <= endHour; hour++) {
+    const maxMinute = hour === endHour ? endMinute : 60;
+    for (let minute = 0; minute < maxMinute; minute += interval) {
       const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
       slots.push(time);
     }
@@ -272,14 +274,14 @@ export function getAvailableTimeSlots(
   // Generate all possible slots
   const [openHour] = hours.open_time.split(':').map(Number);
   const [closeHour, closeMinute] = hours.close_time.split(':').map(Number);
-  const slots = generateTimeSlots(15, openHour, closeHour);
+  const slots = generateTimeSlots(15, openHour, closeHour, closeMinute);
 
   // Filter out slots that would exceed closing time
   const availableSlots = slots.filter((slot) => {
     const endTime = addMinutesToTime(slot, duration);
     const [endHour, endMin] = endTime.split(':').map(Number);
 
-    // Check if end time is before or at closing time
+    // Check if end time is after closing time (allow ending exactly at closing time)
     if (
       (endHour ?? 0) > (closeHour ?? 0) ||
       ((endHour ?? 0) === (closeHour ?? 0) &&

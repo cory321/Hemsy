@@ -6,6 +6,11 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import type { Appointment, AppointmentStatus } from '@/types';
 import { EmailService } from '@/lib/services/email/email-service';
+import {
+  getTodayString,
+  getCurrentTimeString,
+  formatTimeHHMM,
+} from '@/lib/utils/date-time-utils';
 
 // Validation schemas
 const createAppointmentSchema = z.object({
@@ -701,14 +706,10 @@ export async function getNextClientAppointment(
   if (shopError || !shopData) throw new Error('Unauthorized access to shop');
 
   // Get today's date for filtering upcoming appointments
-  const today = new Date();
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, '0');
-  const dd = String(today.getDate()).padStart(2, '0');
-  const todayStr = `${yyyy}-${mm}-${dd}`;
+  const todayStr = getTodayString();
 
   // Get current time for same-day appointments
-  const currentTime = `${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
+  const currentTime = getCurrentTimeString();
 
   // Query for the next upcoming appointment
   const { data: appointments, error } = await supabase
@@ -823,11 +824,7 @@ export async function getClientAppointmentsPage(
   }
 
   // Timeframe filter
-  const today = new Date();
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, '0');
-  const dd = String(today.getDate()).padStart(2, '0');
-  const todayStr = `${yyyy}-${mm}-${dd}`;
+  const todayStr = getTodayString();
 
   if (dateRange) {
     query = query.gte('date', dateRange.start).lte('date', dateRange.end);

@@ -22,6 +22,7 @@ import type { Appointment } from '@/types';
 
 interface NextAppointmentCardProps {
   appointment: Appointment | null;
+  isHappeningNow?: boolean;
   onCall?: () => void;
   onLocation?: () => void;
   onViewDetails?: () => void;
@@ -37,10 +38,15 @@ const refinedColors = {
     secondary: '#666666',
     tertiary: '#999999',
   },
+  happeningNow: {
+    main: '#EEBA8C', // In Progress color from garment stages
+    hover: '#E5A870', // Darker shade for hover
+  },
 };
 
 export function NextAppointmentCard({
   appointment,
+  isHappeningNow = false,
   onCall,
   onLocation,
   onViewDetails,
@@ -65,7 +71,7 @@ export function NextAppointmentCard({
           variant="overline"
           sx={{ color: refinedColors.text.tertiary }}
         >
-          Next appointment
+          {isHappeningNow ? 'Happening Now' : 'Next appointment'}
         </Typography>
         <Typography
           variant="body2"
@@ -81,31 +87,43 @@ export function NextAppointmentCard({
     );
   }
 
-  // Format time based on whether appointment is today or in the future
+  // Format time based on whether appointment is happening now, today, or in the future
   const appointmentDate = new Date(
     `${appointment.date}T${appointment.start_time}`
   );
   const today = new Date();
   const isToday = appointmentDate.toDateString() === today.toDateString();
 
-  const timeFormatted = isToday
-    ? format(new Date(`1970-01-01T${appointment.start_time}`), 'h:mm a')
-    : (() => {
-        // Format as "Tue, Oct 8 • 2:30 PM" for future dates
-        const dayName = appointmentDate.toLocaleDateString('en-US', {
-          weekday: 'short',
-        });
-        const monthDay = appointmentDate.toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-        });
-        const time = appointmentDate.toLocaleTimeString('en-US', {
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true,
-        });
-        return `${dayName}, ${monthDay} • ${time}`;
-      })();
+  const timeFormatted = isHappeningNow
+    ? (() => {
+        // Show time range for happening now appointments
+        const startTime = format(
+          new Date(`1970-01-01T${appointment.start_time}`),
+          'h:mm a'
+        );
+        const endTime = appointment.end_time
+          ? format(new Date(`1970-01-01T${appointment.end_time}`), 'h:mm a')
+          : startTime; // If no end_time, just show start time
+        return appointment.end_time ? `${startTime} - ${endTime}` : startTime;
+      })()
+    : isToday
+      ? format(new Date(`1970-01-01T${appointment.start_time}`), 'h:mm a')
+      : (() => {
+          // Format as "Tue, Oct 8 • 2:30 PM" for future dates
+          const dayName = appointmentDate.toLocaleDateString('en-US', {
+            weekday: 'short',
+          });
+          const monthDay = appointmentDate.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+          });
+          const time = appointmentDate.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+          });
+          return `${dayName}, ${monthDay} • ${time}`;
+        })();
 
   const clientName = appointment.client
     ? `${appointment.client.first_name} ${appointment.client.last_name}`
@@ -115,22 +133,36 @@ export function NextAppointmentCard({
     <Paper
       sx={{
         p: 2,
-        bgcolor: alpha(refinedColors.primary, 0.05),
-        border: `1px solid ${alpha(refinedColors.primary, 0.2)}`,
+        bgcolor: isHappeningNow
+          ? alpha(refinedColors.happeningNow.main, 0.15)
+          : alpha(refinedColors.primary, 0.05),
+        border: `2px solid ${
+          isHappeningNow
+            ? refinedColors.happeningNow.main
+            : alpha(refinedColors.primary, 0.2)
+        }`,
         mb: 3,
+        transition: 'all 0.3s ease',
       }}
     >
       <Typography
         variant="overline"
-        sx={{ color: refinedColors.text.tertiary }}
+        sx={{
+          color: isHappeningNow
+            ? refinedColors.happeningNow.main
+            : refinedColors.text.tertiary,
+          fontWeight: isHappeningNow ? 600 : 400,
+        }}
       >
-        Next appointment
+        {isHappeningNow ? 'Happening Now' : 'Next appointment'}
       </Typography>
       <Typography
         variant="h5"
         sx={{
           fontWeight: 600,
-          color: refinedColors.primary,
+          color: isHappeningNow
+            ? refinedColors.happeningNow.main
+            : refinedColors.primary,
           mb: 1,
         }}
       >
@@ -159,9 +191,13 @@ export function NextAppointmentCard({
               startIcon={<PhoneIcon sx={{ fontSize: 16 }} />}
               onClick={onCall}
               sx={{
-                bgcolor: refinedColors.primary,
+                bgcolor: isHappeningNow
+                  ? refinedColors.happeningNow.main
+                  : refinedColors.primary,
                 '&:hover': {
-                  bgcolor: alpha(refinedColors.primary, 0.8),
+                  bgcolor: isHappeningNow
+                    ? refinedColors.happeningNow.hover
+                    : alpha(refinedColors.primary, 0.8),
                 },
               }}
             >
@@ -184,9 +220,13 @@ export function NextAppointmentCard({
               startIcon={<ViewIcon sx={{ fontSize: 16 }} />}
               onClick={onViewDetails}
               sx={{
-                bgcolor: refinedColors.primary,
+                bgcolor: isHappeningNow
+                  ? refinedColors.happeningNow.main
+                  : refinedColors.primary,
                 '&:hover': {
-                  bgcolor: alpha(refinedColors.primary, 0.8),
+                  bgcolor: isHappeningNow
+                    ? refinedColors.happeningNow.hover
+                    : alpha(refinedColors.primary, 0.8),
                 },
               }}
             >
@@ -198,11 +238,19 @@ export function NextAppointmentCard({
               startIcon={<PersonIcon sx={{ fontSize: 16 }} />}
               onClick={onViewClient}
               sx={{
-                borderColor: refinedColors.primary,
-                color: refinedColors.primary,
+                borderColor: isHappeningNow
+                  ? refinedColors.happeningNow.main
+                  : refinedColors.primary,
+                color: isHappeningNow
+                  ? refinedColors.happeningNow.main
+                  : refinedColors.primary,
                 '&:hover': {
-                  borderColor: alpha(refinedColors.primary, 0.8),
-                  bgcolor: alpha(refinedColors.primary, 0.04),
+                  borderColor: isHappeningNow
+                    ? refinedColors.happeningNow.hover
+                    : alpha(refinedColors.primary, 0.8),
+                  bgcolor: isHappeningNow
+                    ? alpha(refinedColors.happeningNow.main, 0.1)
+                    : alpha(refinedColors.primary, 0.04),
                 },
               }}
             >

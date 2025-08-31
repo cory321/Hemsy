@@ -3,7 +3,10 @@
 import { auth } from '@clerk/nextjs/server';
 import { createClient } from '@/lib/supabase/server';
 import { ensureUserAndShop } from '@/lib/auth/user-shop';
-import { format } from 'date-fns';
+import {
+  getTodayString,
+  getCurrentTimeWithSeconds,
+} from '@/lib/utils/date-time-utils';
 import type { Appointment } from '@/types';
 
 export interface DashboardStats {
@@ -22,7 +25,7 @@ export async function getTodayAppointments(): Promise<number> {
   const supabase = await createClient();
 
   // Get today's date in YYYY-MM-DD format
-  const today = format(new Date(), 'yyyy-MM-dd');
+  const today = getTodayString();
 
   const { count, error } = await supabase
     .from('appointments')
@@ -50,7 +53,7 @@ export async function getGarmentsDueToday(): Promise<number> {
   const supabase = await createClient();
 
   // Get today's date in YYYY-MM-DD format
-  const today = format(new Date(), 'yyyy-MM-dd');
+  const today = getTodayString();
 
   const { count, error } = await supabase
     .from('garments')
@@ -79,7 +82,7 @@ export async function getTodayAppointmentsDetailed(): Promise<Appointment[]> {
   const supabase = await createClient();
 
   // Get today's date in YYYY-MM-DD format
-  const today = format(new Date(), 'yyyy-MM-dd');
+  const today = getTodayString();
 
   const { data: appointments, error } = await supabase
     .from('appointments')
@@ -115,6 +118,7 @@ export async function getTodayAppointmentsDetailed(): Promise<Appointment[]> {
 
 /**
  * Get the next upcoming appointment with client information
+ * This now includes currently happening appointments to be handled client-side
  */
 export async function getNextAppointment(): Promise<Appointment | null> {
   const { userId } = await auth();
@@ -124,10 +128,48 @@ export async function getNextAppointment(): Promise<Appointment | null> {
   const supabase = await createClient();
 
   // Get current date and time
-  const now = new Date();
-  const today = format(now, 'yyyy-MM-dd');
-  const currentTime = format(now, 'HH:mm');
+  const today = getTodayString();
+  const currentTimeForComparison = getCurrentTimeWithSeconds();
 
+  // First, try to find an appointment that's currently happening
+  const { data: currentAppointments, error: currentError } = await supabase
+    .from('appointments')
+    .select(
+      `
+      *,
+      client:clients(
+        id,
+        shop_id,
+        first_name,
+        last_name,
+        email,
+        phone_number,
+        accept_email,
+        accept_sms,
+        created_at,
+        updated_at
+      )
+    `
+    )
+    .eq('shop_id', shop.id)
+    .eq('date', today)
+    .in('status', ['pending', 'confirmed'])
+    .lte('start_time', currentTimeForComparison)
+    .gte('end_time', currentTimeForComparison)
+    .order('start_time', { ascending: true })
+    .limit(1);
+
+  if (currentError) {
+    console.error('Error fetching current appointment:', currentError);
+    throw new Error('Failed to fetch current appointment');
+  }
+
+  // If there's a current appointment, return it
+  if (currentAppointments && currentAppointments.length > 0) {
+    return currentAppointments[0] as Appointment;
+  }
+
+  // Otherwise, get the next future appointment
   const { data: appointments, error } = await supabase
     .from('appointments')
     .select(
@@ -149,7 +191,9 @@ export async function getNextAppointment(): Promise<Appointment | null> {
     )
     .eq('shop_id', shop.id)
     .in('status', ['pending', 'confirmed'])
-    .or(`date.gt.${today},and(date.eq.${today},start_time.gt.${currentTime})`)
+    .or(
+      `date.gt.${today},and(date.eq.${today},start_time.gt.${currentTimeForComparison})`
+    )
     .order('date', { ascending: true })
     .order('start_time', { ascending: true })
     .limit(1);
