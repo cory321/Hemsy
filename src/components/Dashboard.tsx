@@ -10,6 +10,9 @@ import { BusinessOverview } from '@/components/dashboard/business-overview';
 import {
   getTodayAppointmentsDetailed,
   getNextAppointment,
+  getGarmentStageCounts,
+  getActiveGarments,
+  type ActiveGarment,
 } from '@/lib/actions/dashboard';
 import { useEffect, useState } from 'react';
 import type { Appointment } from '@/types';
@@ -24,25 +27,31 @@ export function Dashboard() {
     null
   );
   const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
+  const [stageCounts, setStageCounts] = useState<Record<string, number>>({});
+  const [activeGarments, setActiveGarments] = useState<ActiveGarment[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchAppointmentData() {
+    async function fetchDashboardData() {
       try {
-        const [next, today] = await Promise.all([
+        const [next, today, stages, active] = await Promise.all([
           getNextAppointment(),
           getTodayAppointmentsDetailed(),
+          getGarmentStageCounts(),
+          getActiveGarments(),
         ]);
         setNextAppointment(next);
         setTodayAppointments(today);
+        setStageCounts(stages);
+        setActiveGarments(active);
       } catch (error) {
-        console.error('Failed to fetch appointment data:', error);
+        console.error('Failed to fetch dashboard data:', error);
       } finally {
         setLoading(false);
       }
     }
 
-    fetchAppointmentData();
+    fetchDashboardData();
   }, []);
 
   return (
@@ -62,7 +71,10 @@ export function Dashboard() {
 
         {/* Center Column - Garment Pipeline */}
         <Grid size={{ xs: 12, lg: 6 }}>
-          <GarmentPipeline />
+          <GarmentPipeline
+            stageCounts={stageCounts}
+            activeGarments={activeGarments}
+          />
         </Grid>
 
         {/* Right Column - Appointments Focus */}

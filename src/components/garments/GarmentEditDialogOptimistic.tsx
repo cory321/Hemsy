@@ -313,9 +313,9 @@ export default function GarmentEditDialogOptimistic({
                   value={formData.dueDate ? dayjs(formData.dueDate) : null}
                   format="dddd, MMMM D, YYYY"
                   // Only restrict to future dates if the original date wasn't in the past
-                  minDate={
-                    originalDueDateIsPast ? undefined : dayjs().startOf('day')
-                  }
+                  {...(!originalDueDateIsPast && {
+                    minDate: dayjs().startOf('day'),
+                  })}
                   onChange={(newValue) => {
                     if (!newValue) {
                       setFormData({ ...formData, dueDate: '' });
@@ -398,11 +398,9 @@ export default function GarmentEditDialogOptimistic({
                       }
                       format="dddd, MMMM D, YYYY"
                       // Only restrict to future dates if the original event date wasn't in the past
-                      minDate={
-                        originalEventDateIsPast
-                          ? undefined
-                          : dayjs().startOf('day')
-                      }
+                      {...(!originalEventDateIsPast && {
+                        minDate: dayjs().startOf('day'),
+                      })}
                       onChange={(newValue) => {
                         if (!newValue) {
                           setFormData({ ...formData, eventDate: '' });

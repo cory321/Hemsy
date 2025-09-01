@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import type { GarmentStage } from '@/types';
 import { z } from 'zod';
+import { logger } from '@/lib/utils/logger';
 
 // Schema for cursor-based pagination
 const GarmentCursorSchema = z.object({
@@ -434,7 +435,11 @@ export async function getGarmentsPaginated(
 
     return response;
   } catch (error) {
-    console.error('Error in getGarmentsPaginated:', error);
+    logger.error('Error in getGarmentsPaginated:', error, {
+      shopId: params.shopId,
+      stage: params.stage,
+      sortField: params.sortField,
+    });
     throw error instanceof Error
       ? error
       : new Error('Failed to fetch garments');

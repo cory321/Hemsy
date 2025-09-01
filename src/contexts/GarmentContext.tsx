@@ -17,6 +17,7 @@ import {
   shouldUpdateStageOptimistically,
   type GarmentStage,
 } from '@/lib/utils/garmentStageCalculator';
+import { logger } from '@/lib/utils/logger';
 
 interface Service {
   id: string;
@@ -153,7 +154,9 @@ export function GarmentProvider({
       toast.success('Garment data refreshed');
       refreshHistory();
     } catch (error) {
-      console.error('Error refreshing garment:', error);
+      logger.error('Error refreshing garment:', error, {
+        garmentId: garment.id,
+      });
       toast.error('Failed to refresh garment data');
     }
   }, [refreshHistory]);
