@@ -13,6 +13,7 @@ import SafeCldImage from '@/components/ui/SafeCldImage';
 import InlinePresetSvg from '@/components/ui/InlinePresetSvg';
 import { resolveGarmentDisplayImage } from '@/utils/displayImage';
 import { getStageColor } from '@/constants/garmentStages';
+import { getDueDateInfo } from '@/lib/utils/date-time-utils';
 import { GarmentStage } from '@/types';
 
 interface GarmentCardProps {
@@ -62,16 +63,8 @@ const GarmentCard: React.FC<GarmentCardProps> = ({
       0
     ) || 0;
 
-  const getDaysUntilDue = () => {
-    if (!garment.due_date) return null;
-    const today = new Date();
-    const dueDate = new Date(garment.due_date);
-    const timeDiff = dueDate.getTime() - today.getTime();
-    const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-    return daysDiff;
-  };
-
-  const daysUntilDue = getDaysUntilDue();
+  // Get due date information using the consolidated utility
+  const dueDateInfo = getDueDateInfo(garment.due_date || null);
 
   return (
     <Card
@@ -212,23 +205,23 @@ const GarmentCard: React.FC<GarmentCardProps> = ({
         )}
 
         {/* Due Date */}
-        {garment.due_date && (
+        {garment.due_date && dueDateInfo && (
           <Box sx={{ mb: 1 }}>
             <Chip
               label={
-                daysUntilDue !== null
-                  ? daysUntilDue < 0
-                    ? `${Math.abs(daysUntilDue)} days overdue`
-                    : daysUntilDue === 0
-                      ? 'Due today'
-                      : `Due in ${daysUntilDue} days`
-                  : 'No due date'
+                dueDateInfo.isPast
+                  ? `${Math.abs(dueDateInfo.daysUntilDue)} days overdue`
+                  : dueDateInfo.isToday
+                    ? 'Due today'
+                    : dueDateInfo.isTomorrow
+                      ? 'Due tomorrow'
+                      : `Due in ${dueDateInfo.daysUntilDue} days`
               }
               size="small"
               color={
-                daysUntilDue !== null && daysUntilDue < 0
+                dueDateInfo.isPast
                   ? 'error'
-                  : daysUntilDue !== null && daysUntilDue <= 3
+                  : dueDateInfo.isUrgent
                     ? 'warning'
                     : 'default'
               }

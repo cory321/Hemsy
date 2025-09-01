@@ -10,6 +10,7 @@ import {
   Typography,
   FormControlLabel,
   Checkbox,
+  Alert,
 } from '@mui/material';
 import { toast } from 'react-hot-toast';
 
@@ -51,6 +52,7 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [price, setPrice] = useState('0.00');
   const [isFrequentlyUsed, setIsFrequentlyUsed] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
 
   const handlePriceChange = (newPrice: string) => {
     setPrice(newPrice);
@@ -58,6 +60,14 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
       ...prev,
       unit_price: parseFloatFromCurrency(newPrice),
     }));
+  };
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Clear name error when user starts typing
+    if (nameError) {
+      setNameError(null);
+    }
+    handleChange(e, setNewService);
   };
 
   const handleUnitChange = (newUnit: 'flat_rate' | 'hour' | 'day') => {
@@ -75,6 +85,9 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Clear any existing errors
+    setNameError(null);
 
     if (newService.name === '' || newService.unit_price <= 0) {
       toast.error('Please provide a service name and price');
@@ -125,9 +138,16 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
         `${newServiceItem.name} has been added to your service catalog.`
       );
     } catch (error) {
-      toast.error(
-        `Error adding service: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+
+      // Check if it's a duplicate name error
+      if (errorMessage.includes('already exists')) {
+        setNameError(errorMessage);
+      } else {
+        toast.error(`Error adding service: ${errorMessage}`);
+      }
+
       console.error('Error adding service:', error);
     } finally {
       setIsLoading(false);
@@ -148,14 +168,20 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
       autoComplete="off"
       onSubmit={handleSubmit}
     >
+      {nameError && (
+        <Alert severity="error" sx={{ mb: 1 }}>
+          {nameError}
+        </Alert>
+      )}
       <TextField
         label="Name"
         name="name"
-        onChange={(e) => handleChange(e, setNewService)}
+        onChange={handleNameChange}
         value={newService.name}
         disabled={isLoading}
         required
         fullWidth
+        error={!!nameError}
       />
 
       <TextField

@@ -265,10 +265,16 @@ export async function getGarmentsPaginated(
         })
         .order('id', { ascending: validatedParams.sortOrder === 'asc' });
     } else if (validatedParams.sortField === 'due_date') {
+      // When sorting by due date, also consider stage as a secondary sort
+      // This helps prioritize garments that are closer to completion
       query = query
         .order('due_date', {
           ascending: validatedParams.sortOrder === 'asc',
           nullsFirst: validatedParams.sortOrder === 'desc',
+        })
+        .order('stage', {
+          ascending: false, // Ready For Pickup -> In Progress -> New
+          nullsFirst: false,
         })
         .order('id', { ascending: validatedParams.sortOrder === 'asc' });
     } else {

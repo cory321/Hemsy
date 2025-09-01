@@ -6,8 +6,10 @@ import { ensureUserAndShop } from '@/lib/auth/user-shop';
 import {
   getTodayString,
   getCurrentTimeWithSeconds,
+  getDueDateInfo,
 } from '@/lib/utils/date-time-utils';
-import type { Appointment } from '@/types';
+import { compareGarmentsByStageAndProgress } from '@/lib/utils/garment-priority';
+import type { Appointment, GarmentStage } from '@/types';
 
 export interface DashboardStats {
   appointmentsToday: number;
@@ -219,4 +221,265 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     appointmentsToday,
     garmentsDueToday,
   };
+}
+
+/**
+ * Get garment counts by stage for the dashboard pipeline
+ */
+export async function getGarmentStageCounts(): Promise<Record<string, number>> {
+  const { userId } = await auth();
+  if (!userId) throw new Error('Unauthorized');
+
+  const { shop } = await ensureUserAndShop();
+  const supabase = await createClient();
+
+  // Get counts for each stage
+  const stages = ['New', 'In Progress', 'Ready For Pickup', 'Done'];
+  const counts: Record<string, number> = {};
+
+  for (const stage of stages) {
+    const { count, error } = await supabase
+      .from('garments')
+      .select('*', { count: 'exact', head: true })
+      .eq('shop_id', shop.id)
+      .eq('stage', stage as any);
+
+    if (error) {
+      console.error(`Error fetching ${stage} garments:`, error);
+      counts[stage] = 0;
+    } else {
+      counts[stage] = count || 0;
+    }
+  }
+
+  return counts;
+}
+
+export interface ActiveGarment {
+  id: string;
+  name: string;
+  order_id: string;
+  stage: GarmentStage;
+  client_name?: string;
+  due_date?: string | null;
+  services: {
+    id: string;
+    name: string;
+    is_done: boolean;
+  }[];
+  progress: number;
+}
+
+/**
+ * Get active garments (non-done, non-pickup-ready) with priority by due date
+ */
+export async function getActiveGarments(): Promise<ActiveGarment[]> {
+  const { userId } = await auth();
+  if (!userId) throw new Error('Unauthorized');
+
+  const { shop } = await ensureUserAndShop();
+  const supabase = await createClient();
+
+  // Get active garments with their services and client info
+  // First get all active garments, then we'll sort them client-side for complex priority logic
+  const { data: garments, error } = await supabase
+    .from('garments')
+    .select(
+      `
+      id,
+      name,
+      stage,
+      order_id,
+      due_date,
+      garment_services (
+        id,
+        name,
+        is_done
+      ),
+      orders!garments_order_id_fkey (
+        clients!orders_client_id_fkey (
+          first_name,
+          last_name
+        )
+      )
+    `
+    )
+    .eq('shop_id', shop.id)
+    .not('stage', 'in', '("Done","Ready For Pickup")')
+    .order('due_date', { ascending: true, nullsFirst: false })
+    .limit(20); // Get more garments to ensure we can find the 3 highest priority ones
+
+  if (error) {
+    console.error('Error fetching active garments:', error);
+    throw new Error('Failed to fetch active garments');
+  }
+
+  // Process garments to include client names and calculate progress
+  const processedGarments: ActiveGarment[] =
+    garments?.map((garment) => {
+      const clientName = garment.orders?.clients
+        ? `${garment.orders.clients.first_name} ${garment.orders.clients.last_name[0]}.`
+        : 'Unknown Client';
+
+      // Calculate progress based on completed services
+      const services = garment.garment_services || [];
+      const totalServices = services.length;
+      const completedServices = services.filter((s: any) => s.is_done).length;
+      const progress =
+        totalServices > 0
+          ? Math.round((completedServices / totalServices) * 100)
+          : 0;
+
+      return {
+        id: garment.id,
+        name: garment.name,
+        order_id: garment.order_id,
+        stage: (garment.stage || 'New') as GarmentStage,
+        client_name: clientName,
+        due_date: garment.due_date,
+        services: services.map((s: any) => ({
+          id: s.id,
+          name: s.name,
+          is_done: s.is_done || false,
+        })),
+        progress,
+      };
+    }) || [];
+
+  // Sort garments by priority
+  // Priority order:
+  // 1. Overdue items (sorted by how overdue they are, then by stage/progress)
+  // 2. Due today (sorted by stage/progress)
+  // 3. Due tomorrow (sorted by stage/progress)
+  // 4. Other items with due dates (sorted by date, then by stage/progress)
+  // 5. Items without due dates (sorted by stage/progress)
+  const sortedGarments = processedGarments.sort((a, b) => {
+    const aDueInfo = getDueDateInfo(a.due_date || null);
+    const bDueInfo = getDueDateInfo(b.due_date || null);
+
+    // If neither has a due date, sort by stage/progress
+    if (!aDueInfo && !bDueInfo) {
+      return compareGarmentsByStageAndProgress(a, b);
+    }
+
+    // Items with due dates come before items without
+    if (!aDueInfo) return 1;
+    if (!bDueInfo) return -1;
+
+    // Both have due dates - prioritize by urgency
+    // Overdue items first (most overdue at top)
+    if (aDueInfo.isPast && bDueInfo.isPast) {
+      const dateDiff = aDueInfo.daysUntilDue - bDueInfo.daysUntilDue; // More negative = more overdue = higher priority
+      if (dateDiff !== 0) return dateDiff;
+      // Same overdue date - sort by stage/progress
+      return compareGarmentsByStageAndProgress(a, b);
+    }
+    if (aDueInfo.isPast) return -1;
+    if (bDueInfo.isPast) return 1;
+
+    // Due today comes next
+    if (aDueInfo.isToday && bDueInfo.isToday) {
+      // Both due today - sort by stage/progress
+      return compareGarmentsByStageAndProgress(a, b);
+    }
+    if (aDueInfo.isToday) return -1;
+    if (bDueInfo.isToday) return 1;
+
+    // Due tomorrow comes next
+    if (aDueInfo.isTomorrow && bDueInfo.isTomorrow) {
+      // Both due tomorrow - sort by stage/progress
+      return compareGarmentsByStageAndProgress(a, b);
+    }
+    if (aDueInfo.isTomorrow) return -1;
+    if (bDueInfo.isTomorrow) return 1;
+
+    // For everything else, sort by days until due (ascending)
+    const dateDiff = aDueInfo.daysUntilDue - bDueInfo.daysUntilDue;
+    if (dateDiff !== 0) return dateDiff;
+
+    // Same future due date - sort by stage/progress
+    return compareGarmentsByStageAndProgress(a, b);
+  });
+
+  // Return only the top 3 highest priority garments
+  return sortedGarments.slice(0, 3);
+}
+
+/**
+ * Get garments that are ready for pickup (completed)
+ */
+export async function getReadyForPickupGarments(): Promise<ActiveGarment[]> {
+  const { userId } = await auth();
+  if (!userId) throw new Error('Unauthorized');
+
+  const { shop } = await ensureUserAndShop();
+  const supabase = await createClient();
+
+  // Get garments that are ready for pickup
+  const { data: garments, error } = await supabase
+    .from('garments')
+    .select(
+      `
+      id,
+      name,
+      stage,
+      order_id,
+      due_date,
+      created_at,
+      garment_services (
+        id,
+        name,
+        is_done
+      ),
+      orders!garments_order_id_fkey (
+        clients!orders_client_id_fkey (
+          first_name,
+          last_name
+        )
+      )
+    `
+    )
+    .eq('shop_id', shop.id)
+    .eq('stage', 'Ready For Pickup')
+    .order('created_at', { ascending: false })
+    .limit(3); // Get only the 3 most recent
+
+  if (error) {
+    console.error('Error fetching ready for pickup garments:', error);
+    throw new Error('Failed to fetch ready for pickup garments');
+  }
+
+  // Process garments to include client names and calculate progress
+  const processedGarments: ActiveGarment[] =
+    garments?.map((garment) => {
+      const clientName = garment.orders?.clients
+        ? `${garment.orders.clients.first_name} ${garment.orders.clients.last_name[0]}.`
+        : 'Unknown Client';
+
+      // Calculate progress based on completed services
+      const services = garment.garment_services || [];
+      const totalServices = services.length;
+      const completedServices = services.filter((s: any) => s.is_done).length;
+      const progress =
+        totalServices > 0
+          ? Math.round((completedServices / totalServices) * 100)
+          : 100; // Ready for pickup garments are 100% complete
+
+      return {
+        id: garment.id,
+        name: garment.name,
+        order_id: garment.order_id,
+        stage: 'Ready For Pickup' as GarmentStage,
+        client_name: clientName,
+        due_date: garment.due_date,
+        services: services.map((s: any) => ({
+          id: s.id,
+          name: s.name,
+          is_done: s.is_done || false,
+        })),
+        progress,
+      };
+    }) || [];
+
+  return processedGarments;
 }

@@ -5,14 +5,8 @@ import { Stack, Paper, Typography, Box, alpha } from '@mui/material';
 import { ArrowForward as ArrowForwardIcon } from '@mui/icons-material';
 import { STAGE_COLORS } from '@/constants/garmentStages';
 
-interface PipelineStage {
-  stage: string;
-  count: number;
-  color: string;
-}
-
 interface PipelineOverviewProps {
-  stages?: PipelineStage[];
+  stageCounts: Record<string, number>;
   onStageClick?: (stage: string) => void;
 }
 
@@ -23,29 +17,27 @@ const refinedColors = {
   stages: STAGE_COLORS,
 };
 
-const defaultStages: PipelineStage[] = [
-  { stage: 'New', count: 5, color: refinedColors.stages.New },
-  {
-    stage: 'In Progress',
-    count: 12,
-    color: refinedColors.stages['In Progress'],
-  },
-  {
-    stage: 'Pickup Ready',
-    count: 8,
-    color: refinedColors.stages['Ready For Pickup'],
-  },
-  {
-    stage: 'Done',
-    count: 3,
-    color: refinedColors.stages.Done,
-  },
+const PIPELINE_STAGES = [
+  { name: 'New', displayName: 'New' },
+  { name: 'In Progress', displayName: 'In Progress' },
+  { name: 'Ready For Pickup', displayName: 'Pickup Ready' },
+  { name: 'Done', displayName: 'Done' },
 ];
 
 export function PipelineOverview({
-  stages = defaultStages,
+  stageCounts,
   onStageClick,
 }: PipelineOverviewProps) {
+  // Build stages array from stageCounts
+  const stages = PIPELINE_STAGES.map((stage) => ({
+    stage: stage.name,
+    displayName: stage.displayName,
+    count: stageCounts[stage.name] || 0,
+    color:
+      refinedColors.stages[stage.name as keyof typeof refinedColors.stages] ||
+      '#5c7f8e',
+  }));
+
   return (
     <Box sx={{ mb: 4 }}>
       <Stack
@@ -86,7 +78,7 @@ export function PipelineOverview({
                 variant="caption"
                 sx={{ fontWeight: 500, display: 'block' }}
               >
-                {item.stage}
+                {item.displayName}
               </Typography>
             </Paper>
             {index < array.length - 1 && (

@@ -86,6 +86,12 @@ export default function GarmentServicesManagerOptimistic() {
   } = useGarment();
   const isGarmentDone = garment?.stage === 'Done';
   const [loading, setLoading] = useState(false);
+  const [togglingServiceId, setTogglingServiceId] = useState<string | null>(
+    null
+  );
+  const [restoringServiceId, setRestoringServiceId] = useState<string | null>(
+    null
+  );
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [editPrice, setEditPrice] = useState('0.00');
@@ -274,7 +280,11 @@ export default function GarmentServicesManagerOptimistic() {
             variant="outlined"
             size="small"
             onClick={() => setShowAddDialog(true)}
-            disabled={isGarmentDone}
+            disabled={
+              isGarmentDone ||
+              togglingServiceId !== null ||
+              restoringServiceId !== null
+            }
           >
             Add Service
           </Button>
@@ -340,11 +350,26 @@ export default function GarmentServicesManagerOptimistic() {
                             )}
                             <IconButton
                               size="small"
-                              onClick={() => restoreService(service.id)}
-                              disabled={loading}
+                              onClick={async () => {
+                                setRestoringServiceId(service.id);
+                                try {
+                                  await restoreService(service.id);
+                                } finally {
+                                  setRestoringServiceId(null);
+                                }
+                              }}
+                              disabled={
+                                loading ||
+                                togglingServiceId !== null ||
+                                restoringServiceId === service.id
+                              }
                               aria-label="Restore service"
                             >
-                              <RestoreFromTrashIcon fontSize="small" />
+                              {restoringServiceId === service.id ? (
+                                <CircularProgress size={20} />
+                              ) : (
+                                <RestoreFromTrashIcon fontSize="small" />
+                              )}
                             </IconButton>
                           </>
                         ) : (
@@ -365,15 +390,27 @@ export default function GarmentServicesManagerOptimistic() {
                                   variant={
                                     service.is_done ? 'outlined' : 'contained'
                                   }
-                                  onClick={() =>
-                                    toggleServiceComplete(
-                                      service.id,
-                                      !service.is_done
-                                    )
+                                  onClick={async () => {
+                                    setTogglingServiceId(service.id);
+                                    try {
+                                      await toggleServiceComplete(
+                                        service.id,
+                                        !service.is_done
+                                      );
+                                    } finally {
+                                      setTogglingServiceId(null);
+                                    }
+                                  }}
+                                  disabled={
+                                    loading ||
+                                    isGarmentDone ||
+                                    togglingServiceId === service.id ||
+                                    restoringServiceId !== null
                                   }
-                                  disabled={loading || isGarmentDone}
                                   startIcon={
-                                    service.is_done ? (
+                                    togglingServiceId === service.id ? (
+                                      <CircularProgress size={16} />
+                                    ) : service.is_done ? (
                                       <CheckCircleIcon />
                                     ) : (
                                       <RadioButtonUncheckedIcon />
@@ -381,9 +418,11 @@ export default function GarmentServicesManagerOptimistic() {
                                   }
                                   sx={{ minWidth: '140px' }}
                                 >
-                                  {service.is_done
-                                    ? 'Mark Incomplete'
-                                    : 'Mark Complete'}
+                                  {togglingServiceId === service.id
+                                    ? 'Updating...'
+                                    : service.is_done
+                                      ? 'Mark Incomplete'
+                                      : 'Mark Complete'}
                                 </Button>
                               </>
                             )}
@@ -399,7 +438,12 @@ export default function GarmentServicesManagerOptimistic() {
                                     (service.unit_price_cents / 100).toFixed(2)
                                   );
                                 }}
-                                disabled={loading || isGarmentDone}
+                                disabled={
+                                  loading ||
+                                  isGarmentDone ||
+                                  togglingServiceId !== null ||
+                                  restoringServiceId !== null
+                                }
                                 size="small"
                               >
                                 <EditIcon fontSize="small" />
@@ -425,7 +469,9 @@ export default function GarmentServicesManagerOptimistic() {
                                       disabled={
                                         loading ||
                                         isGarmentDone ||
-                                        !!service.is_done
+                                        !!service.is_done ||
+                                        togglingServiceId !== null ||
+                                        restoringServiceId !== null
                                       }
                                       size="small"
                                       color={
@@ -449,7 +495,12 @@ export default function GarmentServicesManagerOptimistic() {
                             !service.is_done ? (
                               <IconButton
                                 onClick={() => openDeleteConfirmation(service)}
-                                disabled={loading || isGarmentDone}
+                                disabled={
+                                  loading ||
+                                  isGarmentDone ||
+                                  togglingServiceId !== null ||
+                                  restoringServiceId !== null
+                                }
                                 size="small"
                               >
                                 <DeleteIcon fontSize="small" />
@@ -752,6 +803,8 @@ export default function GarmentServicesManagerOptimistic() {
             variant="contained"
             disabled={
               loading ||
+              togglingServiceId !== null ||
+              restoringServiceId !== null ||
               (newService.isCustom ? !newService.name : !newService.serviceId)
             }
           >
@@ -834,7 +887,11 @@ export default function GarmentServicesManagerOptimistic() {
           <Button
             onClick={handleUpdateService}
             variant="contained"
-            disabled={loading}
+            disabled={
+              loading ||
+              togglingServiceId !== null ||
+              restoringServiceId !== null
+            }
           >
             Save Changes
           </Button>
@@ -877,7 +934,11 @@ export default function GarmentServicesManagerOptimistic() {
             onClick={handleRemoveService}
             variant="contained"
             color="error"
-            disabled={loading}
+            disabled={
+              loading ||
+              togglingServiceId !== null ||
+              restoringServiceId !== null
+            }
           >
             Remove
           </Button>

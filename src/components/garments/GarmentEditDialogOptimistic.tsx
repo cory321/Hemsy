@@ -50,6 +50,15 @@ export default function GarmentEditDialogOptimistic({
   const [dateValidationError, setDateValidationError] = useState('');
   const [iconModalOpen, setIconModalOpen] = useState(false);
 
+  // Track if the garment originally had a past due date
+  const today = dayjs().startOf('day');
+  const originalDueDateIsPast = garment.due_date
+    ? dayjs(garment.due_date).isBefore(today)
+    : false;
+  const originalEventDateIsPast = garment.event_date
+    ? dayjs(garment.event_date).isBefore(today)
+    : false;
+
   const [formData, setFormData] = useState({
     name: garment.name,
     dueDate: garment.due_date || '',
@@ -76,36 +85,49 @@ export default function GarmentEditDialogOptimistic({
     }
 
     // Additional validation for past dates
-    const today = dayjs().startOf('day');
+    // Only validate if the garment didn't originally have a past date
+    if (formData.dueDate) {
+      const dueDateIsPast = dayjs(formData.dueDate).isBefore(today);
 
-    if (formData.dueDate && dayjs(formData.dueDate).isBefore(today)) {
-      setDateValidationError('Due date cannot be in the past.');
-      return;
+      // If setting a new past date (and the original wasn't past), prevent it
+      if (dueDateIsPast && !originalDueDateIsPast) {
+        setDateValidationError('Due date cannot be in the past.');
+        return;
+      }
     }
 
-    if (
-      formData.specialEvent &&
-      formData.eventDate &&
-      dayjs(formData.eventDate).isBefore(today)
-    ) {
-      setDateValidationError('Event date cannot be in the past.');
-      return;
+    if (formData.specialEvent && formData.eventDate) {
+      const eventDateIsPast = dayjs(formData.eventDate).isBefore(today);
+
+      // If setting a new past event date (and the original wasn't past), prevent it
+      if (eventDateIsPast && !originalEventDateIsPast) {
+        setDateValidationError('Event date cannot be in the past.');
+        return;
+      }
     }
 
     setLoading(true);
+    setDateValidationError(''); // Clear any existing errors
 
-    // Close dialog immediately for better UX
-    onClose();
+    try {
+      // Wait for server confirmation before closing
+      const success = await updateGarmentOptimistic({
+        name: formData.name,
+        due_date: formData.dueDate || null,
+        event_date: formData.specialEvent ? formData.eventDate || null : null,
+        notes: formData.notes || null,
+      });
 
-    // Optimistic update happens inside updateGarmentOptimistic
-    await updateGarmentOptimistic({
-      name: formData.name,
-      due_date: formData.dueDate || null,
-      event_date: formData.specialEvent ? formData.eventDate || null : null,
-      notes: formData.notes || null,
-    });
-
-    setLoading(false);
+      if (success) {
+        // Only close dialog after successful save
+        onClose();
+      }
+    } catch (error) {
+      // Error handling is done in updateGarmentOptimistic
+      // Just ensure loading state is reset
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleImageUpload = async (result: any) => {
@@ -267,6 +289,15 @@ export default function GarmentEditDialogOptimistic({
             {/* Right Column - Form Fields */}
             <Grid size={{ xs: 12, sm: 8 }}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {/* Show warning if the garment has a past due date */}
+                {originalDueDateIsPast && (
+                  <Alert severity="warning" sx={{ mb: 1 }}>
+                    This garment has a past due date (
+                    {dayjs(garment.due_date).format('MMM DD, YYYY')}). You can
+                    keep the existing date or select a new one.
+                  </Alert>
+                )}
+
                 <TextField
                   label="Garment Name"
                   value={formData.name}
@@ -281,7 +312,10 @@ export default function GarmentEditDialogOptimistic({
                   label="Due Date"
                   value={formData.dueDate ? dayjs(formData.dueDate) : null}
                   format="dddd, MMMM D, YYYY"
-                  minDate={dayjs().startOf('day')}
+                  // Only restrict to future dates if the original date wasn't in the past
+                  minDate={
+                    originalDueDateIsPast ? undefined : dayjs().startOf('day')
+                  }
                   onChange={(newValue) => {
                     if (!newValue) {
                       setFormData({ ...formData, dueDate: '' });
@@ -292,6 +326,18 @@ export default function GarmentEditDialogOptimistic({
                       ? newValue.startOf('day').format('YYYY-MM-DD')
                       : '';
 
+                    // Check if the new date is in the past
+                    const isNewDatePast = dayjs(dueDate).isBefore(today);
+
+                    // Show warning if selecting a past date when original wasn't past
+                    if (isNewDatePast && !originalDueDateIsPast) {
+                      setDateValidationError(
+                        'Due date cannot be in the past unless the garment already had a past due date.'
+                      );
+                    } else {
+                      setDateValidationError('');
+                    }
+
                     // Validate event date if special event is checked
                     if (formData.specialEvent && formData.eventDate) {
                       const eventDateObj = dayjs(formData.eventDate);
@@ -299,8 +345,6 @@ export default function GarmentEditDialogOptimistic({
                         setDateValidationError(
                           'Event date cannot be before the due date.'
                         );
-                      } else {
-                        setDateValidationError('');
                       }
                     }
 
@@ -310,6 +354,9 @@ export default function GarmentEditDialogOptimistic({
                     textField: {
                       fullWidth: true,
                       required: true,
+                      helperText: originalDueDateIsPast
+                        ? 'Past dates are allowed since this garment already has a past due date'
+                        : undefined,
                     },
                   }}
                 />
@@ -336,44 +383,71 @@ export default function GarmentEditDialogOptimistic({
                 />
 
                 {formData.specialEvent && (
-                  <DatePicker
-                    label="Event Date"
-                    value={
-                      formData.eventDate ? dayjs(formData.eventDate) : null
-                    }
-                    format="dddd, MMMM D, YYYY"
-                    minDate={dayjs().startOf('day')}
-                    onChange={(newValue) => {
-                      if (!newValue) {
-                        setFormData({ ...formData, eventDate: '' });
-                        setDateValidationError('');
-                        return;
+                  <>
+                    {originalEventDateIsPast && (
+                      <Alert severity="warning" sx={{ mt: 1 }}>
+                        This garment has a past event date (
+                        {dayjs(garment.event_date).format('MMM DD, YYYY')}). You
+                        can keep the existing date or select a new one.
+                      </Alert>
+                    )}
+                    <DatePicker
+                      label="Event Date"
+                      value={
+                        formData.eventDate ? dayjs(formData.eventDate) : null
                       }
-                      const eventDate = dayjs.isDayjs(newValue)
-                        ? newValue.startOf('day').format('YYYY-MM-DD')
-                        : '';
+                      format="dddd, MMMM D, YYYY"
+                      // Only restrict to future dates if the original event date wasn't in the past
+                      minDate={
+                        originalEventDateIsPast
+                          ? undefined
+                          : dayjs().startOf('day')
+                      }
+                      onChange={(newValue) => {
+                        if (!newValue) {
+                          setFormData({ ...formData, eventDate: '' });
+                          setDateValidationError('');
+                          return;
+                        }
+                        const eventDate = dayjs.isDayjs(newValue)
+                          ? newValue.startOf('day').format('YYYY-MM-DD')
+                          : '';
 
-                      // Validate that event date is not before due date
-                      if (formData.dueDate) {
-                        const dueDateObj = dayjs(formData.dueDate);
-                        if (newValue.isBefore(dueDateObj)) {
+                        // Check if the new event date is in the past
+                        const isNewEventDatePast =
+                          dayjs(eventDate).isBefore(today);
+
+                        // Show warning if selecting a past event date when original wasn't past
+                        if (isNewEventDatePast && !originalEventDateIsPast) {
                           setDateValidationError(
-                            'Event date cannot be before the due date.'
+                            'Event date cannot be in the past unless the garment already had a past event date.'
                           );
                         } else {
                           setDateValidationError('');
                         }
-                      }
 
-                      setFormData({ ...formData, eventDate });
-                    }}
-                    slotProps={{
-                      textField: {
-                        fullWidth: true,
-                        helperText: 'Date of the event this garment is for',
-                      },
-                    }}
-                  />
+                        // Validate that event date is not before due date
+                        if (formData.dueDate) {
+                          const dueDateObj = dayjs(formData.dueDate);
+                          if (newValue.isBefore(dueDateObj)) {
+                            setDateValidationError(
+                              'Event date cannot be before the due date.'
+                            );
+                          }
+                        }
+
+                        setFormData({ ...formData, eventDate });
+                      }}
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          helperText: originalEventDateIsPast
+                            ? 'Past dates are allowed since this garment already has a past event date'
+                            : 'Date of the event this garment is for',
+                        },
+                      }}
+                    />
+                  </>
                 )}
 
                 <TextField

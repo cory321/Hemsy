@@ -15,6 +15,7 @@ import {
   Tooltip,
   useMediaQuery,
   Box,
+  Alert,
 } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
 import CloseIcon from '@mui/icons-material/Close';
@@ -55,11 +56,17 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
 
   const [isLoading, setIsLoading] = useState(false);
   const [price, setPrice] = useState('0.00');
+  const [nameError, setNameError] = useState<string | null>(null);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
+
+    // Clear name error when user starts typing
+    if (name === 'name' && nameError) {
+      setNameError(null);
+    }
 
     if (name === 'qty') {
       const numValue = parseInt(value, 10) || 0;
@@ -91,6 +98,9 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
   };
 
   const handleSubmit = async () => {
+    // Clear any existing errors
+    setNameError(null);
+
     if (newService.name === '' || newService.unit_price <= 0) return;
 
     setIsLoading(true);
@@ -133,9 +143,16 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
       );
       onClose();
     } catch (error) {
-      toast.error(
-        `Error adding service: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+
+      // Check if it's a duplicate name error
+      if (errorMessage.includes('already exists')) {
+        setNameError(errorMessage);
+      } else {
+        toast.error(`Error adding service: ${errorMessage}`);
+      }
+
       console.error('Error adding service:', error);
     } finally {
       setIsLoading(false);
@@ -144,6 +161,7 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
 
   const handleClose = () => {
     if (!isLoading) {
+      setNameError(null);
       onClose();
     }
   };
@@ -183,6 +201,11 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
 
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+          {nameError && (
+            <Alert severity="error" sx={{ mb: 1 }}>
+              {nameError}
+            </Alert>
+          )}
           <TextField
             label="Service Name"
             type="text"
@@ -193,6 +216,7 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
             onChange={handleChange}
             disabled={isLoading}
             required
+            error={!!nameError}
           />
 
           <TextField

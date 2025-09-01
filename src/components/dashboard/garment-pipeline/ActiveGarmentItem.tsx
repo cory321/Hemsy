@@ -14,23 +14,18 @@ import {
   CheckCircle as CheckCircleIcon,
   Circle as CircleIcon,
 } from '@mui/icons-material';
+import { useRouter } from 'next/navigation';
 import { STAGE_COLORS } from '@/constants/garmentStages';
-
-interface Service {
-  name: string;
-  completed: boolean;
-}
+import {
+  getDetailedDueDateDisplay,
+  isGarmentDueDateUrgent,
+} from '@/lib/utils/date-time-utils';
+import type { ActiveGarment } from '@/lib/actions/dashboard';
 
 interface ActiveGarmentItemProps {
-  name: string;
-  client: string;
-  dueDate?: string;
-  stage?: string;
-  progress?: number;
-  services?: Service[];
+  garment: ActiveGarment;
   priority?: boolean;
   onUpdateStatus?: () => void;
-  onViewDetails?: () => void;
 }
 
 const refinedColors = {
@@ -45,26 +40,41 @@ const refinedColors = {
 };
 
 export function ActiveGarmentItem({
-  name,
-  client,
-  dueDate,
-  stage = 'In Progress',
-  progress = 0,
-  services = [],
+  garment,
   priority = false,
   onUpdateStatus,
-  onViewDetails,
 }: ActiveGarmentItemProps) {
-  if (priority && services.length > 0) {
+  const router = useRouter();
+
+  // Get formatted due date display with detailed info
+  const dueDateDisplay = getDetailedDueDateDisplay(garment.due_date);
+  const isDueDateUrgent = isGarmentDueDateUrgent(garment.due_date);
+  if (priority && garment.services.length > 0) {
     // Priority item with full details
     return (
       <Paper
         elevation={0}
+        onClick={(e) => {
+          // Only navigate if the click wasn't on the button
+          if (
+            (e.target as HTMLElement).tagName !== 'BUTTON' &&
+            !(e.target as HTMLElement).closest('button')
+          ) {
+            router.push(`/garments/${garment.id}`);
+          }
+        }}
         sx={{
           p: 3,
           border: `2px solid ${alpha(refinedColors.warning, 0.3)}`,
-          bgcolor: alpha(refinedColors.warning, 0.02),
+          bgcolor: alpha(refinedColors.warning, 0.05),
           borderRadius: 2,
+          cursor: 'pointer',
+          transition: 'all 0.2s',
+          '&:hover': {
+            borderColor: alpha(refinedColors.warning, 0.5),
+            bgcolor: alpha(refinedColors.warning, 0.08),
+            transform: 'translateY(-1px)',
+          },
         }}
       >
         <Stack
@@ -80,11 +90,11 @@ export function ActiveGarmentItem({
               sx={{ mb: 1 }}
             >
               <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                {name}
+                {garment.name}
               </Typography>
-              {dueDate === 'Today' && (
+              {isDueDateUrgent && (
                 <Chip
-                  label="Due Today"
+                  label={dueDateDisplay}
                   size="small"
                   sx={{
                     bgcolor: refinedColors.warning,
@@ -99,7 +109,7 @@ export function ActiveGarmentItem({
               variant="body2"
               sx={{ color: refinedColors.text.secondary, mb: 2 }}
             >
-              {client} • {dueDate === 'Today' ? 'Wedding guest' : dueDate}
+              {garment.client_name} • {dueDateDisplay}
             </Typography>
 
             {/* Progress Bar */}
@@ -116,12 +126,12 @@ export function ActiveGarmentItem({
                   Progress
                 </Typography>
                 <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                  {progress}%
+                  {garment.progress}%
                 </Typography>
               </Stack>
               <LinearProgress
                 variant="determinate"
-                value={progress}
+                value={garment.progress}
                 sx={{
                   height: 6,
                   borderRadius: 3,
@@ -135,12 +145,12 @@ export function ActiveGarmentItem({
             </Box>
 
             {/* Service Checklist */}
-            <Stack direction="row" spacing={1}>
-              {services.map((service, index) => (
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              {garment.services.map((service) => (
                 <Chip
-                  key={index}
+                  key={service.id}
                   icon={
-                    service.completed ? (
+                    service.is_done ? (
                       <CheckCircleIcon sx={{ fontSize: 16 }} />
                     ) : (
                       <CircleIcon sx={{ fontSize: 16 }} />
@@ -149,93 +159,111 @@ export function ActiveGarmentItem({
                   label={service.name}
                   size="small"
                   sx={
-                    service.completed
+                    service.is_done
                       ? {
                           bgcolor: alpha(refinedColors.success, 0.1),
                           color: refinedColors.success,
                         }
                       : {}
                   }
-                  variant={service.completed ? 'filled' : 'outlined'}
+                  variant={service.is_done ? 'filled' : 'outlined'}
                 />
               ))}
             </Stack>
           </Box>
-
-          <Stack spacing={1}>
-            <Button variant="contained" size="small" onClick={onUpdateStatus}>
-              Update Status
-            </Button>
-            <Button variant="text" size="small" onClick={onViewDetails}>
-              View Details
-            </Button>
-          </Stack>
         </Stack>
       </Paper>
     );
   }
 
-  // Regular item
+  // Regular item - styled to match ReadyForPickupItem
+  const stageColor =
+    refinedColors.stages[garment.stage as keyof typeof refinedColors.stages] ||
+    '#5c7f8e';
+
+  // Get appropriate icon based on stage
+  const stageIcon =
+    garment.stage === 'Ready For Pickup' ? (
+      <CheckCircleIcon
+        sx={{
+          fontSize: 18,
+          color: stageColor,
+        }}
+      />
+    ) : (
+      <CircleIcon
+        sx={{
+          fontSize: 18,
+          color: stageColor,
+        }}
+      />
+    );
+
   return (
     <Paper
       elevation={0}
+      onClick={() => router.push(`/garments/${garment.id}`)}
       sx={{
-        p: 2.5,
-        border: '1px solid #e0e0e0',
-        borderRadius: 2,
+        p: 2,
+        border: `1px solid ${alpha(stageColor, 0.3)}`,
+        bgcolor: alpha(stageColor, 0.05),
+        borderRadius: 1.5,
+        cursor: 'pointer',
         transition: 'all 0.2s',
         '&:hover': {
-          borderColor: '#ccc',
-          bgcolor: alpha(
-            refinedColors.stages[stage as keyof typeof refinedColors.stages] ||
-              '#5c7f8e',
-            0.02
-          ),
+          borderColor: alpha(stageColor, 0.5),
+          bgcolor: alpha(stageColor, 0.08),
+          transform: 'translateY(-1px)',
         },
       }}
     >
       <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Box>
-          <Typography variant="body1" sx={{ fontWeight: 500, mb: 0.5 }}>
-            {name}
-          </Typography>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Stack direction="row" alignItems="center" spacing={1}>
+            {stageIcon}
+            <Typography
+              variant="body2"
+              sx={{
+                fontWeight: 600,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {garment.name}
+            </Typography>
+          </Stack>
           <Typography
-            variant="body2"
-            sx={{ color: refinedColors.text.secondary }}
+            variant="caption"
+            sx={{
+              color: 'text.secondary',
+              display: 'block',
+              mt: 0.5,
+              ml: 3.25, // Align with text after icon
+            }}
           >
-            {client} • Due {dueDate}
+            {garment.client_name} • {dueDateDisplay}
           </Typography>
         </Box>
-        <Stack direction="row" alignItems="center" spacing={2}>
-          <Box sx={{ minWidth: 100 }}>
-            <LinearProgress
-              variant="determinate"
-              value={progress}
-              sx={{
-                height: 4,
-                borderRadius: 2,
-                bgcolor: '#e0e0e0',
-              }}
-            />
-          </Box>
-          <Chip
-            label={stage}
-            size="small"
+        <Box
+          sx={{
+            px: 1.5,
+            py: 0.5,
+            bgcolor: alpha(stageColor, 0.15),
+            borderRadius: 1,
+          }}
+        >
+          <Typography
+            variant="caption"
             sx={{
-              bgcolor: alpha(
-                refinedColors.stages[
-                  stage as keyof typeof refinedColors.stages
-                ] || '#5c7f8e',
-                0.2
-              ),
-              color:
-                refinedColors.stages[
-                  stage as keyof typeof refinedColors.stages
-                ] || '#5c7f8e',
+              color: stageColor,
               fontWeight: 600,
+              fontSize: '0.7rem',
             }}
-          />
-        </Stack>
+          >
+            {garment.stage.toUpperCase()}
+          </Typography>
+        </Box>
       </Stack>
     </Paper>
   );

@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useAuth, useUser } from '@clerk/nextjs';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import {
   Button,
   Box,
@@ -22,7 +23,7 @@ import {
   Card,
   CardContent,
 } from '@mui/material';
-import Grid from '@mui/material/Grid2';
+import Grid2 from '@mui/material/Grid2';
 
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
@@ -41,8 +42,32 @@ import { groupGarmentsByClientName } from '@/utils/garments-sort';
 
 import StageBox from '@/components/garments/StageBox';
 
+// URL-friendly stage name mappings
+const stageToUrlParam: Record<string, string> = {
+  New: 'new',
+  'In Progress': 'in-progress',
+  'Ready For Pickup': 'ready-for-pickup',
+  Done: 'done',
+};
+
+const urlParamToStage: Record<string, string> = {
+  new: 'New',
+  'in-progress': 'In Progress',
+  'ready-for-pickup': 'Ready For Pickup',
+  done: 'Done',
+};
+
 export default function GarmentsPage() {
-  const [selectedStage, setSelectedStage] = useState<string | null>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Initialize stage from URL params
+  const stageParam = searchParams.get('stage');
+  const initialStage = stageParam ? urlParamToStage[stageParam] || null : null;
+
+  const [selectedStage, setSelectedStage] = useState<string | null>(
+    initialStage
+  );
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [sortField, setSortField] =
     useState<GetGarmentsPaginatedParams['sortField']>('due_date');
@@ -54,6 +79,48 @@ export default function GarmentsPage() {
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  // Update URL when stage changes
+  const updateUrlWithStage = useCallback(
+    (stage: string | null) => {
+      const params = new URLSearchParams(searchParams.toString());
+
+      if (stage && stageToUrlParam[stage]) {
+        params.set('stage', stageToUrlParam[stage]);
+      } else {
+        params.delete('stage');
+      }
+
+      // Use replace to avoid adding to browser history for filter changes
+      router.replace(
+        `/garments${params.toString() ? '?' + params.toString() : ''}`
+      );
+    },
+    [router, searchParams]
+  );
+
+  // Handle stage change with URL update
+  const handleStageChange = useCallback(
+    (stage: string | null) => {
+      setSelectedStage(stage);
+      updateUrlWithStage(stage);
+      setSearch('');
+    },
+    // setSearch is not included as it's defined after this callback and is stable from the hook
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [updateUrlWithStage]
+  );
+
+  // Sync stage from URL params when they change
+  useEffect(() => {
+    const stageParam = searchParams.get('stage');
+    const newStage = stageParam ? urlParamToStage[stageParam] || null : null;
+
+    // Only update if different to avoid infinite loops
+    if (newStage !== selectedStage) {
+      setSelectedStage(newStage);
+    }
+  }, [searchParams, selectedStage]);
 
   // Initialize shop ID
   useEffect(() => {
@@ -275,9 +342,9 @@ export default function GarmentsPage() {
         </Box>
 
         {/* Garment Cards Grid */}
-        <Grid container spacing={3} columns={{ xs: 4, sm: 8, md: 12, lg: 20 }}>
+        <Grid2 container spacing={3} columns={{ xs: 4, sm: 8, md: 12, lg: 20 }}>
           {Array.from({ length: 12 }).map((_, index) => (
-            <Grid size={4} key={index}>
+            <Grid2 size={4} key={index}>
               <Card
                 sx={{
                   height: '100%',
@@ -345,9 +412,9 @@ export default function GarmentsPage() {
                   <Skeleton variant="text" width={60} height={24} />
                 </CardContent>
               </Card>
-            </Grid>
+            </Grid2>
           ))}
-        </Grid>
+        </Grid2>
       </Box>
     );
   }
@@ -381,10 +448,7 @@ export default function GarmentsPage() {
           <StageBox
             stage={{ name: 'View All', count: totalGarmentsCount || 0 }}
             isSelected={!selectedStage}
-            onClick={() => {
-              setSelectedStage(null);
-              setSearch('');
-            }}
+            onClick={() => handleStageChange(null)}
             isLast={false}
           />
           {GARMENT_STAGES.map((stage, index) => (
@@ -396,10 +460,7 @@ export default function GarmentsPage() {
                 count: garmentCounts[stage.name] || 0,
               }}
               isSelected={selectedStage === stage.name}
-              onClick={() => {
-                setSelectedStage(stage.name);
-                setSearch('');
-              }}
+              onClick={() => handleStageChange(stage.name)}
               isLast={index === GARMENT_STAGES.length - 1}
             />
           ))}
@@ -410,10 +471,9 @@ export default function GarmentsPage() {
           <Select
             value={selectedStage || 'all'}
             onChange={(e) => {
-              setSelectedStage(
+              handleStageChange(
                 e.target.value === 'all' ? null : e.target.value
               );
-              setSearch('');
             }}
             label="Stage"
           >
@@ -484,7 +544,9 @@ export default function GarmentsPage() {
           >
             {/* Heading */}
             <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
-              <Typography variant="h4">All Garments</Typography>
+              <Typography variant="h4">
+                {selectedStage ? selectedStage : 'All Garments'}
+              </Typography>
               {totalCount !== undefined && (
                 <Typography variant="body2" color="text.secondary">
                   ({totalCount} total)
@@ -576,13 +638,13 @@ export default function GarmentsPage() {
                     </Box>
 
                     {/* Garments for this client */}
-                    <Grid
+                    <Grid2
                       container
                       spacing={3}
                       columns={{ xs: 4, sm: 8, md: 12, lg: 20 }}
                     >
                       {clientGarments.map((garment) => (
-                        <Grid
+                        <Grid2
                           size={{ xs: 4, sm: 4, md: 4, lg: 4 }}
                           key={garment.id}
                         >
@@ -593,22 +655,22 @@ export default function GarmentsPage() {
                               (garment.stage_name || 'New') as any
                             )}
                           />
-                        </Grid>
+                        </Grid2>
                       ))}
-                    </Grid>
+                    </Grid2>
                   </Box>
                 );
               })}
             </Box>
           ) : (
             // Regular grid view
-            <Grid
+            <Grid2
               container
               spacing={3}
               columns={{ xs: 4, sm: 8, md: 12, lg: 20 }}
             >
               {filteredGarments.map((garment) => (
-                <Grid size={{ xs: 4, sm: 4, md: 4, lg: 4 }} key={garment.id}>
+                <Grid2 size={{ xs: 4, sm: 4, md: 4, lg: 4 }} key={garment.id}>
                   <GarmentCard
                     garment={garment}
                     orderId={garment.order_id}
@@ -616,9 +678,9 @@ export default function GarmentsPage() {
                       (garment.stage_name || 'New') as any
                     )}
                   />
-                </Grid>
+                </Grid2>
               ))}
-            </Grid>
+            </Grid2>
           )}
 
           {/* Infinite Scroll Trigger */}

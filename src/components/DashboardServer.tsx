@@ -3,7 +3,7 @@ import Grid from '@mui/material/Grid2';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { DashboardAlerts } from '@/components/dashboard/alerts';
 import { AppointmentsFocusServer } from '@/components/dashboard/todays-focus';
-import { GarmentPipeline } from '@/components/dashboard/garment-pipeline';
+import { GarmentPipelineServer } from '@/components/dashboard/garment-pipeline/GarmentPipelineServer';
 import { BusinessOverview } from '@/components/dashboard/business-overview';
 
 // Refined color palette
@@ -29,7 +29,7 @@ export function DashboardServer() {
 
         {/* Center Column - Garment Pipeline */}
         <Grid size={{ xs: 12, lg: 6 }}>
-          <GarmentPipeline />
+          <GarmentPipelineServer />
         </Grid>
 
         {/* Right Column - Appointments Focus */}

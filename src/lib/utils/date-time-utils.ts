@@ -409,3 +409,59 @@ export function getDueDateInfo(dueDateStr: string | null): DueDateInfo | null {
     isTomorrow: daysUntilDue === 1,
   };
 }
+
+/**
+ * Get a formatted display string for a garment due date
+ * Returns "Overdue", "Due Today", "Due Tomorrow", or the short date format
+ */
+export function getGarmentDueDateDisplay(
+  dueDateStr: string | null | undefined
+): string {
+  if (!dueDateStr) return 'No due date';
+
+  const dueDateInfo = getDueDateInfo(dueDateStr);
+  if (!dueDateInfo) return 'No due date';
+
+  if (dueDateInfo.isPast) return 'Overdue';
+  if (dueDateInfo.isToday) return 'Due Today';
+  if (dueDateInfo.isTomorrow) return 'Due Tomorrow';
+
+  return dueDateInfo.shortDate;
+}
+
+/**
+ * Check if a garment due date should be highlighted as urgent
+ * Returns true for overdue items and items due today
+ */
+export function isGarmentDueDateUrgent(
+  dueDateStr: string | null | undefined
+): boolean {
+  if (!dueDateStr) return false;
+
+  const dueDateInfo = getDueDateInfo(dueDateStr);
+  if (!dueDateInfo) return false;
+
+  return dueDateInfo.isPast || dueDateInfo.isToday;
+}
+
+/**
+ * Get a detailed display string for a garment due date
+ * Returns specific information like "3 days overdue" or "Due in 5 days"
+ */
+export function getDetailedDueDateDisplay(
+  dueDateStr: string | null | undefined
+): string {
+  const dueDateInfo = getDueDateInfo(dueDateStr || null);
+
+  if (!dueDateInfo) return 'No due date';
+
+  if (dueDateInfo.isPast) {
+    const days = Math.abs(dueDateInfo.daysUntilDue);
+    return `${days} day${days !== 1 ? 's' : ''} overdue`;
+  }
+
+  if (dueDateInfo.isToday) return 'Due today';
+  if (dueDateInfo.isTomorrow) return 'Due tomorrow';
+
+  return `Due in ${dueDateInfo.daysUntilDue} days`;
+}

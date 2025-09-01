@@ -491,6 +491,15 @@ export async function addService(
       .single();
 
     if (error || !data) {
+      // Check if it's a unique constraint violation for service name
+      if (
+        error?.code === '23505' &&
+        error?.message?.includes('services_shop_id_name_key')
+      ) {
+        throw new Error(
+          'A service with this name already exists. Please choose a different name.'
+        );
+      }
       throw new Error(error?.message || 'Failed to add service');
     }
 

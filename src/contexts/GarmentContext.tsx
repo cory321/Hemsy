@@ -87,7 +87,7 @@ interface Garment {
 
 interface GarmentContextType {
   garment: Garment;
-  updateGarmentOptimistic: (updates: Partial<Garment>) => Promise<void>;
+  updateGarmentOptimistic: (updates: Partial<Garment>) => Promise<boolean>;
   updateGarmentIcon: (
     iconKey: string | null,
     fillColor: string | null
@@ -156,7 +156,7 @@ export function GarmentProvider({
       console.error('Error refreshing garment:', error);
       toast.error('Failed to refresh garment data');
     }
-  }, [garment.id, refreshHistory]);
+  }, [refreshHistory]);
 
   // Helper to create optimistic history entries
   const createOptimisticHistoryEntry = (
@@ -186,25 +186,13 @@ export function GarmentProvider({
   };
 
   const updateGarmentOptimistic = useCallback(
-    async (updates: Partial<Garment>) => {
-      // Optimistically update the UI
+    async (updates: Partial<Garment>): Promise<boolean> => {
+      // Don't update UI optimistically when dialog needs to wait for server
+      // We'll update the UI only after successful server response
       const previousGarment = garment;
-      setGarment((prev) => ({ ...prev, ...updates }));
-
-      // Create optimistic history entries for each updated field
-      Object.entries(updates).forEach(([key, value]) => {
-        if (key in garment && garment[key as keyof Garment] !== value) {
-          createOptimisticHistoryEntry(
-            'field_update',
-            key,
-            garment[key as keyof Garment],
-            value
-          );
-        }
-      });
 
       try {
-        // Call the server action
+        // Call the server action first
         const result = await updateGarment({
           garmentId: garment.id,
           updates: {
@@ -226,20 +214,36 @@ export function GarmentProvider({
         });
 
         if (!result.success) {
-          // Rollback on failure
-          setGarment(previousGarment);
+          // Show error toast, don't update UI
           toast.error(result.error || 'Failed to update garment');
+          return false;
         } else {
+          // Only update UI after successful server response
+          setGarment((prev) => ({ ...prev, ...updates }));
+
+          // Create history entries for each updated field
+          Object.entries(updates).forEach(([key, value]) => {
+            if (key in garment && garment[key as keyof Garment] !== value) {
+              createOptimisticHistoryEntry(
+                'field_update',
+                key,
+                garment[key as keyof Garment],
+                value
+              );
+            }
+          });
+
           refreshHistory();
           toast.success('Garment updated successfully');
+          return true;
         }
       } catch (error) {
-        // Rollback on error
-        setGarment(previousGarment);
+        // Show error toast
         toast.error('An unexpected error occurred');
+        return false;
       }
     },
-    [garment, refreshHistory]
+    [garment, refreshHistory, createOptimisticHistoryEntry]
   );
 
   const updateGarmentIcon = useCallback(
@@ -275,7 +279,7 @@ export function GarmentProvider({
         toast.error('An unexpected error occurred');
       }
     },
-    [garment, refreshHistory]
+    [garment, refreshHistory, createOptimisticHistoryEntry]
   );
 
   const updateGarmentPhoto = useCallback(
@@ -311,7 +315,7 @@ export function GarmentProvider({
         toast.error('An unexpected error occurred');
       }
     },
-    [garment, refreshHistory]
+    [garment, refreshHistory, createOptimisticHistoryEntry]
   );
 
   const deleteGarmentPhoto = useCallback(async () => {
@@ -440,7 +444,7 @@ export function GarmentProvider({
         toast.error('An unexpected error occurred');
       }
     },
-    [garment, refreshHistory]
+    [garment, refreshHistory, createOptimisticHistoryEntry]
   );
 
   const removeService = useCallback(
@@ -532,7 +536,7 @@ export function GarmentProvider({
         toast.error('An unexpected error occurred');
       }
     },
-    [garment, refreshHistory]
+    [garment, refreshHistory, createOptimisticHistoryEntry]
   );
 
   const restoreService = useCallback(
@@ -613,7 +617,7 @@ export function GarmentProvider({
         toast.error('An unexpected error occurred');
       }
     },
-    [garment, refreshHistory]
+    [garment, refreshHistory, createOptimisticHistoryEntry]
   );
 
   const updateService = useCallback(
@@ -685,7 +689,7 @@ export function GarmentProvider({
         toast.error('An unexpected error occurred');
       }
     },
-    [garment, refreshHistory]
+    [garment, refreshHistory, createOptimisticHistoryEntry]
   );
 
   const toggleServiceComplete = useCallback(
@@ -747,7 +751,7 @@ export function GarmentProvider({
         toast.error('An unexpected error occurred');
       }
     },
-    [garment, refreshHistory]
+    [garment, refreshHistory, createOptimisticHistoryEntry]
   );
 
   const markAsPickedUp = useCallback(async () => {

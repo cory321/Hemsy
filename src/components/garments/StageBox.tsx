@@ -29,12 +29,15 @@ const StageBox: React.FC<StageBoxProps> = ({
   isLast,
 }) => {
   const stageColor = stage.color || '#e0e0e0';
+  // Create a test-friendly ID from the stage name
+  const testId = `stage-box-${stage.name.toLowerCase().replace(/\s+/g, '-')}`;
 
   return (
     <>
       <Paper
         onClick={onClick}
-        data-testid="stage-box"
+        data-testid={testId}
+        data-selected={isSelected}
         className={isSelected ? 'selected' : ''}
         sx={{
           p: 2,
