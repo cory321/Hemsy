@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useInterval } from '@/lib/hooks/useInterval';
 import {
   Box,
   Typography,
@@ -58,21 +59,12 @@ export function DayView({
   // State to track current time for the indicator
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  // Update current time every 5 minutes
-  useEffect(() => {
-    const interval = setInterval(
-      () => {
-        setCurrentTime(new Date());
-      },
-      5 * 60 * 1000
-    ); // 5 minutes in milliseconds
-
-    return () => {
-      if (typeof clearInterval !== 'undefined') {
-        clearInterval(interval);
-      }
-    };
-  }, []);
+  // Update current time every 5 minutes with automatic cleanup
+  useInterval(
+    () => setCurrentTime(new Date()),
+    5 * 60 * 1000, // 5 minutes
+    false // Don't run immediately
+  );
 
   // Filter appointments for current date
   const dateStr = format(currentDate, 'yyyy-MM-dd');

@@ -184,6 +184,7 @@ export async function testEmailTemplate(
 
     // Get the template - first try user's custom template
     // Order by updated_at desc to ensure we get the latest version
+    // eslint-disable-next-line prefer-const
     let { data: template, error: templateError } = await supabase
       .from('email_templates')
       .select('*')

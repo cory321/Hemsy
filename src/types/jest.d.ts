@@ -1,5 +1,5 @@
 // Jest type declarations
-/* eslint-disable no-unused-vars */
+
 declare global {
   namespace jest {
     interface Matchers<R> {

@@ -10,6 +10,7 @@ import React, {
 } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
+import { useInterval, useVisibilityInterval } from '@/lib/hooks/useInterval';
 import {
   appointmentReducer,
   initialAppointmentState,
@@ -364,12 +365,15 @@ export function AppointmentProvider({
     });
   }, []);
 
-  // Set up real-time subscriptions
+  // Set up real-time subscriptions with improved cleanup
   useEffect(() => {
     if (!shopId) return;
 
+    // Create a unique channel name to avoid conflicts
+    const channelName = `appointments:${shopId}:${Date.now()}`;
+
     const channel = supabase
-      .channel(`appointments:${shopId}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -449,21 +453,40 @@ export function AppointmentProvider({
 
     subscriptionRef.current = channel;
 
+    // Cleanup function with improved error handling
     return () => {
       if (subscriptionRef.current) {
-        supabase.removeChannel(subscriptionRef.current);
+        // Unsubscribe from the channel before removing
+        subscriptionRef.current
+          .unsubscribe()
+          .then(() => {
+            if (subscriptionRef.current) {
+              supabase.removeChannel(subscriptionRef.current);
+              subscriptionRef.current = null;
+            }
+          })
+          .catch((error: unknown) => {
+            console.warn(
+              'Error unsubscribing from appointments channel:',
+              error
+            );
+            // Still try to remove the channel even if unsubscribe fails
+            if (subscriptionRef.current) {
+              supabase.removeChannel(subscriptionRef.current);
+              subscriptionRef.current = null;
+            }
+          });
       }
     };
   }, [shopId, state.optimisticUpdates, supabase]);
 
-  // Clean up stale data periodically
-  useEffect(() => {
-    const interval = setInterval(() => {
-      clearStaleData();
-    }, 60 * 1000); // Every minute
-
-    return () => clearInterval(interval);
-  }, [clearStaleData]);
+  // Clean up stale data periodically with visibility-aware interval
+  // Pauses when tab is hidden to save CPU/battery
+  useVisibilityInterval(
+    clearStaleData,
+    60 * 1000, // Every minute
+    true // Pause when tab is hidden
+  );
 
   const value: AppointmentContextValue = {
     state,

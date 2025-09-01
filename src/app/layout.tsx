@@ -6,6 +6,7 @@ import { DateLocalizationProvider } from '@/providers/DateLocalizationProvider';
 import { ClerkProvider } from '@clerk/nextjs';
 import { Toaster } from 'react-hot-toast';
 import { NavigationProgress } from '@/components/ui/NavigationProgress';
+import { MemoryMonitorWidget } from '@/components/monitoring/MemoryMonitorWidget';
 import './globals.css';
 import '../../public/icons/generated-icons.css';
 
@@ -55,6 +56,12 @@ export default function RootLayout({
                 <ThemeProvider>
                   <NavigationProgress />
                   {children}
+                  <MemoryMonitorWidget
+                    developmentOnly={false}
+                    position="bottom-right"
+                    autoHideMs={0}
+                    reportToSentry={true}
+                  />
                   <Toaster
                     position="bottom-center"
                     toastOptions={{
@@ -85,6 +92,12 @@ export default function RootLayout({
               <ThemeProvider>
                 <NavigationProgress />
                 {children}
+                <MemoryMonitorWidget
+                  developmentOnly={false}
+                  position="bottom-right"
+                  autoHideMs={0}
+                  reportToSentry={true}
+                />
                 <Toaster
                   position="bottom-center"
                   toastOptions={{

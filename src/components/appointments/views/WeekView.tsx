@@ -9,7 +9,8 @@ import {
   useMediaQuery,
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useInterval } from '@/lib/hooks/useInterval';
 import { format, isSameDay, isToday } from 'date-fns';
 import {
   generateWeekDays,
@@ -95,13 +96,13 @@ export function WeekView({
 
   // Current time indicator state and position
   const [currentTime, setCurrentTime] = useState(new Date());
-  useEffect(() => {
-    const interval = setInterval(
-      () => setCurrentTime(new Date()),
-      5 * 60 * 1000
-    );
-    return () => clearInterval(interval);
-  }, []);
+
+  // Update current time every 5 minutes with automatic cleanup
+  useInterval(
+    () => setCurrentTime(new Date()),
+    5 * 60 * 1000, // 5 minutes
+    false // Don't run immediately
+  );
 
   const currentTimeMinutes =
     currentTime.getHours() * 60 + currentTime.getMinutes();

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Stack, Card, CardContent, Typography } from '@mui/material';
 import { NextAppointmentCard } from './NextAppointmentCard';
 import { TodaySchedule } from './TodaySchedule';
@@ -9,6 +9,7 @@ import { ReadyForPickup } from './ReadyForPickup';
 import { AppointmentDetailsDialog } from '@/components/appointments/AppointmentDetailsDialog';
 import { AppointmentDialog } from '@/components/appointments/AppointmentDialog';
 import { useRouter } from 'next/navigation';
+import { useInterval } from '@/lib/hooks/useInterval';
 import type { Appointment } from '@/types';
 import {
   formatDateToYYYYMMDD,
@@ -34,14 +35,12 @@ export function AppointmentsFocus({
     useState<Appointment | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  // Update current time every minute
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 60000); // Update every minute
-
-    return () => clearInterval(interval);
-  }, []);
+  // Update current time every minute with automatic cleanup
+  useInterval(
+    () => setCurrentTime(new Date()),
+    60000, // Update every minute
+    false // Don't run immediately (we already have initial state)
+  );
 
   // Determine the actual next/current appointment and its status
   const { displayAppointment, isHappeningNow } = useMemo(() => {
@@ -78,7 +77,9 @@ export function AppointmentsFocus({
     );
 
     return { displayAppointment: firstRelevant, isHappeningNow };
-  }, [nextAppointment, todayAppointments, currentTime]);
+  }, [nextAppointment, todayAppointments]);
+  // Note: currentTime triggers re-renders but isn't directly used in the memo calculation.
+  // The time-based functions (isAppointmentPast, isAppointmentHappeningNow) use new Date() internally.
 
   return (
     <Stack spacing={3}>
