@@ -43,6 +43,7 @@ function WeekOverviewLoading() {
       <Stack spacing={2}>
         <Skeleton variant="rectangular" height={80} sx={{ borderRadius: 2 }} />
         <Skeleton variant="rectangular" height={80} sx={{ borderRadius: 2 }} />
+        <Skeleton variant="rectangular" height={80} sx={{ borderRadius: 2 }} />
       </Stack>
     </Stack>
   );

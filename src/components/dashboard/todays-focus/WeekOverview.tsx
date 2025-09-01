@@ -16,6 +16,7 @@ import {
   ArrowForward as ArrowForwardIcon,
   CalendarMonth as CalendarIcon,
   Inventory2 as InventoryIcon,
+  Warning as WarningIcon,
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import type { WeekDayData, WeekSummaryStats } from '@/lib/actions/dashboard';
@@ -28,6 +29,7 @@ interface WeekOverviewProps {
 const refinedColors = {
   primary: '#5c7f8e',
   warning: '#F3C164',
+  error: '#d32f2f',
   success: '#5A736C',
   text: {
     primary: '#1a1a1a',
@@ -64,7 +66,7 @@ function generateDefaultWeekData(): WeekDayData[] {
 
 export function WeekOverview({
   weekData = generateDefaultWeekData(),
-  summaryStats = { totalAppointments: 0, totalGarmentsDue: 0 },
+  summaryStats = { totalAppointments: 0, totalGarmentsDue: 0, totalOverdue: 0 },
 }: WeekOverviewProps) {
   const router = useRouter();
 
@@ -169,20 +171,39 @@ export function WeekOverview({
                   {dayData.date}
                 </Typography>
 
-                {/* Activity indicators - dots for garments due */}
-                {dayData.garmentsDue > 0 && (
-                  <Box
+                {/* Activity indicators - dots for appointments and garments due */}
+                {(dayData.appointments > 0 || dayData.garmentsDue > 0) && (
+                  <Stack
+                    direction="row"
+                    spacing={0.25}
                     sx={{
                       position: 'absolute',
                       bottom: 4,
                       left: '50%',
                       transform: 'translateX(-50%)',
-                      width: 6,
-                      height: 6,
-                      borderRadius: '50%',
-                      bgcolor: refinedColors.warning,
                     }}
-                  />
+                  >
+                    {dayData.appointments > 0 && (
+                      <Box
+                        sx={{
+                          width: 5,
+                          height: 5,
+                          borderRadius: '50%',
+                          bgcolor: refinedColors.primary,
+                        }}
+                      />
+                    )}
+                    {dayData.garmentsDue > 0 && (
+                      <Box
+                        sx={{
+                          width: 5,
+                          height: 5,
+                          borderRadius: '50%',
+                          bgcolor: refinedColors.warning,
+                        }}
+                      />
+                    )}
+                  </Stack>
                 )}
 
                 {/* Appointments count on hover */}
@@ -255,43 +276,79 @@ export function WeekOverview({
           </Stack>
         </Paper>
 
-        {/* Due Dates */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: 2,
-            border: `1px solid ${alpha(refinedColors.warning, 0.2)}`,
-            borderRadius: 2,
-            bgcolor: alpha(refinedColors.warning, 0.02),
-          }}
-        >
-          <Stack
-            direction="row"
-            justifyContent="space-between"
-            alignItems="center"
+        {/* Overdue Garments - Only show if there are overdue items */}
+        {summaryStats.totalOverdue > 0 && (
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2,
+              border: `1px solid ${alpha(refinedColors.error, 0.2)}`,
+              borderRadius: 2,
+              bgcolor: alpha(refinedColors.error, 0.02),
+            }}
           >
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <InventoryIcon
-                sx={{ fontSize: 18, color: refinedColors.warning }}
-              />
-              <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                Due dates
-              </Typography>
-            </Stack>
-            <Stack direction="row" alignItems="baseline" spacing={1}>
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+            >
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <WarningIcon
+                  sx={{ fontSize: 18, color: refinedColors.error }}
+                />
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                  Overdue garments
+                </Typography>
+              </Stack>
               <Typography
                 variant="h6"
-                sx={{ fontWeight: 700, color: refinedColors.warning }}
+                sx={{ fontWeight: 700, color: refinedColors.error }}
               >
-                {summaryStats.totalGarmentsDue}
+                {summaryStats.totalOverdue}
               </Typography>
-              <Typography
-                variant="caption"
-                sx={{ color: refinedColors.text.tertiary }}
-              ></Typography>
             </Stack>
-          </Stack>
-        </Paper>
+          </Paper>
+        )}
+
+        {/* Due Dates - Only show if there are garments due this week */}
+        {summaryStats.totalGarmentsDue > 0 && (
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2,
+              border: `1px solid ${alpha(refinedColors.warning, 0.2)}`,
+              borderRadius: 2,
+              bgcolor: alpha(refinedColors.warning, 0.02),
+            }}
+          >
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+            >
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <InventoryIcon
+                  sx={{ fontSize: 18, color: refinedColors.warning }}
+                />
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                  Garments due this week
+                </Typography>
+              </Stack>
+              <Stack direction="row" alignItems="baseline" spacing={1}>
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: 700, color: refinedColors.warning }}
+                >
+                  {summaryStats.totalGarmentsDue}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{ color: refinedColors.text.tertiary }}
+                ></Typography>
+              </Stack>
+            </Stack>
+          </Paper>
+        )}
       </Stack>
     </>
   );

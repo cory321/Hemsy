@@ -3,6 +3,7 @@
  */
 
 import type { GarmentStage } from '@/types';
+import { isGarmentOverdue, type GarmentOverdueInfo } from './overdue-logic';
 
 /**
  * Get the priority score for a garment stage
@@ -68,6 +69,7 @@ export function compareGarmentsByStageAndProgress(
  *
  * Priority order:
  * 1. Overdue items (sorted by how overdue, then by stage/progress)
+ *    - Excludes garments with all services completed (Ready For Pickup)
  * 2. Due today (sorted by stage/progress)
  * 3. Due tomorrow (sorted by stage/progress)
  * 4. Future items with due dates (sorted by date, then stage/progress)
@@ -78,6 +80,11 @@ export function sortGarmentsByPriority<
     due_date?: string | null;
     stage: GarmentStage;
     progress?: number;
+    garment_services?: Array<{
+      id: string;
+      is_done?: boolean | null;
+      is_removed?: boolean | null;
+    }> | null;
   },
 >(garments: T[]): T[] {
   const today = new Date();
@@ -110,14 +117,15 @@ export function sortGarmentsByPriority<
     const todayTime = today.getTime();
     const tomorrowTime = tomorrow.getTime();
 
-    const aIsOverdue = aTime < todayTime;
-    const bIsOverdue = bTime < todayTime;
+    // Use the new overdue logic that considers service completion
+    const aIsOverdue = isGarmentOverdue(a as GarmentOverdueInfo);
+    const bIsOverdue = isGarmentOverdue(b as GarmentOverdueInfo);
     const aIsToday = aTime === todayTime;
     const bIsToday = bTime === todayTime;
     const aIsTomorrow = aTime === tomorrowTime;
     const bIsTomorrow = bTime === tomorrowTime;
 
-    // Both overdue
+    // Both overdue (considering service completion)
     if (aIsOverdue && bIsOverdue) {
       // Sort by how overdue (most overdue first)
       const dateDiff = aTime - bTime;
@@ -126,7 +134,7 @@ export function sortGarmentsByPriority<
       return compareGarmentsByStageAndProgress(a, b);
     }
 
-    // One is overdue
+    // One is overdue (considering service completion)
     if (aIsOverdue) return -1;
     if (bIsOverdue) return 1;
 

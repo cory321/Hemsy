@@ -7,6 +7,8 @@ import {
   getTodayString,
   getCurrentTimeWithSeconds,
   getDueDateInfo,
+  isGarmentOverdue,
+  type GarmentOverdueInfo,
 } from '@/lib/utils/date-time-utils';
 import { compareGarmentsByStageAndProgress } from '@/lib/utils/garment-priority';
 import type { Appointment, GarmentStage } from '@/types';
@@ -351,6 +353,7 @@ export async function getActiveGarments(): Promise<ActiveGarment[]> {
   // Sort garments by priority
   // Priority order:
   // 1. Overdue items (sorted by how overdue they are, then by stage/progress)
+  //    - Excludes garments with all services completed (Ready For Pickup)
   // 2. Due today (sorted by stage/progress)
   // 3. Due tomorrow (sorted by stage/progress)
   // 4. Other items with due dates (sorted by date, then by stage/progress)
@@ -368,16 +371,19 @@ export async function getActiveGarments(): Promise<ActiveGarment[]> {
     if (!aDueInfo) return 1;
     if (!bDueInfo) return -1;
 
-    // Both have due dates - prioritize by urgency
-    // Overdue items first (most overdue at top)
-    if (aDueInfo.isPast && bDueInfo.isPast) {
+    // Check if garments are truly overdue (considering service completion)
+    const aIsOverdue = isGarmentOverdue(a as GarmentOverdueInfo);
+    const bIsOverdue = isGarmentOverdue(b as GarmentOverdueInfo);
+
+    // Both overdue (considering service completion)
+    if (aIsOverdue && bIsOverdue) {
       const dateDiff = aDueInfo.daysUntilDue - bDueInfo.daysUntilDue; // More negative = more overdue = higher priority
       if (dateDiff !== 0) return dateDiff;
       // Same overdue date - sort by stage/progress
       return compareGarmentsByStageAndProgress(a, b);
     }
-    if (aDueInfo.isPast) return -1;
-    if (bDueInfo.isPast) return 1;
+    if (aIsOverdue) return -1;
+    if (bIsOverdue) return 1;
 
     // Due today comes next
     if (aDueInfo.isToday && bDueInfo.isToday) {
@@ -573,7 +579,7 @@ export async function getWeekOverviewData(): Promise<WeekDayData[]> {
   const currentDate = new Date(startOfWeek);
 
   for (let i = 0; i < 7; i++) {
-    const dateStr = currentDate.toISOString().split('T')[0];
+    const dateStr = currentDate.toISOString().split('T')[0] as string;
 
     weekData.push({
       date: currentDate.getDate(),
@@ -597,10 +603,12 @@ export async function getWeekOverviewData(): Promise<WeekDayData[]> {
 export interface WeekSummaryStats {
   totalAppointments: number;
   totalGarmentsDue: number;
+  totalOverdue: number;
 }
 
 export async function getWeekSummaryStats(): Promise<WeekSummaryStats> {
   const weekData = await getWeekOverviewData();
+  const overdueCount = await getOverdueGarmentsCount();
 
   const totalAppointments = weekData.reduce(
     (sum, day) => sum + day.appointments,
@@ -614,5 +622,209 @@ export async function getWeekSummaryStats(): Promise<WeekSummaryStats> {
   return {
     totalAppointments,
     totalGarmentsDue,
+    totalOverdue: overdueCount,
+  };
+}
+
+/**
+ * Get the count of overdue garments
+ * Uses the isGarmentOverdue logic to properly filter
+ */
+export async function getOverdueGarmentsCount(): Promise<number> {
+  const { userId } = await auth();
+  if (!userId) throw new Error('Unauthorized');
+
+  const { shop } = await ensureUserAndShop();
+  const supabase = await createClient();
+
+  // Get all active garments with due dates in the past
+  const today = getTodayString();
+
+  const { data: garments, error } = await supabase
+    .from('garments')
+    .select(
+      `
+			id,
+			due_date,
+			stage,
+			garment_services (
+				id,
+				is_done,
+				is_removed
+			)
+		`
+    )
+    .eq('shop_id', shop.id)
+    .lt('due_date', today)
+    .not('stage', 'in', '("Done","Ready For Pickup")');
+
+  if (error) {
+    console.error('Error fetching overdue garments:', error);
+    throw new Error('Failed to fetch overdue garments');
+  }
+
+  // Filter using the isGarmentOverdue logic
+  const overdueGarments = (garments || []).filter((garment) => {
+    return isGarmentOverdue({
+      due_date: garment.due_date,
+      stage: garment.stage as GarmentStage,
+      garment_services: garment.garment_services || [],
+    });
+  });
+
+  return overdueGarments.length;
+}
+
+export interface DashboardAlertGarment {
+  id: string;
+  name: string;
+  client_name: string;
+  due_date: string | null;
+  days_overdue?: number;
+}
+
+/**
+ * Get overdue garments with details for dashboard alerts
+ * Returns up to 5 overdue garments with client names and days overdue
+ */
+export async function getOverdueGarmentsForAlert(): Promise<{
+  count: number;
+  garments: DashboardAlertGarment[];
+}> {
+  const { userId } = await auth();
+  if (!userId) throw new Error('Unauthorized');
+
+  const { shop } = await ensureUserAndShop();
+  const supabase = await createClient();
+
+  // Get all active garments with due dates in the past
+  const today = getTodayString();
+
+  const { data: garments, error } = await supabase
+    .from('garments')
+    .select(
+      `
+			id,
+			name,
+			due_date,
+			stage,
+			garment_services (
+				id,
+				is_done,
+				is_removed
+			),
+			orders!garments_order_id_fkey (
+				clients!orders_client_id_fkey (
+					first_name,
+					last_name
+				)
+			)
+		`
+    )
+    .eq('shop_id', shop.id)
+    .lt('due_date', today)
+    .not('stage', 'in', '("Done","Ready For Pickup")')
+    .order('due_date', { ascending: true }); // Most overdue first
+
+  if (error) {
+    console.error('Error fetching overdue garments:', error);
+    throw new Error('Failed to fetch overdue garments');
+  }
+
+  // Filter using the isGarmentOverdue logic and process
+  const overdueGarments = (garments || [])
+    .filter((garment) => {
+      return isGarmentOverdue({
+        due_date: garment.due_date,
+        stage: garment.stage as GarmentStage,
+        garment_services: garment.garment_services || [],
+      });
+    })
+    .map((garment): DashboardAlertGarment => {
+      const client = garment.orders?.clients;
+      const clientName = client
+        ? `${client.first_name} ${client.last_name[0]}.`
+        : 'Unknown Client';
+
+      const dueDateInfo = getDueDateInfo(garment.due_date);
+      const daysOverdue = dueDateInfo ? Math.abs(dueDateInfo.daysUntilDue) : 0;
+
+      return {
+        id: garment.id,
+        name: garment.name,
+        client_name: clientName,
+        due_date: garment.due_date,
+        days_overdue: daysOverdue,
+      };
+    });
+
+  return {
+    count: overdueGarments.length,
+    garments: overdueGarments.slice(0, 2), // Return up to 2 garments for display
+  };
+}
+
+/**
+ * Get garments due today with details for dashboard alerts
+ * Returns up to 2 garments due today with client names
+ */
+export async function getGarmentsDueTodayForAlert(): Promise<{
+  count: number;
+  garments: DashboardAlertGarment[];
+}> {
+  const { userId } = await auth();
+  if (!userId) throw new Error('Unauthorized');
+
+  const { shop } = await ensureUserAndShop();
+  const supabase = await createClient();
+
+  // Get today's date in YYYY-MM-DD format
+  const today = getTodayString();
+
+  const { data: garments, error } = await supabase
+    .from('garments')
+    .select(
+      `
+			id,
+			name,
+			due_date,
+			stage,
+			orders!garments_order_id_fkey (
+				clients!orders_client_id_fkey (
+					first_name,
+					last_name
+				)
+			)
+		`
+    )
+    .eq('shop_id', shop.id)
+    .eq('due_date', today)
+    .not('stage', 'in', '("Done","Ready For Pickup")')
+    .order('name', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching garments due today:', error);
+    throw new Error('Failed to fetch garments');
+  }
+
+  const processedGarments = (garments || []).map(
+    (garment): DashboardAlertGarment => {
+      const client = garment.orders?.clients;
+      const clientName = client
+        ? `${client.first_name} ${client.last_name[0]}.`
+        : 'Unknown Client';
+
+      return {
+        id: garment.id,
+        name: garment.name,
+        client_name: clientName,
+        due_date: garment.due_date,
+      };
+    }
+  );
+
+  return {
+    count: processedGarments.length,
+    garments: processedGarments.slice(0, 2), // Return up to 2 garments for display
   };
 }

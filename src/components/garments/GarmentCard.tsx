@@ -13,7 +13,10 @@ import SafeCldImage from '@/components/ui/SafeCldImage';
 import InlinePresetSvg from '@/components/ui/InlinePresetSvg';
 import { resolveGarmentDisplayImage } from '@/utils/displayImage';
 import { getStageColor } from '@/constants/garmentStages';
-import { getDueDateInfo } from '@/lib/utils/date-time-utils';
+import {
+  getEnhancedDueDateInfo,
+  type GarmentOverdueInfo,
+} from '@/lib/utils/date-time-utils';
 import { GarmentStage } from '@/types';
 
 interface GarmentCardProps {
@@ -28,6 +31,11 @@ interface GarmentCardProps {
     due_date?: string;
     event_date?: string;
     services?: any[];
+    garment_services?: Array<{
+      id: string;
+      is_done?: boolean | null;
+      is_removed?: boolean | null;
+    }> | null;
     stage?: GarmentStage;
     stage_name?: string | undefined;
   };
@@ -63,8 +71,8 @@ const GarmentCard: React.FC<GarmentCardProps> = ({
       0
     ) || 0;
 
-  // Get due date information using the consolidated utility
-  const dueDateInfo = getDueDateInfo(garment.due_date || null);
+  // Get due date information using the enhanced utility that considers service completion
+  const dueDateInfo = getEnhancedDueDateInfo(garment as GarmentOverdueInfo);
 
   return (
     <Card
@@ -209,21 +217,25 @@ const GarmentCard: React.FC<GarmentCardProps> = ({
           <Box sx={{ mb: 1 }}>
             <Chip
               label={
-                dueDateInfo.isPast
-                  ? `${Math.abs(dueDateInfo.daysUntilDue)} days overdue`
-                  : dueDateInfo.isToday
-                    ? 'Due today'
-                    : dueDateInfo.isTomorrow
-                      ? 'Due tomorrow'
-                      : `Due in ${dueDateInfo.daysUntilDue} days`
+                dueDateInfo.isPast && dueDateInfo.allServicesCompleted
+                  ? 'Ready for Pickup'
+                  : dueDateInfo.isOverdue
+                    ? `${Math.abs(dueDateInfo.daysUntilDue)} days overdue`
+                    : dueDateInfo.isToday
+                      ? 'Due today'
+                      : dueDateInfo.isTomorrow
+                        ? 'Due tomorrow'
+                        : `Due in ${dueDateInfo.daysUntilDue} days`
               }
               size="small"
               color={
-                dueDateInfo.isPast
-                  ? 'error'
-                  : dueDateInfo.isUrgent
-                    ? 'warning'
-                    : 'default'
+                dueDateInfo.isPast && dueDateInfo.allServicesCompleted
+                  ? 'success'
+                  : dueDateInfo.isOverdue
+                    ? 'error'
+                    : dueDateInfo.isUrgent
+                      ? 'warning'
+                      : 'default'
               }
             />
           </Box>

@@ -1,7 +1,7 @@
 import { Box } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
-import { DashboardAlerts } from '@/components/dashboard/alerts';
+import { DashboardAlertsServer } from '@/components/dashboard/alerts';
 import { AppointmentsFocusServer } from '@/components/dashboard/todays-focus';
 import { GarmentPipelineServer } from '@/components/dashboard/garment-pipeline/GarmentPipelineServer';
 import { BusinessOverviewServer } from '@/components/dashboard/business-overview';
@@ -18,7 +18,7 @@ export function DashboardServer() {
       <DashboardHeader />
 
       {/* Alert Section */}
-      <DashboardAlerts />
+      <DashboardAlertsServer />
 
       {/* Main Content Grid */}
       <Grid container spacing={3}>

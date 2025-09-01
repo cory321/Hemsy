@@ -21,6 +21,11 @@ import {
   calculatePaymentStatus,
   type PaymentInfo,
 } from '@/lib/utils/payment-calculations';
+import {
+  isOrderOverdue,
+  getOrderEffectiveDueDate,
+  type OrderOverdueInfo,
+} from '@/lib/utils/overdue-logic';
 
 interface OrderCardMinimalProps {
   order: any;
@@ -54,36 +59,37 @@ function getPaymentStatusChip(paymentStatus: string): {
 }
 
 function getDueDateInfo(orderDueDate: string | null, garments: any[]) {
-  // First try order due date, then fall back to earliest garment due date
-  let dueDate: string | null = orderDueDate;
+  // Get effective due date from order or garments
+  const effectiveDueDate = getOrderEffectiveDueDate({
+    order_due_date: orderDueDate,
+    garments: garments.map((g) => ({
+      ...g,
+      garment_services: g.garment_services || [],
+    })),
+  });
 
-  if (!dueDate) {
-    // Find earliest garment due date
-    const garmentDueDates = garments
-      .map((g) => g.due_date)
-      .filter((date) => date != null)
-      .map((date) => new Date(date))
-      .sort((a, b) => a.getTime() - b.getTime());
+  if (!effectiveDueDate) return null;
 
-    if (garmentDueDates.length > 0 && garmentDueDates[0]) {
-      const isoString = garmentDueDates[0].toISOString().split('T')[0];
-      dueDate = isoString || null; // Convert back to YYYY-MM-DD format
-    }
-  }
-
-  if (!dueDate) return null;
-
-  const due = new Date(dueDate);
+  const due = new Date(effectiveDueDate);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   due.setHours(0, 0, 0, 0);
   const daysUntilDue = differenceInDays(due, today);
 
+  // Check if the order is truly overdue (considering service completion)
+  const orderIsOverdue = isOrderOverdue({
+    order_due_date: orderDueDate,
+    garments: garments.map((g) => ({
+      ...g,
+      garment_services: g.garment_services || [],
+    })),
+  });
+
   return {
     date: format(due, 'MMM d'),
     fullDate: format(due, 'MMM d, yyyy'),
     daysUntilDue,
-    isOverdue: daysUntilDue < 0,
+    isOverdue: orderIsOverdue,
     isUrgent: daysUntilDue >= 0 && daysUntilDue <= 3,
     isToday: daysUntilDue === 0,
     isTomorrow: daysUntilDue === 1,

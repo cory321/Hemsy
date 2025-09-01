@@ -33,6 +33,11 @@ import {
   calculatePaymentStatus,
   type PaymentInfo,
 } from '@/lib/utils/payment-calculations';
+import {
+  isOrderOverdue,
+  getOrderEffectiveDueDate,
+  type OrderOverdueInfo,
+} from '@/lib/utils/overdue-logic';
 import type { GarmentStage } from '@/types';
 import SafeCldImage from '@/components/ui/SafeCldImage';
 import { resolveGarmentDisplayImage } from '@/utils/displayImage';
@@ -174,24 +179,16 @@ function GarmentProgress({ garment }: GarmentProgressProps) {
 }
 
 function getDueDateDisplay(orderDueDate: string | null, garments: any[]) {
-  // First try order due date, then fall back to earliest garment due date
-  let dueDate: string | null = orderDueDate;
+  // Get effective due date from order or garments
+  const effectiveDueDate = getOrderEffectiveDueDate({
+    order_due_date: orderDueDate,
+    garments: garments.map((g) => ({
+      ...g,
+      garment_services: g.garment_services || [],
+    })),
+  });
 
-  if (!dueDate) {
-    // Find earliest garment due date
-    const garmentDueDates = garments
-      .map((g) => g.due_date)
-      .filter((date) => date != null)
-      .map((date) => new Date(date))
-      .sort((a, b) => a.getTime() - b.getTime());
-
-    if (garmentDueDates.length > 0 && garmentDueDates[0]) {
-      const isoString = garmentDueDates[0].toISOString().split('T')[0];
-      dueDate = isoString || null; // Convert back to YYYY-MM-DD format
-    }
-  }
-
-  if (!dueDate)
+  if (!effectiveDueDate)
     return {
       text: 'No due date',
       color: 'text.secondary',
@@ -199,13 +196,30 @@ function getDueDateDisplay(orderDueDate: string | null, garments: any[]) {
       urgent: false,
     };
 
-  const due = new Date(dueDate);
+  const due = new Date(effectiveDueDate);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   due.setHours(0, 0, 0, 0);
   const daysUntilDue = differenceInDays(due, today);
 
-  if (daysUntilDue < 0) {
+  // Check if the order is truly overdue (considering service completion)
+  const orderIsOverdue = isOrderOverdue({
+    order_due_date: orderDueDate,
+    garments: garments.map((g) => ({
+      ...g,
+      garment_services: g.garment_services || [],
+    })),
+  });
+
+  // If past due but all services completed, show as ready
+  if (daysUntilDue < 0 && !orderIsOverdue) {
+    return {
+      text: 'Ready for Pickup',
+      color: 'success.main',
+      icon: <CheckCircleIcon sx={{ fontSize: 18 }} />,
+      urgent: false,
+    };
+  } else if (orderIsOverdue) {
     return {
       text: `${Math.abs(daysUntilDue)} days overdue`,
       color: 'error.main',

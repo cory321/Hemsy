@@ -377,6 +377,7 @@ export function formatTimeRange(
 
 /**
  * Get due date info with urgency status
+ * @deprecated For garments, use getEnhancedGarmentDueDateInfo which considers service completion
  */
 export interface DueDateInfo {
   date: string;
@@ -413,6 +414,7 @@ export function getDueDateInfo(dueDateStr: string | null): DueDateInfo | null {
 /**
  * Get a formatted display string for a garment due date
  * Returns "Overdue", "Due Today", "Due Tomorrow", or the short date format
+ * @deprecated Use getEnhancedGarmentDueDateDisplay which considers service completion
  */
 export function getGarmentDueDateDisplay(
   dueDateStr: string | null | undefined
@@ -432,6 +434,7 @@ export function getGarmentDueDateDisplay(
 /**
  * Check if a garment due date should be highlighted as urgent
  * Returns true for overdue items and items due today
+ * @deprecated Use isGarmentOverdue from overdue-logic.ts which considers service completion
  */
 export function isGarmentDueDateUrgent(
   dueDateStr: string | null | undefined
@@ -442,6 +445,49 @@ export function isGarmentDueDateUrgent(
   if (!dueDateInfo) return false;
 
   return dueDateInfo.isPast || dueDateInfo.isToday;
+}
+
+// Re-export enhanced functions from overdue-logic for convenience
+export {
+  isGarmentOverdue,
+  areAllServicesCompleted,
+  getEnhancedDueDateInfo,
+  isOrderOverdue,
+  type EnhancedDueDateInfo,
+  type GarmentOverdueInfo,
+  type OrderOverdueInfo,
+} from './overdue-logic';
+
+/**
+ * Enhanced display function that considers service completion
+ * A garment with all services completed shows "Ready for Pickup" instead of "Overdue"
+ */
+export function getEnhancedGarmentDueDateDisplay(garment: {
+  due_date?: string | null;
+  stage?: string | null;
+  garment_services?: Array<{
+    id: string;
+    is_done?: boolean | null;
+    is_removed?: boolean | null;
+  }> | null;
+}): string {
+  if (!garment.due_date) return 'No due date';
+
+  const { getEnhancedDueDateInfo } = require('./overdue-logic');
+  const enhancedInfo = getEnhancedDueDateInfo(garment);
+
+  if (!enhancedInfo) return 'No due date';
+
+  // If all services are completed and past due, show as Ready for Pickup
+  if (enhancedInfo.isPast && enhancedInfo.allServicesCompleted) {
+    return 'Ready for Pickup';
+  }
+
+  if (enhancedInfo.isOverdue) return 'Overdue';
+  if (enhancedInfo.isToday) return 'Due Today';
+  if (enhancedInfo.isTomorrow) return 'Due Tomorrow';
+
+  return enhancedInfo.shortDate;
 }
 
 /**
