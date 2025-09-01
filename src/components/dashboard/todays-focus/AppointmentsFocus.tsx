@@ -10,6 +10,7 @@ import { AppointmentDialog } from '@/components/appointments/AppointmentDialog';
 import { useRouter } from 'next/navigation';
 import { useInterval } from '@/lib/hooks/useInterval';
 import type { Appointment } from '@/types';
+import type { WeekDayData, WeekSummaryStats } from '@/lib/actions/dashboard';
 import {
   formatDateToYYYYMMDD,
   getCurrentTimeString,
@@ -21,11 +22,15 @@ import {
 interface AppointmentsFocusProps {
   nextAppointment: Appointment | null;
   todayAppointments: Appointment[];
+  weekData?: WeekDayData[];
+  weekSummaryStats?: WeekSummaryStats;
 }
 
 export function AppointmentsFocus({
   nextAppointment,
   todayAppointments,
+  weekData,
+  weekSummaryStats,
 }: AppointmentsFocusProps) {
   const router = useRouter();
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
@@ -137,7 +142,10 @@ export function AppointmentsFocus({
       {/* This Week Overview */}
       <Card elevation={0} sx={{ border: '1px solid #e0e0e0' }}>
         <CardContent>
-          <WeekOverview onViewCalendar={() => console.log('View calendar')} />
+          <WeekOverview
+            {...(weekData && { weekData })}
+            {...(weekSummaryStats && { summaryStats: weekSummaryStats })}
+          />
         </CardContent>
       </Card>
 

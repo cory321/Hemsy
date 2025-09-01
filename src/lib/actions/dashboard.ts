@@ -487,3 +487,132 @@ export async function getReadyForPickupGarments(): Promise<ActiveGarment[]> {
 
   return processedGarments;
 }
+
+/**
+ * Get appointments and garments due for the current week
+ * Used for the WeekOverview component on the dashboard
+ */
+export interface WeekDayData {
+  date: number; // Day of month
+  dayOfWeek: number; // 0 = Sunday, 6 = Saturday
+  fullDate: string; // YYYY-MM-DD format
+  appointments: number;
+  garmentsDue: number;
+  isToday: boolean;
+}
+
+export async function getWeekOverviewData(): Promise<WeekDayData[]> {
+  const { userId } = await auth();
+  if (!userId) throw new Error('Unauthorized');
+
+  const { shop } = await ensureUserAndShop();
+  const supabase = await createClient();
+
+  // Get current week boundaries (Sunday to Saturday)
+  const today = new Date();
+  const dayOfWeek = today.getDay(); // 0 = Sunday, 6 = Saturday
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - dayOfWeek);
+  startOfWeek.setHours(0, 0, 0, 0);
+
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 6);
+  endOfWeek.setHours(23, 59, 59, 999);
+
+  // Format dates for queries
+  const startDateStr = startOfWeek.toISOString().split('T')[0];
+  const endDateStr = endOfWeek.toISOString().split('T')[0];
+  const todayStr = today.toISOString().split('T')[0];
+
+  // Fetch appointments for the week
+  const { data: appointments, error: appointmentsError } = await supabase
+    .from('appointments')
+    .select('date')
+    .eq('shop_id', shop.id)
+    .gte('date', startDateStr)
+    .lte('date', endDateStr)
+    .in('status', ['pending', 'confirmed']);
+
+  if (appointmentsError) {
+    console.error('Error fetching week appointments:', appointmentsError);
+    throw new Error('Failed to fetch week appointments');
+  }
+
+  // Fetch garments due this week
+  const { data: garments, error: garmentsError } = await supabase
+    .from('garments')
+    .select('due_date')
+    .eq('shop_id', shop.id)
+    .gte('due_date', startDateStr)
+    .lte('due_date', endDateStr)
+    .not('stage', 'in', '("Done","Ready For Pickup")');
+
+  if (garmentsError) {
+    console.error('Error fetching week garments:', garmentsError);
+    throw new Error('Failed to fetch week garments');
+  }
+
+  // Count appointments and garments by date
+  const appointmentsByDate = new Map<string, number>();
+  const garmentsByDate = new Map<string, number>();
+
+  appointments?.forEach((appt) => {
+    const count = appointmentsByDate.get(appt.date) || 0;
+    appointmentsByDate.set(appt.date, count + 1);
+  });
+
+  garments?.forEach((garment) => {
+    if (garment.due_date) {
+      const count = garmentsByDate.get(garment.due_date) || 0;
+      garmentsByDate.set(garment.due_date, count + 1);
+    }
+  });
+
+  // Build week data array
+  const weekData: WeekDayData[] = [];
+  const currentDate = new Date(startOfWeek);
+
+  for (let i = 0; i < 7; i++) {
+    const dateStr = currentDate.toISOString().split('T')[0];
+
+    weekData.push({
+      date: currentDate.getDate(),
+      dayOfWeek: currentDate.getDay(),
+      fullDate: dateStr,
+      appointments: appointmentsByDate.get(dateStr) || 0,
+      garmentsDue: garmentsByDate.get(dateStr) || 0,
+      isToday: dateStr === todayStr,
+    });
+
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+
+  return weekData;
+}
+
+/**
+ * Get total appointments and garments due for the week
+ * Used for the summary stats in WeekOverview
+ */
+export interface WeekSummaryStats {
+  totalAppointments: number;
+  totalGarmentsDue: number;
+}
+
+export async function getWeekSummaryStats(): Promise<WeekSummaryStats> {
+  const weekData = await getWeekOverviewData();
+
+  const totalAppointments = weekData.reduce(
+    (sum, day) => sum + day.appointments,
+    0
+  );
+  const totalGarmentsDue = weekData.reduce(
+    (sum, day) => sum + day.garmentsDue,
+    0
+  );
+
+  return {
+    totalAppointments,
+    totalGarmentsDue,
+  };
+}

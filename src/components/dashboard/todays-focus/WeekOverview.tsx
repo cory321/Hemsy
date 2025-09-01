@@ -9,6 +9,7 @@ import {
   Paper,
   LinearProgress,
   alpha,
+  Tooltip,
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import {
@@ -16,17 +17,12 @@ import {
   CalendarMonth as CalendarIcon,
   Inventory2 as InventoryIcon,
 } from '@mui/icons-material';
-
-interface DayData {
-  date: number;
-  appointments: number;
-  tasks: number;
-  isToday?: boolean;
-}
+import { useRouter } from 'next/navigation';
+import type { WeekDayData, WeekSummaryStats } from '@/lib/actions/dashboard';
 
 interface WeekOverviewProps {
-  weekData?: DayData[];
-  onViewCalendar?: () => void;
+  weekData?: WeekDayData[];
+  summaryStats?: WeekSummaryStats;
 }
 
 const refinedColors = {
@@ -40,21 +36,48 @@ const refinedColors = {
   },
 };
 
-// Default week data for static UI
-const defaultWeekData: DayData[] = [
-  { date: 17, appointments: 0, tasks: 0 },
-  { date: 18, appointments: 2, tasks: 1 },
-  { date: 19, appointments: 4, tasks: 2, isToday: true },
-  { date: 20, appointments: 3, tasks: 2 },
-  { date: 21, appointments: 2, tasks: 1 },
-  { date: 22, appointments: 1, tasks: 2 },
-  { date: 23, appointments: 0, tasks: 0 },
-];
+// Default week data for loading/error states
+function generateDefaultWeekData(): WeekDayData[] {
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - dayOfWeek);
+
+  const weekData: WeekDayData[] = [];
+  const currentDate = new Date(startOfWeek);
+
+  for (let i = 0; i < 7; i++) {
+    const dateString = currentDate.toISOString().split('T')[0];
+    weekData.push({
+      date: currentDate.getDate(),
+      dayOfWeek: currentDate.getDay(),
+      fullDate: dateString!, // We know this is always defined
+      appointments: 0,
+      garmentsDue: 0,
+      isToday: currentDate.toDateString() === today.toDateString(),
+    });
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+
+  return weekData;
+}
 
 export function WeekOverview({
-  weekData = defaultWeekData,
-  onViewCalendar,
+  weekData = generateDefaultWeekData(),
+  summaryStats = { totalAppointments: 0, totalGarmentsDue: 0 },
 }: WeekOverviewProps) {
+  const router = useRouter();
+
+  const handleViewCalendar = () => {
+    router.push('/appointments');
+  };
+
+  const handleDateClick = (date: string | undefined) => {
+    if (!date) return;
+    // Navigate to appointments page with day view and specific date
+    router.push(`/appointments?view=day&date=${date}`);
+  };
+
   return (
     <>
       <Stack
@@ -70,7 +93,7 @@ export function WeekOverview({
           size="small"
           endIcon={<ArrowForwardIcon sx={{ fontSize: 16 }} />}
           sx={{ color: refinedColors.primary }}
-          onClick={onViewCalendar}
+          onClick={handleViewCalendar}
         >
           Full calendar
         </Button>
@@ -105,6 +128,7 @@ export function WeekOverview({
           {weekData.map((dayData, index) => (
             <Grid size="grow" key={index}>
               <Paper
+                onClick={() => handleDateClick(dayData.fullDate)}
                 sx={{
                   position: 'relative',
                   aspectRatio: '1',
@@ -114,7 +138,7 @@ export function WeekOverview({
                   justifyContent: 'center',
                   bgcolor: dayData.isToday
                     ? alpha(refinedColors.primary, 0.1)
-                    : dayData.appointments + dayData.tasks > 0
+                    : dayData.appointments + dayData.garmentsDue > 0
                       ? alpha(refinedColors.primary, 0.02)
                       : 'transparent',
                   border: dayData.isToday
@@ -145,64 +169,51 @@ export function WeekOverview({
                   {dayData.date}
                 </Typography>
 
-                {/* Activity indicators */}
-                {(dayData.appointments > 0 || dayData.tasks > 0) && (
-                  <Stack
-                    direction="row"
-                    spacing={0.25}
+                {/* Activity indicators - dots for garments due */}
+                {dayData.garmentsDue > 0 && (
+                  <Box
                     sx={{
                       position: 'absolute',
                       bottom: 4,
                       left: '50%',
                       transform: 'translateX(-50%)',
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      bgcolor: refinedColors.warning,
                     }}
-                  >
-                    {dayData.appointments > 0 && (
-                      <Box
-                        sx={{
-                          width: 4,
-                          height: 4,
-                          borderRadius: '50%',
-                          bgcolor: refinedColors.primary,
-                        }}
-                      />
-                    )}
-                    {dayData.tasks > 0 && (
-                      <Box
-                        sx={{
-                          width: 4,
-                          height: 4,
-                          borderRadius: '50%',
-                          bgcolor: refinedColors.warning,
-                        }}
-                      />
-                    )}
-                  </Stack>
+                  />
                 )}
 
-                {/* Hover tooltip preview */}
-                {(dayData.appointments > 0 || dayData.tasks > 0) && (
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      top: -1,
-                      right: -1,
-                      bgcolor: refinedColors.primary,
-                      color: 'white',
-                      borderRadius: '0 4px 0 8px',
-                      px: 0.75,
-                      py: 0.25,
-                      fontSize: '0.625rem',
-                      fontWeight: 700,
-                      opacity: 0,
-                      transition: 'opacity 0.2s',
-                      '.MuiPaper-root:hover &': {
-                        opacity: 1,
-                      },
-                    }}
+                {/* Appointments count on hover */}
+                {dayData.appointments > 0 && (
+                  <Tooltip
+                    title={`${dayData.appointments} appointment${dayData.appointments !== 1 ? 's' : ''}`}
+                    placement="top"
+                    arrow
                   >
-                    {dayData.appointments + dayData.tasks}
-                  </Box>
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        top: -1,
+                        right: -1,
+                        bgcolor: refinedColors.primary,
+                        color: 'white',
+                        borderRadius: '0 4px 0 8px',
+                        px: 0.75,
+                        py: 0.25,
+                        fontSize: '0.625rem',
+                        fontWeight: 700,
+                        opacity: 0,
+                        transition: 'opacity 0.2s',
+                        '.MuiPaper-root:hover &': {
+                          opacity: 1,
+                        },
+                      }}
+                    >
+                      {dayData.appointments}
+                    </Box>
+                  </Tooltip>
                 )}
               </Paper>
             </Grid>
@@ -239,7 +250,7 @@ export function WeekOverview({
               variant="h6"
               sx={{ fontWeight: 700, color: refinedColors.primary }}
             >
-              12
+              {summaryStats.totalAppointments}
             </Typography>
           </Stack>
         </Paper>
@@ -272,7 +283,7 @@ export function WeekOverview({
                 variant="h6"
                 sx={{ fontWeight: 700, color: refinedColors.warning }}
               >
-                8
+                {summaryStats.totalGarmentsDue}
               </Typography>
               <Typography
                 variant="caption"

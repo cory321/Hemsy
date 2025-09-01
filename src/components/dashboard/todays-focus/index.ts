@@ -4,3 +4,4 @@ export { AppointmentsFocusLoading } from './AppointmentsFocusLoading';
 export { NextAppointmentCard } from './NextAppointmentCard';
 export { TodaySchedule } from './TodaySchedule';
 export { WeekOverview } from './WeekOverview';
+export { WeekOverviewServer } from './WeekOverviewServer';
