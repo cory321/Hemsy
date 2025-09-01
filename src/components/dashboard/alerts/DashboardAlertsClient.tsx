@@ -28,6 +28,8 @@ export function DashboardAlertsClient({
   const router = useRouter();
   const [showAllOverdue, setShowAllOverdue] = useState(false);
   const [showAllDueToday, setShowAllDueToday] = useState(false);
+  const [dismissedOverdue, setDismissedOverdue] = useState(false);
+  const [dismissedDueToday, setDismissedDueToday] = useState(false);
 
   // Format garment list for display
   const formatGarmentList = (
@@ -73,10 +75,19 @@ export function DashboardAlertsClient({
     }
   };
 
+  // Check if we have any alerts to show
+  const hasOverdueAlert = overdueData.count > 0 && !dismissedOverdue;
+  const hasDueTodayAlert = dueTodayData.count > 0 && !dismissedDueToday;
+
+  // Don't render anything if no alerts are visible
+  if (!hasOverdueAlert && !hasDueTodayAlert) {
+    return null;
+  }
+
   return (
     <Stack spacing={2} sx={{ mb: 4 }}>
       {/* Overdue Alert */}
-      {overdueData.count > 0 && (
+      {hasOverdueAlert && (
         <AlertCard
           icon={<WarningIcon sx={{ fontSize: 20 }} />}
           title={`${overdueData.count} garment${overdueData.count !== 1 ? 's' : ''} overdue`}
@@ -88,11 +99,12 @@ export function DashboardAlertsClient({
           severity="error"
           onAction={handleOverdueViewAll}
           actionLabel={showAllOverdue ? 'Show less' : 'View all'}
+          onDismiss={() => setDismissedOverdue(true)}
         />
       )}
 
       {/* Due Today Alert */}
-      {dueTodayData.count > 0 && (
+      {hasDueTodayAlert && (
         <AlertCard
           icon={<ScheduleIcon sx={{ fontSize: 20 }} />}
           title={`${dueTodayData.count} garment${dueTodayData.count !== 1 ? 's' : ''} due today`}
@@ -104,6 +116,7 @@ export function DashboardAlertsClient({
           severity="warning"
           onAction={handleDueTodayViewAll}
           actionLabel={showAllDueToday ? 'Show less' : 'View all'}
+          onDismiss={() => setDismissedDueToday(true)}
         />
       )}
     </Stack>

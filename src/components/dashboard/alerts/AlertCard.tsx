@@ -1,6 +1,15 @@
 'use client';
 
-import { Paper, Stack, Box, Typography, Button, alpha } from '@mui/material';
+import {
+  Paper,
+  Stack,
+  Box,
+  Typography,
+  Button,
+  alpha,
+  IconButton,
+} from '@mui/material';
+import { Close as CloseIcon } from '@mui/icons-material';
 import { ReactNode } from 'react';
 
 interface AlertCardProps {
@@ -11,6 +20,7 @@ interface AlertCardProps {
   onAction?: () => void;
   actionLabel?: string;
   showAction?: boolean;
+  onDismiss?: () => void;
 }
 
 const severityColors = {
@@ -28,6 +38,7 @@ export function AlertCard({
   onAction,
   actionLabel = 'View all',
   showAction = true,
+  onDismiss,
 }: AlertCardProps) {
   const color = severityColors[severity];
 
@@ -39,12 +50,13 @@ export function AlertCard({
         border: `1px solid ${alpha(color, 0.3)}`,
         bgcolor: alpha(color, 0.05),
         borderRadius: 2,
+        position: 'relative',
       }}
     >
       <Stack direction="row" alignItems="center" justifyContent="space-between">
-        <Stack direction="row" alignItems="center" spacing={2}>
+        <Stack direction="row" alignItems="center" spacing={2} sx={{ flex: 1 }}>
           <Box sx={{ color, display: 'flex' }}>{icon}</Box>
-          <Box>
+          <Box sx={{ flex: 1 }}>
             <Typography
               variant="body2"
               sx={{ fontWeight: 600, color: '#1a1a1a' }}
@@ -56,15 +68,32 @@ export function AlertCard({
             </Typography>
           </Box>
         </Stack>
-        {showAction && onAction && (
-          <Button
-            size="small"
-            sx={{ color, minWidth: 'auto' }}
-            onClick={onAction}
-          >
-            {actionLabel}
-          </Button>
-        )}
+        <Stack direction="row" alignItems="center" spacing={1}>
+          {showAction && onAction && (
+            <Button
+              size="small"
+              sx={{ color, minWidth: 'auto' }}
+              onClick={onAction}
+            >
+              {actionLabel}
+            </Button>
+          )}
+          {onDismiss && (
+            <IconButton
+              size="small"
+              onClick={onDismiss}
+              sx={{
+                color: '#666666',
+                '&:hover': {
+                  bgcolor: alpha(color, 0.1),
+                },
+              }}
+              aria-label="Dismiss"
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          )}
+        </Stack>
       </Stack>
     </Paper>
   );
