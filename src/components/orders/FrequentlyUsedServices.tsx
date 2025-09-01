@@ -43,27 +43,39 @@ export default function FrequentlyUsedServices({
 
       // Otherwise, load from API (fallback for components that don't preload)
       try {
-        const serviceOptions = await getFrequentlyUsedServices();
+        const result = await getFrequentlyUsedServices();
+
+        if (!result.success) {
+          console.error('Failed to load frequent services:', result.error);
+          return;
+        }
+
+        const serviceOptions = result.data;
         console.log('Loaded frequent services:', serviceOptions);
 
         // If no frequently used services, try to load all services and show first few
         if (serviceOptions.length === 0) {
-          try {
-            const allServices = await fetchAllServices();
+          const allServicesResult = await fetchAllServices();
+
+          if (!allServicesResult.success) {
+            console.error(
+              'Failed to load fallback services:',
+              allServicesResult.error
+            );
+          } else {
+            const allServices = allServicesResult.data;
             console.log(
               'No frequent services found, loaded all services:',
               allServices
             );
             // Show first 6 services as fallback
             setFrequentServices(allServices.slice(0, 6));
-          } catch (searchError) {
-            console.error('Failed to load fallback services:', searchError);
           }
         } else {
           setFrequentServices(serviceOptions);
         }
       } catch (error) {
-        console.error('Failed to load frequent services:', error);
+        console.error('Unexpected error loading services:', error);
       }
     };
     loadFrequentServices();

@@ -84,10 +84,14 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
   useEffect(() => {
     const loadFrequentServices = async () => {
       try {
-        const services = await getFrequentlyUsedServices();
-        setFrequentServices(services);
+        const result = await getFrequentlyUsedServices();
+        if (result.success) {
+          setFrequentServices(result.data);
+        } else {
+          console.error('Failed to load frequent services:', result.error);
+        }
       } catch (error) {
-        console.error('Failed to load frequent services:', error);
+        console.error('Unexpected error loading frequent services:', error);
       }
     };
     loadFrequentServices();
@@ -104,13 +108,18 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
       }
       setSearchLoading(true);
       try {
-        const results = await searchServices(searchQuery);
+        const result = await searchServices(searchQuery);
         if (isActive) {
-          setSearchResults(results);
+          if (result.success) {
+            setSearchResults(result.data);
+          } else {
+            console.error('Failed to search services:', result.error);
+            setSearchResults([]);
+          }
         }
       } catch (error) {
         if (isActive) {
-          console.error('Failed to search services:', error);
+          console.error('Unexpected error searching services:', error);
           setSearchResults([]);
         }
       } finally {
@@ -154,37 +163,45 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
 
     try {
       if (quickAddToCatalog) {
-        try {
-          const created = await addService({
-            name: quickAddName,
-            default_qty: quickAddQuantity,
-            default_unit: quickAddUnit,
-            default_unit_price_cents: priceCents,
-            frequently_used: quickAddFrequentlyUsed,
-          });
-          const newService: ServiceLine = {
-            serviceId: created.id,
-            name: quickAddName,
-            quantity: quickAddQuantity,
-            unit: quickAddUnit,
-            unitPriceCents: priceCents,
-          };
-          addServiceToGarment(garmentId, newService);
-          toast.success('Service added to catalog');
+        const result = await addService({
+          name: quickAddName,
+          default_qty: quickAddQuantity,
+          default_unit: quickAddUnit,
+          default_unit_price_cents: priceCents,
+          frequently_used: quickAddFrequentlyUsed,
+        });
 
-          // Reload frequently used services if the new service is marked as frequently used
-          if (quickAddFrequentlyUsed) {
-            try {
-              const services = await getFrequentlyUsedServices();
-              setFrequentServices(services);
-            } catch (error) {
-              console.error('Failed to reload frequent services:', error);
-            }
+        if (!result.success) {
+          // Check if it's a duplicate name error
+          if (result.error.includes('already exists')) {
+            toast.error(result.error);
+          } else {
+            toast.error(`Failed to add service: ${result.error}`);
           }
-        } catch (error) {
-          console.error('Failed to add service:', error);
-          toast.error('Failed to add service');
           return;
+        }
+
+        const created = result.data;
+        const newService: ServiceLine = {
+          serviceId: created.id,
+          name: quickAddName,
+          quantity: quickAddQuantity,
+          unit: quickAddUnit,
+          unitPriceCents: priceCents,
+        };
+        addServiceToGarment(garmentId, newService);
+        toast.success('Service added to catalog');
+
+        // Reload frequently used services if the new service is marked as frequently used
+        if (quickAddFrequentlyUsed) {
+          try {
+            const servicesResult = await getFrequentlyUsedServices();
+            if (servicesResult.success) {
+              setFrequentServices(servicesResult.data);
+            }
+          } catch (error) {
+            console.error('Failed to reload frequent services:', error);
+          }
         }
       } else {
         // Add as inline service

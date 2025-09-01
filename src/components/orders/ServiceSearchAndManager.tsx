@@ -96,13 +96,18 @@ export default function ServiceSearchAndManager({
       }
       setSearchLoading(true);
       try {
-        const results = await searchServices(searchQuery);
+        const result = await searchServices(searchQuery);
         if (isActive) {
-          setSearchResults(results);
+          if (result.success) {
+            setSearchResults(result.data);
+          } else {
+            console.error('Failed to search services:', result.error);
+            setSearchResults([]);
+          }
         }
       } catch (error) {
         if (isActive) {
-          console.error('Failed to search services:', error);
+          console.error('Unexpected error searching services:', error);
           setSearchResults([]);
         }
       } finally {
@@ -158,28 +163,34 @@ export default function ServiceSearchAndManager({
 
     try {
       if (quickAddToCatalog) {
-        try {
-          const created = await addService({
-            name: quickAddName,
-            default_qty: quickAddQuantity,
-            default_unit: quickAddUnit,
-            default_unit_price_cents: priceCents,
-            frequently_used: quickAddFrequentlyUsed,
-          });
-          const newService: ServiceDraft = {
-            serviceId: created.id,
-            name: quickAddName,
-            quantity: quickAddQuantity,
-            unit: quickAddUnit,
-            unitPriceCents: priceCents,
-          };
-          onChange([...services, newService]);
-          toast.success('Service added to catalog');
-        } catch (error) {
-          console.error('Failed to add service:', error);
-          toast.error('Failed to add service');
+        const result = await addService({
+          name: quickAddName,
+          default_qty: quickAddQuantity,
+          default_unit: quickAddUnit,
+          default_unit_price_cents: priceCents,
+          frequently_used: quickAddFrequentlyUsed,
+        });
+
+        if (!result.success) {
+          // Check if it's a duplicate name error
+          if (result.error.includes('already exists')) {
+            toast.error(result.error);
+          } else {
+            toast.error(`Failed to add service: ${result.error}`);
+          }
           return;
         }
+
+        const created = result.data;
+        const newService: ServiceDraft = {
+          serviceId: created.id,
+          name: quickAddName,
+          quantity: quickAddQuantity,
+          unit: quickAddUnit,
+          unitPriceCents: priceCents,
+        };
+        onChange([...services, newService]);
+        toast.success('Service added to catalog');
       } else {
         // Add as inline service
         const newService: ServiceDraft = {

@@ -91,27 +91,39 @@ export default function ServiceSelectorModal({
 
       // Otherwise, load from API (fallback for components that don't preload)
       try {
-        const serviceOptions = await getFrequentlyUsedServices();
+        const result = await getFrequentlyUsedServices();
+
+        if (!result.success) {
+          console.error('Failed to load frequent services:', result.error);
+          return;
+        }
+
+        const serviceOptions = result.data;
         console.log('Loaded frequent services:', serviceOptions);
 
         // If no frequently used services, try to load all services and show first few
         if (serviceOptions.length === 0) {
-          try {
-            const allServices = await fetchAllServices();
+          const allServicesResult = await fetchAllServices();
+
+          if (!allServicesResult.success) {
+            console.error(
+              'Failed to load fallback services:',
+              allServicesResult.error
+            );
+          } else {
+            const allServices = allServicesResult.data;
             console.log(
               'No frequent services found, loaded all services:',
               allServices
             );
             // Show first 6 services as fallback
             setFrequentServices(allServices.slice(0, 6));
-          } catch (searchError) {
-            console.error('Failed to load fallback services:', searchError);
           }
         } else {
           setFrequentServices(serviceOptions);
         }
       } catch (error) {
-        console.error('Failed to load frequent services:', error);
+        console.error('Unexpected error loading services:', error);
       }
     };
     loadFrequentServices();
@@ -128,13 +140,18 @@ export default function ServiceSelectorModal({
       }
       setSearchLoading(true);
       try {
-        const results = await searchServices(searchQuery);
+        const result = await searchServices(searchQuery);
         if (isActive) {
-          setSearchResults(results);
+          if (result.success) {
+            setSearchResults(result.data);
+          } else {
+            console.error('Failed to search services:', result.error);
+            setSearchResults([]);
+          }
         }
       } catch (error) {
         if (isActive) {
-          console.error('Failed to search services:', error);
+          console.error('Unexpected error searching services:', error);
           setSearchResults([]);
         }
       } finally {
@@ -190,37 +207,46 @@ export default function ServiceSelectorModal({
 
     try {
       if (quickAddToCatalog) {
-        try {
-          const created = await addService({
-            name: quickAddName,
-            default_qty: quickAddQuantity,
-            default_unit: quickAddUnit,
-            default_unit_price_cents: priceCents,
-            frequently_used: quickAddFrequentlyUsed,
-          });
-          const newService: ServiceDraft = {
-            serviceId: created.id,
-            name: quickAddName,
-            quantity: quickAddQuantity,
-            unit: quickAddUnit,
-            unitPriceCents: priceCents,
-          };
-          onChange([...services, newService]);
-          toast.success('Service added to catalog');
+        const result = await addService({
+          name: quickAddName,
+          default_qty: quickAddQuantity,
+          default_unit: quickAddUnit,
+          default_unit_price_cents: priceCents,
+          frequently_used: quickAddFrequentlyUsed,
+        });
 
-          // Reload frequently used services if the new service is marked as frequently used
-          if (quickAddFrequentlyUsed) {
-            try {
-              const serviceOptions = await getFrequentlyUsedServices();
-              setFrequentServices(serviceOptions);
-            } catch (error) {
-              console.error('Failed to reload frequent services:', error);
-            }
+        if (!result.success) {
+          // Check if it's a duplicate name error
+          if (result.error.includes('already exists')) {
+            toast.error(result.error);
+          } else {
+            toast.error(`Failed to add service: ${result.error}`);
           }
-        } catch (error) {
-          console.error('Failed to add service:', error);
-          toast.error('Failed to add service');
           return;
+        }
+
+        const created = result.data;
+        const newService: ServiceDraft = {
+          serviceId: created.id,
+          name: quickAddName,
+          quantity: quickAddQuantity,
+          unit: quickAddUnit,
+          unitPriceCents: priceCents,
+        };
+        onChange([...services, newService]);
+        toast.success('Service added to catalog');
+
+        // Reload frequently used services if the new service is marked as frequently used
+        if (quickAddFrequentlyUsed) {
+          try {
+            const serviceOptionsResult = await getFrequentlyUsedServices();
+            if (serviceOptionsResult.success) {
+              const serviceOptions = serviceOptionsResult.data;
+              setFrequentServices(serviceOptions);
+            }
+          } catch (error) {
+            console.error('Failed to reload frequent services:', error);
+          }
         }
       } else {
         // Add as inline service

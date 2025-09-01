@@ -34,10 +34,14 @@ export default function Step2GarmentDetailsCards() {
   useEffect(() => {
     const loadServices = async () => {
       try {
-        const services = await getFrequentlyUsedServices();
-        setPreloadedServices(services);
+        const result = await getFrequentlyUsedServices();
+        if (result.success) {
+          setPreloadedServices(result.data);
+        } else {
+          console.error('Failed to preload services:', result.error);
+        }
       } catch (error) {
-        console.error('Failed to preload services:', error);
+        console.error('Unexpected error preloading services:', error);
       }
     };
     loadServices();

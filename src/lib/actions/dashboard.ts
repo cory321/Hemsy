@@ -294,7 +294,8 @@ export async function getActiveGarments(): Promise<ActiveGarment[]> {
       garment_services (
         id,
         name,
-        is_done
+        is_done,
+        is_removed
       ),
       orders!garments_order_id_fkey (
         clients!orders_client_id_fkey (
@@ -321,8 +322,9 @@ export async function getActiveGarments(): Promise<ActiveGarment[]> {
         ? `${garment.orders.clients.first_name} ${garment.orders.clients.last_name[0]}.`
         : 'Unknown Client';
 
-      // Calculate progress based on completed services
-      const services = garment.garment_services || [];
+      // Calculate progress based on completed services (excluding soft-deleted)
+      const allServices = garment.garment_services || [];
+      const services = allServices.filter((s: any) => !s.is_removed);
       const totalServices = services.length;
       const completedServices = services.filter((s: any) => s.is_done).length;
       const progress =
@@ -429,7 +431,8 @@ export async function getReadyForPickupGarments(): Promise<ActiveGarment[]> {
       garment_services (
         id,
         name,
-        is_done
+        is_done,
+        is_removed
       ),
       orders!garments_order_id_fkey (
         clients!orders_client_id_fkey (
@@ -456,8 +459,9 @@ export async function getReadyForPickupGarments(): Promise<ActiveGarment[]> {
         ? `${garment.orders.clients.first_name} ${garment.orders.clients.last_name[0]}.`
         : 'Unknown Client';
 
-      // Calculate progress based on completed services
-      const services = garment.garment_services || [];
+      // Calculate progress based on completed services (excluding soft-deleted)
+      const allServices = garment.garment_services || [];
+      const services = allServices.filter((s: any) => !s.is_removed);
       const totalServices = services.length;
       const completedServices = services.filter((s: any) => s.is_done).length;
       const progress =

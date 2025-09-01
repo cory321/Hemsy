@@ -45,16 +45,23 @@ export const QuickServiceChips = ({
 
   const loadServices = async () => {
     try {
-      const frequentServices = await getFrequentlyUsedServices();
-      // In the future, we could filter by garment type
-      setServices(
-        frequentServices.slice(0, 6).map((service) => ({
-          ...service,
-          default_unit: service.default_unit as 'flat_rate' | 'hour' | 'day',
-        }))
-      ); // Show top 6
+      const result = await getFrequentlyUsedServices();
+      if (result.success) {
+        const frequentServices = result.data;
+        // In the future, we could filter by garment type
+        setServices(
+          frequentServices.slice(0, 6).map((service: any) => ({
+            ...service,
+            default_unit: service.default_unit as 'flat_rate' | 'hour' | 'day',
+          }))
+        ); // Show top 6
+      } else {
+        console.error('Failed to load services:', result.error);
+        setServices([]);
+      }
     } catch (error) {
-      console.error('Failed to load services:', error);
+      console.error('Unexpected error loading services:', error);
+      setServices([]);
     } finally {
       setIsLoading(false);
     }

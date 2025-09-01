@@ -118,7 +118,19 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
         payload.description = newService.description;
       }
 
-      const newServiceItem = await addService(payload);
+      const result = await addService(payload);
+
+      if (!result.success) {
+        // Check if it's a duplicate name error
+        if (result.error.includes('already exists')) {
+          setNameError(result.error);
+        } else {
+          toast.error(result.error);
+        }
+        return;
+      }
+
+      const newServiceItem = result.data;
 
       // Cast default_unit to ServiceUnitType for Service compatibility
       const serviceForSelect: Service = {
@@ -143,17 +155,9 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
       );
       onClose();
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
-
-      // Check if it's a duplicate name error
-      if (errorMessage.includes('already exists')) {
-        setNameError(errorMessage);
-      } else {
-        toast.error(`Error adding service: ${errorMessage}`);
-      }
-
-      console.error('Error adding service:', error);
+      // This catch block should rarely be reached now, only for unexpected errors
+      console.error('Unexpected error adding service:', error);
+      toast.error('An unexpected error occurred while adding the service');
     } finally {
       setIsLoading(false);
     }

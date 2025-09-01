@@ -94,10 +94,16 @@ export default function GarmentServicesManager({
     if (query.length < 2) return;
     setSearchLoading(true);
     try {
-      const results = await searchServices(query);
-      setCatalogServices(results);
+      const result = await searchServices(query);
+      if (result.success) {
+        setCatalogServices(result.data);
+      } else {
+        console.error('Error searching services:', result.error);
+        setCatalogServices([]);
+      }
     } catch (err) {
-      console.error('Error searching services:', err);
+      console.error('Unexpected error searching services:', err);
+      setCatalogServices([]);
     } finally {
       setSearchLoading(false);
     }

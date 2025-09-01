@@ -41,11 +41,15 @@ import LockOpenIcon from '@mui/icons-material/LockOpen';
 import LockIcon from '@mui/icons-material/Lock';
 
 import WarningIcon from '@mui/icons-material/Warning';
-import { searchServices } from '@/lib/actions/services';
+import {
+  searchServices,
+  addService as addServiceToCatalog,
+} from '@/lib/actions/services';
 import { useGarment } from '@/contexts/GarmentContext';
 import { SERVICE_UNIT_TYPES } from '@/lib/utils/serviceUnitTypes';
 import { parseFloatFromCurrency } from '@/lib/utils/currency';
 import ServicePriceInput from '@/components/common/ServicePriceInput';
+import { toast } from 'sonner';
 
 interface Service {
   id: string;
@@ -120,10 +124,16 @@ export default function GarmentServicesManagerOptimistic() {
     if (query.length < 2) return;
     setSearchLoading(true);
     try {
-      const results = await searchServices(query);
-      setCatalogServices(results);
+      const result = await searchServices(query);
+      if (result.success) {
+        setCatalogServices(result.data);
+      } else {
+        console.error('Error searching services:', result.error);
+        setCatalogServices([]);
+      }
     } catch (err) {
-      console.error('Error searching services:', err);
+      console.error('Unexpected error searching services:', err);
+      setCatalogServices([]);
     } finally {
       setSearchLoading(false);
     }
@@ -132,33 +142,66 @@ export default function GarmentServicesManagerOptimistic() {
   const handleAddService = async () => {
     setLoading(true);
 
-    // Close dialog immediately for better UX
-    setShowAddDialog(false);
-
     const unitPriceCents = Math.round(
       parseFloatFromCurrency(newService.price) * 100
     );
 
-    const input = newService.isCustom
-      ? {
-          customService: {
-            name: newService.name,
-            description: newService.description || undefined,
-            unit: newService.unit,
-            unitPriceCents: unitPriceCents,
-            quantity: newService.quantity,
-          },
+    let serviceIdToAdd = newService.serviceId;
+
+    // If custom service and addToCatalog is true, first add to catalog
+    if (newService.isCustom && newService.addToCatalog) {
+      const catalogResult = await addServiceToCatalog({
+        name: newService.name,
+        description: newService.description || null,
+        default_qty: newService.quantity,
+        default_unit: newService.unit,
+        default_unit_price_cents: unitPriceCents,
+        frequently_used: newService.markAsFrequentlyUsed,
+      });
+
+      if (!catalogResult.success) {
+        // Show error and keep dialog open
+        setLoading(false);
+        // Check if it's a duplicate name error
+        if (catalogResult.error.includes('already exists')) {
+          toast.error(catalogResult.error);
+        } else {
+          toast.error(
+            `Failed to add service to catalog: ${catalogResult.error}`
+          );
         }
-      : {
-          serviceId: newService.serviceId,
-          customService: {
-            name: newService.name,
-            description: newService.description || undefined,
-            unit: newService.unit,
-            unitPriceCents: unitPriceCents,
-            quantity: newService.quantity,
-          },
-        };
+        return; // Don't close dialog or add to garment
+      }
+
+      // Use the newly created service ID
+      serviceIdToAdd = catalogResult.data.id;
+      toast.success('Service added to catalog');
+    }
+
+    // Close dialog after successful catalog addition (or if not adding to catalog)
+    setShowAddDialog(false);
+
+    const input =
+      newService.isCustom && !newService.addToCatalog
+        ? {
+            customService: {
+              name: newService.name,
+              description: newService.description || undefined,
+              unit: newService.unit,
+              unitPriceCents: unitPriceCents,
+              quantity: newService.quantity,
+            },
+          }
+        : {
+            serviceId: serviceIdToAdd,
+            customService: {
+              name: newService.name,
+              description: newService.description || undefined,
+              unit: newService.unit,
+              unitPriceCents: unitPriceCents,
+              quantity: newService.quantity,
+            },
+          };
 
     // Optimistic update happens inside addService
     await addService(input);

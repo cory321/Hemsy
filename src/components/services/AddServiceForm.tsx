@@ -98,7 +98,7 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
 
     try {
       const serviceData = convertServiceForDatabase(newService);
-      const newServiceItem = await addService({
+      const result = await addService({
         name: serviceData.name!,
         ...(serviceData.description !== undefined && {
           description: serviceData.description,
@@ -108,6 +108,18 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
         default_unit_price_cents: serviceData.default_unit_price_cents!,
         frequently_used: isFrequentlyUsed,
       });
+
+      if (!result.success) {
+        // Check if it's a duplicate name error
+        if (result.error.includes('already exists')) {
+          setNameError(result.error);
+        } else {
+          toast.error(result.error);
+        }
+        return;
+      }
+
+      const newServiceItem = result.data;
 
       // Map database result to Service type from serviceUtils
       const serviceForState: Service = {
@@ -138,17 +150,9 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
         `${newServiceItem.name} has been added to your service catalog.`
       );
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
-
-      // Check if it's a duplicate name error
-      if (errorMessage.includes('already exists')) {
-        setNameError(errorMessage);
-      } else {
-        toast.error(`Error adding service: ${errorMessage}`);
-      }
-
-      console.error('Error adding service:', error);
+      // This catch block should rarely be reached now, only for unexpected errors
+      console.error('Unexpected error adding service:', error);
+      toast.error('An unexpected error occurred while adding the service');
     } finally {
       setIsLoading(false);
     }

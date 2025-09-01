@@ -29,7 +29,14 @@ export default function ServiceList({
 
     try {
       const serviceData = convertServiceForDatabase(updatedService);
-      const updated = await editService(id, serviceData as any);
+      const result = await editService(id, serviceData as any);
+
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
+
+      const updated = result.data;
 
       // Map database result to Service type from serviceUtils
       const updatedForState: Service = {
@@ -51,9 +58,9 @@ export default function ServiceList({
 
       toast.success('Service updated successfully');
     } catch (error) {
-      toast.error(
-        `Error updating service: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
+      // This catch block should rarely be reached now, only for unexpected errors
+      console.error('Unexpected error updating service:', error);
+      toast.error('An unexpected error occurred while updating the service');
     } finally {
       setIsLoading((prev) => ({ ...prev, [id]: false }));
     }
@@ -63,15 +70,21 @@ export default function ServiceList({
     setIsLoading((prev) => ({ ...prev, [id]: true }));
 
     try {
-      await deleteService(id);
+      const result = await deleteService(id);
+
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
+
       setServices((prevServices) =>
         prevServices.filter((service) => service.id !== id)
       );
       toast.success('Service deleted successfully');
     } catch (error) {
-      toast.error(
-        `Error deleting service: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
+      // This catch block should rarely be reached now, only for unexpected errors
+      console.error('Unexpected error deleting service:', error);
+      toast.error('An unexpected error occurred while deleting the service');
     } finally {
       setIsLoading((prev) => ({ ...prev, [id]: false }));
     }

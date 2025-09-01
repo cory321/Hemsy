@@ -45,9 +45,17 @@ const ServicesSearch: React.FC<ServicesSearchProps> = ({
 
       setLoading(true);
       try {
-        const results = await searchServices(query);
+        const result = await searchServices(query);
+
+        if (!result.success) {
+          console.error('Failed to search services:', result.error);
+          setOptions([]);
+          return;
+        }
+
+        const results = result.data;
         // Map database results to Service interface
-        const services: Service[] = results.map((result) => {
+        const services: Service[] = results.map((result: any) => {
           const service: Service = {
             id: result.id,
             name: result.name,
