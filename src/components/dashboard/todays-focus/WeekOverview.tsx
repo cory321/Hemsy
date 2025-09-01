@@ -210,177 +210,78 @@ export function WeekOverview({
         </Grid>
       </Box>
 
-      {/* Quick Stats with Visual Progress */}
+      {/* Week Summary Stats */}
       <Stack spacing={2}>
-        {/* Appointments Progress */}
-        <Box>
+        {/* Appointments */}
+        <Paper
+          elevation={0}
+          sx={{
+            p: 2,
+            border: `1px solid ${alpha(refinedColors.primary, 0.2)}`,
+            borderRadius: 2,
+            bgcolor: alpha(refinedColors.primary, 0.02),
+          }}
+        >
           <Stack
             direction="row"
             justifyContent="space-between"
             alignItems="center"
-            sx={{ mb: 0.5 }}
           >
             <Stack direction="row" alignItems="center" spacing={1}>
               <CalendarIcon
-                sx={{ fontSize: 16, color: refinedColors.primary }}
+                sx={{ fontSize: 18, color: refinedColors.primary }}
               />
               <Typography variant="body2" sx={{ fontWeight: 500 }}>
                 Appointments
               </Typography>
             </Stack>
             <Typography
-              variant="body2"
+              variant="h6"
               sx={{ fontWeight: 700, color: refinedColors.primary }}
             >
               12
             </Typography>
           </Stack>
-          <Box sx={{ position: 'relative' }}>
-            <LinearProgress
-              variant="determinate"
-              value={75}
-              sx={{
-                height: 4,
-                borderRadius: 2,
-                bgcolor: alpha(refinedColors.primary, 0.1),
-                '& .MuiLinearProgress-bar': {
-                  bgcolor: refinedColors.primary,
-                  borderRadius: 2,
-                },
-              }}
-            />
-            <Typography
-              variant="caption"
-              sx={{
-                position: 'absolute',
-                right: 0,
-                top: 6,
-                fontSize: '0.625rem',
-                color: refinedColors.text.tertiary,
-              }}
-            >
-              75% booked
-            </Typography>
-          </Box>
-        </Box>
+        </Paper>
 
-        {/* Tasks/Due Dates Progress */}
-        <Box>
+        {/* Due Dates */}
+        <Paper
+          elevation={0}
+          sx={{
+            p: 2,
+            border: `1px solid ${alpha(refinedColors.warning, 0.2)}`,
+            borderRadius: 2,
+            bgcolor: alpha(refinedColors.warning, 0.02),
+          }}
+        >
           <Stack
             direction="row"
             justifyContent="space-between"
             alignItems="center"
-            sx={{ mb: 0.5 }}
           >
             <Stack direction="row" alignItems="center" spacing={1}>
               <InventoryIcon
-                sx={{ fontSize: 16, color: refinedColors.warning }}
+                sx={{ fontSize: 18, color: refinedColors.warning }}
               />
               <Typography variant="body2" sx={{ fontWeight: 500 }}>
                 Due dates
               </Typography>
             </Stack>
-            <Typography
-              variant="body2"
-              sx={{ fontWeight: 700, color: refinedColors.warning }}
-            >
-              8
-            </Typography>
+            <Stack direction="row" alignItems="baseline" spacing={1}>
+              <Typography
+                variant="h6"
+                sx={{ fontWeight: 700, color: refinedColors.warning }}
+              >
+                8
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{ color: refinedColors.text.tertiary }}
+              ></Typography>
+            </Stack>
           </Stack>
-          <Box sx={{ position: 'relative' }}>
-            <LinearProgress
-              variant="determinate"
-              value={60}
-              sx={{
-                height: 4,
-                borderRadius: 2,
-                bgcolor: alpha(refinedColors.warning, 0.1),
-                '& .MuiLinearProgress-bar': {
-                  bgcolor: refinedColors.warning,
-                  borderRadius: 2,
-                },
-              }}
-            />
-            <Typography
-              variant="caption"
-              sx={{
-                position: 'absolute',
-                right: 0,
-                top: 6,
-                fontSize: '0.625rem',
-                color: refinedColors.text.tertiary,
-              }}
-            >
-              3 urgent
-            </Typography>
-          </Box>
-        </Box>
-
-        {/* Available Capacity */}
-        <Box
-          sx={{
-            p: 1.5,
-            bgcolor: alpha(refinedColors.success, 0.08),
-            borderRadius: 2,
-            border: `1px solid ${alpha(refinedColors.success, 0.2)}`,
-          }}
-        >
-          <Stack
-            direction="row"
-            justifyContent="space-between"
-            alignItems="center"
-          >
-            <Typography
-              variant="body2"
-              sx={{ color: refinedColors.success, fontWeight: 500 }}
-            >
-              💡 3 time slots available
-            </Typography>
-            <Button
-              size="small"
-              sx={{
-                minWidth: 'auto',
-                color: refinedColors.success,
-                fontSize: '0.75rem',
-                px: 1,
-              }}
-            >
-              Book
-            </Button>
-          </Stack>
-        </Box>
+        </Paper>
       </Stack>
-
-      {/* Upcoming Highlight */}
-      <Box
-        sx={{
-          mt: 2,
-          p: 1.5,
-          bgcolor: alpha(refinedColors.primary, 0.03),
-          borderRadius: 2,
-          border: `1px dashed ${alpha(refinedColors.primary, 0.3)}`,
-        }}
-      >
-        <Typography
-          variant="caption"
-          sx={{
-            color: refinedColors.text.tertiary,
-            display: 'block',
-            mb: 0.5,
-          }}
-        >
-          Next milestone
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{ fontWeight: 600, color: refinedColors.text.primary }}
-        >
-          Wedding season prep - 5 gowns
-        </Typography>
-        <Typography variant="caption" sx={{ color: refinedColors.primary }}>
-          Starts Thursday
-        </Typography>
-      </Box>
     </>
   );
 }

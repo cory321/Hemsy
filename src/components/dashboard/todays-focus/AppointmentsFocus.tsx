@@ -5,7 +5,6 @@ import { Stack, Card, CardContent, Typography } from '@mui/material';
 import { NextAppointmentCard } from './NextAppointmentCard';
 import { TodaySchedule } from './TodaySchedule';
 import { WeekOverview } from './WeekOverview';
-import { ReadyForPickup } from './ReadyForPickup';
 import { AppointmentDetailsDialog } from '@/components/appointments/AppointmentDetailsDialog';
 import { AppointmentDialog } from '@/components/appointments/AppointmentDialog';
 import { useRouter } from 'next/navigation';
@@ -141,9 +140,6 @@ export function AppointmentsFocus({
           <WeekOverview onViewCalendar={() => console.log('View calendar')} />
         </CardContent>
       </Card>
-
-      {/* Ready for Pickup */}
-      <ReadyForPickup onSendReminders={() => console.log('Send reminders')} />
 
       {/* Appointment Details Dialog */}
       {selectedAppointment && (

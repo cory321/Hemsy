@@ -4,7 +4,7 @@ import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { DashboardAlerts } from '@/components/dashboard/alerts';
 import { AppointmentsFocusServer } from '@/components/dashboard/todays-focus';
 import { GarmentPipelineServer } from '@/components/dashboard/garment-pipeline/GarmentPipelineServer';
-import { BusinessOverview } from '@/components/dashboard/business-overview';
+import { BusinessOverviewServer } from '@/components/dashboard/business-overview';
 
 // Refined color palette
 const refinedColors = {
@@ -24,7 +24,7 @@ export function DashboardServer() {
       <Grid container spacing={3}>
         {/* Left Column - Business Overview */}
         <Grid size={{ xs: 12, lg: 3 }}>
-          <BusinessOverview />
+          <BusinessOverviewServer />
         </Grid>
 
         {/* Center Column - Garment Pipeline */}

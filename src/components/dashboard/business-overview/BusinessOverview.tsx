@@ -9,12 +9,30 @@ import { RecentActivity } from './RecentActivity';
 import ClientCreateDialog from '@/components/clients/ClientCreateDialog';
 import { AppointmentDialog } from '@/components/appointments/AppointmentDialog';
 import CreateServiceDialog from '@/components/services/CreateServiceDialog';
+import { useAppointments } from '@/providers/AppointmentProvider';
+import type { ShopHours } from '@/types';
 
-export function BusinessOverview() {
+interface BusinessOverviewProps {
+  shopId: string;
+  shopHours: ShopHours[];
+  calendarSettings: {
+    buffer_time_minutes: number;
+    default_appointment_duration: number;
+  };
+}
+
+export function BusinessOverview({
+  shopId,
+  shopHours,
+  calendarSettings,
+}: BusinessOverviewProps) {
   const router = useRouter();
   const [clientDialogOpen, setClientDialogOpen] = useState(false);
   const [appointmentDialogOpen, setAppointmentDialogOpen] = useState(false);
   const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
+
+  // Get appointments from the provider to check for conflicts
+  const { appointments } = useAppointments();
 
   const handleQuickAction = (actionId: string) => {
     switch (actionId) {
@@ -64,7 +82,11 @@ export function BusinessOverview() {
       <AppointmentDialog
         open={appointmentDialogOpen}
         onClose={() => setAppointmentDialogOpen(false)}
-        onCreate={async () => {
+        shopHours={shopHours}
+        existingAppointments={appointments}
+        calendarSettings={calendarSettings}
+        onCreate={async (data) => {
+          // The AppointmentDialog will handle the creation through the provider
           setAppointmentDialogOpen(false);
           // Optionally refresh data or show success message
         }}
