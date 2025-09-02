@@ -99,6 +99,7 @@ interface AppointmentDialogProps {
     type: 'consultation' | 'fitting' | 'pickup' | 'delivery' | 'other';
     notes?: string;
     sendEmail?: boolean;
+    timezone?: string;
   }) => Promise<void>;
   onUpdate?: (data: {
     clientId: string;
@@ -109,6 +110,7 @@ interface AppointmentDialogProps {
     notes?: string;
     status?: string;
     sendEmail?: boolean;
+    timezone?: string;
   }) => Promise<void>;
   onDateChange?: (date: Date) => void;
   isLoadingAppointments?: boolean;
@@ -285,6 +287,7 @@ export function AppointmentDialog({
         type: 'consultation' | 'fitting' | 'pickup' | 'delivery' | 'other';
         notes?: string;
         sendEmail?: boolean;
+        timezone?: string;
       } = {
         clientId: formData.client_id,
         date: dayjs.isDayjs(formData.date)
@@ -300,6 +303,7 @@ export function AppointmentDialog({
           | 'other',
         ...(formData.notes ? { notes: formData.notes } : {}),
         sendEmail,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       };
 
       if (appointment && onUpdate) {

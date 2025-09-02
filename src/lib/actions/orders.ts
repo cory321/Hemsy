@@ -5,7 +5,9 @@ import { z } from 'zod';
 import { createClient as createSupabaseClient } from '@/lib/supabase/server';
 import { assignDefaultGarmentNames } from '@/lib/utils/order-normalization';
 import { ensureUserAndShop } from './users';
-import type { Tables } from '@/types/supabase';
+import type { Tables, Database } from '@/types/supabase';
+import { convertLocalToUTC } from '@/lib/utils/date-time-utc';
+import { getShopTimezone } from '@/lib/utils/timezone-helpers';
 
 export interface PaginatedOrders {
   data: Array<
@@ -49,7 +51,7 @@ export interface PaginatedOrders {
 
 export interface OrdersFilters {
   search?: string;
-  status?: string;
+  status?: Database['public']['Enums']['order_status'] | 'all';
   paymentStatus?: string;
   sortBy?: 'created_at' | 'order_due_date' | 'total_cents' | 'status';
   sortOrder?: 'asc' | 'desc';
@@ -243,6 +245,7 @@ const CreateOrderInputSchema = z.object({
   discountCents: z.number().int().min(0).default(0),
   garments: z.array(GarmentInputSchema).min(1),
   notes: z.string().optional(),
+  timezone: z.string().optional(),
 });
 
 type CreateOrderInput = z.infer<typeof CreateOrderInputSchema>;
@@ -307,6 +310,9 @@ export async function createOrder(
     const { shop } = await ensureUserAndShop();
     const supabase = await createSupabaseClient();
 
+    // Get timezone for UTC conversion
+    const timezone = input.timezone || (await getShopTimezone(shop.id));
+
     // Generate order number per shop
     const { data: orderNumberData, error: orderNumberError } =
       await supabase.rpc('generate_order_number', { p_shop_id: shop.id });
@@ -315,6 +321,21 @@ export async function createOrder(
       throw new Error(
         orderNumberError?.message || 'Failed to generate order number'
       );
+    }
+
+    // Calculate order due date from earliest garment due date
+    let orderDueAtUTC: string | null = null;
+
+    const garmentDueDates = garmentsWithDefaultNames
+      .map((g) => g.dueDate)
+      .filter((date): date is string => !!date)
+      .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+
+    if (garmentDueDates.length > 0 && garmentDueDates[0]) {
+      const orderDueDate = garmentDueDates[0];
+      // Convert to UTC (assumes noon in shop timezone for date-only values)
+      const dueAtUTC = convertLocalToUTC(orderDueDate, '12:00', timezone);
+      orderDueAtUTC = dueAtUTC.toISOString();
     }
 
     // Insert order
@@ -327,6 +348,7 @@ export async function createOrder(
         discount_cents: input.discountCents ?? 0,
         notes: input.notes ?? null,
         order_number: orderNumberData as string,
+        due_at: orderDueAtUTC,
       })
       .select('id')
       .single();
@@ -344,6 +366,20 @@ export async function createOrder(
         : null;
       const dueDate = garment.dueDate ?? null;
 
+      // Convert dates to UTC
+      let eventAtUTC: string | null = null;
+      let dueAtUTC: string | null = null;
+
+      if (eventDate) {
+        const eventUTC = convertLocalToUTC(eventDate, '12:00', timezone);
+        eventAtUTC = eventUTC.toISOString();
+      }
+
+      if (dueDate) {
+        const dueUTC = convertLocalToUTC(dueDate, '12:00', timezone);
+        dueAtUTC = dueUTC.toISOString();
+      }
+
       const { data: garmentIns, error: garmentErr } = await supabase
         .from('garments')
         .insert({
@@ -351,8 +387,8 @@ export async function createOrder(
           order_id: orderId,
           name: garment.name,
           notes: garment.notes ?? null,
-          event_date: eventDate,
-          due_date: dueDate,
+          event_at: eventAtUTC,
+          due_at: dueAtUTC,
           stage: 'New',
           // Persist optional image fields
           image_cloud_id: garment.imageCloudId ?? null,

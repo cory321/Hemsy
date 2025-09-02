@@ -141,6 +141,7 @@ export default function OrderFlowStepper() {
         discountCents: orderDraft.discountCents,
         notes: orderDraft.notes,
         taxPercent: taxPercent,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         garments: garmentsNormalized.map((garment: GarmentDraft) => {
           const garmentData = {
             name: garment.name,

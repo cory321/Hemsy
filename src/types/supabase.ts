@@ -19,12 +19,14 @@ export type Database = {
           client_id: string;
           created_at: string | null;
           date: string;
+          end_at: string | null;
           end_time: string;
           id: string;
           notes: string | null;
           order_id: string | null;
           reminder_sent: boolean | null;
           shop_id: string;
+          start_at: string | null;
           start_time: string;
           status: Database['public']['Enums']['appointment_status'];
           type: string;
@@ -34,12 +36,14 @@ export type Database = {
           client_id: string;
           created_at?: string | null;
           date: string;
+          end_at?: string | null;
           end_time: string;
           id?: string;
           notes?: string | null;
           order_id?: string | null;
           reminder_sent?: boolean | null;
           shop_id: string;
+          start_at?: string | null;
           start_time: string;
           status?: Database['public']['Enums']['appointment_status'];
           type: string;
@@ -49,12 +53,14 @@ export type Database = {
           client_id?: string;
           created_at?: string | null;
           date?: string;
+          end_at?: string | null;
           end_time?: string;
           id?: string;
           notes?: string | null;
           order_id?: string | null;
           reminder_sent?: boolean | null;
           shop_id?: string;
+          start_at?: string | null;
           start_time?: string;
           status?: Database['public']['Enums']['appointment_status'];
           type?: string;
@@ -535,6 +541,13 @@ export type Database = {
             foreignKeyName: 'garment_services_invoice_id_fkey';
             columns: ['invoice_id'];
             isOneToOne: false;
+            referencedRelation: 'invoice_payment_summary';
+            referencedColumns: ['invoice_id'];
+          },
+          {
+            foreignKeyName: 'garment_services_invoice_id_fkey';
+            columns: ['invoice_id'];
+            isOneToOne: false;
             referencedRelation: 'invoices';
             referencedColumns: ['id'];
           },
@@ -564,7 +577,9 @@ export type Database = {
       garments: {
         Row: {
           created_at: string | null;
+          due_at: string | null;
           due_date: string | null;
+          event_at: string | null;
           event_date: string | null;
           id: string;
           image_cloud_id: string | null;
@@ -581,7 +596,9 @@ export type Database = {
         };
         Insert: {
           created_at?: string | null;
+          due_at?: string | null;
           due_date?: string | null;
+          event_at?: string | null;
           event_date?: string | null;
           id?: string;
           image_cloud_id?: string | null;
@@ -598,7 +615,9 @@ export type Database = {
         };
         Update: {
           created_at?: string | null;
+          due_at?: string | null;
           due_date?: string | null;
+          event_at?: string | null;
           event_date?: string | null;
           id?: string;
           image_cloud_id?: string | null;
@@ -713,6 +732,13 @@ export type Database = {
             foreignKeyName: 'invoice_status_history_invoice_id_fkey';
             columns: ['invoice_id'];
             isOneToOne: false;
+            referencedRelation: 'invoice_payment_summary';
+            referencedColumns: ['invoice_id'];
+          },
+          {
+            foreignKeyName: 'invoice_status_history_invoice_id_fkey';
+            columns: ['invoice_id'];
+            isOneToOne: false;
             referencedRelation: 'invoices';
             referencedColumns: ['id'];
           },
@@ -807,6 +833,7 @@ export type Database = {
           created_at: string | null;
           deposit_amount_cents: number | null;
           discount_cents: number;
+          due_at: string | null;
           id: string;
           is_paid: boolean;
           notes: string | null;
@@ -816,7 +843,7 @@ export type Database = {
           paid_at: string | null;
           payment_status: string | null;
           shop_id: string;
-          status: string | null;
+          status: Database['public']['Enums']['order_status'];
           subtotal_cents: number;
           tax_cents: number;
           total_cents: number;
@@ -827,6 +854,7 @@ export type Database = {
           created_at?: string | null;
           deposit_amount_cents?: number | null;
           discount_cents?: number;
+          due_at?: string | null;
           id?: string;
           is_paid?: boolean;
           notes?: string | null;
@@ -836,7 +864,7 @@ export type Database = {
           paid_at?: string | null;
           payment_status?: string | null;
           shop_id: string;
-          status?: string | null;
+          status?: Database['public']['Enums']['order_status'];
           subtotal_cents?: number;
           tax_cents?: number;
           total_cents?: number;
@@ -847,6 +875,7 @@ export type Database = {
           created_at?: string | null;
           deposit_amount_cents?: number | null;
           discount_cents?: number;
+          due_at?: string | null;
           id?: string;
           is_paid?: boolean;
           notes?: string | null;
@@ -856,7 +885,7 @@ export type Database = {
           paid_at?: string | null;
           payment_status?: string | null;
           shop_id?: string;
-          status?: string | null;
+          status?: Database['public']['Enums']['order_status'];
           subtotal_cents?: number;
           tax_cents?: number;
           total_cents?: number;
@@ -922,6 +951,13 @@ export type Database = {
             foreignKeyName: 'payment_audit_log_payment_id_fkey';
             columns: ['payment_id'];
             isOneToOne: false;
+            referencedRelation: 'payment_reconciliation';
+            referencedColumns: ['payment_id'];
+          },
+          {
+            foreignKeyName: 'payment_audit_log_payment_id_fkey';
+            columns: ['payment_id'];
+            isOneToOne: false;
             referencedRelation: 'payments';
             referencedColumns: ['id'];
           },
@@ -944,6 +980,7 @@ export type Database = {
           payment_id: string;
           timestamp: string;
           user_agent: string | null;
+          user_id: string | null;
         };
         Insert: {
           action: string;
@@ -954,6 +991,7 @@ export type Database = {
           payment_id: string;
           timestamp?: string;
           user_agent?: string | null;
+          user_id?: string | null;
         };
         Update: {
           action?: string;
@@ -964,13 +1002,28 @@ export type Database = {
           payment_id?: string;
           timestamp?: string;
           user_agent?: string | null;
+          user_id?: string | null;
         };
         Relationships: [
           {
             foreignKeyName: 'payment_audit_logs_payment_id_fkey';
             columns: ['payment_id'];
             isOneToOne: false;
+            referencedRelation: 'payment_reconciliation';
+            referencedColumns: ['payment_id'];
+          },
+          {
+            foreignKeyName: 'payment_audit_logs_payment_id_fkey';
+            columns: ['payment_id'];
+            isOneToOne: false;
             referencedRelation: 'payments';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'payment_audit_logs_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
             referencedColumns: ['id'];
           },
         ];
@@ -1013,6 +1066,13 @@ export type Database = {
           used_at?: string | null;
         };
         Relationships: [
+          {
+            foreignKeyName: 'payment_links_invoice_id_fkey';
+            columns: ['invoice_id'];
+            isOneToOne: false;
+            referencedRelation: 'invoice_payment_summary';
+            referencedColumns: ['invoice_id'];
+          },
           {
             foreignKeyName: 'payment_links_invoice_id_fkey';
             columns: ['invoice_id'];
@@ -1085,6 +1145,13 @@ export type Database = {
             foreignKeyName: 'payments_invoice_id_fkey';
             columns: ['invoice_id'];
             isOneToOne: false;
+            referencedRelation: 'invoice_payment_summary';
+            referencedColumns: ['invoice_id'];
+          },
+          {
+            foreignKeyName: 'payments_invoice_id_fkey';
+            columns: ['invoice_id'];
+            isOneToOne: false;
             referencedRelation: 'invoices';
             referencedColumns: ['id'];
           },
@@ -1107,6 +1174,7 @@ export type Database = {
           payment_id: string;
           processed_at: string | null;
           reason: string | null;
+          refund_method: string;
           refund_type: string;
           status: string;
           stripe_metadata: Json | null;
@@ -1121,6 +1189,7 @@ export type Database = {
           payment_id: string;
           processed_at?: string | null;
           reason?: string | null;
+          refund_method?: string;
           refund_type: string;
           status?: string;
           stripe_metadata?: Json | null;
@@ -1135,6 +1204,7 @@ export type Database = {
           payment_id?: string;
           processed_at?: string | null;
           reason?: string | null;
+          refund_method?: string;
           refund_type?: string;
           status?: string;
           stripe_metadata?: Json | null;
@@ -1147,6 +1217,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: 'users';
             referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'refunds_payment_id_fkey';
+            columns: ['payment_id'];
+            isOneToOne: false;
+            referencedRelation: 'payment_reconciliation';
+            referencedColumns: ['payment_id'];
           },
           {
             foreignKeyName: 'refunds_payment_id_fkey';
@@ -1203,8 +1280,22 @@ export type Database = {
             foreignKeyName: 'service_payment_allocations_invoice_id_fkey';
             columns: ['invoice_id'];
             isOneToOne: false;
+            referencedRelation: 'invoice_payment_summary';
+            referencedColumns: ['invoice_id'];
+          },
+          {
+            foreignKeyName: 'service_payment_allocations_invoice_id_fkey';
+            columns: ['invoice_id'];
+            isOneToOne: false;
             referencedRelation: 'invoices';
             referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'service_payment_allocations_payment_id_fkey';
+            columns: ['payment_id'];
+            isOneToOne: false;
+            referencedRelation: 'payment_reconciliation';
+            referencedColumns: ['payment_id'];
           },
           {
             foreignKeyName: 'service_payment_allocations_payment_id_fkey';
@@ -1266,6 +1357,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: 'garment_services';
             referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'service_refund_history_payment_id_fkey';
+            columns: ['payment_id'];
+            isOneToOne: false;
+            referencedRelation: 'payment_reconciliation';
+            referencedColumns: ['payment_id'];
           },
           {
             foreignKeyName: 'service_refund_history_payment_id_fkey';
@@ -1449,6 +1547,8 @@ export type Database = {
           owner_user_id: string;
           phone_number: string | null;
           tax_percent: number;
+          timezone: string | null;
+          timezone_offset: number | null;
           trial_countdown_enabled: boolean | null;
           trial_end_date: string | null;
           updated_at: string | null;
@@ -1467,6 +1567,8 @@ export type Database = {
           owner_user_id: string;
           phone_number?: string | null;
           tax_percent?: number;
+          timezone?: string | null;
+          timezone_offset?: number | null;
           trial_countdown_enabled?: boolean | null;
           trial_end_date?: string | null;
           updated_at?: string | null;
@@ -1485,6 +1587,8 @@ export type Database = {
           owner_user_id?: string;
           phone_number?: string | null;
           tax_percent?: number;
+          timezone?: string | null;
+          timezone_offset?: number | null;
           trial_countdown_enabled?: boolean | null;
           trial_end_date?: string | null;
           updated_at?: string | null;
@@ -1562,6 +1666,8 @@ export type Database = {
           id: string;
           last_name: string | null;
           role: string | null;
+          timezone: string | null;
+          timezone_offset: number | null;
           updated_at: string | null;
         };
         Insert: {
@@ -1572,6 +1678,8 @@ export type Database = {
           id?: string;
           last_name?: string | null;
           role?: string | null;
+          timezone?: string | null;
+          timezone_offset?: number | null;
           updated_at?: string | null;
         };
         Update: {
@@ -1582,6 +1690,8 @@ export type Database = {
           id?: string;
           last_name?: string | null;
           role?: string | null;
+          timezone?: string | null;
+          timezone_offset?: number | null;
           updated_at?: string | null;
         };
         Relationships: [];
@@ -1627,8 +1737,72 @@ export type Database = {
           },
         ];
       };
+      invoice_payment_summary: {
+        Row: {
+          amount_due: number | null;
+          invoice_id: string | null;
+          invoice_status: string | null;
+          invoice_total: number | null;
+          last_payment_date: string | null;
+          last_refund_date: string | null;
+          net_paid: number | null;
+          order_id: string | null;
+          payment_count: number | null;
+          total_paid: number | null;
+          total_refunded: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'invoices_order_id_fkey';
+            columns: ['order_id'];
+            isOneToOne: false;
+            referencedRelation: 'orders';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      payment_reconciliation: {
+        Row: {
+          amount_cents: number | null;
+          consistency_status: string | null;
+          discrepancy_amount: number | null;
+          invoice_id: string | null;
+          last_refund_at: string | null;
+          payment_created_at: string | null;
+          payment_id: string | null;
+          payment_method: string | null;
+          payment_table_refunds: number | null;
+          refund_count: number | null;
+          refunds_table_total: number | null;
+          status: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'payments_invoice_id_fkey';
+            columns: ['invoice_id'];
+            isOneToOne: false;
+            referencedRelation: 'invoice_payment_summary';
+            referencedColumns: ['invoice_id'];
+          },
+          {
+            foreignKeyName: 'payments_invoice_id_fkey';
+            columns: ['invoice_id'];
+            isOneToOne: false;
+            referencedRelation: 'invoices';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Functions: {
+      calculate_order_status: {
+        Args: { p_order_id: string };
+        Returns: Database['public']['Enums']['order_status'];
+      };
+      calculate_total_refunded_amount: {
+        Args: { payment_uuid: string };
+        Returns: number;
+      };
       check_appointment_conflict: {
         Args: {
           p_appointment_id?: string;
@@ -1638,6 +1812,17 @@ export type Database = {
           p_start_time: string;
         };
         Returns: boolean;
+      };
+      check_payment_discrepancies: {
+        Args: { p_shop_id?: string };
+        Returns: {
+          consistency_status: string;
+          details: string;
+          discrepancy_amount: number;
+          invoice_id: string;
+          payment_id: string;
+          payment_method: string;
+        }[];
       };
       check_within_working_hours: {
         Args: {
@@ -1656,6 +1841,22 @@ export type Database = {
         Args: { p_order_id: string };
         Returns: undefined;
       };
+      convert_date_time_to_utc: {
+        Args: { p_date: string; p_time: string; p_timezone: string };
+        Returns: string;
+      };
+      convert_date_to_utc: {
+        Args: { p_date: string; p_timezone: string };
+        Returns: string;
+      };
+      convert_local_to_utc: {
+        Args: { local_date: string; local_time: string; tz: string };
+        Returns: string;
+      };
+      convert_utc_to_local: {
+        Args: { tz: string; utc_timestamp: string };
+        Returns: string;
+      };
       create_appointment_atomic: {
         Args: {
           p_client_id: string;
@@ -1670,12 +1871,14 @@ export type Database = {
           client_id: string;
           created_at: string | null;
           date: string;
+          end_at: string | null;
           end_time: string;
           id: string;
           notes: string | null;
           order_id: string | null;
           reminder_sent: boolean | null;
           shop_id: string;
+          start_at: string | null;
           start_time: string;
           status: Database['public']['Enums']['appointment_status'];
           type: string;
@@ -1711,12 +1914,14 @@ export type Database = {
         };
       };
       create_order_with_payment_transaction: {
-        Args: {
-          p_order_data: Json;
-          p_payment_intent: Json;
-          p_shop_id: string;
-          p_user_id: string;
-        };
+        Args:
+          | { p_order_data: Json; p_payment_intent?: Json; p_shop_id: string }
+          | {
+              p_order_data: Json;
+              p_payment_intent?: Json;
+              p_shop_id: string;
+              p_user_id?: string;
+            };
         Returns: Json;
       };
       generate_order_number: {
@@ -1791,6 +1996,10 @@ export type Database = {
         Args: { user_id: string };
         Returns: undefined;
       };
+      mark_garment_picked_up: {
+        Args: { p_garment_id: string };
+        Returns: undefined;
+      };
       process_manual_payment: {
         Args: {
           p_amount_cents: number;
@@ -1836,6 +2045,12 @@ export type Database = {
         | 'canceled'
         | 'no_show';
       garment_stage_enum: 'New' | 'In Progress' | 'Ready For Pickup' | 'Done';
+      order_status:
+        | 'new'
+        | 'active'
+        | 'ready_for_pickup'
+        | 'completed'
+        | 'cancelled';
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -1974,6 +2189,13 @@ export const Constants = {
         'no_show',
       ],
       garment_stage_enum: ['New', 'In Progress', 'Ready For Pickup', 'Done'],
+      order_status: [
+        'new',
+        'active',
+        'ready_for_pickup',
+        'completed',
+        'cancelled',
+      ],
     },
   },
 } as const;

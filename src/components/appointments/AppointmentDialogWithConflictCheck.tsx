@@ -35,6 +35,7 @@ interface AppointmentDialogWithConflictCheckProps {
     type: 'consultation' | 'fitting' | 'pickup' | 'delivery' | 'other';
     notes?: string;
     sendEmail?: boolean;
+    timezone?: string;
   }) => Promise<void>;
   onUpdate?: (data: {
     clientId: string;
@@ -45,6 +46,7 @@ interface AppointmentDialogWithConflictCheckProps {
     notes?: string;
     status?: string;
     sendEmail?: boolean;
+    timezone?: string;
   }) => Promise<void>;
 }
 

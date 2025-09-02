@@ -52,6 +52,7 @@ import { isDateTimeInPast } from '@/lib/utils/date-time-utils';
 import { parseLocalDateFromYYYYMMDD } from '@/lib/utils/date';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useAppointmentDisplay } from '@/hooks/useAppointmentDisplay';
 // Legacy actions not used in refactored flows
 import {
   getAppointmentColor,
@@ -96,9 +97,13 @@ export function AppointmentDetailsDialog({
     useAppointmentDetailsState(appointment);
   const { dispatch, state } = useAppointments();
 
+  // Get timezone-aware display values
+  const { appointment: displayAppointment, isLoading: isLoadingTimezone } =
+    useAppointmentDisplay(appointment);
+
   const duration = getDurationMinutes(
-    appointment.start_time,
-    appointment.end_time
+    displayAppointment?.displayStartTime || appointment.start_time,
+    displayAppointment?.displayEndTime || appointment.end_time
   );
   const isPast = isDateTimeInPast(appointment.date, appointment.end_time);
 
@@ -486,11 +491,18 @@ export function AppointmentDetailsDialog({
                   variant="body2"
                   sx={{ color: 'rgba(255,255,255,0.9)' }}
                 >
-                  {format(
-                    parseLocalDateFromYYYYMMDD(appointment.date),
-                    'EEE, MMM d'
-                  )}{' '}
-                  • {formatTime(appointment.start_time)}
+                  {displayAppointment
+                    ? format(
+                        parseLocalDateFromYYYYMMDD(
+                          displayAppointment.displayDate
+                        ),
+                        'EEE, MMM d'
+                      )
+                    : ''}{' '}
+                  •{' '}
+                  {displayAppointment
+                    ? formatTime(displayAppointment.displayStartTime)
+                    : ''}
                 </Typography>
               </Box>
 
@@ -590,15 +602,24 @@ export function AppointmentDetailsDialog({
                     </Box>
                     <Box>
                       <Typography variant="body1" fontWeight={500}>
-                        {format(
-                          parseLocalDateFromYYYYMMDD(appointment.date),
-                          'EEEE, MMMM d, yyyy'
-                        )}
+                        {displayAppointment
+                          ? format(
+                              parseLocalDateFromYYYYMMDD(
+                                displayAppointment.displayDate
+                              ),
+                              'EEEE, MMMM d, yyyy'
+                            )
+                          : ''}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        {formatTime(appointment.start_time)} -{' '}
-                        {formatTime(appointment.end_time)} (
-                        {formatDuration(duration)})
+                        {displayAppointment
+                          ? formatTime(displayAppointment.displayStartTime)
+                          : ''}{' '}
+                        -{' '}
+                        {displayAppointment
+                          ? formatTime(displayAppointment.displayEndTime)
+                          : ''}{' '}
+                        ({formatDuration(duration)})
                       </Typography>
                     </Box>
                   </Box>

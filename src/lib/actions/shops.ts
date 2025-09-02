@@ -17,6 +17,8 @@ const UpdateBusinessInfoSchema = z.object({
   location_type: z
     .enum(['home_based', 'shop_location', 'mobile_service'])
     .optional(),
+  timezone: z.string().optional(),
+  timezone_offset: z.number().optional(),
 });
 
 type UpdateBusinessInfoInput = z.infer<typeof UpdateBusinessInfoSchema>;
@@ -48,6 +50,9 @@ export async function getShopBusinessInfo(): Promise<{
         location_type: shopData.location_type || 'shop_location',
         trial_countdown_enabled: shopData.trial_countdown_enabled || false,
         trial_end_date: shopData.trial_end_date,
+        timezone:
+          shopData.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+        timezone_offset: shopData.timezone_offset,
       },
     };
   } catch (error) {

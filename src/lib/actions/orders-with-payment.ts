@@ -35,6 +35,7 @@ const CreateOrderWithPaymentSchema = z.object({
     taxPercent: z.number().min(0).max(100),
     discountCents: z.number().int().min(0),
     notes: z.string().optional(),
+    timezone: z.string().optional(),
   }),
   paymentIntent: z.object({
     collectNow: z.boolean(),

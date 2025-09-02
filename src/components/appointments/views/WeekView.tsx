@@ -25,6 +25,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import type { Appointment } from '@/types';
+import { useAppointmentsDisplay } from '@/hooks/useAppointmentDisplay';
 
 interface WeekViewProps {
   currentDate: Date;
@@ -53,17 +54,21 @@ export function WeekView({
   const weekDays = generateWeekDays(currentDate);
   const SLOT_HEIGHT_PX = 80; // 30-minute slot height (ensures 15-min blocks are readable)
 
+  // Convert appointments to display format with timezone support
+  const { appointments: displayAppointments } =
+    useAppointmentsDisplay(appointments);
+
   // Group appointments by date
-  const appointmentsByDate = appointments.reduce(
+  const appointmentsByDate = displayAppointments.reduce(
     (acc, appointment) => {
-      const dateKey = appointment.date;
+      const dateKey = appointment.displayDate;
       if (!acc[dateKey]) {
         acc[dateKey] = [];
       }
       acc[dateKey].push(appointment);
       return acc;
     },
-    {} as Record<string, Appointment[]>
+    {} as Record<string, (typeof displayAppointments)[0][]>
   );
 
   // Generate time slots for the grid based on shop hours with 30-minute increments
@@ -148,7 +153,7 @@ export function WeekView({
         {weekDays.map((day, dayIndex) => {
           const dateStr = format(day, 'yyyy-MM-dd');
           const dayAppointments = (appointmentsByDate[dateStr] || []).sort(
-            (a, b) => a.start_time.localeCompare(b.start_time)
+            (a, b) => a.displayStartTime.localeCompare(b.displayStartTime)
           );
           const isCurrentDay = isToday(day);
           const isOpen = isShopOpen(day, shopHours);
@@ -199,14 +204,14 @@ export function WeekView({
                 {timeSlots.map((time) => {
                   // Check if this time slot has appointments (30-minute slot checking)
                   const slotAppointments = dayAppointments.filter((apt) => {
-                    const aptStartParts = apt.start_time.split(':');
+                    const aptStartParts = apt.displayStartTime.split(':');
                     const aptStartHour = parseInt(aptStartParts[0] || '0', 10);
                     const aptStartMinute = parseInt(
                       aptStartParts[1] || '0',
                       10
                     );
 
-                    const aptEndParts = apt.end_time.split(':');
+                    const aptEndParts = apt.displayEndTime.split(':');
                     const aptEndHour = parseInt(aptEndParts[0] || '0', 10);
                     const aptEndMinute = parseInt(aptEndParts[1] || '0', 10);
 

@@ -8,6 +8,7 @@ import {
   isCurrentTimeInRange,
 } from '@/lib/utils/date-time-utils';
 import type { Appointment } from '@/types';
+import { useAppointmentsDisplay } from '@/hooks/useAppointmentDisplay';
 
 interface TodayScheduleProps {
   appointments: Appointment[];
@@ -23,13 +24,17 @@ const refinedColors = {
 };
 
 export function TodaySchedule({ appointments }: TodayScheduleProps) {
+  // Convert appointments to display format with timezone support
+  const { appointments: displayAppointments } =
+    useAppointmentsDisplay(appointments);
+
   return (
     <>
       <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
         Today&apos;s Schedule
       </Typography>
       <Stack spacing={2}>
-        {appointments.length === 0 ? (
+        {displayAppointments.length === 0 ? (
           <Typography
             variant="body2"
             sx={{ color: refinedColors.text.tertiary, fontStyle: 'italic' }}
@@ -37,18 +42,18 @@ export function TodaySchedule({ appointments }: TodayScheduleProps) {
             No appointments scheduled for today
           </Typography>
         ) : (
-          appointments.map((apt) => {
+          displayAppointments.map((apt) => {
             // Format time from 24-hour to 12-hour format
-            const timeFormatted = formatTimeForDisplay(apt.start_time);
+            const timeFormatted = formatTimeForDisplay(apt.displayStartTime);
             const clientName = apt.client
               ? `${apt.client.first_name} ${apt.client.last_name}`
               : 'No client assigned';
 
             // Check if this appointment is currently happening
             const isCurrent = isCurrentTimeInRange(
-              apt.date,
-              apt.start_time,
-              apt.end_time
+              apt.displayDate,
+              apt.displayStartTime,
+              apt.displayEndTime
             );
 
             return (

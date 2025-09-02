@@ -6,6 +6,8 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { recalculateAndUpdateGarmentStage } from './garment-stage-helpers';
 import { syncInvoiceWithGarmentServices } from './invoice-sync';
+import { convertLocalToUTC } from '@/lib/utils/date-time-utc';
+import { getShopTimezone } from '@/lib/utils/timezone-helpers';
 
 // Schema for updating garment
 const UpdateGarmentSchema = z.object({
@@ -20,6 +22,7 @@ const UpdateGarmentSchema = z.object({
     photoUrl: z.string().nullable().optional(),
     imageCloudId: z.string().nullable().optional(),
   }),
+  timezone: z.string().optional(),
 });
 
 export async function updateGarment(
@@ -40,6 +43,10 @@ export async function updateGarment(
     }
 
     const supabase = await createClient();
+
+    // Get timezone for UTC conversion
+    const timezone =
+      validatedInput.timezone || (await getShopTimezone(shop.id));
 
     // Verify garment belongs to shop
     const { data: garment, error: fetchError } = await supabase
@@ -79,6 +86,13 @@ export async function updateGarment(
       const newDueDate = validatedInput.updates.dueDate || null;
       if (oldDueDate !== newDueDate) {
         updateData.due_date = newDueDate;
+        // Convert to UTC
+        if (newDueDate) {
+          const dueUTC = convertLocalToUTC(newDueDate, '12:00', timezone);
+          updateData.due_at = dueUTC.toISOString();
+        } else {
+          updateData.due_at = null;
+        }
       }
     }
     if (validatedInput.updates.eventDate !== undefined) {
@@ -87,6 +101,13 @@ export async function updateGarment(
       const newEventDate = validatedInput.updates.eventDate || null;
       if (oldEventDate !== newEventDate) {
         updateData.event_date = newEventDate;
+        // Convert to UTC
+        if (newEventDate) {
+          const eventUTC = convertLocalToUTC(newEventDate, '12:00', timezone);
+          updateData.event_at = eventUTC.toISOString();
+        } else {
+          updateData.event_at = null;
+        }
       }
     }
     if (

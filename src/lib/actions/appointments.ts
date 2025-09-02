@@ -14,6 +14,12 @@ import {
   validateFutureDateTime,
   isDateTimeInPast,
 } from '@/lib/utils/date-time-utils';
+import {
+  convertLocalToUTC,
+  convertUTCToLocal,
+  validateFutureDateTimeForTimezone,
+} from '@/lib/utils/date-time-utc';
+import { getShopTimezone } from '@/lib/utils/timezone-helpers';
 
 // Validation schemas
 const createAppointmentSchema = z.object({
@@ -26,6 +32,8 @@ const createAppointmentSchema = z.object({
   notes: z.string().optional(),
   // Per-appointment email preference (default: true if client accepts email)
   sendEmail: z.boolean().optional(),
+  // Timezone for the appointment (defaults to shop timezone if not provided)
+  timezone: z.string().optional(),
 });
 
 const updateAppointmentSchema = createAppointmentSchema
@@ -200,8 +208,16 @@ export async function createAppointment(
   const validated = createAppointmentSchema.parse(data);
   const supabase = await createClient();
 
-  // Prevent creating appointments in the past
-  validateFutureDateTime(validated.date, validated.startTime);
+  // Get the timezone to use (prefer provided timezone, fallback to shop timezone)
+  const timezone =
+    validated.timezone || (await getShopTimezone(validated.shopId));
+
+  // Prevent creating appointments in the past (using timezone-aware validation)
+  validateFutureDateTimeForTimezone(
+    validated.date,
+    validated.startTime,
+    timezone
+  );
 
   // Verify shop ownership
   const { data: userData, error: userError } = await supabase
@@ -221,12 +237,21 @@ export async function createAppointment(
 
   if (shopError || !shopData) throw new Error('Unauthorized access to shop');
 
-  // Insert appointment
+  // Convert local times to UTC
+  const startAt = convertLocalToUTC(
+    validated.date,
+    validated.startTime,
+    timezone
+  );
+  const endAt = convertLocalToUTC(validated.date, validated.endTime, timezone);
+
+  // Insert appointment with UTC fields only
   const insertData: any = {
     shop_id: validated.shopId,
-    date: validated.date,
-    start_time: validated.startTime,
-    end_time: validated.endTime,
+    // UTC fields
+    start_at: startAt.toISOString(),
+    end_at: endAt.toISOString(),
+    // Other fields
     type: validated.type,
     notes: validated.notes || null,
   };
@@ -360,14 +385,18 @@ export async function updateAppointment(
     throw new Error('Appointment not found or unauthorized');
   }
 
+  // Get the timezone to use
+  const timezone =
+    validated.timezone || (await getShopTimezone(currentApt.shop_id));
+
   // If date/time is changing, check for conflicts
   if (validated.date || validated.startTime || validated.endTime) {
     const date = validated.date || currentApt.date;
     const startTime = validated.startTime || currentApt.start_time;
     const endTime = validated.endTime || currentApt.end_time;
 
-    // Prevent moving appointment to a past time
-    validateFutureDateTime(date, startTime);
+    // Prevent moving appointment to a past time (using timezone-aware validation)
+    validateFutureDateTimeForTimezone(date, startTime, timezone);
 
     const { data: hasConflict, error: conflictError } = await supabase.rpc(
       'check_appointment_conflict',
@@ -396,10 +425,41 @@ export async function updateAppointment(
 
   // Update the appointment
   const updateData: any = {};
-  if (validated.date !== undefined) updateData.date = validated.date;
-  if (validated.startTime !== undefined)
-    updateData.start_time = validated.startTime;
-  if (validated.endTime !== undefined) updateData.end_time = validated.endTime;
+
+  // Handle date/time updates with UTC conversion
+  if (
+    validated.date !== undefined ||
+    validated.startTime !== undefined ||
+    validated.endTime !== undefined
+  ) {
+    // Determine values to use for conversion
+    // Check if UTC fields exist (they might not if this is an older appointment)
+    const hasUTCFields = 'start_at' in currentApt && 'end_at' in currentApt;
+
+    const date =
+      validated.date ||
+      (hasUTCFields && currentApt.start_at
+        ? convertUTCToLocal(currentApt.start_at as string, timezone).date
+        : currentApt.date);
+    const startTime =
+      validated.startTime ||
+      (hasUTCFields && currentApt.start_at
+        ? convertUTCToLocal(currentApt.start_at as string, timezone).time
+        : currentApt.start_time);
+    const endTime =
+      validated.endTime ||
+      (hasUTCFields && currentApt.end_at
+        ? convertUTCToLocal(currentApt.end_at as string, timezone).time
+        : currentApt.end_time);
+
+    // Update UTC fields only
+    const startAt = convertLocalToUTC(date, startTime, timezone);
+    const endAt = convertLocalToUTC(date, endTime, timezone);
+    updateData.start_at = startAt.toISOString();
+    updateData.end_at = endAt.toISOString();
+  }
+
+  // Update other fields
   if (validated.type !== undefined) updateData.type = validated.type;
   if (validated.status !== undefined) updateData.status = validated.status;
   if (validated.notes !== undefined) updateData.notes = validated.notes;

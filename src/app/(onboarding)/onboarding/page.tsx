@@ -23,6 +23,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { completeOnboarding } from '@/lib/actions/onboarding';
 import { useUser } from '@clerk/nextjs';
+import { TimezoneSelection } from '@/components/onboarding/TimezoneSelection';
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -41,6 +42,8 @@ export default function OnboardingPage() {
       | 'shop_location'
       | 'mobile_service',
     workingHours: {},
+    timezone: '',
+    timezoneOffset: 0,
   });
 
   const steps = ['Business Info', 'Location & Hours', 'Get Started'];
@@ -100,6 +103,8 @@ export default function OnboardingPage() {
           locationType: formData.locationType,
           workingHours: formData.workingHours,
           email: formData.email,
+          timezone: formData.timezone,
+          timezoneOffset: formData.timezoneOffset,
           ...(formData.businessType && { businessType: formData.businessType }),
           ...(formData.phone && { phoneNumber: formData.phone }),
           ...(formData.address && { mailingAddress: formData.address }),
@@ -233,6 +238,20 @@ export default function OnboardingPage() {
                 label="Weekend Hours"
                 defaultValue="10:00 AM - 4:00 PM"
                 fullWidth
+              />
+            </Box>
+
+            {/* Timezone Selection */}
+            <Box sx={{ mt: 3 }}>
+              <TimezoneSelection
+                value={formData.timezone}
+                onChange={(timezone, offset) =>
+                  setFormData({
+                    ...formData,
+                    timezone,
+                    timezoneOffset: offset,
+                  })
+                }
               />
             </Box>
           </Box>

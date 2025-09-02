@@ -29,6 +29,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import AddIcon from '@mui/icons-material/Add';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import type { Appointment } from '@/types';
+import { useAppointmentsDisplay } from '@/hooks/useAppointmentDisplay';
 
 interface DayViewProps {
   currentDate: Date;
@@ -66,11 +67,15 @@ export function DayView({
     false // Don't run immediately
   );
 
+  // Convert appointments to display format with timezone support
+  const { appointments: displayAppointments } =
+    useAppointmentsDisplay(appointments);
+
   // Filter appointments for current date
   const dateStr = format(currentDate, 'yyyy-MM-dd');
-  const dayAppointments = appointments
-    .filter((apt) => apt.date === dateStr)
-    .sort((a, b) => a.start_time.localeCompare(b.start_time));
+  const dayAppointments = displayAppointments
+    .filter((apt) => apt.displayDate === dateStr)
+    .sort((a, b) => a.displayStartTime.localeCompare(b.displayStartTime));
   // Scroll focused appointment into view on mount/update
   useEffect(() => {
     if (!focusAppointmentId) return;
@@ -115,8 +120,8 @@ export function DayView({
     const slotEndMinutes = slotStartMinutes + 30;
 
     return dayAppointments.filter((apt) => {
-      const [sH, sM] = apt.start_time.split(':');
-      const [eH, eM] = apt.end_time.split(':');
+      const [sH, sM] = apt.displayStartTime.split(':');
+      const [eH, eM] = apt.displayEndTime.split(':');
       const aptStart = parseInt(sH || '0', 10) * 60 + parseInt(sM || '0', 10);
       const aptEnd = parseInt(eH || '0', 10) * 60 + parseInt(eM || '0', 10);
       return aptStart < slotEndMinutes && aptEnd > slotStartMinutes;

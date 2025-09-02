@@ -429,12 +429,7 @@ export function AppointmentProvider({
             .select(
               `
               *,
-              client:clients(
-                first_name,
-                last_name,
-                email,
-                phone_number
-              )
+              client:clients(*)
             `
             )
             .eq('id', payload.new.id)
@@ -468,12 +463,7 @@ export function AppointmentProvider({
             .select(
               `
               *,
-              client:clients(
-                first_name,
-                last_name,
-                email,
-                phone_number
-              )
+              client:clients(*)
             `
             )
             .eq('id', payload.new.id)

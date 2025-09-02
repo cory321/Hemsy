@@ -10,6 +10,7 @@ import {
 } from '@/lib/utils/calendar';
 import { formatTimeForDisplay } from '@/lib/utils/date-time-utils';
 import type { Appointment } from '@/types';
+import { useAppointmentsDisplay } from '@/hooks/useAppointmentDisplay';
 
 interface MonthViewProps {
   currentDate: Date;
@@ -35,17 +36,21 @@ export function MonthView({
   const days = generateMonthDays(currentDate);
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+  // Convert appointments to display format with timezone support
+  const { appointments: displayAppointments } =
+    useAppointmentsDisplay(appointments);
+
   // Group appointments by date
-  const appointmentsByDate = appointments.reduce(
+  const appointmentsByDate = displayAppointments.reduce(
     (acc, appointment) => {
-      const dateKey = appointment.date;
+      const dateKey = appointment.displayDate;
       if (!acc[dateKey]) {
         acc[dateKey] = [];
       }
       acc[dateKey].push(appointment);
       return acc;
     },
-    {} as Record<string, Appointment[]>
+    {} as Record<string, (typeof displayAppointments)[0][]>
   );
 
   return (
@@ -143,7 +148,7 @@ export function MonthView({
                         },
                       }}
                     >
-                      {formatTimeForDisplay(apt.start_time)}
+                      {formatTimeForDisplay(apt.displayStartTime)}
                     </Box>
                   ))}
                   {dayAppointments.length > 3 && (

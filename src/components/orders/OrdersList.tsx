@@ -35,6 +35,7 @@ import { useRouter } from 'next/navigation';
 import { useDebounce } from '@/hooks/useDebounce';
 import { format } from 'date-fns';
 import type { PaginatedOrders, OrdersFilters } from '@/lib/actions/orders';
+import type { Database } from '@/types/supabase';
 import OrderCardMinimal from './OrderCardMinimal';
 import OrderCardCompact from './OrderCardCompact';
 import OrderCardDetailed from './OrderCardDetailed';
@@ -100,7 +101,9 @@ export default function OrdersList({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState<
+    Database['public']['Enums']['order_status'] | 'all'
+  >('all');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('all');
   const [page, setPage] = useState(initialData.page - 1);
   const [rowsPerPage, setRowsPerPage] = useState(initialData.pageSize);
@@ -258,7 +261,13 @@ export default function OrdersList({
             <Select
               value={statusFilter}
               label="Order Status"
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) =>
+                setStatusFilter(
+                  e.target.value as
+                    | Database['public']['Enums']['order_status']
+                    | 'all'
+                )
+              }
             >
               <MenuItem value="all">All Order Statuses</MenuItem>
               <MenuItem value="new">New</MenuItem>

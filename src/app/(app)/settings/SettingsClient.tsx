@@ -40,6 +40,7 @@ import {
 } from '@/lib/actions/shops';
 import { useToast } from '@/hooks/useToast';
 import PastelColorPicker from '@/components/ui/PastelColorPicker';
+import { TimezoneSelection } from '@/components/onboarding/TimezoneSelection';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -78,6 +79,8 @@ export function SettingsClient() {
       | 'home_based'
       | 'shop_location'
       | 'mobile_service',
+    timezone: '',
+    timezone_offset: 0,
   });
   const [isPending, startTransition] = useTransition();
   const { showToast } = useToast();
@@ -104,6 +107,11 @@ export function SettingsClient() {
           phone_number: result.data.phone_number || '',
           mailing_address: result.data.mailing_address || '',
           location_type: result.data.location_type || 'shop_location',
+          timezone:
+            result.data.timezone ||
+            Intl.DateTimeFormat().resolvedOptions().timeZone,
+          timezone_offset:
+            result.data.timezone_offset || new Date().getTimezoneOffset(),
         });
       }
     } catch (err) {
@@ -271,6 +279,33 @@ export function SettingsClient() {
                       </FormControl>
                     </Grid>
                   </Grid>
+                </CardContent>
+              </Card>
+
+              {/* Timezone Settings */}
+              <Card sx={{ mb: 3 }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Timezone Settings
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 2 }}
+                  >
+                    Set your timezone to ensure appointments and due dates are
+                    displayed correctly.
+                  </Typography>
+                  <TimezoneSelection
+                    value={businessInfo.timezone}
+                    onChange={(timezone, offset) =>
+                      setBusinessInfo({
+                        ...businessInfo,
+                        timezone,
+                        timezone_offset: offset,
+                      })
+                    }
+                  />
                 </CardContent>
               </Card>
 

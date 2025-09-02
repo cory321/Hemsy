@@ -24,6 +24,7 @@ import {
   safeParseDate,
 } from '@/lib/utils/date-time-utils';
 import type { Appointment } from '@/types';
+import { useAppointmentDisplay } from '@/hooks/useAppointmentDisplay';
 
 interface NextAppointmentCardProps {
   appointment: Appointment | null;
@@ -62,6 +63,10 @@ export function NextAppointmentCard({
   const { isMobile, isTablet } = useResponsive();
   const isMobileOrTablet = isMobile || isTablet;
 
+  // Get timezone-aware display values
+  const { appointment: displayAppointment } =
+    useAppointmentDisplay(appointment);
+
   if (!appointment) {
     return (
       <Paper
@@ -93,28 +98,32 @@ export function NextAppointmentCard({
   }
 
   // Format time based on whether appointment is happening now, today, or in the future
-  const appointmentDate = new Date(
-    `${appointment.date}T${appointment.start_time}`
-  );
+  const displayDate = displayAppointment?.displayDate || appointment.date;
+  const displayStartTime =
+    displayAppointment?.displayStartTime || appointment.start_time;
+  const displayEndTime =
+    displayAppointment?.displayEndTime || appointment.end_time;
+
+  const appointmentDate = new Date(`${displayDate}T${displayStartTime}`);
   const today = new Date();
   const isToday = appointmentDate.toDateString() === today.toDateString();
 
   const timeFormatted = isHappeningNow
     ? (() => {
         // Show time range for happening now appointments
-        const startTime = formatTimeForDisplay(appointment.start_time);
-        const endTime = appointment.end_time
-          ? formatTimeForDisplay(appointment.end_time)
+        const startTime = formatTimeForDisplay(displayStartTime);
+        const endTime = displayEndTime
+          ? formatTimeForDisplay(displayEndTime)
           : startTime; // If no end_time, just show start time
-        return appointment.end_time ? `${startTime} - ${endTime}` : startTime;
+        return displayEndTime ? `${startTime} - ${endTime}` : startTime;
       })()
     : isToday
-      ? formatTimeForDisplay(appointment.start_time)
+      ? formatTimeForDisplay(displayStartTime)
       : (() => {
           // Format as "Tue, Oct 8 • 2:30 PM" for future dates
           const dayName = format(appointmentDate, 'EEE');
           const monthDay = format(appointmentDate, 'MMM d');
-          const time = formatTimeForDisplay(appointment.start_time);
+          const time = formatTimeForDisplay(displayStartTime);
           return `${dayName}, ${monthDay} • ${time}`;
         })();
 
