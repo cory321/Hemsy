@@ -245,9 +245,13 @@ export async function createAppointment(
   );
   const endAt = convertLocalToUTC(validated.date, validated.endTime, timezone);
 
-  // Insert appointment with UTC fields only
+  // Insert appointment with both legacy and UTC fields
   const insertData: any = {
     shop_id: validated.shopId,
+    // Legacy fields (still required in database)
+    date: validated.date,
+    start_time: validated.startTime,
+    end_time: validated.endTime,
     // UTC fields
     start_at: startAt.toISOString(),
     end_at: endAt.toISOString(),
