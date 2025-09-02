@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { getShopHours } from '@/lib/actions/shop-hours';
 import { getCalendarSettings } from '@/lib/actions/calendar-settings';
-import { BusinessOverview } from './BusinessOverview';
+import { BusinessOverviewClient } from './BusinessOverviewClient';
 import type { ShopHours } from '@/types';
 
 async function getShopId() {
@@ -56,7 +56,7 @@ export async function BusinessOverviewServer() {
   } as const;
 
   return (
-    <BusinessOverview
+    <BusinessOverviewClient
       shopId={shopId}
       shopHours={shopHours}
       calendarSettings={normalizedCalendarSettings}

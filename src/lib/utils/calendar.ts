@@ -5,6 +5,12 @@ import {
   endOfMonth,
   addDays,
 } from 'date-fns';
+import {
+  safeParseDate,
+  safeParseDateTime,
+  isDateTimeInPast,
+  formatDateForDatabase,
+} from './date-time-utils';
 
 // Generate calendar days for month view
 export function generateMonthDays(date: Date) {
@@ -190,22 +196,18 @@ export function isShopOpen(
 
 // Check if a date is in the past (before today)
 export function isPastDate(date: Date): boolean {
+  const dateStr = formatDateForDatabase(date);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const checkDate = new Date(date);
+  const checkDate = safeParseDate(dateStr);
   checkDate.setHours(0, 0, 0, 0);
   return checkDate < today;
 }
 
 // Check if a specific date/time (local) is in the past relative to now
 export function isPastDateTime(date: Date, time: string): boolean {
-  // time is expected to be HH:mm
-  const [hourStr, minuteStr] = time.split(':');
-  const hours = parseInt(hourStr || '0', 10);
-  const minutes = parseInt(minuteStr || '0', 10);
-  const candidate = new Date(date);
-  candidate.setHours(hours, minutes, 0, 0);
-  return candidate.getTime() < Date.now();
+  const dateStr = formatDateForDatabase(date);
+  return isDateTimeInPast(dateStr, time);
 }
 
 // Check if appointment can be created on a date

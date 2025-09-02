@@ -18,6 +18,11 @@ import {
 } from '@mui/icons-material';
 import { useResponsive } from '@/hooks/useResponsive';
 import { format } from 'date-fns';
+import {
+  formatTimeForDisplay,
+  formatDateTimeForDisplay,
+  safeParseDate,
+} from '@/lib/utils/date-time-utils';
 import type { Appointment } from '@/types';
 
 interface NextAppointmentCardProps {
@@ -97,31 +102,19 @@ export function NextAppointmentCard({
   const timeFormatted = isHappeningNow
     ? (() => {
         // Show time range for happening now appointments
-        const startTime = format(
-          new Date(`1970-01-01T${appointment.start_time}`),
-          'h:mm a'
-        );
+        const startTime = formatTimeForDisplay(appointment.start_time);
         const endTime = appointment.end_time
-          ? format(new Date(`1970-01-01T${appointment.end_time}`), 'h:mm a')
+          ? formatTimeForDisplay(appointment.end_time)
           : startTime; // If no end_time, just show start time
         return appointment.end_time ? `${startTime} - ${endTime}` : startTime;
       })()
     : isToday
-      ? format(new Date(`1970-01-01T${appointment.start_time}`), 'h:mm a')
+      ? formatTimeForDisplay(appointment.start_time)
       : (() => {
           // Format as "Tue, Oct 8 • 2:30 PM" for future dates
-          const dayName = appointmentDate.toLocaleDateString('en-US', {
-            weekday: 'short',
-          });
-          const monthDay = appointmentDate.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-          });
-          const time = appointmentDate.toLocaleTimeString('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true,
-          });
+          const dayName = format(appointmentDate, 'EEE');
+          const monthDay = format(appointmentDate, 'MMM d');
+          const time = formatTimeForDisplay(appointment.start_time);
           return `${dayName}, ${monthDay} • ${time}`;
         })();
 

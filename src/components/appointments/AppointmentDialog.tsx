@@ -110,6 +110,8 @@ interface AppointmentDialogProps {
     status?: string;
     sendEmail?: boolean;
   }) => Promise<void>;
+  onDateChange?: (date: Date) => void;
+  isLoadingAppointments?: boolean;
 }
 
 export function AppointmentDialog({
@@ -129,6 +131,8 @@ export function AppointmentDialog({
   },
   onCreate,
   onUpdate,
+  onDateChange,
+  isLoadingAppointments = false,
 }: AppointmentDialogProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -426,6 +430,10 @@ export function AppointmentDialog({
                     start_time: null,
                     end_time: null,
                   }));
+                  // Notify parent component of date change for refetching appointments
+                  if (onDateChange) {
+                    onDateChange(dayjsDate.toDate());
+                  }
                 }
               }}
               minDate={dayjs()}
@@ -510,21 +518,29 @@ export function AppointmentDialog({
                     setFormData((prev) => ({ ...prev, start_time: time }));
                   }}
                   required
+                  disabled={isLoadingAppointments}
                 >
-                  {availableSlots.length === 0 && (
+                  {isLoadingAppointments ? (
+                    <MenuItem disabled value="">
+                      Loading available times...
+                    </MenuItem>
+                  ) : availableSlots.length === 0 ? (
                     <MenuItem disabled value="">
                       No available slots
                     </MenuItem>
+                  ) : (
+                    availableSlots.map((slot) => (
+                      <MenuItem key={slot} value={slot}>
+                        {to12HourFormat(slot)}
+                      </MenuItem>
+                    ))
                   )}
-                  {availableSlots.map((slot) => (
-                    <MenuItem key={slot} value={slot}>
-                      {to12HourFormat(slot)}
-                    </MenuItem>
-                  ))}
                 </Select>
                 <FormHelperText>
-                  {availableSlots.length === 0 &&
-                    'No time slots available for this date'}
+                  {isLoadingAppointments
+                    ? 'Checking for available time slots...'
+                    : availableSlots.length === 0 &&
+                      'No time slots available for this date'}
                 </FormHelperText>
               </FormControl>
 
@@ -715,7 +731,10 @@ export function AppointmentDialog({
           variant="contained"
           onClick={handleSubmit}
           disabled={
-            loading || !formData.start_time || availableSlots.length === 0
+            loading ||
+            isLoadingAppointments ||
+            !formData.start_time ||
+            availableSlots.length === 0
           }
         >
           {loading ? (

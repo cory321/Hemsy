@@ -105,7 +105,7 @@ export default function Loading() {
       {/* Garment Cards Grid */}
       <Grid container spacing={3} columns={{ xs: 4, sm: 8, md: 12, lg: 20 }}>
         {Array.from({ length: 12 }).map((_, index) => (
-          <Grid size={4} key={index}>
+          <Grid size={{ xs: 4, sm: 4, md: 4, lg: 4 }} key={index}>
             <Card
               sx={{
                 height: '100%',

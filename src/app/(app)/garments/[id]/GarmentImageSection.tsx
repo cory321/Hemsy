@@ -19,7 +19,7 @@ import { getStageColor } from '@/constants/garmentStages';
 import InlinePresetSvg from '@/components/ui/InlinePresetSvg';
 import { resolveGarmentDisplayImage } from '@/utils/displayImage';
 import { useGarment } from '@/contexts/GarmentContext';
-import { AppointmentDialog } from '@/components/appointments/AppointmentDialog';
+import { AppointmentDialogWithConflictCheck } from '@/components/appointments/AppointmentDialogWithConflictCheck';
 import { createAppointment } from '@/lib/actions/appointments';
 import GarmentImageHoverOverlay from './GarmentImageHoverOverlay';
 import type { Client } from '@/types';
@@ -365,9 +365,10 @@ export default function GarmentImageSection({
 
       {/* Appointment Dialog */}
       {shopId && prefilledClient && (
-        <AppointmentDialog
+        <AppointmentDialogWithConflictCheck
           open={appointmentDialogOpen}
           onClose={() => setAppointmentDialogOpen(false)}
+          shopId={shopId}
           prefilledClient={prefilledClient}
           shopHours={shopHours}
           calendarSettings={calendarSettings}

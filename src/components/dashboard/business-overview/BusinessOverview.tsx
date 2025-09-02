@@ -7,7 +7,7 @@ import { QuickActions } from './QuickActions';
 import { BusinessHealth } from './BusinessHealth';
 import { RecentActivity } from './RecentActivity';
 import ClientCreateDialog from '@/components/clients/ClientCreateDialog';
-import { AppointmentDialog } from '@/components/appointments/AppointmentDialog';
+import { AppointmentDialogWithConflictCheck } from '@/components/appointments/AppointmentDialogWithConflictCheck';
 import CreateServiceDialog from '@/components/services/CreateServiceDialog';
 import { useAppointments } from '@/providers/AppointmentProvider';
 import type { ShopHours } from '@/types';
@@ -32,7 +32,7 @@ export function BusinessOverview({
   const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
 
   // Get appointments from the provider to check for conflicts
-  const { state } = useAppointments();
+  const { state, createAppointment } = useAppointments();
 
   const handleQuickAction = (actionId: string) => {
     switch (actionId) {
@@ -79,16 +79,20 @@ export function BusinessOverview({
         }}
       />
 
-      <AppointmentDialog
+      <AppointmentDialogWithConflictCheck
         open={appointmentDialogOpen}
         onClose={() => setAppointmentDialogOpen(false)}
+        shopId={shopId}
         shopHours={shopHours}
-        existingAppointments={Array.from(state.appointments.values())}
         calendarSettings={calendarSettings}
         onCreate={async (data) => {
-          // The AppointmentDialog will handle the creation through the provider
-          setAppointmentDialogOpen(false);
-          // Optionally refresh data or show success message
+          try {
+            await createAppointment(shopId, { ...data, shopId });
+            setAppointmentDialogOpen(false);
+          } catch (error) {
+            // Error is handled in the provider with toast
+            console.error('Failed to create appointment:', error);
+          }
         }}
       />
 

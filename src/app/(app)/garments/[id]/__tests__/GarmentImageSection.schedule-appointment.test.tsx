@@ -4,17 +4,19 @@ import userEvent from '@testing-library/user-event';
 import { jest } from '@jest/globals';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import GarmentImageSection from '../GarmentImageSection';
 import { GarmentProvider } from '@/contexts/GarmentContext';
 
 // Mock the appointment actions
 jest.mock('@/lib/actions/appointments', () => ({
   createAppointment: jest.fn(),
+  getAppointmentsByTimeRange: jest.fn(() => Promise.resolve([])),
 }));
 
 // Mock the client actions
 jest.mock('@/lib/actions/clients', () => ({
-  searchClients: jest.fn().mockResolvedValue([]),
+  searchClients: jest.fn(() => Promise.resolve([])),
   createClient: jest.fn(),
 }));
 
@@ -31,6 +33,11 @@ jest.mock('sonner', () => ({
     success: jest.fn(),
     error: jest.fn(),
   },
+}));
+
+// Mock Clerk auth
+jest.mock('@clerk/nextjs/server', () => ({
+  auth: jest.fn(() => ({ userId: 'test-user-id' })),
 }));
 
 // Mock the image components
@@ -106,10 +113,20 @@ const renderWithGarmentProvider = (
   component: React.ReactElement,
   garment = mockGarment
 ) => {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
+    },
+  });
+
   return render(
-    <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <GarmentProvider initialGarment={garment}>{component}</GarmentProvider>
-    </LocalizationProvider>
+    <QueryClientProvider client={queryClient}>
+      <LocalizationProvider dateAdapter={AdapterDayjs}>
+        <GarmentProvider initialGarment={garment}>{component}</GarmentProvider>
+      </LocalizationProvider>
+    </QueryClientProvider>
   );
 };
 

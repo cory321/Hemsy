@@ -26,6 +26,10 @@ import {
   getOrderEffectiveDueDate,
   type OrderOverdueInfo,
 } from '@/lib/utils/overdue-logic';
+import {
+  safeParseDate,
+  calculateDaysUntilDue,
+} from '@/lib/utils/date-time-utils';
 
 interface OrderCardMinimalProps {
   order: any;
@@ -99,22 +103,19 @@ function getDueDateInfo(orderDueDate: string | null, garments: any[]) {
 function getEarliestEventDate(garments: any[]) {
   const eventDates = garments
     .map((g) => g.event_date)
-    .filter((date) => date != null)
-    .map((date) => new Date(date))
-    .sort((a, b) => a.getTime() - b.getTime());
+    .filter((date): date is string => date != null)
+    .sort((a, b) => a.localeCompare(b));
 
   if (eventDates.length === 0) return null;
 
-  const event = eventDates[0];
-  if (!event) return null; // Type guard
+  const eventDateStr = eventDates[0];
+  if (!eventDateStr) return null; // Type guard
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  event.setHours(0, 0, 0, 0);
-  const daysUntil = differenceInDays(event, today);
+  const eventDate = safeParseDate(eventDateStr);
+  const daysUntil = calculateDaysUntilDue(eventDateStr);
 
   return {
-    date: format(event, 'MMM d'),
+    date: format(eventDate, 'MMM d'),
     daysUntil,
     isToday: daysUntil === 0,
     isTomorrow: daysUntil === 1,

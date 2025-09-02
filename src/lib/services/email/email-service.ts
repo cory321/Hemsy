@@ -7,6 +7,7 @@ import { emailConfig } from '../../config/email.config';
 import { EMAIL_CONSTRAINTS } from '../../utils/email/constants';
 import { format } from 'date-fns';
 import { getShopDisplayName } from '@/lib/utils/shop';
+import { safeParseDateTime } from '@/lib/utils/date-time-utils';
 
 export class EmailService {
   private repository: EmailRepository;
@@ -318,8 +319,9 @@ export class EmailService {
         'appointment_confirmation_request',
       ].includes(emailType)
     ) {
-      const appointmentDateTime = new Date(
-        `${appointment.date} ${appointment.start_time}`
+      const appointmentDateTime = safeParseDateTime(
+        appointment.date,
+        appointment.start_time
       );
       const hoursUntilAppointment =
         (appointmentDateTime.getTime() - Date.now()) / (1000 * 60 * 60);

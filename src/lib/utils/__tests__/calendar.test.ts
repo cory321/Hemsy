@@ -111,22 +111,22 @@ describe('Calendar Utilities', () => {
     });
 
     it('should filter out past time slots for the current day', () => {
-      // Mock current time as 9:46pm
-      const originalDateNow = Date.now;
-      const mockNow = new Date();
-      mockNow.setHours(21, 46, 0, 0);
-      Date.now = () => mockNow.getTime();
+      // Use jest's built-in date mocking
+      const mockDate = new Date();
+      mockDate.setHours(21, 46, 0, 0);
+      jest.useFakeTimers();
+      jest.setSystemTime(mockDate);
 
       const shopHours = [
         {
-          day_of_week: mockNow.getDay(),
+          day_of_week: mockDate.getDay(),
           open_time: '09:00',
           close_time: '22:30',
           is_closed: false,
         },
       ];
 
-      const slots = getAvailableTimeSlots(mockNow, shopHours, [], 30, 0);
+      const slots = getAvailableTimeSlots(mockDate, shopHours, [], 30, 0);
 
       // Should not include slots before 9:46pm
       expect(slots).not.toContain('21:00');
@@ -136,8 +136,8 @@ describe('Calendar Utilities', () => {
       // Should include future slots
       expect(slots).toContain('22:00');
 
-      // Restore Date.now
-      Date.now = originalDateNow;
+      // Restore real timers
+      jest.useRealTimers();
     });
   });
 

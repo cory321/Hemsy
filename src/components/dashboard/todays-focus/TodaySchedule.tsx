@@ -2,6 +2,11 @@
 
 import { Stack, Box, Typography } from '@mui/material';
 import { format } from 'date-fns';
+import {
+  formatTimeForDisplay,
+  safeParseDateTime,
+  isCurrentTimeInRange,
+} from '@/lib/utils/date-time-utils';
 import type { Appointment } from '@/types';
 
 interface TodayScheduleProps {
@@ -34,23 +39,17 @@ export function TodaySchedule({ appointments }: TodayScheduleProps) {
         ) : (
           appointments.map((apt) => {
             // Format time from 24-hour to 12-hour format
-            const timeFormatted = format(
-              new Date(`1970-01-01T${apt.start_time}`),
-              'h:mm a'
-            );
+            const timeFormatted = formatTimeForDisplay(apt.start_time);
             const clientName = apt.client
               ? `${apt.client.first_name} ${apt.client.last_name}`
               : 'No client assigned';
 
             // Check if this appointment is currently happening
-            const now = new Date();
-            const appointmentDate = new Date(apt.date);
-            const startTime = new Date(`${apt.date}T${apt.start_time}`);
-            const endTime = new Date(`${apt.date}T${apt.end_time}`);
-            const isCurrent =
-              appointmentDate.toDateString() === now.toDateString() &&
-              now >= startTime &&
-              now <= endTime;
+            const isCurrent = isCurrentTimeInRange(
+              apt.date,
+              apt.start_time,
+              apt.end_time
+            );
 
             return (
               <Stack

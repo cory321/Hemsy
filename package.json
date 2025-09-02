@@ -62,6 +62,7 @@
     "cloudinary": "^2.7.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "date-fns-tz": "^3.2.0",
     "dayjs": "^1.11.13",
     "framer-motion": "^12.23.12",
     "libphonenumber-js": "^1.12.13",

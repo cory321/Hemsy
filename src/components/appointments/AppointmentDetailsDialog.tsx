@@ -48,6 +48,7 @@ function RemixIcon({
   );
 }
 import { format } from 'date-fns';
+import { isDateTimeInPast } from '@/lib/utils/date-time-utils';
 import { parseLocalDateFromYYYYMMDD } from '@/lib/utils/date';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -99,8 +100,7 @@ export function AppointmentDetailsDialog({
     appointment.start_time,
     appointment.end_time
   );
-  const isPast =
-    new Date(`${appointment.date} ${appointment.end_time}`) < new Date();
+  const isPast = isDateTimeInPast(appointment.date, appointment.end_time);
 
   // Sync state with appointment prop whenever it changes
   useEffect(() => {

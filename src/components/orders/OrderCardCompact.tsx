@@ -16,6 +16,10 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PersonIcon from '@mui/icons-material/Person';
 import CheckroomIcon from '@mui/icons-material/Checkroom';
 import { format, differenceInDays } from 'date-fns';
+import {
+  safeParseDate,
+  calculateDaysUntilDue,
+} from '@/lib/utils/date-time-utils';
 import { formatPhoneNumber } from '@/lib/utils/phone';
 import { getStageColor } from '@/constants/garmentStages';
 import {
@@ -106,25 +110,22 @@ function getEventDateInfo(garments: any[]) {
   // Find the earliest event date from all garments
   const eventDates = garments
     .map((g) => g.event_date)
-    .filter((date) => date != null)
-    .map((date) => new Date(date))
-    .sort((a, b) => a.getTime() - b.getTime());
+    .filter((date): date is string => date != null)
+    .sort((a, b) => a.localeCompare(b));
 
   if (eventDates.length === 0) {
     return null;
   }
 
-  const earliestEvent = eventDates[0];
-  if (!earliestEvent) return null; // Type guard
+  const eventDateStr = eventDates[0];
+  if (!eventDateStr) return null; // Type guard
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  earliestEvent.setHours(0, 0, 0, 0);
-  const daysUntilEvent = differenceInDays(earliestEvent, today);
+  const eventDate = safeParseDate(eventDateStr);
+  const daysUntilEvent = calculateDaysUntilDue(eventDateStr);
 
   return {
-    date: format(earliestEvent, 'MMM d, yyyy'),
-    shortDate: format(earliestEvent, 'MMM d'),
+    date: format(eventDate, 'MMM d, yyyy'),
+    shortDate: format(eventDate, 'MMM d'),
     daysUntilEvent,
     isPast: daysUntilEvent < 0,
     isUrgent: daysUntilEvent >= 0 && daysUntilEvent <= 3,

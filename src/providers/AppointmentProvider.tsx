@@ -181,7 +181,43 @@ export function AppointmentProvider({
           payload: { appointment, tempId },
         });
 
-        toast.success('Appointment created successfully');
+        // Format date and time for the toast message
+        const appointmentDate = new Date(
+          `${appointment.date}T${appointment.start_time}`
+        );
+        const formattedDate = appointmentDate.toLocaleDateString('en-US', {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric',
+        });
+        const formattedTime = appointmentDate.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true,
+        });
+
+        // Get client name if available
+        const clientName = appointment.client
+          ? `${appointment.client.first_name} ${appointment.client.last_name}`
+          : '';
+
+        // Create a styled toast message
+        const typeFormatted =
+          appointment.type.charAt(0).toUpperCase() + appointment.type.slice(1);
+        const description = `${typeFormatted} appointment${clientName ? ` with ${clientName}` : ''}`;
+
+        toast.success(
+          <div>
+            <div>
+              Appointment scheduled successfully for {formattedDate} at{' '}
+              {formattedTime}
+            </div>
+            <div style={{ fontSize: '0.875rem', opacity: 0.9 }}>
+              {description}
+            </div>
+          </div>,
+          { duration: 5000 }
+        );
       } catch (error) {
         dispatch({
           type: AppointmentActionType.CREATE_APPOINTMENT_ERROR,
@@ -194,9 +230,13 @@ export function AppointmentProvider({
           },
         });
         toast.error(
-          error instanceof Error
-            ? error.message
-            : 'Failed to create appointment'
+          <div>
+            <div>Failed to schedule appointment</div>
+            <div style={{ fontSize: '0.875rem', opacity: 0.9 }}>
+              Please try again or contact support if the problem persists.
+            </div>
+          </div>,
+          { duration: 5000 }
         );
         throw error;
       }

@@ -4,6 +4,10 @@ import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { ensureUserAndShop } from '@/lib/auth/user-shop';
 import { revalidatePath } from 'next/cache';
+import {
+  formatDateForDisplay,
+  getCurrentDateString,
+} from '@/lib/utils/date-time-utils';
 
 // Enhanced schema for adding services with payment awareness
 const AddServiceToGarmentEnhancedSchema = z.object({
@@ -132,7 +136,7 @@ export async function addServiceToGarmentWithPaymentCheck(
           invoiceType: 'additional',
           notes:
             input.invoiceNotes ||
-            `Additional services added to ${garment.name} on ${new Date().toLocaleDateString()}`,
+            `Additional services added to ${garment.name} on ${formatDateForDisplay(getCurrentDateString())}`,
         });
 
         if (invoiceResult.success && invoiceResult.invoice) {

@@ -1,12 +1,17 @@
 /**
- * Comprehensive date and time utilities for consistent handling across the application
- * Handles timezone-aware date formatting, time comparisons, and common date operations
+ * Consolidated date and time utilities for consistent timezone handling
+ *
+ * Core Strategy:
+ * 1. All dates/times from the database are treated as "business local time"
+ * 2. We parse them explicitly to avoid timezone ambiguity
+ * 3. Comparisons are done in consistent timezone context
+ * 4. Display formatting preserves the business date/time
  */
 
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 // ============================================================================
-// Date Formatting Utilities
+// Date Formatting Utilities (Safe Implementations)
 // ============================================================================
 
 /**
@@ -21,12 +26,47 @@ export function formatDateToYYYYMMDD(date: Date): string {
 }
 
 /**
+ * Alias for formatDateToYYYYMMDD for consistency
+ */
+export function formatDateForDatabase(date: Date): string {
+  return formatDateToYYYYMMDD(date);
+}
+
+/**
  * Parse a date string (YYYY-MM-DD) to a Date object in local timezone
- * Prevents UTC conversion issues by explicitly setting time to midnight local
+ * Uses explicit component construction to avoid timezone issues
  */
 export function parseDateString(dateStr: string): Date {
-  // Add time component to ensure local timezone parsing
-  return new Date(dateStr + 'T00:00:00');
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year!, month! - 1, day!, 0, 0, 0, 0);
+}
+
+/**
+ * Alias for parseDateString with a more explicit name
+ */
+export function safeParseDate(dateStr: string): Date {
+  return parseDateString(dateStr);
+}
+
+/**
+ * Parse a date and time string to a Date object in local timezone
+ * This ensures consistent behavior across different servers/timezones
+ * @param dateStr Date in YYYY-MM-DD format
+ * @param timeStr Time in HH:MM format
+ */
+export function parseDateTimeString(dateStr: string, timeStr: string): Date {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const [hours, minutes] = timeStr.split(':').map(Number);
+
+  // Create date in local timezone with explicit components
+  return new Date(year!, month! - 1, day!, hours || 0, minutes || 0, 0, 0);
+}
+
+/**
+ * Alias for parseDateTimeString with a more explicit name
+ */
+export function safeParseDateTime(dateStr: string, timeStr: string): Date {
+  return parseDateTimeString(dateStr, timeStr);
 }
 
 /**
@@ -37,11 +77,20 @@ export function getTodayString(): string {
 }
 
 /**
+ * Alias for getTodayString
+ */
+export function getCurrentDateString(): string {
+  return getTodayString();
+}
+
+/**
  * Get the current time in HH:MM format (24-hour)
  */
 export function getCurrentTimeString(): string {
   const now = new Date();
-  return now.toTimeString().split(' ')[0]?.slice(0, 5) || '00:00';
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  return `${hours}:${minutes}`;
 }
 
 /**
@@ -53,6 +102,22 @@ export function getCurrentTimeWithSeconds(): string {
   const minutes = String(now.getMinutes()).padStart(2, '0');
   const seconds = String(now.getSeconds()).padStart(2, '0');
   return `${hours}:${minutes}:${seconds}`;
+}
+
+/**
+ * Format a Date object to HH:MM for database storage
+ */
+export function formatTimeForDatabase(date: Date): string {
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${hours}:${minutes}`;
+}
+
+/**
+ * Format a Date object to ISO string for timestamptz fields
+ */
+export function formatTimestampForDatabase(date: Date): string {
+  return date.toISOString();
 }
 
 // ============================================================================
@@ -93,16 +158,48 @@ export function parseTimeString(timeStr: string): {
 }
 
 // ============================================================================
-// Date/Time Comparison Utilities
+// Safe Comparison Functions
 // ============================================================================
+
+/**
+ * Check if a date/time combination is in the past
+ * Uses consistent local timezone comparison
+ */
+export function isDateTimeInPast(dateStr: string, timeStr: string): boolean {
+  // Parse the target date/time
+  const targetDateTime = safeParseDateTime(dateStr, timeStr);
+
+  // Get current time in the same format (YYYY-MM-DD HH:MM)
+  const now = new Date();
+  const currentDateStr = formatDateForDatabase(now);
+  const currentTimeStr = formatTimeForDatabase(now);
+  const currentDateTime = safeParseDateTime(currentDateStr, currentTimeStr);
+
+  // Compare the parsed dates (both created with same method)
+  return targetDateTime.getTime() < currentDateTime.getTime();
+}
+
+/**
+ * Check if a date/time combination is in the future
+ */
+export function isDateTimeInFuture(dateStr: string, timeStr: string): boolean {
+  const dateTime = safeParseDateTime(dateStr, timeStr);
+  const now = new Date();
+  return dateTime.getTime() > now.getTime();
+}
 
 /**
  * Check if a date string represents today
  */
 export function isDateToday(dateStr: string): boolean {
-  const date = parseDateString(dateStr);
+  const date = safeParseDate(dateStr);
   const today = new Date();
-  return formatDateToYYYYMMDD(date) === formatDateToYYYYMMDD(today);
+
+  return (
+    date.getFullYear() === today.getFullYear() &&
+    date.getMonth() === today.getMonth() &&
+    date.getDate() === today.getDate()
+  );
 }
 
 /**
@@ -164,6 +261,42 @@ export function isTimeFuture(timeStr: string, currentTime?: string): boolean {
   const curr = normalizeTimeToHHMM(current);
 
   return curr < time;
+}
+
+/**
+ * Check if current time is within a time range on a given date
+ */
+export function isCurrentTimeInRange(
+  date: string,
+  startTime: string,
+  endTime: string
+): boolean {
+  const start = safeParseDateTime(date, startTime);
+  const end = safeParseDateTime(date, endTime);
+
+  // Create current time using same parsing method for consistency
+  const now = new Date();
+  const currentDateStr = formatDateForDatabase(now);
+  const currentTimeStr = formatTimeForDatabase(now);
+  const current = safeParseDateTime(currentDateStr, currentTimeStr);
+
+  return current >= start && current <= end;
+}
+
+/**
+ * Get the number of days between two dates
+ * Handles timezone correctly by comparing at midnight
+ */
+export function daysBetween(date1Str: string, date2Str: string): number {
+  const date1 = safeParseDate(date1Str);
+  const date2 = safeParseDate(date2Str);
+
+  // Set both to midnight to get accurate day count
+  date1.setHours(0, 0, 0, 0);
+  date2.setHours(0, 0, 0, 0);
+
+  const diffMs = date2.getTime() - date1.getTime();
+  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
 }
 
 // ============================================================================
@@ -255,6 +388,57 @@ export function getAppointmentStatus(
 }
 
 // ============================================================================
+// Business Logic Helpers
+// ============================================================================
+
+/**
+ * Validate that an appointment date/time is not in the past
+ * Throws an error if the date/time is in the past
+ */
+export function validateFutureDateTime(dateStr: string, timeStr: string): void {
+  if (isDateTimeInPast(dateStr, timeStr)) {
+    throw new Error('Cannot create appointments in the past');
+  }
+}
+
+/**
+ * Standard appointment validation
+ */
+export function validateAppointmentDateTime(
+  dateStr: string,
+  startTimeStr: string,
+  endTimeStr: string
+): void {
+  // Check not in past
+  validateFutureDateTime(dateStr, startTimeStr);
+
+  // Check end time is after start time
+  const startTime = safeParseDateTime(dateStr, startTimeStr);
+  const endTime = safeParseDateTime(dateStr, endTimeStr);
+
+  if (endTime <= startTime) {
+    throw new Error('End time must be after start time');
+  }
+}
+
+/**
+ * Get appointment status based on current time
+ */
+export function getAppointmentTimeStatus(
+  dateStr: string,
+  startTime: string,
+  endTime: string
+): 'past' | 'current' | 'future' {
+  const now = new Date();
+  const start = safeParseDateTime(dateStr, startTime);
+  const end = safeParseDateTime(dateStr, endTime);
+
+  if (now < start) return 'future';
+  if (now > end) return 'past';
+  return 'current';
+}
+
+// ============================================================================
 // Time Duration Utilities
 // ============================================================================
 
@@ -329,14 +513,21 @@ export function getDateRange(startDate: string, endDate: string): string[] {
 }
 
 // ============================================================================
-// Formatting for Display
+// Display Helpers
 // ============================================================================
 
 /**
- * Format date for display (e.g., "Jan 15, 2024")
+ * Format a date for user display (e.g., "Jan 15, 2024")
  */
 export function formatDateDisplay(dateStr: string): string {
   return format(parseDateString(dateStr), 'MMM d, yyyy');
+}
+
+/**
+ * Alias for formatDateDisplay
+ */
+export function formatDateForDisplay(dateStr: string): string {
+  return formatDateDisplay(dateStr);
 }
 
 /**
@@ -357,6 +548,13 @@ export function formatTime12Hour(timeStr: string): string {
 }
 
 /**
+ * Alias for formatTime12Hour
+ */
+export function formatTimeForDisplay(timeStr: string): string {
+  return formatTime12Hour(timeStr);
+}
+
+/**
  * Format time range for display (e.g., "2:30 PM - 3:00 PM")
  */
 export function formatTimeRange(
@@ -369,6 +567,52 @@ export function formatTimeRange(
   }
   const end = formatTime12Hour(endTime);
   return `${start} - ${end}`;
+}
+
+/**
+ * Format a date and time for user display
+ */
+export function formatDateTimeForDisplay(
+  dateStr: string,
+  timeStr: string
+): string {
+  const date = safeParseDateTime(dateStr, timeStr);
+  return format(date, 'MMM d, yyyy h:mm a');
+}
+
+// ============================================================================
+// Specific Business Logic Functions
+// ============================================================================
+
+/**
+ * Calculate days until a due date (negative if overdue)
+ */
+export function calculateDaysUntilDue(dueDateStr: string): number {
+  const today = getCurrentDateString();
+  return daysBetween(today, dueDateStr);
+}
+
+/**
+ * Format a due date with relative information
+ */
+export function formatDueDateWithRelative(dueDateStr: string): string {
+  const days = calculateDaysUntilDue(dueDateStr);
+
+  if (days < 0) return `${Math.abs(days)} days overdue`;
+  if (days === 0) return 'Due today';
+  if (days === 1) return 'Due tomorrow';
+  return `Due in ${days} days`;
+}
+
+/**
+ * Check if a shop is currently open based on hours
+ */
+export function isShopCurrentlyOpen(
+  openTime: string,
+  closeTime: string
+): boolean {
+  const today = getCurrentDateString();
+  return isCurrentTimeInRange(today, openTime, closeTime);
 }
 
 // ============================================================================
@@ -510,4 +754,95 @@ export function getDetailedDueDateDisplay(
   if (dueDateInfo.isTomorrow) return 'Due tomorrow';
 
   return `Due in ${dueDateInfo.daysUntilDue} days`;
+}
+
+// ============================================================================
+// Migration Helpers
+// ============================================================================
+
+/**
+ * Parse any date string safely, handling various formats
+ * Use this when migrating code that might have different date formats
+ */
+export function parseAnyDateSafely(dateStr: string): Date | null {
+  try {
+    // Try YYYY-MM-DD format first
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      return safeParseDate(dateStr);
+    }
+
+    // Try ISO format
+    if (dateStr.includes('T')) {
+      return parseISO(dateStr);
+    }
+
+    // Try creating date directly as last resort
+    const date = new Date(dateStr);
+    if (!isNaN(date.getTime())) {
+      return date;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Convert a date from one format to another safely
+ */
+export function convertDateFormat(
+  dateStr: string,
+  fromFormat: string,
+  toFormat: string
+): string {
+  const date = parseAnyDateSafely(dateStr);
+  if (!date) {
+    throw new Error(`Invalid date: ${dateStr}`);
+  }
+
+  return format(date, toFormat);
+}
+
+// ============================================================================
+// Debug Helpers (Development Only)
+// ============================================================================
+
+/**
+ * Debug function to log date parsing results
+ */
+export function debugDateParsing(dateStr: string, timeStr?: string): void {
+  if (process.env.NODE_ENV === 'production') return;
+
+  console.group('Date Parsing Debug');
+  console.log('Input:', { dateStr, timeStr });
+
+  if (timeStr) {
+    const parsed = safeParseDateTime(dateStr, timeStr);
+    console.log('Parsed DateTime:', parsed);
+    console.log('ISO String:', parsed.toISOString());
+    console.log('Local String:', parsed.toString());
+  } else {
+    const parsed = safeParseDate(dateStr);
+    console.log('Parsed Date:', parsed);
+    console.log('ISO String:', parsed.toISOString());
+    console.log('Local String:', parsed.toString());
+  }
+
+  console.groupEnd();
+}
+
+/**
+ * Log timezone information for debugging
+ */
+export function logTimezoneInfo(): void {
+  if (process.env.NODE_ENV === 'production') return;
+
+  const now = new Date();
+  console.group('Timezone Information');
+  console.log('Current Time:', now.toString());
+  console.log('ISO String:', now.toISOString());
+  console.log('Timezone Offset:', now.getTimezoneOffset(), 'minutes');
+  console.log('Timezone:', Intl.DateTimeFormat().resolvedOptions().timeZone);
+  console.groupEnd();
 }

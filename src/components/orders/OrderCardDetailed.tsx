@@ -30,6 +30,10 @@ import {
   getOrderStatusLabel,
 } from '@/lib/utils/orderStatus';
 import {
+  safeParseDate,
+  calculateDaysUntilDue,
+} from '@/lib/utils/date-time-utils';
+import {
   calculatePaymentStatus,
   type PaymentInfo,
 } from '@/lib/utils/payment-calculations';
@@ -261,39 +265,36 @@ function getEventDateDisplay(garments: any[]) {
   // Find the earliest event date from all garments
   const eventDates = garments
     .map((g) => g.event_date)
-    .filter((date) => date != null)
-    .map((date) => new Date(date))
-    .sort((a, b) => a.getTime() - b.getTime());
+    .filter((date): date is string => date != null)
+    .sort((a, b) => a.localeCompare(b));
 
   if (eventDates.length === 0) {
     return null;
   }
 
-  const earliestEvent = eventDates[0];
-  if (!earliestEvent) return null; // Type guard
+  const eventDateStr = eventDates[0];
+  if (!eventDateStr) return null; // Type guard
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  earliestEvent.setHours(0, 0, 0, 0);
-  const daysUntilEvent = differenceInDays(earliestEvent, today);
+  const eventDate = safeParseDate(eventDateStr);
+  const daysUntilEvent = calculateDaysUntilDue(eventDateStr);
 
   let text: string;
   let color: string;
 
   if (daysUntilEvent < 0) {
-    text = `Event was ${format(earliestEvent, 'MMM d')}`;
+    text = `Event was ${format(eventDate, 'MMM d')}`;
     color = 'text.secondary';
-  } else if (isToday(earliestEvent)) {
+  } else if (isToday(eventDate)) {
     text = 'Event today!';
     color = 'error.main';
-  } else if (isTomorrow(earliestEvent)) {
+  } else if (isTomorrow(eventDate)) {
     text = 'Event tomorrow';
     color = 'warning.main';
   } else if (daysUntilEvent <= 7) {
     text = `Event in ${daysUntilEvent} days`;
     color = 'warning.main';
   } else {
-    text = `Event: ${format(earliestEvent, 'MMM d, yyyy')}`;
+    text = `Event: ${format(eventDate, 'MMM d, yyyy')}`;
     color = 'text.primary';
   }
 

@@ -19,6 +19,11 @@ import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { format, parseISO, isAfter, isBefore } from 'date-fns';
+import {
+  safeParseDateTime,
+  isDateTimeInPast,
+  isDateTimeInFuture,
+} from '@/lib/utils/date-time-utils';
 import { parseLocalDateFromYYYYMMDD } from '@/lib/utils/date';
 import {
   getAppointmentColor,
@@ -44,13 +49,10 @@ export function ListView({ appointments, onAppointmentClick }: ListViewProps) {
   const filteredAppointments = appointments
     .filter((apt) => {
       // Filter by time
-      const aptDateTime = new Date(`${apt.date} ${apt.start_time}`);
-      const now = new Date();
-
-      if (filter === 'upcoming' && isBefore(aptDateTime, now)) {
+      if (filter === 'upcoming' && isDateTimeInPast(apt.date, apt.start_time)) {
         return false;
       }
-      if (filter === 'past' && isAfter(aptDateTime, now)) {
+      if (filter === 'past' && isDateTimeInFuture(apt.date, apt.start_time)) {
         return false;
       }
 
@@ -155,9 +157,9 @@ export function ListView({ appointments, onAppointmentClick }: ListViewProps) {
               appointment.start_time,
               appointment.end_time
             );
-            const isPast = isBefore(
-              new Date(`${appointment.date} ${appointment.end_time}`),
-              new Date()
+            const isPast = isDateTimeInPast(
+              appointment.date,
+              appointment.end_time
             );
 
             return (

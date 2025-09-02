@@ -43,7 +43,7 @@ const mockOrderFlowContext = {
             unitPriceCents: 5000,
           },
         ],
-        dueDate: new Date(Date.now() + 86400000).toISOString(), // Tomorrow
+        dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0], // Tomorrow in YYYY-MM-DD format
         notes: 'Special care needed',
       },
       {

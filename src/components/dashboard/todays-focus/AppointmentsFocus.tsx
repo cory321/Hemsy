@@ -24,6 +24,16 @@ interface AppointmentsFocusProps {
   todayAppointments: Appointment[];
   weekData?: WeekDayData[];
   weekSummaryStats?: WeekSummaryStats;
+  shopHours?: Array<{
+    day_of_week: number;
+    open_time: string | null;
+    close_time: string | null;
+    is_closed: boolean;
+  }>;
+  calendarSettings?: {
+    buffer_time_minutes: number;
+    default_appointment_duration: number;
+  };
 }
 
 export function AppointmentsFocus({
@@ -31,6 +41,11 @@ export function AppointmentsFocus({
   todayAppointments,
   weekData,
   weekSummaryStats,
+  shopHours = [],
+  calendarSettings = {
+    buffer_time_minutes: 0,
+    default_appointment_duration: 30,
+  },
 }: AppointmentsFocusProps) {
   const router = useRouter();
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
@@ -60,8 +75,7 @@ export function AppointmentsFocus({
 
     // Sort by date and start time
     relevantAppointments.sort((a, b) => {
-      const dateCompare =
-        new Date(a.date).getTime() - new Date(b.date).getTime();
+      const dateCompare = a.date.localeCompare(b.date);
       if (dateCompare !== 0) return dateCompare;
       return a.start_time.localeCompare(b.start_time);
     });
@@ -180,12 +194,9 @@ export function AppointmentsFocus({
           rescheduleSendEmailDefault={true}
           selectedDate={new Date(selectedAppointment.date)}
           selectedTime={selectedAppointment.start_time}
-          shopHours={[]}
-          existingAppointments={[]}
-          calendarSettings={{
-            buffer_time_minutes: 0,
-            default_appointment_duration: 30,
-          }}
+          shopHours={shopHours}
+          existingAppointments={todayAppointments}
+          calendarSettings={calendarSettings}
           onCreate={async () => {
             // Handle create - shouldn't happen in reschedule mode
             setEditDialogOpen(false);

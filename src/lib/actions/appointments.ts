@@ -10,6 +10,9 @@ import {
   getTodayString,
   getCurrentTimeString,
   formatTimeHHMM,
+  parseDateTimeString,
+  validateFutureDateTime,
+  isDateTimeInPast,
 } from '@/lib/utils/date-time-utils';
 
 // Validation schemas
@@ -197,11 +200,8 @@ export async function createAppointment(
   const validated = createAppointmentSchema.parse(data);
   const supabase = await createClient();
 
-  // Prevent creating appointments in the past (date + startTime before now)
-  const startDateTime = new Date(`${validated.date} ${validated.startTime}`);
-  if (startDateTime.getTime() < Date.now()) {
-    throw new Error('Cannot create appointments in the past');
-  }
+  // Prevent creating appointments in the past
+  validateFutureDateTime(validated.date, validated.startTime);
 
   // Verify shop ownership
   const { data: userData, error: userError } = await supabase
@@ -345,8 +345,7 @@ export async function updateAppointment(
   }
 
   // Prevent reschedule/cancel for past appointments
-  const currentAptEnd = new Date(`${currentApt.date} ${currentApt.end_time}`);
-  const isPast = currentAptEnd < new Date();
+  const isPast = isDateTimeInPast(currentApt.date, currentApt.end_time);
   if (
     isPast &&
     (validated.status === 'canceled' ||
@@ -368,10 +367,7 @@ export async function updateAppointment(
     const endTime = validated.endTime || currentApt.end_time;
 
     // Prevent moving appointment to a past time
-    const newStartDateTime = new Date(`${date} ${startTime}`);
-    if (newStartDateTime.getTime() < Date.now()) {
-      throw new Error('Cannot schedule appointments in the past');
-    }
+    validateFutureDateTime(date, startTime);
 
     const { data: hasConflict, error: conflictError } = await supabase.rpc(
       'check_appointment_conflict',

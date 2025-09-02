@@ -8,6 +8,7 @@ import {
   getAppointmentColor,
   isShopOpen,
 } from '@/lib/utils/calendar';
+import { formatTimeForDisplay } from '@/lib/utils/date-time-utils';
 import type { Appointment } from '@/types';
 
 interface MonthViewProps {
@@ -142,10 +143,7 @@ export function MonthView({
                         },
                       }}
                     >
-                      {format(
-                        new Date(`2000-01-01 ${apt.start_time}`),
-                        'h:mma'
-                      )}
+                      {formatTimeForDisplay(apt.start_time)}
                     </Box>
                   ))}
                   {dayAppointments.length > 3 && (

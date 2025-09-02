@@ -146,14 +146,14 @@ describe('Calendar Component', () => {
       renderCalendar();
 
       // Check if appointments are visible (in month view, shows time)
-      expect(screen.getByText('10:00AM')).toBeInTheDocument();
-      expect(screen.getByText('2:00PM')).toBeInTheDocument();
+      expect(screen.getByText('10:00 AM')).toBeInTheDocument();
+      expect(screen.getByText('2:00 PM')).toBeInTheDocument();
     });
 
     it('should call onAppointmentClick when appointment is clicked', () => {
       renderCalendar();
 
-      const appointment = screen.getByText('10:00AM');
+      const appointment = screen.getByText('10:00 AM');
       fireEvent.click(appointment);
 
       expect(defaultProps.onAppointmentClick).toHaveBeenCalledWith(

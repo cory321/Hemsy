@@ -19,6 +19,7 @@ import {
   Warning as WarningIcon,
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
+import { formatDateForDatabase } from '@/lib/utils/date-time-utils';
 import type { WeekDayData, WeekSummaryStats } from '@/lib/actions/dashboard';
 
 interface WeekOverviewProps {
@@ -49,11 +50,11 @@ function generateDefaultWeekData(): WeekDayData[] {
   const currentDate = new Date(startOfWeek);
 
   for (let i = 0; i < 7; i++) {
-    const dateString = currentDate.toISOString().split('T')[0];
+    const dateString = formatDateForDatabase(currentDate);
     weekData.push({
       date: currentDate.getDate(),
       dayOfWeek: currentDate.getDay(),
-      fullDate: dateString!, // We know this is always defined
+      fullDate: dateString, // formatDateForDatabase always returns a string
       appointments: 0,
       garmentsDue: 0,
       isToday: currentDate.toDateString() === today.toDateString(),

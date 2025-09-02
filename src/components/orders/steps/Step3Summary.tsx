@@ -2,6 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import {
+  calculateDaysUntilDue,
+  formatDateForDisplay,
+} from '@/lib/utils/date-time-utils';
+import {
   Box,
   Typography,
   Card,
@@ -118,10 +122,7 @@ interface GarmentCardProps {
 function GarmentCard({ garment, index }: GarmentCardProps) {
   const theme = useTheme();
   const daysUntilDue = garment.dueDate
-    ? Math.ceil(
-        (new Date(garment.dueDate).getTime() - new Date().getTime()) /
-          (1000 * 60 * 60 * 24)
-      )
+    ? calculateDaysUntilDue(garment.dueDate)
     : null;
   const isUrgent = daysUntilDue !== null && daysUntilDue <= 2;
 
@@ -202,7 +203,7 @@ function GarmentCard({ garment, index }: GarmentCardProps) {
               {garment.dueDate && (
                 <Chip
                   icon={<TimeIcon />}
-                  label={`Due ${new Date(garment.dueDate).toLocaleDateString()}`}
+                  label={`Due ${formatDateForDisplay(garment.dueDate)}`}
                   size="small"
                   variant={isUrgent ? 'filled' : 'outlined'}
                   color={isUrgent ? 'error' : 'default'}
@@ -211,7 +212,7 @@ function GarmentCard({ garment, index }: GarmentCardProps) {
               {garment.eventDate && (
                 <Chip
                   icon={<EventIcon />}
-                  label={`Event ${new Date(garment.eventDate).toLocaleDateString()}`}
+                  label={`Event ${formatDateForDisplay(garment.eventDate)}`}
                   size="small"
                   color="secondary"
                 />
@@ -279,10 +280,7 @@ function GarmentTableView({ garments }: GarmentTableViewProps) {
               0
             );
             const daysUntilDue = garment.dueDate
-              ? Math.ceil(
-                  (new Date(garment.dueDate).getTime() - new Date().getTime()) /
-                    (1000 * 60 * 60 * 24)
-                )
+              ? Math.ceil(calculateDaysUntilDue(garment.dueDate))
               : null;
             const isUrgent = daysUntilDue !== null && daysUntilDue <= 2;
 
@@ -373,7 +371,7 @@ function GarmentTableView({ garments }: GarmentTableViewProps) {
                   {garment.dueDate ? (
                     <Box>
                       <Typography variant="body2">
-                        {new Date(garment.dueDate).toLocaleDateString()}
+                        {formatDateForDisplay(garment.dueDate)}
                       </Typography>
                       {isUrgent && (
                         <Chip
@@ -392,7 +390,7 @@ function GarmentTableView({ garments }: GarmentTableViewProps) {
                   {garment.eventDate ? (
                     <Chip
                       icon={<EventIcon />}
-                      label={new Date(garment.eventDate).toLocaleDateString()}
+                      label={formatDateForDisplay(garment.eventDate)}
                       size="small"
                       color="secondary"
                     />
@@ -500,10 +498,7 @@ export default function Step3Summary({
   // Calculate urgency indicators
   const urgentGarments = orderDraft.garments.filter((g) => {
     if (!g.dueDate) return false;
-    const daysUntilDue = Math.ceil(
-      (new Date(g.dueDate).getTime() - new Date().getTime()) /
-        (1000 * 60 * 60 * 24)
-    );
+    const daysUntilDue = Math.ceil(calculateDaysUntilDue(g.dueDate));
     return daysUntilDue <= 2;
   });
 

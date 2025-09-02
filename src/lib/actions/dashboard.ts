@@ -8,6 +8,7 @@ import {
   getCurrentTimeWithSeconds,
   getDueDateInfo,
   isGarmentOverdue,
+  formatDateForDatabase,
   type GarmentOverdueInfo,
 } from '@/lib/utils/date-time-utils';
 import { compareGarmentsByStageAndProgress } from '@/lib/utils/garment-priority';
@@ -526,9 +527,9 @@ export async function getWeekOverviewData(): Promise<WeekDayData[]> {
   endOfWeek.setHours(23, 59, 59, 999);
 
   // Format dates for queries
-  const startDateStr = startOfWeek.toISOString().split('T')[0];
-  const endDateStr = endOfWeek.toISOString().split('T')[0];
-  const todayStr = today.toISOString().split('T')[0];
+  const startDateStr = formatDateForDatabase(startOfWeek);
+  const endDateStr = formatDateForDatabase(endOfWeek);
+  const todayStr = formatDateForDatabase(today);
 
   // Fetch appointments for the week
   const { data: appointments, error: appointmentsError } = await supabase
@@ -579,7 +580,7 @@ export async function getWeekOverviewData(): Promise<WeekDayData[]> {
   const currentDate = new Date(startOfWeek);
 
   for (let i = 0; i < 7; i++) {
-    const dateStr = currentDate.toISOString().split('T')[0] as string;
+    const dateStr = formatDateForDatabase(currentDate);
 
     weekData.push({
       date: currentDate.getDate(),
