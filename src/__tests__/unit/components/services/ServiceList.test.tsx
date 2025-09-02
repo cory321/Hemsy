@@ -58,7 +58,10 @@ describe('ServiceList', () => {
         updated_at: '2024-01-01T00:00:00Z',
       };
 
-      mockEditService.mockResolvedValue(updatedService);
+      mockEditService.mockResolvedValue({
+        success: true,
+        data: updatedService,
+      });
 
       render(
         <ServiceList services={mockServices} setServices={mockSetServices} />
@@ -116,7 +119,10 @@ describe('ServiceList', () => {
         updated_at: '2024-01-01T00:00:00Z',
       };
 
-      mockEditService.mockResolvedValue(updatedService);
+      mockEditService.mockResolvedValue({
+        success: true,
+        data: updatedService,
+      });
 
       render(
         <ServiceList services={mockServices} setServices={mockSetServices} />

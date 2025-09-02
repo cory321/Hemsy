@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import Error from '@/app/error';
+import RootError from '@/app/error';
 import AppError from '@/app/(app)/error';
 import { logger } from '@/lib/utils/logger';
 
@@ -44,10 +44,12 @@ describe('Error Handling', () => {
       const mockReset = jest.fn();
       const error = new Error('Test error message');
 
-      render(<Error error={error} reset={mockReset} />);
+      render(<RootError error={error} reset={mockReset} />);
 
       expect(screen.getByText(/Something went wrong/i)).toBeInTheDocument();
-      expect(screen.getByText(/Try Again/i)).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /Try Again/i })
+      ).toBeInTheDocument();
       expect(screen.getByText(/Go to Dashboard/i)).toBeInTheDocument();
     });
 
@@ -55,7 +57,7 @@ describe('Error Handling', () => {
       const mockReset = jest.fn();
       const error = new Error('Test error message');
 
-      render(<Error error={error} reset={mockReset} />);
+      render(<RootError error={error} reset={mockReset} />);
 
       expect(logger.error).toHaveBeenCalledWith(
         'Application error:',
@@ -69,7 +71,7 @@ describe('Error Handling', () => {
       const mockReset = jest.fn();
       const error = new Error('Test error message');
 
-      render(<Error error={error} reset={mockReset} />);
+      render(<RootError error={error} reset={mockReset} />);
 
       const tryAgainButton = screen.getByRole('button', { name: /Try Again/i });
       fireEvent.click(tryAgainButton);
@@ -118,7 +120,12 @@ describe('Error Handling', () => {
   describe('Logger Utility', () => {
     it('does not expose sensitive information in production', () => {
       const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'production';
+
+      // Mock process.env.NODE_ENV to be production
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: 'production',
+        configurable: true,
+      });
 
       // Create a new instance to test production behavior
       jest.resetModules();
@@ -132,7 +139,12 @@ describe('Error Handling', () => {
       expect(consoleSpy).not.toHaveBeenCalled();
 
       consoleSpy.mockRestore();
-      process.env.NODE_ENV = originalEnv;
+
+      // Restore original NODE_ENV
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: originalEnv,
+        configurable: true,
+      });
     });
   });
 });

@@ -113,7 +113,7 @@ describe('ServicesSearch', () => {
       },
     ];
 
-    mockSearchServices.mockResolvedValue(mockServices);
+    mockSearchServices.mockResolvedValue({ success: true, data: mockServices });
 
     render(<ServicesSearch onServiceSelect={mockOnServiceSelect} />);
 
@@ -161,7 +161,10 @@ describe('ServicesSearch', () => {
       updated_at: '2024-01-01T00:00:00Z',
     };
 
-    mockSearchServices.mockResolvedValue([mockService]);
+    mockSearchServices.mockResolvedValue({
+      success: true,
+      data: [mockService],
+    });
 
     render(<ServicesSearch onServiceSelect={mockOnServiceSelect} />);
 
