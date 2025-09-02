@@ -5,6 +5,18 @@ import {
 } from '@/lib/utils/garment-priority';
 import type { GarmentStage } from '@/types';
 
+type TestGarment = {
+  id: number;
+  due_date?: string | null;
+  stage: GarmentStage;
+  progress?: number;
+  garment_services?: Array<{
+    id: string;
+    is_done?: boolean | null;
+    is_removed?: boolean | null;
+  }> | null;
+};
+
 describe('Garment Priority Utils', () => {
   describe('getStagePriorityScore', () => {
     it('should return correct priority scores for each stage', () => {
@@ -73,10 +85,11 @@ describe('Garment Priority Utils', () => {
     const nextWeek = new Date(today);
     nextWeek.setDate(nextWeek.getDate() + 7);
 
-    const formatDate = (date: Date) => date.toISOString().split('T')[0];
+    const formatDate = (date: Date): string =>
+      date.toISOString().split('T')[0]!;
 
     it('should prioritize overdue garments', () => {
-      const garments = [
+      const garments: TestGarment[] = [
         { id: 1, due_date: formatDate(tomorrow), stage: 'New' as GarmentStage },
         {
           id: 2,
@@ -88,13 +101,13 @@ describe('Garment Priority Utils', () => {
 
       const sorted = sortGarmentsByPriority(garments);
 
-      expect(sorted[0].id).toBe(2); // Yesterday (overdue)
-      expect(sorted[1].id).toBe(3); // Today
-      expect(sorted[2].id).toBe(1); // Tomorrow
+      expect(sorted[0]!.id).toBe(2); // Yesterday (overdue)
+      expect(sorted[1]!.id).toBe(3); // Today
+      expect(sorted[2]!.id).toBe(1); // Tomorrow
     });
 
     it('should prioritize by stage when due dates are the same', () => {
-      const garments = [
+      const garments: TestGarment[] = [
         { id: 1, due_date: formatDate(today), stage: 'New' as GarmentStage },
         {
           id: 2,
@@ -110,13 +123,13 @@ describe('Garment Priority Utils', () => {
 
       const sorted = sortGarmentsByPriority(garments);
 
-      expect(sorted[0].id).toBe(2); // Ready For Pickup
-      expect(sorted[1].id).toBe(3); // In Progress
-      expect(sorted[2].id).toBe(1); // New
+      expect(sorted[0]!.id).toBe(2); // Ready For Pickup
+      expect(sorted[1]!.id).toBe(3); // In Progress
+      expect(sorted[2]!.id).toBe(1); // New
     });
 
     it('should prioritize by progress when stage and due date are the same', () => {
-      const garments = [
+      const garments: TestGarment[] = [
         {
           id: 1,
           due_date: formatDate(today),
@@ -139,13 +152,13 @@ describe('Garment Priority Utils', () => {
 
       const sorted = sortGarmentsByPriority(garments);
 
-      expect(sorted[0].id).toBe(2); // 75% progress
-      expect(sorted[1].id).toBe(3); // 50% progress
-      expect(sorted[2].id).toBe(1); // 25% progress
+      expect(sorted[0]!.id).toBe(2); // 75% progress
+      expect(sorted[1]!.id).toBe(3); // 50% progress
+      expect(sorted[2]!.id).toBe(1); // 25% progress
     });
 
     it('should handle garments without due dates', () => {
-      const garments = [
+      const garments: TestGarment[] = [
         { id: 1, due_date: null, stage: 'New' as GarmentStage },
         { id: 2, due_date: formatDate(today), stage: 'New' as GarmentStage },
         { id: 3, due_date: null, stage: 'Ready For Pickup' as GarmentStage },
@@ -153,13 +166,13 @@ describe('Garment Priority Utils', () => {
 
       const sorted = sortGarmentsByPriority(garments);
 
-      expect(sorted[0].id).toBe(2); // Has due date
-      expect(sorted[1].id).toBe(3); // No due date but Ready For Pickup
-      expect(sorted[2].id).toBe(1); // No due date and New
+      expect(sorted[0]!.id).toBe(2); // Has due date
+      expect(sorted[1]!.id).toBe(3); // No due date but Ready For Pickup
+      expect(sorted[2]!.id).toBe(1); // No due date and New
     });
 
     it('should handle complex priority scenarios', () => {
-      const garments = [
+      const garments: TestGarment[] = [
         { id: 1, due_date: formatDate(tomorrow), stage: 'New' as GarmentStage },
         {
           id: 2,
@@ -201,19 +214,19 @@ describe('Garment Priority Utils', () => {
       // 5. Tomorrow + New (id: 1)
       // 6. No date + In Progress 90% (id: 6)
 
-      expect(sorted[0].id).toBe(5);
-      expect(sorted[1].id).toBe(2);
-      expect(sorted[2].id).toBe(3);
-      expect(sorted[3].id).toBe(4);
-      expect(sorted[4].id).toBe(1);
-      expect(sorted[5].id).toBe(6);
+      expect(sorted[0]!.id).toBe(5);
+      expect(sorted[1]!.id).toBe(2);
+      expect(sorted[2]!.id).toBe(3);
+      expect(sorted[3]!.id).toBe(4);
+      expect(sorted[4]!.id).toBe(1);
+      expect(sorted[5]!.id).toBe(6);
     });
 
     it('should sort multiple overdue items by how overdue they are', () => {
       const weekAgo = new Date(today);
       weekAgo.setDate(weekAgo.getDate() - 7);
 
-      const garments = [
+      const garments: TestGarment[] = [
         {
           id: 1,
           due_date: formatDate(yesterday),
@@ -225,13 +238,13 @@ describe('Garment Priority Utils', () => {
 
       const sorted = sortGarmentsByPriority(garments);
 
-      expect(sorted[0].id).toBe(2); // Week ago (most overdue)
-      expect(sorted[1].id).toBe(1); // Yesterday
-      expect(sorted[2].id).toBe(3); // Today (not overdue)
+      expect(sorted[0]!.id).toBe(2); // Week ago (most overdue)
+      expect(sorted[1]!.id).toBe(1); // Yesterday
+      expect(sorted[2]!.id).toBe(3); // Today (not overdue)
     });
 
     it('should handle the same overdue date with different stages', () => {
-      const garments = [
+      const garments: TestGarment[] = [
         {
           id: 1,
           due_date: formatDate(yesterday),
@@ -258,10 +271,10 @@ describe('Garment Priority Utils', () => {
 
       const sorted = sortGarmentsByPriority(garments);
 
-      expect(sorted[0].id).toBe(2); // Ready For Pickup
-      expect(sorted[1].id).toBe(3); // In Progress 80%
-      expect(sorted[2].id).toBe(4); // In Progress 20%
-      expect(sorted[3].id).toBe(1); // New
+      expect(sorted[0]!.id).toBe(2); // Ready For Pickup
+      expect(sorted[1]!.id).toBe(3); // In Progress 80%
+      expect(sorted[2]!.id).toBe(4); // In Progress 20%
+      expect(sorted[3]!.id).toBe(1); // New
     });
   });
 });

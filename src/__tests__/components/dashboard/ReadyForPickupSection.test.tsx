@@ -2,7 +2,8 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ReadyForPickupSectionClient } from '@/components/dashboard/garment-pipeline/ReadyForPickupSectionClient';
 import { ReadyForPickupItem } from '@/components/dashboard/garment-pipeline/ReadyForPickupItem';
-import type { ActiveGarment, GarmentStage } from '@/types';
+import type { ActiveGarment } from '@/lib/actions/dashboard';
+import type { GarmentStage } from '@/types';
 
 // Mock the router
 const mockPush = jest.fn();
@@ -66,13 +67,18 @@ describe('ReadyForPickupSection', () => {
   describe('ReadyForPickupSectionClient', () => {
     it('should not render when there are no garments', () => {
       const { container } = render(
-        <ReadyForPickupSectionClient garments={[]} />
+        <ReadyForPickupSectionClient garments={[]} totalCount={0} />
       );
       expect(container.firstChild).toBeNull();
     });
 
     it('should render the section with garments', () => {
-      render(<ReadyForPickupSectionClient garments={mockGarments} />);
+      render(
+        <ReadyForPickupSectionClient
+          garments={mockGarments}
+          totalCount={mockGarments.length}
+        />
+      );
 
       // Check header
       expect(screen.getByText('Ready For Pickup')).toBeInTheDocument();
@@ -87,14 +93,24 @@ describe('ReadyForPickupSection', () => {
     });
 
     it('should show singular form for 1 garment', () => {
-      render(<ReadyForPickupSectionClient garments={[mockGarments[0]]} />);
+      render(
+        <ReadyForPickupSectionClient
+          garments={[mockGarments[0]!]}
+          totalCount={1}
+        />
+      );
       expect(
         screen.getByText('1 garment ready for customer pickup')
       ).toBeInTheDocument();
     });
 
     it('should navigate to garments page with filter when View All is clicked', () => {
-      render(<ReadyForPickupSectionClient garments={mockGarments} />);
+      render(
+        <ReadyForPickupSectionClient
+          garments={mockGarments}
+          totalCount={mockGarments.length}
+        />
+      );
 
       const viewAllButton = screen.getByRole('button', { name: /View All/i });
       fireEvent.click(viewAllButton);
@@ -105,13 +121,21 @@ describe('ReadyForPickupSection', () => {
     });
 
     it('should show "Showing latest 3 garments" message when there are 3 or more garments', () => {
-      render(<ReadyForPickupSectionClient garments={mockGarments} />);
+      render(
+        <ReadyForPickupSectionClient
+          garments={mockGarments}
+          totalCount={mockGarments.length}
+        />
+      );
       expect(screen.getByText(/Showing latest 3 garments/)).toBeInTheDocument();
     });
 
     it('should not show "Showing latest 3 garments" message when there are less than 3 garments', () => {
       render(
-        <ReadyForPickupSectionClient garments={mockGarments.slice(0, 2)} />
+        <ReadyForPickupSectionClient
+          garments={mockGarments.slice(0, 2)}
+          totalCount={2}
+        />
       );
       expect(
         screen.queryByText(/Showing latest 3 garments/)
@@ -120,7 +144,7 @@ describe('ReadyForPickupSection', () => {
   });
 
   describe('ReadyForPickupItem', () => {
-    const singleGarment = mockGarments[0];
+    const singleGarment = mockGarments[0]!;
 
     it('should render garment information', () => {
       render(<ReadyForPickupItem garment={singleGarment} />);

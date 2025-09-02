@@ -124,17 +124,17 @@ describe('Dashboard - Soft Delete Service Filtering', () => {
 
       // Verify that only non-removed services are included
       expect(result).toHaveLength(1);
-      expect(result[0].services).toHaveLength(2); // Only 2 services (removed one filtered out)
-      expect(result[0].services.map((s) => s.name)).toEqual([
+      expect(result[0]!.services).toHaveLength(2); // Only 2 services (removed one filtered out)
+      expect(result[0]!.services.map((s) => s.name)).toEqual([
         'Hemming',
         'Pressing',
       ]);
       expect(
-        result[0].services.find((s) => s.name === 'Alterations')
+        result[0]!.services.find((s) => s.name === 'Alterations')
       ).toBeUndefined();
 
       // Check progress calculation excludes removed services
-      expect(result[0].progress).toBe(50); // 1 completed out of 2 active services
+      expect(result[0]!.progress).toBe(50); // 1 completed out of 2 active services
     });
 
     it('should handle garments with all services soft-deleted', async () => {
@@ -176,8 +176,8 @@ describe('Dashboard - Soft Delete Service Filtering', () => {
       const result = await getActiveGarments();
 
       expect(result).toHaveLength(1);
-      expect(result[0].services).toHaveLength(0); // All services filtered out
-      expect(result[0].progress).toBe(0); // No active services
+      expect(result[0]!.services).toHaveLength(0); // All services filtered out
+      expect(result[0]!.progress).toBe(0); // No active services
     });
 
     it('should handle garments with no services', async () => {
@@ -206,8 +206,8 @@ describe('Dashboard - Soft Delete Service Filtering', () => {
       const result = await getActiveGarments();
 
       expect(result).toHaveLength(1);
-      expect(result[0].services).toHaveLength(0);
-      expect(result[0].progress).toBe(0);
+      expect(result[0]!.services).toHaveLength(0);
+      expect(result[0]!.progress).toBe(0);
     });
   });
 
@@ -271,17 +271,17 @@ describe('Dashboard - Soft Delete Service Filtering', () => {
 
       // Verify that only non-removed services are included
       expect(result).toHaveLength(1);
-      expect(result[0].services).toHaveLength(2); // Only 2 services (removed one filtered out)
-      expect(result[0].services.map((s) => s.name)).toEqual([
+      expect(result[0]!.services).toHaveLength(2); // Only 2 services (removed one filtered out)
+      expect(result[0]!.services.map((s) => s.name)).toEqual([
         'Tailoring',
         'Finishing',
       ]);
       expect(
-        result[0].services.find((s) => s.name === 'Extra Service')
+        result[0]!.services.find((s) => s.name === 'Extra Service')
       ).toBeUndefined();
 
       // Progress should still be 100% for ready for pickup
-      expect(result[0].progress).toBe(100);
+      expect(result[0]!.progress).toBe(100);
     });
 
     it('should handle ready for pickup garments with mixed service states', async () => {
@@ -330,9 +330,9 @@ describe('Dashboard - Soft Delete Service Filtering', () => {
       const result = await getReadyForPickupGarments();
 
       expect(result).toHaveLength(1);
-      expect(result[0].services).toHaveLength(1); // Only Service A (not removed)
-      expect(result[0].services[0].name).toBe('Service A');
-      expect(result[0].progress).toBe(100); // Ready for pickup is always 100%
+      expect(result[0]!.services).toHaveLength(1); // Only Service A (not removed)
+      expect(result[0]!.services[0]!.name).toBe('Service A');
+      expect(result[0]!.progress).toBe(100); // Ready for pickup is always 100%
     });
   });
 });

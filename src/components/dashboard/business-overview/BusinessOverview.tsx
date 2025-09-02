@@ -32,7 +32,7 @@ export function BusinessOverview({
   const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
 
   // Get appointments from the provider to check for conflicts
-  const { appointments } = useAppointments();
+  const { state } = useAppointments();
 
   const handleQuickAction = (actionId: string) => {
     switch (actionId) {
@@ -83,7 +83,7 @@ export function BusinessOverview({
         open={appointmentDialogOpen}
         onClose={() => setAppointmentDialogOpen(false)}
         shopHours={shopHours}
-        existingAppointments={appointments}
+        existingAppointments={Array.from(state.appointments.values())}
         calendarSettings={calendarSettings}
         onCreate={async (data) => {
           // The AppointmentDialog will handle the creation through the provider

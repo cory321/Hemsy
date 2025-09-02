@@ -342,7 +342,7 @@ export default function GarmentsPage() {
         </Box>
 
         {/* Garment Cards Grid */}
-        <Grid2 container spacing={3} columns={{ xs: 4, sm: 8, md: 12, lg: 20 }}>
+        <Grid2 spacing={3} columns={{ xs: 4, sm: 8, md: 12, lg: 20 }}>
           {Array.from({ length: 12 }).map((_, index) => (
             <Grid2 size={4} key={index}>
               <Card
@@ -664,11 +664,7 @@ export default function GarmentsPage() {
             </Box>
           ) : (
             // Regular grid view
-            <Grid2
-              container
-              spacing={3}
-              columns={{ xs: 4, sm: 8, md: 12, lg: 20 }}
-            >
+            <Grid2 spacing={3} columns={{ xs: 4, sm: 8, md: 12, lg: 20 }}>
               {filteredGarments.map((garment) => (
                 <Grid2 size={{ xs: 4, sm: 4, md: 4, lg: 4 }} key={garment.id}>
                   <GarmentCard

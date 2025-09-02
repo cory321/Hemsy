@@ -6,7 +6,7 @@ import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { DashboardAlerts } from '@/components/dashboard/alerts';
 import { AppointmentsFocus } from '@/components/dashboard/todays-focus';
 import { GarmentPipeline } from '@/components/dashboard/garment-pipeline';
-import { BusinessOverview } from '@/components/dashboard/business-overview';
+import { BusinessOverviewServer } from '@/components/dashboard/business-overview';
 import {
   getTodayAppointmentsDetailed,
   getNextAppointment,
@@ -66,7 +66,7 @@ export function Dashboard() {
       <Grid container spacing={3}>
         {/* Left Column - Business Overview */}
         <Grid size={{ xs: 12, lg: 3 }}>
-          <BusinessOverview />
+          <BusinessOverviewServer />
         </Grid>
 
         {/* Center Column - Garment Pipeline */}

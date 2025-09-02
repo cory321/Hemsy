@@ -12,7 +12,6 @@ export {
   NextAppointmentCard,
   TodaySchedule,
   WeekOverview,
-  ReadyForPickup,
 } from './todays-focus';
 
 // Garment Pipeline components

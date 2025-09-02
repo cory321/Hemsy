@@ -28,6 +28,38 @@ jest.mock('@/lib/queries/garment-queries', () => ({
   useGarmentsSearch: jest.fn(),
 }));
 
+// Mock InfiniteScrollTrigger
+jest.mock('@/components/common/InfiniteScrollTrigger', () => ({
+  InfiniteScrollTrigger: ({ onLoadMore, hasMore, isLoading }: any) => (
+    <div data-testid="infinite-scroll-trigger">
+      {isLoading && <div>Loading...</div>}
+      {hasMore && !isLoading && <button onClick={onLoadMore}>Load More</button>}
+    </div>
+  ),
+}));
+
+// Mock GarmentCard
+jest.mock('@/components/garments/GarmentCard', () => ({
+  __esModule: true,
+  default: ({ garment }: any) => (
+    <div data-testid={`garment-card-${garment.id}`}>{garment.name}</div>
+  ),
+}));
+
+// Mock StageBox
+jest.mock('@/components/garments/StageBox', () => ({
+  __esModule: true,
+  default: ({ stage, onClick, isSelected }: any) => (
+    <div
+      data-testid={`stage-box-${stage.name.toLowerCase().replace(/\s+/g, '-')}`}
+      data-selected={isSelected}
+      onClick={onClick}
+    >
+      {stage.name} ({stage.count})
+    </div>
+  ),
+}));
+
 // Mock MUI components
 jest.mock('@mui/material', () => ({
   ...jest.requireActual('@mui/material'),

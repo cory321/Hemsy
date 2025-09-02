@@ -33,8 +33,12 @@ async function AppointmentsFocusData() {
       <AppointmentsFocus
         nextAppointment={null}
         todayAppointments={[]}
-        weekData={undefined}
-        weekSummaryStats={undefined}
+        weekData={[]}
+        weekSummaryStats={{
+          totalAppointments: 0,
+          totalGarmentsDue: 0,
+          totalOverdue: 0,
+        }}
       />
     );
   }

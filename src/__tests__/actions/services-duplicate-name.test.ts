@@ -1,6 +1,6 @@
 import { addService } from '@/lib/actions/services';
 import { addService as addServiceFromOrders } from '@/lib/actions/orders';
-import { createSupabaseClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import { ensureUserAndShop } from '@/lib/auth/user-shop';
 
 // Mock dependencies
@@ -22,7 +22,7 @@ describe('Service Duplicate Name Handling - Server Actions', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (createSupabaseClient as jest.Mock).mockResolvedValue(mockSupabase);
+    (createClient as jest.Mock).mockResolvedValue(mockSupabase);
     (ensureUserAndShop as jest.Mock).mockResolvedValue({ shop: mockShop });
   });
 
