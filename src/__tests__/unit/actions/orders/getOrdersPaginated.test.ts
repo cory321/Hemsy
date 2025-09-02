@@ -135,7 +135,9 @@ describe('getOrdersPaginated', () => {
     // Verify correct query construction
     expect(mockSupabase.from).toHaveBeenCalledWith('orders');
     expect(mockSupabase.select).toHaveBeenCalledWith(
-      expect.stringContaining('client:clients(id, first_name, last_name)'),
+      expect.stringContaining(
+        'client:clients(id, first_name, last_name, phone_number)'
+      ),
       { count: 'exact' }
     );
     expect(mockSupabase.eq).toHaveBeenCalledWith('shop_id', 'shop_123');

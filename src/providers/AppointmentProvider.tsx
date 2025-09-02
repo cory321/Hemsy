@@ -456,26 +456,52 @@ export function AppointmentProvider({
     // Cleanup function with improved error handling
     return () => {
       if (subscriptionRef.current) {
-        // Unsubscribe from the channel before removing
-        subscriptionRef.current
-          .unsubscribe()
-          .then(() => {
+        try {
+          // Unsubscribe from the channel before removing
+          const unsubscribeResult = subscriptionRef.current.unsubscribe();
+
+          // Check if unsubscribe returns a promise (real Supabase) or undefined (mocked)
+          if (
+            unsubscribeResult &&
+            typeof unsubscribeResult.then === 'function'
+          ) {
+            unsubscribeResult
+              .then(() => {
+                if (subscriptionRef.current) {
+                  supabase.removeChannel(subscriptionRef.current);
+                  subscriptionRef.current = null;
+                }
+              })
+              .catch((error: unknown) => {
+                console.warn(
+                  'Error unsubscribing from appointments channel:',
+                  error
+                );
+                // Still try to remove the channel even if unsubscribe fails
+                if (subscriptionRef.current) {
+                  supabase.removeChannel(subscriptionRef.current);
+                  subscriptionRef.current = null;
+                }
+              });
+          } else {
+            // Synchronous unsubscribe (likely in tests)
             if (subscriptionRef.current) {
               supabase.removeChannel(subscriptionRef.current);
               subscriptionRef.current = null;
             }
-          })
-          .catch((error: unknown) => {
-            console.warn(
-              'Error unsubscribing from appointments channel:',
-              error
-            );
-            // Still try to remove the channel even if unsubscribe fails
-            if (subscriptionRef.current) {
+          }
+        } catch (error) {
+          console.warn('Error during appointment subscription cleanup:', error);
+          // Still try to clean up
+          if (subscriptionRef.current) {
+            try {
               supabase.removeChannel(subscriptionRef.current);
-              subscriptionRef.current = null;
+            } catch (removeError) {
+              console.warn('Error removing channel:', removeError);
             }
-          });
+            subscriptionRef.current = null;
+          }
+        }
       }
     };
   }, [shopId, state.optimisticUpdates, supabase]);

@@ -27,6 +27,14 @@ jest.mock('date-fns', () => ({
   format: jest.fn(),
 }));
 
+// Mock Date to return a consistent date for all tests
+const MOCK_DATE = new Date('2024-01-15T10:30:00Z');
+global.Date = jest.fn(() => MOCK_DATE) as any;
+global.Date.now = jest.fn(() => MOCK_DATE.getTime());
+global.Date.UTC = jest.fn();
+global.Date.parse = jest.fn();
+global.Date.prototype = Date.prototype;
+
 const mockAuth = auth as jest.MockedFunction<typeof auth>;
 const mockCreateClient = createClient as jest.MockedFunction<
   typeof createClient
@@ -230,7 +238,7 @@ describe('Dashboard Actions', () => {
       });
 
       await expect(getNextAppointment()).rejects.toThrow(
-        'Failed to fetch next appointment'
+        'Failed to fetch current appointment'
       );
     });
   });

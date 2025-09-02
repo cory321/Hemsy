@@ -14,6 +14,14 @@ jest.mock('date-fns', () => ({
 }));
 
 describe('WeekViewDesktop - Auto Update Current Time Indicator', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
   const mockShopHours = [
     {
       day_of_week: 0,

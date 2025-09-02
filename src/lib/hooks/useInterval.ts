@@ -36,7 +36,9 @@ export function useInterval(
       intervalId.current = setInterval(tick, delay);
       return () => {
         if (intervalId.current) {
-          clearInterval(intervalId.current);
+          if (typeof clearInterval !== 'undefined') {
+            clearInterval(intervalId.current);
+          }
           intervalId.current = null;
         }
       };
@@ -82,7 +84,9 @@ export function useTimeout(callback: () => void, delay: number | null) {
       timeoutId.current = setTimeout(tick, delay);
       return () => {
         if (timeoutId.current) {
-          clearTimeout(timeoutId.current);
+          if (typeof clearTimeout !== 'undefined') {
+            clearTimeout(timeoutId.current);
+          }
           timeoutId.current = null;
         }
       };
@@ -120,8 +124,28 @@ export function useVisibilityInterval(
   }, [callback]);
 
   useEffect(() => {
-    if (!pauseWhenHidden || delay === null) {
+    if (delay === null) {
       return;
+    }
+
+    if (!pauseWhenHidden) {
+      // Simple interval when not pausing for visibility
+      function tick() {
+        if (savedCallback.current) {
+          savedCallback.current();
+        }
+      }
+
+      intervalId.current = setInterval(tick, delay);
+
+      return () => {
+        if (intervalId.current) {
+          if (typeof clearInterval !== 'undefined') {
+            clearInterval(intervalId.current);
+          }
+          intervalId.current = null;
+        }
+      };
     }
 
     function tick() {
@@ -134,7 +158,9 @@ export function useVisibilityInterval(
       if (document.hidden) {
         // Clear interval when tab becomes hidden
         if (intervalId.current) {
-          clearInterval(intervalId.current);
+          if (typeof clearInterval !== 'undefined') {
+            clearInterval(intervalId.current);
+          }
           intervalId.current = null;
         }
       } else {

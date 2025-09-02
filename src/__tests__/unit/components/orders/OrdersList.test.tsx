@@ -15,6 +15,164 @@ jest.mock('@/hooks/useDebounce', () => ({
   useDebounce: (value: string) => value,
 }));
 
+// Mock OrderCard components with more realistic content
+jest.mock('@/components/orders/OrderCardMinimal', () => ({
+  __esModule: true,
+  default: ({ order, onClick }: any) => {
+    const clientName = order.client
+      ? `${order.client.first_name} ${order.client.last_name}`.trim()
+      : 'No Client';
+    const garmentCount = order.garments?.length || 0;
+    const statusLabel =
+      order.status === 'pending'
+        ? 'Pending'
+        : order.status === 'paid'
+          ? 'Paid'
+          : order.status?.charAt(0)?.toUpperCase() + order.status?.slice(1);
+    const paymentStatus =
+      order.payment_status === 'pending'
+        ? 'Pending'
+        : order.payment_status === 'paid'
+          ? 'Paid'
+          : order.payment_status?.charAt(0)?.toUpperCase() +
+            order.payment_status?.slice(1);
+
+    return (
+      <div
+        data-testid={`order-card-${order.id}`}
+        onClick={() => onClick(order.id)}
+      >
+        <div>#{order.order_number?.slice(-4) || order.id.slice(0, 4)}</div>
+        <div>{clientName}</div>
+        <div>
+          {garmentCount} garment{garmentCount !== 1 ? 's' : ''}
+        </div>
+        <div>${(order.total_cents / 100).toFixed(2)}</div>
+        <div>{statusLabel}</div>
+        <div>{paymentStatus}</div>
+        {order.created_at && (
+          <div>
+            {new Date(order.created_at).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            })}
+          </div>
+        )}
+      </div>
+    );
+  },
+}));
+
+jest.mock('@/components/orders/OrderCardCompact', () => ({
+  __esModule: true,
+  default: ({ order, onClick }: any) => {
+    const clientName = order.client
+      ? `${order.client.first_name} ${order.client.last_name}`.trim()
+      : 'No Client';
+    const garmentCount = order.garments?.length || 0;
+    const statusLabel =
+      order.status === 'pending'
+        ? 'Pending'
+        : order.status === 'paid'
+          ? 'Paid'
+          : order.status?.charAt(0)?.toUpperCase() + order.status?.slice(1);
+    const paymentStatus =
+      order.payment_status === 'pending'
+        ? 'Pending'
+        : order.payment_status === 'paid'
+          ? 'Paid'
+          : order.payment_status?.charAt(0)?.toUpperCase() +
+            order.payment_status?.slice(1);
+
+    return (
+      <div
+        data-testid={`order-card-${order.id}`}
+        onClick={() => onClick(order.id)}
+      >
+        <div>Order #{order.order_number}</div>
+        <div>{clientName}</div>
+        <div>
+          {garmentCount} garment{garmentCount !== 1 ? 's' : ''}
+        </div>
+        <div>${(order.total_cents / 100).toFixed(2)}</div>
+        <div>{statusLabel}</div>
+        <div>{paymentStatus}</div>
+        <div data-testid="PhoneIcon">📞</div>
+        {order.created_at && (
+          <div>
+            {new Date(order.created_at).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            })}
+          </div>
+        )}
+      </div>
+    );
+  },
+}));
+
+jest.mock('@/components/orders/OrderCardDetailed', () => ({
+  __esModule: true,
+  default: ({ order, onClick }: any) => {
+    const clientName = order.client
+      ? `${order.client.first_name} ${order.client.last_name}`.trim()
+      : 'No Client';
+    const garmentCount = order.garments?.length || 0;
+    const statusLabel =
+      order.status === 'pending'
+        ? 'Pending'
+        : order.status === 'paid'
+          ? 'Paid'
+          : order.status?.charAt(0)?.toUpperCase() + order.status?.slice(1);
+    const paymentStatus =
+      order.payment_status === 'pending'
+        ? 'Pending'
+        : order.payment_status === 'paid'
+          ? 'Paid'
+          : order.payment_status?.charAt(0)?.toUpperCase() +
+            order.payment_status?.slice(1);
+
+    return (
+      <div
+        data-testid={`order-card-${order.id}`}
+        onClick={() => onClick(order.id)}
+      >
+        <div>Order #{order.order_number}</div>
+        <div>{clientName}</div>
+        <div>
+          {garmentCount} garment{garmentCount !== 1 ? 's' : ''}
+        </div>
+        <div>${(order.total_cents / 100).toFixed(2)}</div>
+        <div>{statusLabel}</div>
+        <div>{paymentStatus}</div>
+        <div data-testid="PhoneIcon">📞</div>
+        {order.created_at && (
+          <div>
+            {new Date(order.created_at).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            })}
+          </div>
+        )}
+      </div>
+    );
+  },
+}));
+
+// Mock localStorage
+const localStorageMock = {
+  getItem: jest.fn(),
+  setItem: jest.fn(),
+  removeItem: jest.fn(),
+  clear: jest.fn(),
+};
+Object.defineProperty(window, 'localStorage', {
+  value: localStorageMock,
+});
+
 const mockPush = jest.fn();
 const mockUseRouter = useRouter as jest.MockedFunction<typeof useRouter>;
 
@@ -120,9 +278,9 @@ describe('OrdersList', () => {
 
     // Wait for the orders to be displayed
     await waitFor(() => {
-      expect(screen.getByText('Pending')).toBeInTheDocument();
+      expect(screen.getAllByText('Pending').length).toBeGreaterThan(0);
     });
-    expect(screen.getByText('Paid')).toBeInTheDocument();
+    expect(screen.getAllByText('Paid').length).toBeGreaterThan(0);
   });
 
   it('should display garment count correctly', async () => {
@@ -194,9 +352,9 @@ describe('OrdersList', () => {
       />
     );
 
-    // Click on the status select dropdown - it doesn't have an accessible name, so find by text
-    const statusDropdown = screen.getByText('All Statuses');
-    await user.click(statusDropdown);
+    // Click on the payment status select dropdown
+    const paymentStatusDropdown = screen.getByText('All Payment Statuses');
+    await user.click(paymentStatusDropdown);
 
     // Select 'Paid' from the menu
     const paidOption = await screen.findByRole('option', {
@@ -207,7 +365,7 @@ describe('OrdersList', () => {
     await waitFor(() => {
       expect(mockGetOrdersAction).toHaveBeenCalledWith(1, 10, {
         search: '',
-        status: 'paid',
+        paymentStatus: 'paid',
         sortBy: 'created_at',
         sortOrder: 'desc',
       });

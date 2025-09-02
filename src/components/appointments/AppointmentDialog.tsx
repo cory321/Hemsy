@@ -333,7 +333,13 @@ export function AppointmentDialog({
       : [];
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      data-testid="appointment-dialog"
+    >
       <DialogTitle>
         {isReschedule
           ? 'Reschedule Appointment'

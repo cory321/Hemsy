@@ -274,12 +274,15 @@ describe('MonthViewDesktop', () => {
     // The current day should have special styling
     // We can't easily test CSS, but we can verify the date is rendered
     const today = format(new Date(), 'd');
-    const todayElement = screen.getByText(today);
+    const todayElements = screen.getAllByText(today);
 
-    expect(todayElement).toBeInTheDocument();
-    // Verify that the today's date typography has the expected class or style
-    // The component sets fontWeight: 'bold' for the current day
-    const todayTypography = todayElement.closest('h6');
+    // There should be at least one element with today's date
+    expect(todayElements.length).toBeGreaterThan(0);
+
+    // At least one of the elements should be a heading (h6) which represents the main date
+    const todayTypography = todayElements.find(
+      (el) => el.tagName.toLowerCase() === 'h6'
+    );
     expect(todayTypography).toBeTruthy();
   });
 

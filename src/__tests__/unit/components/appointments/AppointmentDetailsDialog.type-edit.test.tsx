@@ -127,7 +127,7 @@ describe('AppointmentDetailsDialog - Type Editing', () => {
     fireEvent.click(screen.getByText('Fitting'));
 
     // Click save
-    fireEvent.click(screen.getByRole('button', { name: /save type/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
 
     await waitFor(() => {
       expect(updateAppointmentRefactored).toHaveBeenCalledWith({
@@ -164,7 +164,7 @@ describe('AppointmentDetailsDialog - Type Editing', () => {
     fireEvent.click(screen.getByText('Pickup'));
 
     // Click save
-    fireEvent.click(screen.getByRole('button', { name: /save type/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
 
     // Check loading state
     expect(screen.getByText('Saving...')).toBeInTheDocument();
@@ -256,7 +256,9 @@ describe('AppointmentDetailsDialog - Type Editing', () => {
     );
 
     const rescheduleBtn = screen.getByRole('button', { name: /reschedule/i });
-    const cancelBtn = screen.getByRole('button', { name: /^cancel$/i });
+    const cancelBtn = screen.getByRole('button', {
+      name: /cancel appointment/i,
+    });
     expect(rescheduleBtn).toBeDisabled();
     expect(cancelBtn).toBeDisabled();
   });
@@ -284,7 +286,7 @@ describe('AppointmentDetailsDialog - Type Editing', () => {
     fireEvent.change(notesInput, { target: { value: 'Updated notes' } });
 
     // Save notes
-    fireEvent.click(screen.getByRole('button', { name: /save notes/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
 
     await waitFor(() => {
       expect(updateAppointmentRefactored).toHaveBeenCalledWith({
@@ -312,7 +314,7 @@ describe('AppointmentDetailsDialog - Type Editing', () => {
     // Start a type update
     const editButtons = screen.getAllByRole('button', { name: /edit/i });
     fireEvent.click(editButtons[0]!);
-    fireEvent.click(screen.getByRole('button', { name: /save type/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
 
     // Check that other buttons are disabled
     expect(screen.getByRole('button', { name: /close/i })).toBeDisabled();

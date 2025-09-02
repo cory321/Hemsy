@@ -23,6 +23,9 @@ jest.mock('next/navigation', () => ({
     push: jest.fn(),
     refresh: jest.fn(),
   }),
+  useSearchParams: () => ({
+    get: jest.fn(() => null),
+  }),
 }));
 
 const mockGarments = [

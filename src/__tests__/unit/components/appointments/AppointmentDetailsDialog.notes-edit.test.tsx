@@ -80,10 +80,7 @@ describe('AppointmentDetailsDialog - Notes Editing', () => {
     expect(screen.getByText('Initial appointment notes')).toBeInTheDocument();
 
     // Check edit button is present
-    const editButtons = screen.getAllByRole('button');
-    const notesEditButton = editButtons.find((button) =>
-      button.querySelector('svg[data-testid="EditIcon"]')
-    );
+    const notesEditButton = screen.getByTestId('edit-notes-button');
     expect(notesEditButton).toBeInTheDocument();
   });
 
@@ -124,11 +121,9 @@ describe('AppointmentDetailsDialog - Notes Editing', () => {
     expect(
       screen.getByPlaceholderText('Add notes about this appointment...')
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: /save notes/i })
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^save$/i })).toBeInTheDocument();
     // Check for the cancel button that's in the same container as save notes
-    const saveButton = screen.getByRole('button', { name: /save notes/i });
+    const saveButton = screen.getByRole('button', { name: /^save$/i });
     const cancelButton =
       saveButton.parentElement?.querySelector('button:first-child');
     expect(cancelButton).toBeInTheDocument();
@@ -169,7 +164,7 @@ describe('AppointmentDetailsDialog - Notes Editing', () => {
     await user.type(textField, 'Updated appointment notes');
 
     // Save
-    await user.click(screen.getByRole('button', { name: /save notes/i }));
+    await user.click(screen.getByRole('button', { name: /^save$/i }));
 
     // Check that updateAppointment was called
     await waitFor(() => {
@@ -211,7 +206,7 @@ describe('AppointmentDetailsDialog - Notes Editing', () => {
     await user.clear(textField);
 
     // Save
-    await user.click(screen.getByRole('button', { name: /save notes/i }));
+    await user.click(screen.getByRole('button', { name: /^save$/i }));
 
     // Component sends undefined to clear notes (handled server-side as null)
     await waitFor(() => {
@@ -247,7 +242,7 @@ describe('AppointmentDetailsDialog - Notes Editing', () => {
     await user.type(textField, 'Changes that will be cancelled');
 
     // Cancel - find the cancel button in the notes edit section
-    const saveButton = screen.getByRole('button', { name: /save notes/i });
+    const saveButton = screen.getByRole('button', { name: /^save$/i });
     const cancelButton = saveButton.parentElement?.querySelector(
       'button:first-child'
     ) as HTMLButtonElement;
@@ -281,7 +276,7 @@ describe('AppointmentDetailsDialog - Notes Editing', () => {
     await user.click(notesEditButton);
 
     // Save
-    await user.click(screen.getByRole('button', { name: /save notes/i }));
+    await user.click(screen.getByRole('button', { name: /^save$/i }));
 
     // Check error is displayed
     await waitFor(() => {
@@ -320,7 +315,7 @@ describe('AppointmentDetailsDialog - Notes Editing', () => {
     await user.click(notesEditButton);
 
     // Save
-    const saveButton = screen.getByRole('button', { name: /save notes/i });
+    const saveButton = screen.getByRole('button', { name: /^save$/i });
     await user.click(saveButton);
 
     // Buttons should be disabled while saving

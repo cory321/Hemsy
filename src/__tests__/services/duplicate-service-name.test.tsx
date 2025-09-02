@@ -36,12 +36,11 @@ describe('Duplicate Service Name Handling', () => {
 
   describe('CreateServiceDialog', () => {
     it('should display duplicate name error in the dialog', async () => {
-      const duplicateError = new Error(
-        'A service with this name already exists. Please choose a different name.'
-      );
-      (servicesActions.addService as jest.Mock).mockRejectedValueOnce(
-        duplicateError
-      );
+      (servicesActions.addService as jest.Mock).mockResolvedValueOnce({
+        success: false,
+        error:
+          'A service with this name already exists. Please choose a different name.',
+      });
 
       render(
         <CreateServiceDialog
@@ -88,12 +87,11 @@ describe('Duplicate Service Name Handling', () => {
     });
 
     it('should clear error when user types in name field', async () => {
-      const duplicateError = new Error(
-        'A service with this name already exists. Please choose a different name.'
-      );
-      (servicesActions.addService as jest.Mock).mockRejectedValueOnce(
-        duplicateError
-      );
+      (servicesActions.addService as jest.Mock).mockResolvedValueOnce({
+        success: false,
+        error:
+          'A service with this name already exists. Please choose a different name.',
+      });
 
       render(
         <CreateServiceDialog
@@ -163,7 +161,7 @@ describe('Duplicate Service Name Handling', () => {
       // Wait for toast to be called
       await waitFor(() => {
         expect(toast.error).toHaveBeenCalledWith(
-          'Error adding service: Network error'
+          'An unexpected error occurred while adding the service'
         );
       });
 
@@ -172,12 +170,11 @@ describe('Duplicate Service Name Handling', () => {
     });
 
     it('should clear error when dialog is closed', async () => {
-      const duplicateError = new Error(
-        'A service with this name already exists. Please choose a different name.'
-      );
-      (servicesActions.addService as jest.Mock).mockRejectedValueOnce(
-        duplicateError
-      );
+      (servicesActions.addService as jest.Mock).mockResolvedValueOnce({
+        success: false,
+        error:
+          'A service with this name already exists. Please choose a different name.',
+      });
 
       const { rerender } = render(
         <CreateServiceDialog
@@ -233,12 +230,11 @@ describe('Duplicate Service Name Handling', () => {
 
   describe('AddServiceForm', () => {
     it('should display duplicate name error in the form', async () => {
-      const duplicateError = new Error(
-        'A service with this name already exists. Please choose a different name.'
-      );
-      (servicesActions.addService as jest.Mock).mockRejectedValueOnce(
-        duplicateError
-      );
+      (servicesActions.addService as jest.Mock).mockResolvedValueOnce({
+        success: false,
+        error:
+          'A service with this name already exists. Please choose a different name.',
+      });
 
       render(
         <AddServiceForm setServices={mockSetServices} onClose={mockOnClose} />
@@ -281,12 +277,11 @@ describe('Duplicate Service Name Handling', () => {
     });
 
     it('should clear error when user types in name field', async () => {
-      const duplicateError = new Error(
-        'A service with this name already exists. Please choose a different name.'
-      );
-      (servicesActions.addService as jest.Mock).mockRejectedValueOnce(
-        duplicateError
-      );
+      (servicesActions.addService as jest.Mock).mockResolvedValueOnce({
+        success: false,
+        error:
+          'A service with this name already exists. Please choose a different name.',
+      });
 
       render(
         <AddServiceForm setServices={mockSetServices} onClose={mockOnClose} />

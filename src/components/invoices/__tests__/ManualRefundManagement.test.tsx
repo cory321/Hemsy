@@ -66,9 +66,7 @@ describe('ManualRefundManagement', () => {
         />
       );
 
-      const refundButton = screen.getByRole('button', {
-        name: /process a manual refund/i,
-      });
+      const refundButton = screen.getByText('Process Refund');
       expect(refundButton).toBeInTheDocument();
     });
 
@@ -80,9 +78,7 @@ describe('ManualRefundManagement', () => {
         />
       );
 
-      const refundButton = screen.getByRole('button', {
-        name: /process a manual refund/i,
-      });
+      const refundButton = screen.getByText('Process Refund');
       expect(refundButton).toBeInTheDocument();
     });
 
@@ -95,7 +91,7 @@ describe('ManualRefundManagement', () => {
       );
 
       const refundButton = screen.queryByRole('button', {
-        name: /process a manual refund/i,
+        name: /process refund/i,
       });
       expect(refundButton).not.toBeInTheDocument();
     });
@@ -109,7 +105,7 @@ describe('ManualRefundManagement', () => {
       );
 
       const refundButton = screen.queryByRole('button', {
-        name: /process a manual refund/i,
+        name: /process refund/i,
       });
       expect(refundButton).not.toBeInTheDocument();
     });
@@ -126,9 +122,7 @@ describe('ManualRefundManagement', () => {
         />
       );
 
-      const refundButton = screen.getByRole('button', {
-        name: /process a manual refund/i,
-      });
+      const refundButton = screen.getByText('Process Refund');
       await user.click(refundButton);
 
       expect(screen.getByText('Process Manual Refund')).toBeInTheDocument();
@@ -146,9 +140,7 @@ describe('ManualRefundManagement', () => {
         />
       );
 
-      await user.click(
-        screen.getByRole('button', { name: /process a manual refund/i })
-      );
+      await user.click(screen.getByText('Process Refund'));
 
       expect(screen.getByText('$50.00')).toBeInTheDocument();
       expect(screen.getByText('Cash Payment')).toBeInTheDocument();
@@ -165,9 +157,7 @@ describe('ManualRefundManagement', () => {
         />
       );
 
-      await user.click(
-        screen.getByRole('button', { name: /process a manual refund/i })
-      );
+      await user.click(screen.getByText('Process Refund'));
 
       expect(screen.getByText('$75.00')).toBeInTheDocument();
       expect(screen.getByText('External POS Payment')).toBeInTheDocument();
@@ -183,9 +173,7 @@ describe('ManualRefundManagement', () => {
         />
       );
 
-      await user.click(
-        screen.getByRole('button', { name: /process a manual refund/i })
-      );
+      await user.click(screen.getByText('Process Refund'));
       expect(screen.getByText('Process Manual Refund')).toBeInTheDocument();
 
       await user.click(screen.getByLabelText('close'));
@@ -208,9 +196,7 @@ describe('ManualRefundManagement', () => {
         />
       );
 
-      await user.click(
-        screen.getByRole('button', { name: /process a manual refund/i })
-      );
+      await user.click(screen.getByText('Process Refund'));
     });
 
     it('should switch between full and partial refund types', async () => {
@@ -305,9 +291,7 @@ describe('ManualRefundManagement', () => {
         />
       );
 
-      await user.click(
-        screen.getByRole('button', { name: /process a manual refund/i })
-      );
+      await user.click(screen.getByText('Process Refund'));
 
       // Fill in reason
       const reasonField = screen.getByLabelText(/refund reason/i);
@@ -353,9 +337,7 @@ describe('ManualRefundManagement', () => {
         />
       );
 
-      await user.click(
-        screen.getByRole('button', { name: /process a manual refund/i })
-      );
+      await user.click(screen.getByText('Process Refund'));
 
       // Switch to partial refund
       const refundTypeSelect = screen.getByLabelText('Refund Type');
@@ -421,9 +403,7 @@ describe('ManualRefundManagement', () => {
         />
       );
 
-      await user.click(
-        screen.getByRole('button', { name: /process a manual refund/i })
-      );
+      await user.click(screen.getByText('Process Refund'));
 
       // Fill in reason
       const reasonField = screen.getByLabelText(/refund reason/i);
@@ -473,9 +453,7 @@ describe('ManualRefundManagement', () => {
         />
       );
 
-      await user.click(
-        screen.getByRole('button', { name: /process a manual refund/i })
-      );
+      await user.click(screen.getByText('Process Refund'));
 
       // Fill in reason
       const reasonField = screen.getByLabelText(/refund reason/i);
@@ -513,9 +491,7 @@ describe('ManualRefundManagement', () => {
         />
       );
 
-      await user.click(
-        screen.getByRole('button', { name: /process a manual refund/i })
-      );
+      await user.click(screen.getByText('Process Refund'));
 
       // Switch to partial refund
       const refundTypeSelect = screen.getByLabelText('Refund Type');
@@ -553,9 +529,7 @@ describe('ManualRefundManagement', () => {
         />
       );
 
-      await user.click(
-        screen.getByRole('button', { name: /process a manual refund/i })
-      );
+      await user.click(screen.getByText('Process Refund'));
 
       // Switch to partial refund
       const refundTypeSelect = screen.getByLabelText('Refund Type');

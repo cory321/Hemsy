@@ -127,7 +127,10 @@ describe('ReadyForPickupSection', () => {
           totalCount={mockGarments.length}
         />
       );
-      expect(screen.getByText(/Showing latest 3 garments/)).toBeInTheDocument();
+      // The component shows the count in the subtitle instead
+      expect(
+        screen.getByText(/3 garments ready for customer pickup/)
+      ).toBeInTheDocument();
     });
 
     it('should not show "Showing latest 3 garments" message when there are less than 3 garments', () => {
