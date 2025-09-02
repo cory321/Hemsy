@@ -119,6 +119,7 @@ describe('Service Duplicate Name Handling - Server Actions', () => {
       };
 
       const result = await addService(serviceData);
+
       expect(result).toEqual(newService);
     });
   });
@@ -189,7 +190,7 @@ describe('Service Duplicate Name Handling - Server Actions', () => {
 
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.errors.name).toContain(
+        expect(result.errors.root).toContain(
           'relation "services" does not exist'
         );
       }

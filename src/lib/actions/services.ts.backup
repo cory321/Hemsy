@@ -1,0 +1,331 @@
+'use server';
+
+import { createClient as createSupabaseClient } from '@/lib/supabase/server';
+import { ensureUserAndShop } from './users';
+import { revalidatePath } from 'next/cache';
+
+// Result types for better type safety
+export type ServiceActionResult<T = any> =
+  | { success: true; data: T }
+  | { success: false; error: string };
+
+export async function searchServices(
+  query: string
+): Promise<ServiceActionResult> {
+  try {
+    const { shop } = await ensureUserAndShop();
+    const supabase = await createSupabaseClient();
+
+    const { data, error } = await supabase
+      .from('services')
+      .select('*')
+      .eq('shop_id', shop.id)
+      .ilike('name', `%${query}%`)
+      .order('frequently_used_position', { ascending: true, nullsFirst: false })
+      .order('name', { ascending: true });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data: data || [] };
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : 'Failed to search services',
+    };
+  }
+}
+
+export async function addService(service: {
+  name: string;
+  description?: string | null;
+  default_qty: number;
+  default_unit: string;
+  default_unit_price_cents: number;
+  frequently_used?: boolean;
+  frequently_used_position?: number | null;
+}): Promise<any> {
+  try {
+    const { shop } = await ensureUserAndShop();
+    const supabase = await createSupabaseClient();
+
+    const { data, error } = await supabase
+      .from('services')
+      .insert({
+        shop_id: shop.id,
+        name: service.name,
+        description: service.description || null,
+        default_qty: service.default_qty,
+        default_unit: service.default_unit,
+        default_unit_price_cents: service.default_unit_price_cents,
+        frequently_used: service.frequently_used || false,
+        frequently_used_position: service.frequently_used_position || null,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      // Check if it's a unique constraint violation for service name
+      if (
+        error.code === '23505' &&
+        error.message.includes('services_shop_id_name_key')
+      ) {
+        throw new Error(
+          'A service with this name already exists. Please choose a different name.'
+        );
+      }
+      throw new Error(error.message);
+    }
+
+    revalidatePath('/services');
+    return data;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to add service');
+  }
+}
+
+export async function editService(
+  id: string,
+  updatedService: {
+    name: string;
+    description?: string | null;
+    default_qty: number;
+    default_unit: string;
+    default_unit_price_cents: number;
+    frequently_used?: boolean;
+    frequently_used_position?: number | null;
+  }
+): Promise<ServiceActionResult> {
+  try {
+    const { shop } = await ensureUserAndShop();
+    const supabase = await createSupabaseClient();
+
+    const { data, error } = await supabase
+      .from('services')
+      .update({
+        name: updatedService.name,
+        description: updatedService.description || null,
+        default_qty: updatedService.default_qty,
+        default_unit: updatedService.default_unit,
+        default_unit_price_cents: updatedService.default_unit_price_cents,
+        frequently_used: updatedService.frequently_used || false,
+        frequently_used_position:
+          updatedService.frequently_used_position || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .eq('shop_id', shop.id)
+      .select()
+      .single();
+
+    if (error) {
+      // Check if it's a unique constraint violation for service name
+      if (
+        error.code === '23505' &&
+        error.message.includes('services_shop_id_name_key')
+      ) {
+        return {
+          success: false,
+          error:
+            'A service with this name already exists. Please choose a different name.',
+        };
+      }
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath('/services');
+    return { success: true, data };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to edit service',
+    };
+  }
+}
+
+export async function deleteService(id: string): Promise<ServiceActionResult> {
+  try {
+    const { shop } = await ensureUserAndShop();
+    const supabase = await createSupabaseClient();
+
+    const { error } = await supabase
+      .from('services')
+      .delete()
+      .eq('id', id)
+      .eq('shop_id', shop.id);
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath('/services');
+    return { success: true, data: id };
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : 'Failed to delete service',
+    };
+  }
+}
+
+export async function fetchAllServices(): Promise<ServiceActionResult> {
+  try {
+    const { shop } = await ensureUserAndShop();
+    const supabase = await createSupabaseClient();
+
+    const { data: services, error } = await supabase
+      .from('services')
+      .select('*')
+      .eq('shop_id', shop.id)
+      .order('frequently_used_position', { ascending: true, nullsFirst: false })
+      .order('name', { ascending: true });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data: services || [] };
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : 'Failed to fetch services',
+    };
+  }
+}
+
+export async function getFrequentlyUsedServices(): Promise<ServiceActionResult> {
+  try {
+    const { shop } = await ensureUserAndShop();
+    const supabase = await createSupabaseClient();
+
+    const { data, error } = await supabase
+      .from('services')
+      .select('id, name, default_unit, default_qty, default_unit_price_cents')
+      .eq('shop_id', shop.id)
+      .eq('frequently_used', true)
+      .order('frequently_used_position', { ascending: true });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data: data || [] };
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch frequently used services',
+    };
+  }
+}
+
+export async function duplicateService(
+  id: string
+): Promise<ServiceActionResult> {
+  try {
+    const { shop } = await ensureUserAndShop();
+    const supabase = await createSupabaseClient();
+
+    // Fetch the service by ID
+    const { data: service, error: fetchError } = await supabase
+      .from('services')
+      .select('*')
+      .eq('id', id)
+      .eq('shop_id', shop.id)
+      .single();
+
+    if (fetchError) {
+      return { success: false, error: fetchError.message };
+    }
+
+    if (!service) {
+      return { success: false, error: 'Service not found' };
+    }
+
+    // Remove the id field to allow the database to generate a new one
+    const { id: _, created_at, updated_at, ...serviceData } = service;
+
+    // Insert the duplicated service
+    const { data: duplicatedService, error: insertError } = await supabase
+      .from('services')
+      .insert({
+        ...serviceData,
+        name: `${service.name} (Copy)`,
+        frequently_used: false,
+        frequently_used_position: null,
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      return { success: false, error: insertError.message };
+    }
+
+    revalidatePath('/services');
+    return { success: true, data: duplicatedService };
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : 'Failed to duplicate service',
+    };
+  }
+}
+
+export async function updateFrequentlyUsedServices(
+  services: Array<{ id: string; position: number }>
+): Promise<ServiceActionResult> {
+  try {
+    const { shop } = await ensureUserAndShop();
+    const supabase = await createSupabaseClient();
+
+    // First, reset all services to not frequently used
+    const { error: resetError } = await supabase
+      .from('services')
+      .update({
+        frequently_used: false,
+        frequently_used_position: null,
+      })
+      .eq('shop_id', shop.id);
+
+    if (resetError) {
+      return { success: false, error: resetError.message };
+    }
+
+    // Then update the frequently used services
+    for (const service of services) {
+      const { error } = await supabase
+        .from('services')
+        .update({
+          frequently_used: true,
+          frequently_used_position: service.position,
+        })
+        .eq('id', service.id)
+        .eq('shop_id', shop.id);
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+    }
+
+    revalidatePath('/services');
+    return { success: true, data: true };
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Failed to update frequently used services',
+    };
+  }
+}

@@ -259,6 +259,20 @@ function toFieldErrors(error: unknown): FieldErrors {
     }
     return out;
   }
+
+  // Handle specific service name duplicate error
+  if (
+    error instanceof Error &&
+    error.message.includes('A service with this name already exists')
+  ) {
+    return { name: [error.message] };
+  }
+
+  // Handle other specific errors with field mappings
+  if (error instanceof Error) {
+    return { root: [error.message] };
+  }
+
   return { root: ['Unexpected error'] };
 }
 

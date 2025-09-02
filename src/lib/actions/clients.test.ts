@@ -677,17 +677,16 @@ describe('Client Actions', () => {
         { total_cents: 12000, paid_amount_cents: 2000 }, // $100 outstanding
       ];
 
-      // Mock the select chain for outstanding balance query
-      const mockSelectChain = {
-        eq: jest.fn().mockReturnThis(),
-      };
-      mockSelectChain.eq.mockResolvedValue({
-        data: mockOrders,
-        error: null,
-      });
-
+      // Mock the complete query chain for outstanding balance
       mockSupabase.from.mockReturnValue({
-        select: jest.fn().mockReturnValue(mockSelectChain),
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            eq: jest.fn().mockResolvedValue({
+              data: mockOrders,
+              error: null,
+            }),
+          }),
+        }),
       });
 
       const result = await getClientOutstandingBalance('client_123');
@@ -711,10 +710,14 @@ describe('Client Actions', () => {
       const mockSelectChain = {
         eq: jest.fn().mockReturnThis(),
       };
-      mockSelectChain.eq.mockResolvedValue({
-        data: mockOrders,
-        error: null,
-      });
+      // The function calls .eq() twice, so the second call should resolve with data
+      mockSelectChain.eq
+        .mockReturnValueOnce(mockSelectChain) // First .eq() call
+        .mockResolvedValueOnce({
+          // Second .eq() call
+          data: mockOrders,
+          error: null,
+        });
 
       mockSupabase.from.mockReturnValue({
         select: jest.fn().mockReturnValue(mockSelectChain),
@@ -734,7 +737,8 @@ describe('Client Actions', () => {
       const mockSelectChain = {
         eq: jest.fn().mockReturnThis(),
       };
-      mockSelectChain.eq.mockResolvedValue({
+      // The function calls .eq() twice, so setup the chain properly
+      mockSelectChain.eq.mockReturnThis().mockReturnThis().mockResolvedValue({
         data: [],
         error: null,
       });
@@ -762,10 +766,14 @@ describe('Client Actions', () => {
       const mockSelectChain = {
         eq: jest.fn().mockReturnThis(),
       };
-      mockSelectChain.eq.mockResolvedValue({
-        data: mockOrders,
-        error: null,
-      });
+      // The function calls .eq() twice, so the second call should resolve with data
+      mockSelectChain.eq
+        .mockReturnValueOnce(mockSelectChain) // First .eq() call
+        .mockResolvedValueOnce({
+          // Second .eq() call
+          data: mockOrders,
+          error: null,
+        });
 
       mockSupabase.from.mockReturnValue({
         select: jest.fn().mockReturnValue(mockSelectChain),
@@ -785,10 +793,14 @@ describe('Client Actions', () => {
       const mockSelectChain = {
         eq: jest.fn().mockReturnThis(),
       };
-      mockSelectChain.eq.mockResolvedValue({
-        data: null,
-        error: { message: 'Database error' },
-      });
+      // The function calls .eq() twice, so setup the chain properly
+      mockSelectChain.eq
+        .mockReturnThis()
+        .mockReturnThis()
+        .mockResolvedValue({
+          data: null,
+          error: { message: 'Database error' },
+        });
 
       mockSupabase.from.mockReturnValue({
         select: jest.fn().mockReturnValue(mockSelectChain),
@@ -822,10 +834,14 @@ describe('Client Actions', () => {
       const mockSelectChain = {
         eq: jest.fn().mockReturnThis(),
       };
-      mockSelectChain.eq.mockResolvedValue({
-        data: mockOrders,
-        error: null,
-      });
+      // The function calls .eq() twice, so the second call should resolve with data
+      mockSelectChain.eq
+        .mockReturnValueOnce(mockSelectChain) // First .eq() call
+        .mockResolvedValueOnce({
+          // Second .eq() call
+          data: mockOrders,
+          error: null,
+        });
 
       mockSupabase.from.mockReturnValue({
         select: jest.fn().mockReturnValue(mockSelectChain),
