@@ -27,7 +27,7 @@ describe('Service Duplicate Name Handling - Server Actions', () => {
   });
 
   describe('addService from services.ts', () => {
-    it('should throw a user-friendly error for duplicate service names', async () => {
+    it('should return a user-friendly error for duplicate service names', async () => {
       const duplicateError = {
         code: '23505',
         message:
@@ -53,12 +53,17 @@ describe('Service Duplicate Name Handling - Server Actions', () => {
         default_unit_price_cents: 5000,
       };
 
-      await expect(addService(serviceData)).rejects.toThrow(
-        'A service with this name already exists. Please choose a different name.'
-      );
+      const result = await addService(serviceData);
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error).toBe(
+          'A service with this name already exists. Please choose a different name.'
+        );
+      }
     });
 
-    it('should throw the original error for other database errors', async () => {
+    it('should return the original error for other database errors', async () => {
       const otherError = {
         code: '42P01',
         message: 'relation "services" does not exist',
@@ -83,9 +88,12 @@ describe('Service Duplicate Name Handling - Server Actions', () => {
         default_unit_price_cents: 5000,
       };
 
-      await expect(addService(serviceData)).rejects.toThrow(
-        'relation "services" does not exist'
-      );
+      const result = await addService(serviceData);
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error).toBe('relation "services" does not exist');
+      }
     });
 
     it('should successfully create a service when name is unique', async () => {
@@ -120,7 +128,10 @@ describe('Service Duplicate Name Handling - Server Actions', () => {
 
       const result = await addService(serviceData);
 
-      expect(result).toEqual(newService);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data).toEqual(newService);
+      }
     });
   });
 
@@ -257,12 +268,8 @@ describe('Service Duplicate Name Handling - Server Actions', () => {
         default_unit_price_cents: 5000,
       };
 
-      let error1Message = '';
-      try {
-        await addService(serviceData1);
-      } catch (error) {
-        error1Message = (error as Error).message;
-      }
+      const result1 = await addService(serviceData1);
+      const error1Message = !result1.success ? result1.error : '';
 
       // Test orders.ts implementation
       const serviceData2 = {
