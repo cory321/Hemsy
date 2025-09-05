@@ -48,20 +48,12 @@ export default function ConfettiCelebration({
           return;
         }
 
+        // Center-only gentle falling effect
         confetti({
-          particleCount: 8,
-          angle: 60,
-          spread: 60,
-          origin: { x: 0 },
-          gravity: 1.1,
-          ticks: 200,
-          scalar: 1.0,
-        });
-        confetti({
-          particleCount: 8,
-          angle: 120,
-          spread: 60,
-          origin: { x: 1 },
+          particleCount: 10,
+          angle: 90,
+          spread: 70,
+          origin: { x: 0.5, y: 0 },
           gravity: 1.1,
           ticks: 200,
           scalar: 1.0,
