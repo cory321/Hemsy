@@ -170,7 +170,7 @@ describe('Calendar Component', () => {
       const calledWith = (defaultProps.onAppointmentClick as jest.Mock).mock
         .calls[0][0];
       expect(calledWith).toEqual(
-        expect.objectContaining({ id: mockAppointments[0].id })
+        expect.objectContaining({ id: mockAppointments[0]!.id })
       );
     });
 
