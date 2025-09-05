@@ -9,6 +9,7 @@ import { EmailService } from '@/lib/services/email/email-service';
 import {
   getTodayString,
   getCurrentTimeString,
+  getCurrentDateTime,
   formatTimeHHMM,
   parseDateTimeString,
   validateFutureDateTime,
@@ -885,13 +886,26 @@ export async function getClientAppointmentsPage(
 
   // Timeframe filter
   const todayStr = getTodayString();
+  const { dateStr: currentDateStr, timeStr: currentTimeStr } =
+    getCurrentDateTime();
 
   if (dateRange) {
     query = query.gte('date', dateRange.start).lte('date', dateRange.end);
   } else if (timeframe === 'upcoming') {
-    query = query.gte('date', todayStr);
+    // For upcoming appointments, we need to exclude appointments that have already started
+    // This includes:
+    // 1. All appointments from future dates
+    // 2. Appointments from today that haven't started yet (start_time > current time)
+    query = query.or(
+      `date.gt.${currentDateStr},and(date.eq.${currentDateStr},start_time.gt.${currentTimeStr})`
+    );
   } else if (timeframe === 'past') {
-    query = query.lt('date', todayStr);
+    // For past appointments, include:
+    // 1. All appointments from past dates
+    // 2. Appointments from today that have already started (start_time <= current time)
+    query = query.or(
+      `date.lt.${currentDateStr},and(date.eq.${currentDateStr},start_time.lte.${currentTimeStr})`
+    );
   }
 
   // Sorting based on timeframe

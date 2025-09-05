@@ -62,7 +62,7 @@ export function DashboardAlertsClient({
       setShowAllOverdue(false);
     } else {
       // Navigate to garments page with overdue filter
-      router.push('/garments?sort=overdue');
+      router.push('/garments?filter=overdue');
     }
   };
 
@@ -71,7 +71,7 @@ export function DashboardAlertsClient({
       setShowAllDueToday(false);
     } else {
       // Navigate to garments page with due today filter
-      router.push('/garments?sort=due_soon');
+      router.push('/garments?filter=due-today');
     }
   };
 

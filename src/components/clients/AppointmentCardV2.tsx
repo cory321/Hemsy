@@ -12,6 +12,7 @@ import {
   Collapse,
   Fade,
 } from '@mui/material';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import EventRepeatIcon from '@mui/icons-material/EventRepeat';
 import CancelIcon from '@mui/icons-material/Cancel';
@@ -78,10 +79,10 @@ export const AppointmentCardV2 = memo(function AppointmentCardV2({
     appointment.end_time
   );
 
-  // Only show action buttons for pending/confirmed appointments that haven't ended yet
-  const isActive =
-    ['pending', 'confirmed'].includes(appointment.status) &&
-    !hasAppointmentPassed;
+  // Show View button for pending/confirmed appointments (regardless of date)
+  // Show Reschedule/Cancel buttons only for future appointments
+  const showViewButton = ['pending', 'confirmed'].includes(appointment.status);
+  const showActionButtons = showViewButton && !hasAppointmentPassed;
 
   const handleView = useCallback(() => {
     setDetailsDialogOpen(true);
@@ -89,6 +90,11 @@ export const AppointmentCardV2 = memo(function AppointmentCardV2({
 
   const handleReschedule = useCallback(() => {
     setRescheduleDialogOpen(true);
+  }, []);
+
+  const handleCancel = useCallback(() => {
+    // Open details dialog for cancellation (same as view for now)
+    setDetailsDialogOpen(true);
   }, []);
 
   const handleEditFromDetails = useCallback(
@@ -183,7 +189,7 @@ export const AppointmentCardV2 = memo(function AppointmentCardV2({
 
             {/* Content */}
             <Box sx={{ flex: 1, minWidth: 0 }}>
-              {/* Time and Type */}
+              {/* Date, Time and Status */}
               <Box
                 sx={{
                   display: 'flex',
@@ -220,6 +226,26 @@ export const AppointmentCardV2 = memo(function AppointmentCardV2({
                   }}
                 />
               </Box>
+
+              {/* Date Display */}
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{
+                  mb: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                }}
+              >
+                <CalendarMonthIcon sx={{ fontSize: 16 }} />{' '}
+                {new Date(appointment.date).toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </Typography>
 
               {/* Appointment Type */}
               <Typography
@@ -264,7 +290,7 @@ export const AppointmentCardV2 = memo(function AppointmentCardV2({
               )}
 
               {/* Expanded Content */}
-              <Collapse in={expanded} timeout={300}>
+              <Collapse in={expanded} timeout={300} unmountOnExit>
                 <Box sx={{ mt: 2 }}>
                   {appointment.notes && (
                     <Box
@@ -298,7 +324,7 @@ export const AppointmentCardV2 = memo(function AppointmentCardV2({
                   )}
 
                   {/* Action Buttons */}
-                  {isActive && (
+                  {showViewButton && (
                     <Box
                       sx={{
                         display: 'flex',
@@ -309,13 +335,14 @@ export const AppointmentCardV2 = memo(function AppointmentCardV2({
                       }}
                       onClick={(e) => e.stopPropagation()}
                     >
+                      {/* Always show View button for pending/confirmed appointments */}
                       <Button
                         size="small"
                         variant="outlined"
                         startIcon={<VisibilityIcon />}
                         onClick={handleView}
                         sx={{
-                          flex: 1,
+                          flex: showActionButtons ? 1 : 'none',
                           transition: 'all 0.2s ease-in-out',
                           '&:hover': {
                             transform: 'translateY(-1px)',
@@ -323,41 +350,47 @@ export const AppointmentCardV2 = memo(function AppointmentCardV2({
                           },
                         }}
                       >
-                        View
+                        View Details
                       </Button>
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        startIcon={<EventRepeatIcon />}
-                        onClick={handleReschedule}
-                        sx={{
-                          flex: 1,
-                          transition: 'all 0.2s ease-in-out',
-                          '&:hover': {
-                            transform: 'translateY(-1px)',
-                            boxShadow: 1,
-                          },
-                        }}
-                      >
-                        Reschedule
-                      </Button>
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        color="error"
-                        startIcon={<CancelIcon />}
-                        onClick={handleView}
-                        sx={{
-                          flex: 1,
-                          transition: 'all 0.2s ease-in-out',
-                          '&:hover': {
-                            transform: 'translateY(-1px)',
-                            boxShadow: 1,
-                          },
-                        }}
-                      >
-                        Cancel
-                      </Button>
+
+                      {/* Only show Reschedule/Cancel for future appointments */}
+                      {showActionButtons && (
+                        <>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<EventRepeatIcon />}
+                            onClick={handleReschedule}
+                            sx={{
+                              flex: 1,
+                              transition: 'all 0.2s ease-in-out',
+                              '&:hover': {
+                                transform: 'translateY(-1px)',
+                                boxShadow: 1,
+                              },
+                            }}
+                          >
+                            Reschedule
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="error"
+                            startIcon={<CancelIcon />}
+                            onClick={handleCancel}
+                            sx={{
+                              flex: 1,
+                              transition: 'all 0.2s ease-in-out',
+                              '&:hover': {
+                                transform: 'translateY(-1px)',
+                                boxShadow: 1,
+                              },
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </>
+                      )}
                     </Box>
                   )}
                 </Box>

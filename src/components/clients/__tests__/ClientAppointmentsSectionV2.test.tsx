@@ -350,35 +350,6 @@ describe('ClientAppointmentsSectionV2', () => {
     }
   });
 
-  it('expands and collapses appointment details', async () => {
-    const user = userEvent.setup();
-    renderComponent();
-
-    // Find all IconButtons (the expand buttons are IconButtons)
-    const iconButtons = screen.getAllByRole('button');
-    // Filter to find the expand button (it should have an aria-label)
-    const expandButton = iconButtons.find(
-      (button) =>
-        button.getAttribute('aria-label')?.includes('Show more') ||
-        button.getAttribute('aria-label')?.includes('expand')
-    );
-
-    if (expandButton) {
-      await user.click(expandButton);
-
-      // Should show action buttons when expanded
-      await waitFor(() => {
-        // Look for button text directly since they're Material UI buttons
-        expect(screen.getByText('View')).toBeInTheDocument();
-        expect(screen.getByText('Reschedule')).toBeInTheDocument();
-        expect(screen.getByText('Cancel')).toBeInTheDocument();
-      });
-    } else {
-      // If no expand button found, skip this test
-      console.warn('No expand button found in appointment cards');
-    }
-  });
-
   it('maintains accessibility standards', () => {
     renderComponent();
 

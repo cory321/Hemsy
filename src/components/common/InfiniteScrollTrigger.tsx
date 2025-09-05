@@ -35,15 +35,23 @@ export function InfiniteScrollTrigger({
   onPageChange,
 }: InfiniteScrollTriggerProps) {
   const triggerRef = useRef<HTMLDivElement>(null);
+  const loadingRef = useRef(false);
+
+  // Simple, reliable intersection observer settings
   const { isInView } = useInView(triggerRef as React.RefObject<Element>, {
     threshold: 0.1,
     rootMargin: '100px',
   });
 
-  // Auto-load when trigger is in view
+  // Auto-load when trigger is in view - keep it simple
   useEffect(() => {
-    if (isInView && hasMore && !isLoading) {
+    if (isInView && hasMore && !isLoading && !loadingRef.current) {
+      loadingRef.current = true;
       onLoadMore();
+      // Reset loading ref after load completes
+      setTimeout(() => {
+        loadingRef.current = false;
+      }, 1000);
     }
   }, [isInView, hasMore, isLoading, onLoadMore]);
 
@@ -59,7 +67,18 @@ export function InfiniteScrollTrigger({
   return (
     <>
       {/* Invisible trigger element for intersection observer */}
-      <div ref={triggerRef} style={{ height: 1, width: '100%' }} />
+      <div
+        ref={triggerRef}
+        style={{
+          height: 1,
+          width: '100%',
+          // Ensure the element doesn't cause layout shifts
+          position: 'relative',
+          marginTop: -1,
+          // Act as scroll anchor to maintain position during content loading
+          overflowAnchor: 'auto',
+        }}
+      />
 
       {/* Visual loading/status indicator */}
       <Box

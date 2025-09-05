@@ -8,11 +8,12 @@ import {
 } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ClerkProvider, useAuth, useUser } from '@clerk/nextjs';
-import GarmentsPage from '@/app/(app)/garments/page';
+import GarmentsClient from '@/app/(app)/garments/garments-client';
 import { getCurrentUserShop } from '@/lib/actions/shops';
 import { getGarmentsPaginated } from '@/lib/actions/garments-paginated';
 import { GARMENT_STAGES } from '@/constants/garmentStages';
 import userEvent from '@testing-library/user-event';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
 // Mock modules
 jest.mock('@clerk/nextjs', () => ({
@@ -23,6 +24,11 @@ jest.mock('@clerk/nextjs', () => ({
 
 jest.mock('@/lib/actions/shops');
 jest.mock('@/lib/actions/garments-paginated');
+jest.mock('next/navigation', () => ({
+  useRouter: jest.fn(),
+  usePathname: jest.fn(),
+  useSearchParams: jest.fn(),
+}));
 
 // Mock MUI media query
 let mockIsMobile = false;
@@ -53,6 +59,12 @@ describe('GarmentsPage - Search Clear on Stage Change', () => {
     hasMore: false,
   };
 
+  const mockRouter = {
+    push: jest.fn(),
+    replace: jest.fn(),
+    refresh: jest.fn(),
+  } as any;
+
   beforeEach(() => {
     // Reset mobile mock to desktop by default
     mockIsMobile = false;
@@ -76,6 +88,11 @@ describe('GarmentsPage - Search Clear on Stage Change', () => {
     // Mock shop and garments
     (getCurrentUserShop as jest.Mock).mockResolvedValue(mockShop);
     (getGarmentsPaginated as jest.Mock).mockResolvedValue(mockGarmentsResponse);
+
+    // Router hooks for client component
+    (useRouter as jest.Mock).mockReturnValue(mockRouter);
+    (usePathname as jest.Mock).mockReturnValue('/garments');
+    (useSearchParams as jest.Mock).mockReturnValue(new URLSearchParams());
   });
 
   afterEach(() => {
@@ -85,29 +102,41 @@ describe('GarmentsPage - Search Clear on Stage Change', () => {
 
   it('should clear search when clicking a stage box', async () => {
     render(
-      <QueryClientProvider client={queryClient}>
-        <GarmentsPage />
-      </QueryClientProvider>
+      <GarmentsClient
+        initialData={mockGarmentsResponse as any}
+        stageCounts={{
+          New: 1,
+          'In Progress': 0,
+          'Ready For Pickup': 0,
+          Done: 0,
+        }}
+        shopId="shop-123"
+        initialFilters={{ sortField: 'created_at', sortOrder: 'desc' }}
+      />
     );
 
     // Wait for initial load
     await waitFor(() => {
-      expect(screen.getByText('All Garments')).toBeInTheDocument();
+      expect(
+        screen.getByPlaceholderText(
+          'Search garments by name, notes, or client name...'
+        )
+      ).toBeInTheDocument();
     });
 
     // Type in search box
     const searchInput = screen.getByPlaceholderText(
       'Search garments by name, notes, or client name...'
-    );
+    ) as HTMLInputElement;
     fireEvent.change(searchInput, { target: { value: 'test search' } });
-    expect(searchInput).toHaveValue('test search');
+    expect(searchInput.value).toBe('test search');
 
     // Click on "View All" stage
     const viewAllStage = screen.getByText('View All');
     fireEvent.click(viewAllStage);
 
     // Search should be cleared
-    expect(searchInput).toHaveValue('');
+    expect(searchInput.value).toBe('');
   });
 
   it('should clear search when selecting stage from mobile dropdown', async () => {
@@ -116,22 +145,34 @@ describe('GarmentsPage - Search Clear on Stage Change', () => {
     const user = userEvent.setup();
 
     render(
-      <QueryClientProvider client={queryClient}>
-        <GarmentsPage />
-      </QueryClientProvider>
+      <GarmentsClient
+        initialData={mockGarmentsResponse as any}
+        stageCounts={{
+          New: 1,
+          'In Progress': 0,
+          'Ready For Pickup': 0,
+          Done: 0,
+        }}
+        shopId="shop-123"
+        initialFilters={{ sortField: 'created_at', sortOrder: 'desc' }}
+      />
     );
 
     // Wait for initial load
     await waitFor(() => {
-      expect(screen.getByText('All Garments')).toBeInTheDocument();
+      expect(
+        screen.getByPlaceholderText(
+          'Search garments by name, notes, or client name...'
+        )
+      ).toBeInTheDocument();
     });
 
     // Type in search box
     const searchInput = screen.getByPlaceholderText(
       'Search garments by name, notes, or client name...'
-    );
+    ) as HTMLInputElement;
     await user.type(searchInput, 'mobile search');
-    expect(searchInput).toHaveValue('mobile search');
+    expect(searchInput.value).toBe('mobile search');
 
     // Find and click the stage select dropdown (first combobox)
     const selectDropdowns = screen.getAllByRole('combobox');
@@ -147,7 +188,7 @@ describe('GarmentsPage - Search Clear on Stage Change', () => {
 
     // Search should be cleared
     await waitFor(() => {
-      expect(searchInput).toHaveValue('');
+      expect(searchInput.value).toBe('');
     });
   });
 
@@ -168,14 +209,21 @@ describe('GarmentsPage - Search Clear on Stage Change', () => {
     (getGarmentsPaginated as jest.Mock).mockResolvedValue(multiStageResponse);
 
     render(
-      <QueryClientProvider client={queryClient}>
-        <GarmentsPage />
-      </QueryClientProvider>
+      <GarmentsClient
+        initialData={multiStageResponse as any}
+        stageCounts={multiStageResponse.stageCounts}
+        shopId="shop-123"
+        initialFilters={{ sortField: 'created_at', sortOrder: 'desc' }}
+      />
     );
 
     // Wait for initial load and stage boxes
     await waitFor(() => {
-      expect(screen.getByText('All Garments')).toBeInTheDocument();
+      expect(
+        screen.getByPlaceholderText(
+          'Search garments by name, notes, or client name...'
+        )
+      ).toBeInTheDocument();
       // Check that stage boxes are rendered
       const newStageBox = screen.getByText('New');
       expect(newStageBox).toBeInTheDocument();
@@ -183,22 +231,22 @@ describe('GarmentsPage - Search Clear on Stage Change', () => {
 
     const searchInput = screen.getByPlaceholderText(
       'Search garments by name, notes, or client name...'
-    );
+    ) as HTMLInputElement;
 
     // Type search and click New stage
     fireEvent.change(searchInput, { target: { value: 'first search' } });
-    expect(searchInput).toHaveValue('first search');
+    expect(searchInput.value).toBe('first search');
 
     const newStage = screen.getByText('New');
     fireEvent.click(newStage);
-    expect(searchInput).toHaveValue('');
+    expect(searchInput.value).toBe('');
 
     // Type another search and click In Progress stage
     fireEvent.change(searchInput, { target: { value: 'second search' } });
-    expect(searchInput).toHaveValue('second search');
+    expect(searchInput.value).toBe('second search');
 
     const inProgressStage = screen.getByText('In Progress');
     fireEvent.click(inProgressStage);
-    expect(searchInput).toHaveValue('');
+    expect(searchInput.value).toBe('');
   });
 });

@@ -168,35 +168,57 @@ export function AppointmentDetailsDialog({
     },
   });
 
+  // Mutation for marking no-show
+  const noShowMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return updateAppointmentRefactored({
+        id,
+        status: 'no_show',
+        sendEmail: true,
+      });
+    },
+    onMutate: async () => {
+      // Optimistic update
+      dispatch({
+        type: AppointmentActionType.UPDATE_APPOINTMENT_OPTIMISTIC,
+        payload: {
+          id: appointment.id,
+          updates: { status: 'no_show' },
+          previousData: appointment,
+        },
+      });
+    },
+    onSuccess: (updatedAppointment) => {
+      dispatch({
+        type: AppointmentActionType.UPDATE_APPOINTMENT_SUCCESS,
+        payload: {
+          appointment: updatedAppointment,
+        },
+      });
+      toast.success('Appointment marked as no-show');
+      onClose();
+    },
+    onError: (error) => {
+      dispatch({
+        type: AppointmentActionType.UPDATE_APPOINTMENT_ERROR,
+        payload: {
+          id: appointment.id,
+          previousData: appointment,
+          error: error.message,
+        },
+      });
+      toast.error(error.message || 'Failed to mark as no-show');
+    },
+  });
+
   const handleConfirmCancel = async () => {
     cancelMutation.mutate(appointment.id);
   };
 
   // Removed intermediary reschedule confirmation step
 
-  const handleMarkNoShow = async () => {
-    uiDispatch({ type: 'SET_ERROR', payload: null });
-    uiDispatch({ type: 'SET_LOADING', payload: true });
-    setIsUpdating(true);
-
-    try {
-      // Use the consolidated update function from context
-      await updateAppointmentFromContext(appointment.id, {
-        id: appointment.id,
-        status: 'no_show',
-        sendEmail: true,
-      });
-      onClose();
-    } catch (err) {
-      uiDispatch({
-        type: 'SET_ERROR',
-        payload:
-          err instanceof Error ? err.message : 'Failed to mark as no-show',
-      });
-    } finally {
-      uiDispatch({ type: 'SET_LOADING', payload: false });
-      setIsUpdating(false);
-    }
+  const handleMarkNoShow = () => {
+    noShowMutation.mutate(appointment.id);
   };
 
   const handleSaveNotes = async () => {
@@ -976,78 +998,88 @@ export function AppointmentDetailsDialog({
             {(appointment.status === 'pending' ||
               appointment.status === 'confirmed') && (
               <>
-                <Button
-                  variant="contained"
-                  startIcon={
-                    isUpdating ? (
-                      <CircularProgress size={18} color="inherit" />
-                    ) : (
-                      <RemixIcon name="ri-edit-line" size={18} />
-                    )
-                  }
-                  onClick={handleEditClick}
-                  disabled={isUpdating || cancelMutation.isPending || isPast}
-                  sx={{
-                    borderRadius: 2,
-                    py: 1.5,
-                    px: 3,
-                    fontWeight: 600,
-                    textTransform: 'none',
-                    boxShadow: '0 2px 8px rgba(184, 85, 99, 0.3)',
-                    '&:hover': {
-                      boxShadow: '0 4px 12px rgba(184, 85, 99, 0.4)',
-                      transform: 'translateY(-1px)',
-                    },
-                    '&:active': {
-                      transform: 'translateY(0)',
-                    },
-                    transition: 'all 0.2s ease-in-out',
-                  }}
-                >
-                  Reschedule
-                </Button>
+                {/* Show Reschedule and Cancel only for future appointments */}
+                {!isPast && (
+                  <>
+                    <Button
+                      variant="contained"
+                      startIcon={
+                        isUpdating ? (
+                          <CircularProgress size={18} color="inherit" />
+                        ) : (
+                          <RemixIcon name="ri-edit-line" size={18} />
+                        )
+                      }
+                      onClick={handleEditClick}
+                      disabled={isUpdating || cancelMutation.isPending}
+                      sx={{
+                        borderRadius: 2,
+                        py: 1.5,
+                        px: 3,
+                        fontWeight: 600,
+                        textTransform: 'none',
+                        boxShadow: '0 2px 8px rgba(184, 85, 99, 0.3)',
+                        '&:hover': {
+                          boxShadow: '0 4px 12px rgba(184, 85, 99, 0.4)',
+                          transform: 'translateY(-1px)',
+                        },
+                        '&:active': {
+                          transform: 'translateY(0)',
+                        },
+                        transition: 'all 0.2s ease-in-out',
+                      }}
+                    >
+                      Reschedule
+                    </Button>
 
-                <Button
-                  variant="outlined"
-                  color="error"
-                  startIcon={
-                    cancelMutation.isPending ? (
-                      <CircularProgress size={18} color="inherit" />
-                    ) : (
-                      <RemixIcon name="ri-close-line" size={18} />
-                    )
-                  }
-                  onClick={handleCancelClick}
-                  disabled={isUpdating || cancelMutation.isPending || isPast}
-                  sx={{
-                    borderRadius: 2,
-                    py: 1.5,
-                    px: 3,
-                    fontWeight: 600,
-                    textTransform: 'none',
-                    borderWidth: 2,
-                    '&:hover': {
-                      borderWidth: 2,
-                      transform: 'translateY(-1px)',
-                    },
-                    '&:active': {
-                      transform: 'translateY(0)',
-                    },
-                    transition: 'all 0.2s ease-in-out',
-                  }}
-                >
-                  Cancel Appointment
-                </Button>
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      startIcon={
+                        cancelMutation.isPending ? (
+                          <CircularProgress size={18} color="inherit" />
+                        ) : (
+                          <RemixIcon name="ri-close-line" size={18} />
+                        )
+                      }
+                      onClick={handleCancelClick}
+                      disabled={isUpdating || cancelMutation.isPending}
+                      sx={{
+                        borderRadius: 2,
+                        py: 1.5,
+                        px: 3,
+                        fontWeight: 600,
+                        textTransform: 'none',
+                        borderWidth: 2,
+                        '&:hover': {
+                          borderWidth: 2,
+                          transform: 'translateY(-1px)',
+                        },
+                        '&:active': {
+                          transform: 'translateY(0)',
+                        },
+                        transition: 'all 0.2s ease-in-out',
+                      }}
+                    >
+                      Cancel Appointment
+                    </Button>
+                  </>
+                )}
 
+                {/* Show No Show button only for past appointments */}
                 {isPast && (
                   <Button
                     variant="outlined"
                     color="warning"
                     startIcon={
-                      <RemixIcon name="ri-user-unfollow-line" size={18} />
+                      noShowMutation.isPending ? (
+                        <CircularProgress size={18} color="inherit" />
+                      ) : (
+                        <RemixIcon name="ri-user-unfollow-line" size={18} />
+                      )
                     }
                     onClick={handleMarkNoShow}
-                    disabled={ui.loading || isUpdating}
+                    disabled={noShowMutation.isPending || isUpdating}
                     sx={{
                       borderRadius: 2,
                       py: 1.5,

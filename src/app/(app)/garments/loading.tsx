@@ -54,7 +54,7 @@ export default function Loading() {
             {index < 6 && (
               <ArrowForwardIcon
                 sx={{
-                  color: 'text.disabled',
+                  color: 'rgba(0, 0, 0, 0.15)',
                   fontSize: 20,
                 }}
               />
@@ -132,12 +132,12 @@ export default function Loading() {
                     top: '50%',
                     left: '50%',
                     transform: 'translate(-50%, -50%)',
-                    color: 'text.disabled',
+                    color: 'rgba(0, 0, 0, 0.15)',
                     opacity: 1,
                   }}
                 >
                   <i
-                    className="ri ri-t-shirt-line"
+                    className="ri ri-shirt-line"
                     style={{ fontSize: 128 }}
                     aria-hidden
                   />

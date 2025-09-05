@@ -212,34 +212,57 @@ const GarmentCard: React.FC<GarmentCardProps> = ({
           </Typography>
         )}
 
-        {/* Due Date */}
-        {garment.due_date && dueDateInfo && (
+        {/* Due Date or Status Chip */}
+        {(garment.due_date && dueDateInfo) || garment.stage === 'Done' ? (
           <Box sx={{ mb: 1 }}>
             <Chip
               label={
-                dueDateInfo.isPast && dueDateInfo.allServicesCompleted
-                  ? 'Ready for Pickup'
-                  : dueDateInfo.isOverdue
-                    ? `${Math.abs(dueDateInfo.daysUntilDue)} days overdue`
-                    : dueDateInfo.isToday
-                      ? 'Due today'
-                      : dueDateInfo.isTomorrow
-                        ? 'Due tomorrow'
-                        : `Due in ${dueDateInfo.daysUntilDue} days`
+                garment.stage === 'Done'
+                  ? 'Done'
+                  : dueDateInfo?.isPast && dueDateInfo?.allServicesCompleted
+                    ? 'Ready for Pickup'
+                    : dueDateInfo?.isOverdue
+                      ? `${Math.abs(dueDateInfo.daysUntilDue)} days overdue`
+                      : dueDateInfo?.isToday
+                        ? 'Due today'
+                        : dueDateInfo?.isTomorrow
+                          ? 'Due tomorrow'
+                          : `Due in ${dueDateInfo?.daysUntilDue} days`
               }
               size="small"
-              color={
-                dueDateInfo.isPast && dueDateInfo.allServicesCompleted
-                  ? 'success'
-                  : dueDateInfo.isOverdue
-                    ? 'error'
-                    : dueDateInfo.isUrgent
-                      ? 'warning'
-                      : 'default'
-              }
+              sx={{
+                ...(dueDateInfo?.isPast &&
+                  dueDateInfo?.allServicesCompleted &&
+                  garment.stage !== 'Done' && {
+                    backgroundColor: '#BD8699',
+                    color: 'white',
+                    fontWeight: 600,
+                  }),
+                ...(dueDateInfo?.isToday && {
+                  backgroundColor: '#EEBA8C',
+                  color: 'black',
+                  fontWeight: 600,
+                }),
+                ...(garment.stage === 'Done' && {
+                  backgroundColor: '#c3b3d1',
+                  color: '#4a4a4a',
+                  fontWeight: 600,
+                }),
+              }}
+              {...(!(
+                garment.stage === 'Done' ||
+                (dueDateInfo?.isPast && dueDateInfo?.allServicesCompleted) ||
+                dueDateInfo?.isToday
+              ) && {
+                color: dueDateInfo?.isOverdue
+                  ? 'error'
+                  : dueDateInfo?.isUrgent
+                    ? 'warning'
+                    : 'default',
+              })}
             />
           </Box>
-        )}
+        ) : null}
 
         {/* Event Date */}
         {garment.event_date && (

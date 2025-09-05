@@ -1,16 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import {
-  Box,
-  Typography,
-  Divider,
-  Button,
-  Collapse,
-  IconButton,
-} from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import { Box, Typography, Divider } from '@mui/material';
 import type { AppointmentGroup } from '@/lib/utils/appointment-grouping';
 import type { Appointment } from '@/types';
 import { AppointmentCardV2 } from './AppointmentCardV2';
@@ -40,12 +30,13 @@ export function AppointmentTimelineGroup({
   calendarSettings,
   existingAppointments,
 }: AppointmentTimelineGroupProps) {
-  const [isCollapsed, setIsCollapsed] = useState(group.isCollapsed || false);
+  // Always show appointments expanded - no collapsing functionality
+  const isCollapsed = false;
   const isToday = dateKey === 'today';
   const isTomorrow = dateKey === 'tomorrow';
 
-  // Don't collapse today or tomorrow
-  const canCollapse = !isToday && !isTomorrow && group.appointments.length > 3;
+  // Disable collapse functionality - always show appointments
+  const canCollapse = false;
 
   return (
     <Box>
@@ -80,79 +71,34 @@ export function AppointmentTimelineGroup({
             opacity: isToday ? 0.3 : 0.2,
           }}
         />
-
-        {canCollapse && (
-          <IconButton
-            size="small"
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            sx={{
-              ml: 1,
-              bgcolor: 'background.paper',
-              '&:hover': {
-                bgcolor: 'action.hover',
-              },
-            }}
-            aria-label={isCollapsed ? 'expand group' : 'collapse group'}
-          >
-            {isCollapsed ? <ExpandMoreIcon /> : <ExpandLessIcon />}
-          </IconButton>
-        )}
       </Box>
 
-      {/* Appointments */}
-      {isCollapsed ? (
-        <Box
-          sx={{
-            py: 2,
-            px: 3,
-            bgcolor: 'grey.50',
-            borderRadius: 1,
-            cursor: 'pointer',
-            transition: 'all 0.2s ease-in-out',
-            '&:hover': {
-              bgcolor: 'grey.100',
-              transform: 'translateX(4px)',
-            },
-          }}
-          onClick={() => setIsCollapsed(false)}
-        >
-          <Typography variant="body2" color="text.secondary">
-            📅 {group.appointments.length} appointment
-            {group.appointments.length !== 1 ? 's' : ''} scheduled
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            Click to expand
-          </Typography>
-        </Box>
-      ) : (
-        <Collapse in={!isCollapsed} timeout={300}>
-          <Box
-            sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 1.5,
-              mb: 2,
-            }}
-          >
-            {group.appointments.map((appointment) => (
-              <AppointmentCardV2
-                key={appointment.id}
-                appointment={appointment}
-                shopId={shopId}
-                isToday={isToday}
-                shopHours={shopHours || []}
-                calendarSettings={
-                  calendarSettings || {
-                    buffer_time_minutes: 0,
-                    default_appointment_duration: 30,
-                  }
-                }
-                existingAppointments={existingAppointments || []}
-              />
-            ))}
-          </Box>
-        </Collapse>
-      )}
+      {/* Appointments - Always Expanded */}
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 1.5,
+          mb: 2,
+        }}
+      >
+        {group.appointments.map((appointment) => (
+          <AppointmentCardV2
+            key={appointment.id}
+            appointment={appointment}
+            shopId={shopId}
+            isToday={isToday}
+            shopHours={shopHours || []}
+            calendarSettings={
+              calendarSettings || {
+                buffer_time_minutes: 0,
+                default_appointment_duration: 30,
+              }
+            }
+            existingAppointments={existingAppointments || []}
+          />
+        ))}
+      </Box>
     </Box>
   );
 }

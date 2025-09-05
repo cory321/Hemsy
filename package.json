@@ -18,7 +18,6 @@
     "type-check": "tsc --noEmit",
     "icons:build": "tsx scripts/build-icons.ts",
     "prebuild": "npm run icons:build",
-    "postinstall": "npm run icons:build",
     "test": "jest --detectOpenHandles --forceExit",
     "test:watch": "jest --watch --detectOpenHandles",
     "test:coverage": "jest --coverage --detectOpenHandles --forceExit",

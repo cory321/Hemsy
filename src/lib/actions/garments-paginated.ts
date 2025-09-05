@@ -4,6 +4,11 @@ import { createClient } from '@/lib/supabase/server';
 import type { GarmentStage } from '@/types';
 import { z } from 'zod';
 import { logger } from '@/lib/utils/logger';
+import { getTodayString } from '@/lib/utils/date-time-utils';
+import {
+  isGarmentOverdue,
+  type GarmentOverdueInfo,
+} from '@/lib/utils/overdue-logic';
 
 // Schema for cursor-based pagination
 const GarmentCursorSchema = z.object({
@@ -24,6 +29,7 @@ const GetGarmentsPaginatedSchema = z.object({
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
   stage: z.custom<GarmentStage>().optional(),
   search: z.string().optional(),
+  filter: z.enum(['due-today', 'overdue']).optional(),
 });
 
 export type GetGarmentsPaginatedParams = z.infer<
@@ -84,10 +90,14 @@ export async function getGarmentsPaginated(
       validatedParams.search && validatedParams.search.trim().length > 0;
 
     // Build the query
-    let query;
+    let query: any;
+
+    // Determine if we need service data for overdue filtering
+    const needsServiceData = validatedParams.filter === 'overdue';
 
     if (hasSearch) {
       // Use the view for searching (includes client names)
+      // Note: The view doesn't include service data, so we'll need to handle overdue filtering differently
       query = supabase
         .from('garments_with_clients')
         .select(
@@ -112,21 +122,26 @@ export async function getGarmentsPaginated(
       `,
           { count: 'exact' }
         )
-        .eq('shop_id', validatedParams.shopId);
+        .eq('shop_id', validatedParams.shopId) as any;
     } else {
       // Use regular table when not searching
-      query = supabase
-        .from('garments')
-        .select(
-          `
+      // Always include service data when filtering for overdue or when not filtering
+      const serviceSelection =
+        needsServiceData || !validatedParams.filter
+          ? `garment_services (
+          id,
+          name,
+          is_done,
+          is_removed
+        ),`
+          : '';
+
+      // Build select statement separately to keep the type simple
+      const garmentsSelect = `
         id,
         name,
         stage,
-        garment_services (
-          id,
-          name,
-          is_done
-        ),
+        ${serviceSelection}
         order_id,
         image_cloud_id,
         photo_url,
@@ -143,15 +158,34 @@ export async function getGarmentsPaginated(
             last_name
           )
         )
-      `,
-          { count: 'exact' }
-        )
-        .eq('shop_id', validatedParams.shopId);
+      ` as const;
+
+      const baseQuery: any = (supabase as any).from('garments');
+      query = (
+        baseQuery.select(garmentsSelect as any, { count: 'exact' }) as any
+      ).eq('shop_id', validatedParams.shopId) as any;
     }
 
     // Apply stage filter if provided
     if (validatedParams.stage) {
       query = query.eq('stage', validatedParams.stage);
+    }
+
+    // Apply due date filter if provided
+    if (validatedParams.filter) {
+      const todayStr = getTodayString();
+
+      if (validatedParams.filter === 'due-today') {
+        // Filter for garments due today
+        query = query.eq('due_date', todayStr);
+      } else if (validatedParams.filter === 'overdue') {
+        // Filter for potentially overdue garments (due date is in the past)
+        // Exclude garments in Done and Ready For Pickup stages
+        // Note: We'll apply the proper isGarmentOverdue logic after fetching
+        query = query
+          .lt('due_date', todayStr)
+          .not('stage', 'in', '("Done","Ready For Pickup")');
+      }
     }
 
     // Apply search filter if provided
@@ -204,6 +238,7 @@ export async function getGarmentsPaginated(
       // When sorting by client name, we need to use the view
       if (!hasSearch) {
         // Switch to view query for client name sorting
+        // Note: The view doesn't include service data, so overdue filtering will be limited
         query = supabase
           .from('garments_with_clients')
           .select(
@@ -228,11 +263,26 @@ export async function getGarmentsPaginated(
       `,
             { count: 'exact' }
           )
-          .eq('shop_id', validatedParams.shopId);
+          .eq('shop_id', validatedParams.shopId) as any;
 
         // Re-apply stage filter if provided
         if (validatedParams.stage) {
           query = query.eq('stage', validatedParams.stage);
+        }
+
+        // Re-apply due date filter if provided
+        if (validatedParams.filter) {
+          const todayStr = getTodayString();
+
+          if (validatedParams.filter === 'due-today') {
+            query = query.eq('due_date', todayStr);
+          } else if (validatedParams.filter === 'overdue') {
+            // Filter for overdue garments (due date is in the past)
+            // Exclude garments in Done and Ready For Pickup stages
+            query = query
+              .lt('due_date', todayStr)
+              .not('stage', 'in', '("Done","Ready For Pickup")');
+          }
         }
 
         // Re-apply cursor if provided
@@ -288,8 +338,14 @@ export async function getGarmentsPaginated(
         .order('id', { ascending: validatedParams.sortOrder === 'asc' });
     }
 
-    // Apply limit
-    query = query.limit(validatedParams.limit);
+    // Apply limit - over-fetch when filtering overdue to account for post-processing
+    const fetchLimit =
+      validatedParams.filter === 'overdue' &&
+      !hasSearch &&
+      validatedParams.sortField !== 'client_name'
+        ? validatedParams.limit * 2 // Fetch double to ensure we have enough after filtering
+        : validatedParams.limit;
+    query = query.limit(fetchLimit);
 
     // Execute query
     const { data: garments, error, count } = await query;
@@ -298,8 +354,28 @@ export async function getGarmentsPaginated(
       throw new Error('Failed to fetch garments: ' + error.message);
     }
 
+    // Apply proper overdue filtering if needed
+    let filteredGarments = garments || [];
+    if (
+      validatedParams.filter === 'overdue' &&
+      !hasSearch &&
+      validatedParams.sortField !== 'client_name'
+    ) {
+      // We have service data, so we can apply proper overdue filtering
+      filteredGarments = filteredGarments.filter((garment: any) => {
+        return isGarmentOverdue({
+          due_date: garment.due_date,
+          stage: garment.stage as GarmentStage,
+          garment_services: garment.garment_services || [],
+        } as GarmentOverdueInfo);
+      });
+
+      // Trim to requested limit after filtering
+      filteredGarments = filteredGarments.slice(0, validatedParams.limit);
+    }
+
     // Process garments to include computed fields
-    const processedGarments: GarmentListItem[] = (garments || []).map(
+    const processedGarments: GarmentListItem[] = filteredGarments.map(
       (garment: any) => {
         // Handle client name based on data structure (view vs nested)
         let clientName: string;
@@ -360,7 +436,14 @@ export async function getGarmentsPaginated(
     );
 
     // Determine if there are more results
-    const hasMore = processedGarments.length === validatedParams.limit;
+    // When filtering overdue garments, check if we hit the fetch limit
+    const hasMore =
+      validatedParams.filter === 'overdue' &&
+      !hasSearch &&
+      validatedParams.sortField !== 'client_name'
+        ? processedGarments.length === validatedParams.limit &&
+          (garments || []).length === fetchLimit
+        : processedGarments.length === validatedParams.limit;
 
     // Create next cursor if there are more results
     const lastGarment = processedGarments[processedGarments.length - 1];

@@ -46,17 +46,17 @@ export function groupAppointmentsByDate(
 
     if (isToday(appointmentDate)) {
       groupKey = 'today';
-      label = `TODAY - ${format(appointmentDate, 'MMMM d, yyyy')}`;
+      label = `TODAY`;
     } else if (isTomorrow(appointmentDate)) {
       groupKey = 'tomorrow';
-      label = `TOMORROW - ${format(appointmentDate, 'MMMM d, yyyy')}`;
+      label = `TOMORROW`;
     } else if (isThisWeek(appointmentDate, { weekStartsOn: 1 })) {
       groupKey = 'this-week';
-      label = 'THIS WEEK';
+      label = `THIS WEEK`;
       isCollapsed = true;
     } else if (isWithinNextWeek(appointmentDate)) {
       groupKey = 'next-week';
-      label = 'NEXT WEEK';
+      label = `NEXT WEEK`;
       isCollapsed = true;
     } else if (appointmentDate < new Date()) {
       // Group past appointments by month

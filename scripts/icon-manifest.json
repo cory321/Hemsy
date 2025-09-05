@@ -3,8 +3,6 @@
   "ri-group-line",
   "ri-shopping-bag-3-line",
   "ri-shopping-bag-line",
-  "ri-t-shirt-line",
-  "ri-t-shirt-2-fill",
   "ri-calendar-2-line",
   "ri-calendar-event-line",
   "ri-pencil-ruler-line",
@@ -32,5 +30,8 @@
   "ri-user-line",
   "ri-mail-line",
   "ri-phone-line",
-  "ri-sticky-note-line"
+  "ri-sticky-note-line",
+  "ri-t-shirt-line",
+  "ri-shirt-line",
+  "ri-shirt-fill"
 ]

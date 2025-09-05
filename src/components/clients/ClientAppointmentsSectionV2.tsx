@@ -103,47 +103,99 @@ export function ClientAppointmentsSectionV2({
     pageSize: 20,
   });
 
-  // Combine and filter appointments based on time period
+  // Select appointments based on time period - let server filtering do the heavy lifting
   const appointments = useMemo(() => {
-    const allAppointments: Appointment[] = [];
+    switch (timePeriod) {
+      case 'upcoming':
+        // Only use upcoming query results (server already filtered correctly)
+        return upcomingQuery.data?.pages.flatMap((p) => p.appointments) || [];
 
-    if (upcomingQuery.data) {
-      allAppointments.push(
-        ...upcomingQuery.data.pages.flatMap((p) => p.appointments)
-      );
-    }
+      case 'past':
+        // Only use past query results (server already filtered correctly)
+        return pastQuery.data?.pages.flatMap((p) => p.appointments) || [];
 
-    if (pastQuery.data) {
-      allAppointments.push(
-        ...pastQuery.data.pages.flatMap((p) => p.appointments)
-      );
-    }
-
-    // Apply time period filtering
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    return allAppointments.filter((apt) => {
-      const aptDate = new Date(apt.date);
-      aptDate.setHours(0, 0, 0, 0);
-
-      switch (timePeriod) {
-        case 'today':
-          return aptDate.getTime() === today.getTime();
-        case 'week': {
-          const weekFromNow = new Date(today);
-          weekFromNow.setDate(weekFromNow.getDate() + 7);
-          return aptDate >= today && aptDate <= weekFromNow;
+      case 'all':
+        // Combine both upcoming and past
+        const allAppointments: Appointment[] = [];
+        if (upcomingQuery.data) {
+          allAppointments.push(
+            ...upcomingQuery.data.pages.flatMap((p) => p.appointments)
+          );
         }
-        case 'month': {
-          const monthFromNow = new Date(today);
-          monthFromNow.setMonth(monthFromNow.getMonth() + 1);
-          return aptDate >= today && aptDate <= monthFromNow;
+        if (pastQuery.data) {
+          allAppointments.push(
+            ...pastQuery.data.pages.flatMap((p) => p.appointments)
+          );
         }
-        default:
-          return true;
+        return allAppointments;
+
+      case 'today':
+      case 'week':
+      case 'month': {
+        // For these filters, combine both queries then apply client-side date filtering
+        const allAppointments: Appointment[] = [];
+        if (upcomingQuery.data) {
+          allAppointments.push(
+            ...upcomingQuery.data.pages.flatMap((p) => p.appointments)
+          );
+        }
+        if (pastQuery.data) {
+          allAppointments.push(
+            ...pastQuery.data.pages.flatMap((p) => p.appointments)
+          );
+        }
+
+        // Apply time period filtering
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        return allAppointments.filter((apt) => {
+          const aptDate = new Date(apt.date);
+          aptDate.setHours(0, 0, 0, 0);
+
+          switch (timePeriod) {
+            case 'today':
+              return aptDate.getTime() === today.getTime();
+            case 'week': {
+              // Get the start and end of the current week (Sunday to Saturday)
+              const startOfWeek = new Date(today);
+              const dayOfWeek = startOfWeek.getDay(); // 0 = Sunday, 1 = Monday, etc.
+              startOfWeek.setDate(startOfWeek.getDate() - dayOfWeek); // Go back to Sunday
+              startOfWeek.setHours(0, 0, 0, 0);
+
+              const endOfWeek = new Date(startOfWeek);
+              endOfWeek.setDate(endOfWeek.getDate() + 6); // Saturday
+              endOfWeek.setHours(23, 59, 59, 999);
+
+              return aptDate >= startOfWeek && aptDate <= endOfWeek;
+            }
+            case 'month': {
+              // Get the start and end of the current month
+              const startOfMonth = new Date(
+                today.getFullYear(),
+                today.getMonth(),
+                1
+              );
+              startOfMonth.setHours(0, 0, 0, 0);
+
+              const endOfMonth = new Date(
+                today.getFullYear(),
+                today.getMonth() + 1,
+                0
+              );
+              endOfMonth.setHours(0, 0, 0, 0); // This gives us the last day of current month at 00:00
+
+              return aptDate >= startOfMonth && aptDate <= endOfMonth;
+            }
+            default:
+              return false;
+          }
+        });
       }
-    });
+
+      default:
+        return [];
+    }
   }, [upcomingQuery.data, pastQuery.data, timePeriod]);
 
   // Group appointments by date

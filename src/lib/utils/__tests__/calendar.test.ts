@@ -142,6 +142,17 @@ describe('Calendar Utilities', () => {
   });
 
   describe('isPastDateTime', () => {
+    beforeAll(() => {
+      const fixed = new Date();
+      fixed.setHours(12, 0, 0, 0); // Stabilize at noon local time
+      jest.useFakeTimers();
+      jest.setSystemTime(fixed);
+    });
+
+    afterAll(() => {
+      jest.useRealTimers();
+    });
+
     it('should correctly identify past times', () => {
       const now = new Date();
       const pastDate = new Date(now);

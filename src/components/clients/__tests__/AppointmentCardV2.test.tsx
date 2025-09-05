@@ -279,4 +279,71 @@ describe('AppointmentCardV2', () => {
     const notesSection = screen.getByText('Notes').parentElement;
     expect(notesSection).toHaveTextContent(longNotes);
   });
+
+  it('shows action buttons for pending appointments (awaiting confirmation)', async () => {
+    const user = userEvent.setup();
+    const pendingAppointment = {
+      ...mockAppointment,
+      status: 'pending' as const,
+    };
+
+    renderWithQuery(
+      <AppointmentCardV2 {...defaultProps} appointment={pendingAppointment} />
+    );
+
+    // Expand via icon button
+    await user.click(screen.getByLabelText('expand'));
+
+    // Should show action buttons for pending appointments
+    expect(screen.getByRole('button', { name: /view/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /reschedule/i })
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
+  });
+
+  it('allows viewing details for pending appointments', async () => {
+    const user = userEvent.setup();
+    const pendingAppointment = {
+      ...mockAppointment,
+      status: 'pending' as const,
+    };
+
+    renderWithQuery(
+      <AppointmentCardV2 {...defaultProps} appointment={pendingAppointment} />
+    );
+
+    // Expand and click View
+    await user.click(screen.getByLabelText('expand'));
+    await user.click(screen.getByRole('button', { name: /view/i }));
+
+    // Should open details dialog
+    expect(
+      screen.getByTestId('appointment-details-dialog')
+    ).toBeInTheDocument();
+  });
+
+  it('allows rescheduling pending appointments', async () => {
+    const user = userEvent.setup();
+    const pendingAppointment = {
+      ...mockAppointment,
+      status: 'pending' as const,
+    };
+
+    renderWithQuery(
+      <AppointmentCardV2 {...defaultProps} appointment={pendingAppointment} />
+    );
+
+    // Expand and click Reschedule
+    await user.click(screen.getByLabelText('expand'));
+    await user.click(screen.getByRole('button', { name: /reschedule/i }));
+
+    // Should open reschedule dialog
+    expect(
+      screen.getByTestId('appointment-reschedule-dialog')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Reschedule Appointment Dialog/)
+    ).toBeInTheDocument();
+  });
 });

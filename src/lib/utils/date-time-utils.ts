@@ -105,6 +105,21 @@ export function getCurrentTimeWithSeconds(): string {
 }
 
 /**
+ * Get current date and time for filtering upcoming appointments
+ * Returns an object with current date string and time string
+ */
+export function getCurrentDateTime(): {
+  dateStr: string;
+  timeStr: string;
+} {
+  const now = new Date();
+  return {
+    dateStr: formatDateForDatabase(now),
+    timeStr: formatTimeForDatabase(now),
+  };
+}
+
+/**
  * Format a Date object to HH:MM for database storage
  */
 export function formatTimeForDatabase(date: Date): string {

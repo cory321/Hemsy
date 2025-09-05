@@ -258,12 +258,17 @@ describe('AppointmentDetailsDialog - Type Editing', () => {
       { wrapper: createWrapper }
     );
 
-    const rescheduleBtn = screen.getByRole('button', { name: /reschedule/i });
-    const cancelBtn = screen.getByRole('button', {
+    // For past appointments, Reschedule and Cancel buttons should not be shown
+    const rescheduleBtn = screen.queryByRole('button', { name: /reschedule/i });
+    const cancelBtn = screen.queryByRole('button', {
       name: /cancel appointment/i,
     });
-    expect(rescheduleBtn).toBeDisabled();
-    expect(cancelBtn).toBeDisabled();
+    expect(rescheduleBtn).not.toBeInTheDocument();
+    expect(cancelBtn).not.toBeInTheDocument();
+
+    // Instead, past appointments should show "Mark No Show" button
+    const noShowBtn = screen.getByRole('button', { name: /mark no show/i });
+    expect(noShowBtn).toBeInTheDocument();
   });
 
   it('should update notes independently from type', async () => {
@@ -304,11 +309,19 @@ describe('AppointmentDetailsDialog - Type Editing', () => {
       () => new Promise((resolve) => setTimeout(resolve, 100))
     );
 
+    // Use a future appointment so we can see Reschedule and Cancel buttons
+    const futureAppointment: Appointment = {
+      ...mockAppointment,
+      date: '2025-12-01',
+      start_time: '09:00',
+      end_time: '10:00',
+    };
+
     render(
       <AppointmentDetailsDialog
         open={true}
         onClose={jest.fn()}
-        appointment={mockAppointment}
+        appointment={futureAppointment}
         onEdit={jest.fn()}
       />,
       { wrapper: createWrapper }

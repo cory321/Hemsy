@@ -77,26 +77,26 @@ describe('OrderCardMinimal', () => {
     expect(screen.getByText('Partially_paid')).toBeInTheDocument();
   });
 
-  it('displays urgency indicator for due dates within 3 days', () => {
+  it('displays clear phrasing for due dates within 3 days', () => {
     render(
       <ThemeProvider theme={theme}>
         <OrderCardMinimal order={mockOrder} onClick={mockOnClick} />
       </ThemeProvider>
     );
 
-    // Should show "2 days" text
-    expect(screen.getByText('2 days')).toBeInTheDocument();
+    // Should show "Due in 2 days" text
+    expect(screen.getByText('Due in 2 days')).toBeInTheDocument();
   });
 
-  it('displays overdue indicator for past due dates', () => {
+  it('displays clear overdue phrasing for past due dates (never negative)', () => {
     render(
       <ThemeProvider theme={theme}>
         <OrderCardMinimal order={mockOrderOverdue} onClick={mockOnClick} />
       </ThemeProvider>
     );
 
-    // Should show overdue text
-    expect(screen.getByText('3 overdue')).toBeInTheDocument();
+    // Should show overdue text (not "Due in -3 days")
+    expect(screen.getByText('Overdue by 3 days')).toBeInTheDocument();
   });
 
   it('displays paid status correctly', () => {
@@ -174,7 +174,7 @@ describe('OrderCardMinimal', () => {
     expect(screen.getByText('○ UNPAID')).toBeInTheDocument();
   });
 
-  it('displays today for due date that is today', () => {
+  it('displays "Due today" for due date that is today', () => {
     const orderDueToday = {
       ...mockOrder,
       order_due_date: new Date().toISOString(),
@@ -186,6 +186,6 @@ describe('OrderCardMinimal', () => {
       </ThemeProvider>
     );
 
-    expect(screen.getByText('Today')).toBeInTheDocument();
+    expect(screen.getByText('Due today')).toBeInTheDocument();
   });
 });

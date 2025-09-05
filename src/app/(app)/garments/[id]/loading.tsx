@@ -24,12 +24,36 @@ export default function Loading() {
             {/* Image Section */}
             <Card elevation={2}>
               <CardContent>
-                <Skeleton
-                  variant="rectangular"
-                  width="100%"
-                  height={300}
-                  sx={{ mb: 2, borderRadius: 1 }}
-                />
+                <Box
+                  sx={{
+                    position: 'relative',
+                    width: '100%',
+                    height: 300,
+                    bgcolor: 'grey.100',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: 1,
+                    mb: 2,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      color: 'rgba(0, 0, 0, 0.15)',
+                      opacity: 1,
+                    }}
+                  >
+                    <i
+                      className="ri ri-shirt-line"
+                      style={{ fontSize: 96 }}
+                      aria-hidden
+                    />
+                  </Box>
+                </Box>
 
                 {/* Image upload area */}
                 <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>

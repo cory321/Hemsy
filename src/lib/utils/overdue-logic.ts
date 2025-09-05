@@ -5,6 +5,7 @@
  */
 
 import type { GarmentStage } from '@/types';
+import { parseDateString, parseAnyDateSafely } from './date-time-utils';
 
 export interface GarmentOverdueInfo {
   id?: string;
@@ -89,7 +90,19 @@ export function getDaysUntilDue(
 ): number | null {
   if (!dueDateStr) return null;
 
-  const dueDate = new Date(dueDateStr);
+  // Use flexible date parsing to handle both YYYY-MM-DD and ISO formats
+  let dueDate: Date;
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dueDateStr)) {
+    // Pure YYYY-MM-DD format - use safe parsing
+    dueDate = parseDateString(dueDateStr);
+  } else {
+    // ISO format or other - use flexible parsing
+    const parsed = parseAnyDateSafely(dueDateStr);
+    if (!parsed) return null;
+    dueDate = parsed;
+  }
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   dueDate.setHours(0, 0, 0, 0);
