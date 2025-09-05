@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AppointmentCardV2 } from '../AppointmentCardV2';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAppointments } from '@/providers/AppointmentProvider';
 import type { Appointment } from '@/types';
 
@@ -27,11 +28,15 @@ jest.mock('@/components/appointments/AppointmentDialog', () => ({
     ) : null,
 }));
 
+const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+  .toISOString()
+  .slice(0, 10);
+
 const mockAppointment: Appointment = {
   id: '1',
   shop_id: 'shop-1',
   client_id: 'client-1',
-  date: '2024-12-25',
+  date: futureDate,
   start_time: '10:00',
   end_time: '11:00',
   type: 'fitting',
@@ -60,6 +65,15 @@ const defaultProps = {
   existingAppointments: [mockAppointment],
 };
 
+const renderWithQuery = (ui: React.ReactElement) => {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+  );
+};
+
 describe('AppointmentCardV2', () => {
   const mockUpdateAppointment = jest.fn();
 
@@ -71,17 +85,17 @@ describe('AppointmentCardV2', () => {
   });
 
   it('renders appointment details correctly', () => {
-    render(<AppointmentCardV2 {...defaultProps} />);
+    renderWithQuery(<AppointmentCardV2 {...defaultProps} />);
 
-    expect(screen.getByText('10:00 - 11:00')).toBeInTheDocument();
+    expect(screen.getByText('10:00 AM - 11:00 AM')).toBeInTheDocument();
     expect(screen.getByText('fitting')).toBeInTheDocument();
     expect(screen.getByText('confirmed')).toBeInTheDocument();
-    expect(screen.getByText(/Hemming wedding dress/)).toBeInTheDocument();
+    expect(screen.getByText(/📝\s*Hemming wedding dress/)).toBeInTheDocument();
   });
 
   it('expands and collapses appointment card', async () => {
     const user = userEvent.setup();
-    render(<AppointmentCardV2 {...defaultProps} />);
+    renderWithQuery(<AppointmentCardV2 {...defaultProps} />);
 
     const expandButton = screen.getByLabelText('expand');
     expect(expandButton).toBeInTheDocument();
@@ -102,7 +116,7 @@ describe('AppointmentCardV2', () => {
 
   it('opens appointment details dialog when clicking View', async () => {
     const user = userEvent.setup();
-    render(<AppointmentCardV2 {...defaultProps} />);
+    renderWithQuery(<AppointmentCardV2 {...defaultProps} />);
 
     // Expand first
     await user.click(screen.getByLabelText('expand'));
@@ -118,7 +132,7 @@ describe('AppointmentCardV2', () => {
 
   it('opens reschedule dialog when clicking Reschedule', async () => {
     const user = userEvent.setup();
-    render(<AppointmentCardV2 {...defaultProps} />);
+    renderWithQuery(<AppointmentCardV2 {...defaultProps} />);
 
     // Expand first
     await user.click(screen.getByLabelText('expand'));
@@ -139,7 +153,7 @@ describe('AppointmentCardV2', () => {
 
   it('opens details dialog when clicking Cancel', async () => {
     const user = userEvent.setup();
-    render(<AppointmentCardV2 {...defaultProps} />);
+    renderWithQuery(<AppointmentCardV2 {...defaultProps} />);
 
     // Expand first
     await user.click(screen.getByLabelText('expand'));
@@ -155,7 +169,7 @@ describe('AppointmentCardV2', () => {
 
   it('transitions from details dialog to reschedule dialog', async () => {
     const user = userEvent.setup();
-    render(<AppointmentCardV2 {...defaultProps} />);
+    renderWithQuery(<AppointmentCardV2 {...defaultProps} />);
 
     // Expand and open details dialog
     await user.click(screen.getByLabelText('expand'));
@@ -175,11 +189,11 @@ describe('AppointmentCardV2', () => {
   });
 
   it('shows correct action buttons for active appointments', () => {
-    render(<AppointmentCardV2 {...defaultProps} />);
+    renderWithQuery(<AppointmentCardV2 {...defaultProps} />);
 
-    // Card should be clickable to expand
-    const card = screen.getByRole('article');
-    fireEvent.click(card);
+    // Expand via icon button
+    const expandButton = screen.getByLabelText('expand');
+    fireEvent.click(expandButton);
 
     // Should show action buttons when expanded
     expect(screen.getByRole('button', { name: /view/i })).toBeInTheDocument();
@@ -194,12 +208,12 @@ describe('AppointmentCardV2', () => {
       ...mockAppointment,
       status: 'canceled' as const,
     };
-    render(
+    renderWithQuery(
       <AppointmentCardV2 {...defaultProps} appointment={canceledAppointment} />
     );
 
-    // Expand the card
-    fireEvent.click(screen.getByRole('article'));
+    // Expand via icon button
+    fireEvent.click(screen.getByLabelText('expand'));
 
     // Should not show action buttons
     expect(
@@ -214,7 +228,7 @@ describe('AppointmentCardV2', () => {
   });
 
   it('applies special styling for today appointments', () => {
-    const { container } = render(
+    const { container } = renderWithQuery(
       <AppointmentCardV2 {...defaultProps} isToday={true} />
     );
 
@@ -225,7 +239,7 @@ describe('AppointmentCardV2', () => {
   });
 
   it('shows status icon and color correctly', () => {
-    render(<AppointmentCardV2 {...defaultProps} />);
+    renderWithQuery(<AppointmentCardV2 {...defaultProps} />);
 
     // Should show confirmed status with success color
     const statusChip = screen.getByText('confirmed').closest('div');
@@ -233,13 +247,13 @@ describe('AppointmentCardV2', () => {
   });
 
   it('shows appointment type correctly', () => {
-    render(<AppointmentCardV2 {...defaultProps} />);
+    renderWithQuery(<AppointmentCardV2 {...defaultProps} />);
 
     expect(screen.getByText('fitting')).toBeInTheDocument();
   });
 
   it('shows notes preview when not expanded', () => {
-    render(<AppointmentCardV2 {...defaultProps} />);
+    renderWithQuery(<AppointmentCardV2 {...defaultProps} />);
 
     // Should show truncated notes
     expect(screen.getByText(/📝 Hemming wedding dress/)).toBeInTheDocument();
@@ -251,7 +265,7 @@ describe('AppointmentCardV2', () => {
       'This is a very long note that spans multiple lines and contains detailed information about the appointment requirements and special instructions.';
     const appointmentWithLongNotes = { ...mockAppointment, notes: longNotes };
 
-    render(
+    renderWithQuery(
       <AppointmentCardV2
         {...defaultProps}
         appointment={appointmentWithLongNotes}

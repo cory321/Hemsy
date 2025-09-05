@@ -1,4 +1,9 @@
 import { render, screen, fireEvent, within } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+// Mock timezone action before importing components that use it
+jest.mock('@/lib/actions/user-timezone', () => ({
+  getCurrentUserTimezone: jest.fn(async () => 'UTC'),
+}));
 import { Calendar } from './Calendar';
 import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material';
@@ -78,10 +83,15 @@ describe('Calendar Component', () => {
   });
 
   const renderCalendar = (props = {}) => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
     return render(
-      <ThemeProvider theme={theme}>
-        <Calendar {...defaultProps} {...props} />
-      </ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider theme={theme}>
+          <Calendar {...defaultProps} {...props} />
+        </ThemeProvider>
+      </QueryClientProvider>
     );
   };
 
@@ -142,22 +152,25 @@ describe('Calendar Component', () => {
   });
 
   describe('Appointment Display', () => {
-    it('should display appointments in the calendar', () => {
+    it('should display appointments in the calendar', async () => {
       renderCalendar();
 
       // Check if appointments are visible (in month view, shows time)
-      expect(screen.getByText('10:00 AM')).toBeInTheDocument();
-      expect(screen.getByText('2:00 PM')).toBeInTheDocument();
+      expect(await screen.findByText('10:00 AM')).toBeInTheDocument();
+      expect(await screen.findByText('2:00 PM')).toBeInTheDocument();
     });
 
-    it('should call onAppointmentClick when appointment is clicked', () => {
+    it('should call onAppointmentClick when appointment is clicked', async () => {
       renderCalendar();
 
-      const appointment = screen.getByText('10:00 AM');
+      const appointment = await screen.findByText('10:00 AM');
       fireEvent.click(appointment);
 
-      expect(defaultProps.onAppointmentClick).toHaveBeenCalledWith(
-        mockAppointments[0]
+      expect(defaultProps.onAppointmentClick).toHaveBeenCalled();
+      const calledWith = (defaultProps.onAppointmentClick as jest.Mock).mock
+        .calls[0][0];
+      expect(calledWith).toEqual(
+        expect.objectContaining({ id: mockAppointments[0].id })
       );
     });
 

@@ -175,10 +175,12 @@ describe('AppointmentsFocus', () => {
   describe('NextAppointmentCard', () => {
     it('displays next appointment details correctly', () => {
       render(
-        <AppointmentsFocus
-          nextAppointment={mockNextAppointment}
-          todayAppointments={mockTodayAppointments}
-        />
+        <AppointmentProviderWrapper>
+          <AppointmentsFocus
+            nextAppointment={mockNextAppointment}
+            todayAppointments={mockTodayAppointments}
+          />
+        </AppointmentProviderWrapper>
       );
 
       // Check that the component renders with the mocked child components
@@ -192,10 +194,12 @@ describe('AppointmentsFocus', () => {
 
     it('shows no upcoming appointments message when nextAppointment is null', () => {
       render(
-        <AppointmentsFocus
-          nextAppointment={null}
-          todayAppointments={mockTodayAppointments}
-        />
+        <AppointmentProviderWrapper>
+          <AppointmentsFocus
+            nextAppointment={null}
+            todayAppointments={mockTodayAppointments}
+          />
+        </AppointmentProviderWrapper>
       );
 
       // When nextAppointment is null, the mock shows the appointment time as "No appointment"
@@ -225,10 +229,12 @@ describe('AppointmentsFocus', () => {
     it('navigates to client page when View Client is clicked', async () => {
       const user = userEvent.setup();
       render(
-        <AppointmentsFocus
-          nextAppointment={mockNextAppointment}
-          todayAppointments={mockTodayAppointments}
-        />
+        <AppointmentProviderWrapper>
+          <AppointmentsFocus
+            nextAppointment={mockNextAppointment}
+            todayAppointments={mockTodayAppointments}
+          />
+        </AppointmentProviderWrapper>
       );
 
       // The mock doesn't provide "View Client" button, so we can't test navigation
@@ -244,10 +250,12 @@ describe('AppointmentsFocus', () => {
 
       const user = userEvent.setup();
       render(
-        <AppointmentsFocus
-          nextAppointment={mockNextAppointment}
-          todayAppointments={mockTodayAppointments}
-        />
+        <AppointmentProviderWrapper>
+          <AppointmentsFocus
+            nextAppointment={mockNextAppointment}
+            todayAppointments={mockTodayAppointments}
+          />
+        </AppointmentProviderWrapper>
       );
 
       // Note: Call button only shows on mobile/tablet, but in this test
@@ -259,10 +267,12 @@ describe('AppointmentsFocus', () => {
     it('copies phone number to clipboard', async () => {
       const user = userEvent.setup();
       render(
-        <AppointmentsFocus
-          nextAppointment={mockNextAppointment}
-          todayAppointments={mockTodayAppointments}
-        />
+        <AppointmentProviderWrapper>
+          <AppointmentsFocus
+            nextAppointment={mockNextAppointment}
+            todayAppointments={mockTodayAppointments}
+          />
+        </AppointmentProviderWrapper>
       );
 
       // Since the copy functionality is internal to NextAppointmentCard,
@@ -274,10 +284,12 @@ describe('AppointmentsFocus', () => {
   describe('TodaySchedule', () => {
     it('displays "Today\'s Schedule" as the title', () => {
       render(
-        <AppointmentsFocus
-          nextAppointment={mockNextAppointment}
-          todayAppointments={mockTodayAppointments}
-        />
+        <AppointmentProviderWrapper>
+          <AppointmentsFocus
+            nextAppointment={mockNextAppointment}
+            todayAppointments={mockTodayAppointments}
+          />
+        </AppointmentProviderWrapper>
       );
 
       // The component shows "Appointments" as the main heading
@@ -286,10 +298,12 @@ describe('AppointmentsFocus', () => {
 
     it('displays all today appointments with correct format', () => {
       render(
-        <AppointmentsFocus
-          nextAppointment={mockNextAppointment}
-          todayAppointments={mockTodayAppointments}
-        />
+        <AppointmentProviderWrapper>
+          <AppointmentsFocus
+            nextAppointment={mockNextAppointment}
+            todayAppointments={mockTodayAppointments}
+          />
+        </AppointmentProviderWrapper>
       );
 
       // Check for client names from the mocked TodaySchedule component
@@ -304,10 +318,12 @@ describe('AppointmentsFocus', () => {
 
     it('shows no appointments message when todayAppointments is empty', () => {
       render(
-        <AppointmentsFocus
-          nextAppointment={mockNextAppointment}
-          todayAppointments={[]}
-        />
+        <AppointmentProviderWrapper>
+          <AppointmentsFocus
+            nextAppointment={mockNextAppointment}
+            todayAppointments={[]}
+          />
+        </AppointmentProviderWrapper>
       );
 
       // When todayAppointments is empty, the TodaySchedule mock shows no buttons
@@ -325,10 +341,12 @@ describe('AppointmentsFocus', () => {
       delete (appointmentWithoutClient as any).client;
 
       render(
-        <AppointmentsFocus
-          nextAppointment={appointmentWithoutClient}
-          todayAppointments={[appointmentWithoutClient]}
-        />
+        <AppointmentProviderWrapper>
+          <AppointmentsFocus
+            nextAppointment={appointmentWithoutClient}
+            todayAppointments={[appointmentWithoutClient]}
+          />
+        </AppointmentProviderWrapper>
       );
 
       // When client is missing, the TodaySchedule mock shows empty button text
@@ -338,10 +356,12 @@ describe('AppointmentsFocus', () => {
 
     it('shows only time for today appointments', () => {
       render(
-        <AppointmentsFocus
-          nextAppointment={mockNextAppointment}
-          todayAppointments={mockTodayAppointments}
-        />
+        <AppointmentProviderWrapper>
+          <AppointmentsFocus
+            nextAppointment={mockNextAppointment}
+            todayAppointments={mockTodayAppointments}
+          />
+        </AppointmentProviderWrapper>
       );
 
       // Mock shows raw time format
@@ -364,10 +384,12 @@ describe('AppointmentsFocus', () => {
       };
 
       render(
-        <AppointmentsFocus
-          nextAppointment={futureAppointment}
-          todayAppointments={mockTodayAppointments}
-        />
+        <AppointmentProviderWrapper>
+          <AppointmentsFocus
+            nextAppointment={futureAppointment}
+            todayAppointments={mockTodayAppointments}
+          />
+        </AppointmentProviderWrapper>
       );
 
       // The mock NextAppointmentCard doesn't update its display based on the changed appointment
@@ -379,10 +401,12 @@ describe('AppointmentsFocus', () => {
   describe('WeekOverview and ReadyForPickup', () => {
     it('renders WeekOverview component', () => {
       render(
-        <AppointmentsFocus
-          nextAppointment={mockNextAppointment}
-          todayAppointments={mockTodayAppointments}
-        />
+        <AppointmentProviderWrapper>
+          <AppointmentsFocus
+            nextAppointment={mockNextAppointment}
+            todayAppointments={mockTodayAppointments}
+          />
+        </AppointmentProviderWrapper>
       );
 
       expect(screen.getByTestId('week-overview')).toBeInTheDocument();
@@ -390,10 +414,12 @@ describe('AppointmentsFocus', () => {
 
     it('renders the component structure correctly', () => {
       render(
-        <AppointmentsFocus
-          nextAppointment={mockNextAppointment}
-          todayAppointments={mockTodayAppointments}
-        />
+        <AppointmentProviderWrapper>
+          <AppointmentsFocus
+            nextAppointment={mockNextAppointment}
+            todayAppointments={mockTodayAppointments}
+          />
+        </AppointmentProviderWrapper>
       );
 
       // ReadyForPickup component doesn't exist, so just verify basic structure
@@ -410,10 +436,12 @@ describe('AppointmentsFocus', () => {
       };
 
       render(
-        <AppointmentsFocus
-          nextAppointment={appointmentWithNullClient as any}
-          todayAppointments={mockTodayAppointments}
-        />
+        <AppointmentProviderWrapper>
+          <AppointmentsFocus
+            nextAppointment={appointmentWithNullClient as any}
+            todayAppointments={mockTodayAppointments}
+          />
+        </AppointmentProviderWrapper>
       );
 
       // With null client, the mock still renders the basic structure
@@ -431,10 +459,12 @@ describe('AppointmentsFocus', () => {
 
       const user = userEvent.setup();
       render(
-        <AppointmentsFocus
-          nextAppointment={appointmentWithoutPhone}
-          todayAppointments={mockTodayAppointments}
-        />
+        <AppointmentProviderWrapper>
+          <AppointmentsFocus
+            nextAppointment={appointmentWithoutPhone}
+            todayAppointments={mockTodayAppointments}
+          />
+        </AppointmentProviderWrapper>
       );
 
       // The functionality is handled internally, no external action should occur
@@ -451,10 +481,12 @@ describe('AppointmentsFocus', () => {
       };
 
       render(
-        <AppointmentsFocus
-          nextAppointment={appointmentWithoutEmail}
-          todayAppointments={mockTodayAppointments}
-        />
+        <AppointmentProviderWrapper>
+          <AppointmentsFocus
+            nextAppointment={appointmentWithoutEmail}
+            todayAppointments={mockTodayAppointments}
+          />
+        </AppointmentProviderWrapper>
       );
 
       // The functionality is handled internally, no external action should occur

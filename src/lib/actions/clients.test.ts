@@ -53,6 +53,8 @@ describe('Client Actions', () => {
           last_name: 'User',
           created_at: '2024-01-01T00:00:00Z',
           updated_at: '2024-01-01T00:00:00Z',
+          timezone: 'America/New_York',
+          timezone_offset: -300,
         },
         shop: {
           id: 'shop_123',
@@ -63,7 +65,6 @@ describe('Client Actions', () => {
           phone_number: '555-0123',
           mailing_address: '123 Test St',
           location_type: 'shop_location',
-
           tax_percent: 0,
           buffer_time_minutes: 15,
           trial_countdown_enabled: false,
@@ -72,6 +73,8 @@ describe('Client Actions', () => {
           created_at: '2024-01-01T00:00:00Z',
           updated_at: '2024-01-01T00:00:00Z',
           onboarding_completed: true,
+          timezone: 'America/New_York',
+          timezone_offset: -300,
         },
       });
 
@@ -136,6 +139,8 @@ describe('Client Actions', () => {
           last_name: 'User',
           created_at: '2024-01-01T00:00:00Z',
           updated_at: '2024-01-01T00:00:00Z',
+          timezone: 'America/New_York',
+          timezone_offset: -300,
         },
         shop: {
           id: 'shop_123',
@@ -146,7 +151,6 @@ describe('Client Actions', () => {
           phone_number: '555-0123',
           mailing_address: '123 Test St',
           location_type: 'shop_location',
-
           tax_percent: 0,
           buffer_time_minutes: 15,
           trial_countdown_enabled: false,
@@ -155,6 +159,8 @@ describe('Client Actions', () => {
           created_at: '2024-01-01T00:00:00Z',
           updated_at: '2024-01-01T00:00:00Z',
           onboarding_completed: true,
+          timezone: 'America/New_York',
+          timezone_offset: -300,
         },
       });
 
@@ -184,6 +190,8 @@ describe('Client Actions', () => {
           last_name: 'User',
           created_at: '2024-01-01T00:00:00Z',
           updated_at: '2024-01-01T00:00:00Z',
+          timezone: 'America/New_York',
+          timezone_offset: -300,
         },
         shop: {
           id: 'shop_123',
@@ -194,7 +202,6 @@ describe('Client Actions', () => {
           phone_number: '555-0123',
           mailing_address: '123 Test St',
           location_type: 'shop_location',
-
           tax_percent: 0,
           buffer_time_minutes: 15,
           trial_countdown_enabled: false,
@@ -203,6 +210,8 @@ describe('Client Actions', () => {
           created_at: '2024-01-01T00:00:00Z',
           updated_at: '2024-01-01T00:00:00Z',
           onboarding_completed: true,
+          timezone: 'America/New_York',
+          timezone_offset: -300,
         },
       });
 
@@ -340,6 +349,8 @@ describe('Client Actions', () => {
           last_name: 'User',
           created_at: '2024-01-01T00:00:00Z',
           updated_at: '2024-01-01T00:00:00Z',
+          timezone: 'America/New_York',
+          timezone_offset: -300,
         },
         shop: {
           id: 'shop_123',
@@ -350,7 +361,6 @@ describe('Client Actions', () => {
           phone_number: '555-0123',
           mailing_address: '123 Test St',
           location_type: 'shop_location',
-
           tax_percent: 0,
           buffer_time_minutes: 15,
           trial_countdown_enabled: false,
@@ -359,6 +369,8 @@ describe('Client Actions', () => {
           created_at: '2024-01-01T00:00:00Z',
           updated_at: '2024-01-01T00:00:00Z',
           onboarding_completed: true,
+          timezone: 'America/New_York',
+          timezone_offset: -300,
         },
       });
 
@@ -405,6 +417,8 @@ describe('Client Actions', () => {
           last_name: 'User',
           created_at: '2024-01-01T00:00:00Z',
           updated_at: '2024-01-01T00:00:00Z',
+          timezone: 'America/New_York',
+          timezone_offset: -300,
         },
         shop: {
           id: 'shop_123',
@@ -415,7 +429,6 @@ describe('Client Actions', () => {
           phone_number: '555-0123',
           mailing_address: '123 Test St',
           location_type: 'shop_location',
-
           tax_percent: 0,
           buffer_time_minutes: 15,
           trial_countdown_enabled: false,
@@ -424,6 +437,8 @@ describe('Client Actions', () => {
           created_at: '2024-01-01T00:00:00Z',
           updated_at: '2024-01-01T00:00:00Z',
           onboarding_completed: true,
+          timezone: 'America/New_York',
+          timezone_offset: -300,
         },
       });
 
@@ -530,6 +545,8 @@ describe('Client Actions', () => {
           last_name: 'User',
           created_at: '2024-01-01T00:00:00Z',
           updated_at: '2024-01-01T00:00:00Z',
+          timezone: 'America/New_York',
+          timezone_offset: -300,
         },
         shop: {
           id: 'shop_123',
@@ -548,6 +565,8 @@ describe('Client Actions', () => {
           created_at: '2024-01-01T00:00:00Z',
           updated_at: '2024-01-01T00:00:00Z',
           onboarding_completed: true,
+          timezone: 'America/New_York',
+          timezone_offset: -300,
         },
       });
 

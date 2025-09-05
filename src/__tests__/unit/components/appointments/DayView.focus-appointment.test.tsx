@@ -1,5 +1,11 @@
 import { render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DayView } from '@/components/appointments/views/DayView';
+
+// Mock timezone action used by useUserTimezone
+jest.mock('@/lib/actions/user-timezone', () => ({
+  getCurrentUserTimezone: jest.fn(async () => 'UTC'),
+}));
 
 describe('DayView focusAppointmentId', () => {
   const appointments = [
@@ -38,17 +44,22 @@ describe('DayView focusAppointmentId', () => {
     },
   ];
 
-  it('marks the focused appointment with data-focused', () => {
+  it('marks the focused appointment with data-focused', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
     render(
-      <DayView
-        currentDate={new Date(2025, 0, 20)}
-        appointments={appointments as any}
-        shopHours={shopHours}
-        focusAppointmentId="apt-2"
-      />
+      <QueryClientProvider client={queryClient}>
+        <DayView
+          currentDate={new Date(2025, 0, 20)}
+          appointments={appointments as any}
+          shopHours={shopHours}
+          focusAppointmentId="apt-2"
+        />
+      </QueryClientProvider>
     );
 
-    const focused = screen.getByTestId('dayview-appointment-apt-2');
+    const focused = await screen.findByTestId('dayview-appointment-apt-2');
     expect(focused).toHaveAttribute('data-focused', 'true');
   });
 });

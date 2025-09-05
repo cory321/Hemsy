@@ -4,6 +4,9 @@ import { createClient as createSupabaseClient } from '@/lib/supabase/server';
 
 // Mock dependencies
 jest.mock('@/lib/supabase/server');
+jest.mock('@/lib/utils/timezone-helpers', () => ({
+  getShopTimezone: jest.fn(async () => 'UTC'),
+}));
 jest.mock('@/lib/actions/users', () => ({
   ensureUserAndShop: jest.fn().mockResolvedValue({
     user: { id: 'test-user-id' },

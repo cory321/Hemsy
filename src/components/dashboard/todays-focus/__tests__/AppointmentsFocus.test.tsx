@@ -97,7 +97,11 @@ describe('AppointmentsFocus - Rescheduling', () => {
           nextAppointment={mockAppointment}
           todayAppointments={[mockAppointment]}
           weekData={[]}
-          weekSummaryStats={null}
+          weekSummaryStats={{
+            totalAppointments: 1,
+            totalGarmentsDue: 0,
+            totalOverdue: 0,
+          }}
           shopHours={[]}
           calendarSettings={{
             buffer_time_minutes: 0,

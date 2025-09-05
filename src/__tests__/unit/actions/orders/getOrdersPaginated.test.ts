@@ -36,6 +36,8 @@ describe('getOrdersPaginated', () => {
         updated_at: null,
         first_name: null,
         last_name: null,
+        timezone: 'America/New_York',
+        timezone_offset: -300,
       },
       shop: {
         id: 'shop_123',
@@ -54,6 +56,8 @@ describe('getOrdersPaginated', () => {
         tax_percent: 0,
         trial_end_date: null,
         working_hours: null,
+        timezone: 'America/New_York',
+        timezone_offset: -300,
         onboarding_completed: true,
       },
     });

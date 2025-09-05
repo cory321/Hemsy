@@ -158,6 +158,7 @@ export const AppointmentCardV2 = memo(function AppointmentCardV2({
           }),
         }}
         onClick={() => setExpanded(!expanded)}
+        role="article"
       >
         <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
           {/* Main Content Row */}

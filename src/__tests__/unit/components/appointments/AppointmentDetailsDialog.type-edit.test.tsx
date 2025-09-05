@@ -134,10 +134,13 @@ describe('AppointmentDetailsDialog - Type Editing', () => {
         id: '123',
         type: 'fitting',
       });
-      expect(toast.success).toHaveBeenCalledWith(
-        'Appointment updated successfully'
-      );
     });
+
+    // Verify UI updated to show new type chip
+    expect(screen.getAllByText('FITTING').length).toBeGreaterThan(0);
+
+    // No success toast for type-only updates per provider logic
+    expect(toast.success).not.toHaveBeenCalled();
   });
 
   it('should show loading state while saving type', async () => {

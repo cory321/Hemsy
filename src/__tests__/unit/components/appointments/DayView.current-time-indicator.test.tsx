@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen, within } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DayView } from '@/components/appointments/views/DayView';
 import { format } from 'date-fns';
 import '@testing-library/jest-dom';
@@ -10,7 +11,21 @@ jest.mock('date-fns', () => ({
   isToday: jest.fn(),
 }));
 
+// Mock timezone action
+jest.mock('@/lib/actions/user-timezone', () => ({
+  getCurrentUserTimezone: jest.fn(async () => 'UTC'),
+}));
+
 describe('DayView - Current Time Indicator', () => {
+  const renderWithQuery = (ui: React.ReactElement) => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    return render(
+      <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+    );
+  };
+
   const mockShopHours = [
     {
       day_of_week: 0,
@@ -71,7 +86,7 @@ describe('DayView - Current Time Indicator', () => {
     const { isToday } = require('date-fns');
     isToday.mockReturnValue(true);
 
-    render(
+    renderWithQuery(
       <DayView
         currentDate={mockDate}
         appointments={[]}
@@ -97,7 +112,7 @@ describe('DayView - Current Time Indicator', () => {
     const { isToday } = require('date-fns');
     isToday.mockReturnValue(false);
 
-    render(
+    renderWithQuery(
       <DayView
         currentDate={pastDate}
         appointments={[]}
@@ -123,7 +138,7 @@ describe('DayView - Current Time Indicator', () => {
     const { isToday } = require('date-fns');
     isToday.mockReturnValue(false);
 
-    render(
+    renderWithQuery(
       <DayView
         currentDate={futureDate}
         appointments={[]}
@@ -148,7 +163,7 @@ describe('DayView - Current Time Indicator', () => {
     const { isToday } = require('date-fns');
     isToday.mockReturnValue(true);
 
-    render(
+    renderWithQuery(
       <DayView
         currentDate={mockDate}
         appointments={[]}
@@ -173,7 +188,7 @@ describe('DayView - Current Time Indicator', () => {
     const { isToday } = require('date-fns');
     isToday.mockReturnValue(true);
 
-    render(
+    renderWithQuery(
       <DayView
         currentDate={mockDate}
         appointments={[]}
@@ -202,7 +217,7 @@ describe('DayView - Current Time Indicator', () => {
     const { isToday } = require('date-fns');
     isToday.mockReturnValue(true);
 
-    render(
+    renderWithQuery(
       <DayView
         currentDate={mockDate}
         appointments={[]}

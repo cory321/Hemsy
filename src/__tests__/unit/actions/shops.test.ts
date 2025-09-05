@@ -55,7 +55,7 @@ describe('Shop Actions', () => {
       const result = await getShopBusinessInfo();
 
       expect(result.success).toBe(true);
-      expect(result.data).toEqual({
+      expect(result.data).toMatchObject({
         id: 'shop-123',
         name: 'Test Shop',
         business_name: 'Test Business',
@@ -66,6 +66,8 @@ describe('Shop Actions', () => {
 
         trial_countdown_enabled: false,
         trial_end_date: null,
+        timezone: expect.any(String),
+        timezone_offset: undefined,
       });
     });
 

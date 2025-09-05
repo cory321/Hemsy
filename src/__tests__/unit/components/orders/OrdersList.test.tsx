@@ -182,7 +182,7 @@ const mockInitialData: PaginatedOrders = {
       id: 'order_1',
       shop_id: 'shop_123',
       client_id: 'client_1',
-      status: 'pending',
+      status: 'active',
       order_number: 'ORD-001',
       total_cents: 5000,
       subtotal_cents: 5000,
@@ -190,6 +190,7 @@ const mockInitialData: PaginatedOrders = {
       tax_cents: 0,
       notes: 'Test order 1',
       order_due_date: null,
+      due_at: '2024-01-10T00:00:00Z',
       is_paid: false,
       paid_at: null,
       deposit_amount_cents: null,
@@ -207,7 +208,7 @@ const mockInitialData: PaginatedOrders = {
       id: 'order_2',
       shop_id: 'shop_123',
       client_id: 'client_2',
-      status: 'paid',
+      status: 'completed',
       order_number: 'ORD-002',
       total_cents: 7500,
       subtotal_cents: 7500,
@@ -215,6 +216,7 @@ const mockInitialData: PaginatedOrders = {
       tax_cents: 0,
       notes: null,
       order_due_date: null,
+      due_at: '2024-01-15T00:00:00Z',
       is_paid: true,
       paid_at: '2024-01-02T00:00:00Z',
       deposit_amount_cents: null,
@@ -516,14 +518,14 @@ describe('OrdersList', () => {
   });
 
   it('should handle orders without client info', async () => {
-    const dataWithoutClient = {
+    const dataWithoutClient: PaginatedOrders = {
       ...mockInitialData,
       data: [
         {
           id: 'order_1',
           shop_id: 'shop_123',
           client_id: 'client_1',
-          status: 'pending',
+          status: 'active',
           order_number: 'ORD-001',
           total_cents: 5000,
           subtotal_cents: 5000,
@@ -531,6 +533,7 @@ describe('OrdersList', () => {
           tax_cents: 0,
           notes: 'Test order 1',
           order_due_date: null,
+          due_at: '2024-01-10T00:00:00Z',
           is_paid: false,
           paid_at: null,
           deposit_amount_cents: null,

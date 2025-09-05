@@ -77,15 +77,16 @@ Object.defineProperty(window, 'localStorage', {
 
 const theme = createTheme();
 
-const mockInitialData = {
+const mockInitialData: any = {
   data: [
     {
       id: 'order-1',
       order_number: '2024-001',
-      status: 'partially_paid',
+      status: 'active',
       order_due_date: new Date(
         Date.now() + 2 * 24 * 60 * 60 * 1000
       ).toISOString(),
+      due_at: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
       total_cents: 50000,
       subtotal_cents: 45000,
       tax_cents: 5000,
@@ -115,10 +116,11 @@ const mockInitialData = {
     {
       id: 'order-2',
       order_number: '2024-002',
-      status: 'paid',
+      status: 'completed',
       order_due_date: new Date(
         Date.now() + 5 * 24 * 60 * 60 * 1000
       ).toISOString(),
+      due_at: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
       total_cents: 75000,
       subtotal_cents: 70000,
       tax_cents: 5000,

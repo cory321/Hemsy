@@ -8,6 +8,7 @@ import {
 import { CalendarDesktop } from '@/components/appointments/CalendarDesktop';
 import { format, startOfWeek } from 'date-fns';
 import '@testing-library/jest-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Mock Material UI useMediaQuery to simulate desktop view
 jest.mock('@mui/material', () => ({
@@ -115,13 +116,26 @@ describe('CalendarDesktop', () => {
     jest.clearAllMocks();
   });
 
+  const createWrapper = ({ children }: { children: React.ReactNode }) => {
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+  };
+
   it('renders desktop calendar with enhanced features', () => {
     render(
       <CalendarDesktop
         appointments={mockAppointments}
         shopHours={mockShopHours}
         {...mockHandlers}
-      />
+      />,
+      { wrapper: createWrapper }
     );
 
     // Check for desktop-specific elements
@@ -155,7 +169,8 @@ describe('CalendarDesktop', () => {
         appointments={mockAppointments}
         shopHours={mockShopHours}
         {...mockHandlers}
-      />
+      />,
+      { wrapper: createWrapper }
     );
 
     // Check filter functionality
@@ -178,7 +193,8 @@ describe('CalendarDesktop', () => {
         appointments={mockAppointments}
         shopHours={mockShopHours}
         {...mockHandlers}
-      />
+      />,
+      { wrapper: createWrapper }
     );
 
     // Switch to week view
@@ -202,7 +218,8 @@ describe('CalendarDesktop', () => {
         appointments={mockAppointments}
         shopHours={mockShopHours}
         {...mockHandlers}
-      />
+      />,
+      { wrapper: createWrapper }
     );
 
     // Test previous/next navigation
@@ -243,7 +260,8 @@ describe('CalendarDesktop', () => {
         appointments={mockAppointments}
         shopHours={mockShopHours}
         {...mockHandlers}
-      />
+      />,
+      { wrapper: createWrapper }
     );
 
     // Filter should reflect the number of filtered appointments
@@ -265,7 +283,8 @@ describe('CalendarDesktop', () => {
         appointments={mockAppointments}
         shopHours={mockShopHours}
         {...mockHandlers}
-      />
+      />,
+      { wrapper: createWrapper }
     );
 
     // Start in month view by default

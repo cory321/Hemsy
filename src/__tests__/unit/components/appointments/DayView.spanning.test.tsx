@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DayView } from '@/components/appointments/views/DayView';
 import { format } from 'date-fns';
 import type { Appointment } from '@/types';
@@ -29,8 +30,14 @@ jest.mock('@mui/material', () => ({
   useMediaQuery: () => false,
 }));
 
+// Mock timezone action used by useUserTimezone
+jest.mock('@/lib/actions/user-timezone', () => ({
+  getCurrentUserTimezone: jest.fn(async () => 'UTC'),
+}));
+
 describe('DayView - Appointment spanning across 30-minute rows', () => {
-  const mockDate = new Date('2024-01-15');
+  // Use a UTC midday timestamp to avoid timezone date-shift in formatting
+  const mockDate = new Date('2024-01-15T12:00:00Z');
   const dateStr = format(mockDate, 'yyyy-MM-dd');
 
   const mockShopHours = [
@@ -42,7 +49,16 @@ describe('DayView - Appointment spanning across 30-minute rows', () => {
     },
   ];
 
-  it('positions and sizes appointment blocks based on duration', () => {
+  const renderWithQuery = (ui: React.ReactElement) => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    return render(
+      <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+    );
+  };
+
+  it('positions and sizes appointment blocks based on duration', async () => {
     const appointments: Appointment[] = [
       {
         id: 'apt-60',
@@ -98,7 +114,7 @@ describe('DayView - Appointment spanning across 30-minute rows', () => {
       },
     ];
 
-    render(
+    renderWithQuery(
       <DayView
         currentDate={mockDate}
         appointments={appointments}
@@ -106,8 +122,8 @@ describe('DayView - Appointment spanning across 30-minute rows', () => {
       />
     );
 
-    const first = screen.getByTestId('dayview-appointment-apt-60');
-    const second = screen.getByTestId('dayview-appointment-apt-90');
+    const first = await screen.findByTestId('dayview-appointment-apt-60');
+    const second = await screen.findByTestId('dayview-appointment-apt-90');
 
     // 30-minute row height is 80px, pixels per minute = 80/30
     const pxPerMinute = 80 / 30;

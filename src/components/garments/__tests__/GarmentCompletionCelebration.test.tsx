@@ -18,7 +18,7 @@ jest.mock('@/contexts/GarmentContext', () => ({
 import GarmentCompletionCelebration from '../GarmentCompletionCelebration';
 
 describe('GarmentCompletionCelebration', () => {
-  it('renders confetti when all non-removed services are done', () => {
+  it('does not render confetti on initial mount even if already completed', () => {
     mockGarment = {
       garment_services: [
         { id: '1', is_done: true, is_removed: false },
@@ -27,7 +27,7 @@ describe('GarmentCompletionCelebration', () => {
     };
 
     render(<GarmentCompletionCelebration />);
-    expect(screen.getByTestId('confetti')).toBeInTheDocument();
+    expect(screen.queryByTestId('confetti')).toBeNull();
   });
 
   it('does not render confetti when any active service is not done', () => {
@@ -42,15 +42,68 @@ describe('GarmentCompletionCelebration', () => {
     expect(screen.queryByTestId('confetti')).toBeNull();
   });
 
-  it('ignores removed services when evaluating completion', () => {
+  it('ignores removed services when evaluating completion and triggers on transition', () => {
+    // Start incomplete due to an active not-done service
+    mockGarment = {
+      garment_services: [
+        { id: '1', is_done: true, is_removed: false },
+        { id: '2', is_done: false, is_removed: false },
+      ],
+    };
+
+    const { rerender } = render(<GarmentCompletionCelebration />);
+    expect(screen.queryByTestId('confetti')).toBeNull();
+
+    // Transition to completed; second service becomes removed (ignored)
     mockGarment = {
       garment_services: [
         { id: '1', is_done: true, is_removed: false },
         { id: '2', is_done: false, is_removed: true },
       ],
     };
+    rerender(<GarmentCompletionCelebration />);
+    expect(screen.getByTestId('confetti')).toBeInTheDocument();
+  });
 
-    render(<GarmentCompletionCelebration />);
+  it('re-triggers when toggling a service to incomplete then complete', () => {
+    // Start incomplete
+    mockGarment = {
+      garment_services: [
+        { id: '1', is_done: true, is_removed: false },
+        { id: '2', is_done: false, is_removed: false },
+      ],
+    };
+    const { rerender } = render(<GarmentCompletionCelebration />);
+    expect(screen.queryByTestId('confetti')).toBeNull();
+
+    // Complete -> should trigger first time
+    mockGarment = {
+      garment_services: [
+        { id: '1', is_done: true, is_removed: false },
+        { id: '2', is_done: true, is_removed: false },
+      ],
+    };
+    rerender(<GarmentCompletionCelebration />);
+    expect(screen.getByTestId('confetti')).toBeInTheDocument();
+
+    // Toggle back to incomplete
+    mockGarment = {
+      garment_services: [
+        { id: '1', is_done: true, is_removed: false },
+        { id: '2', is_done: false, is_removed: false },
+      ],
+    };
+    rerender(<GarmentCompletionCelebration />);
+    expect(screen.queryByTestId('confetti')).toBeNull();
+
+    // And back to complete -> should trigger again
+    mockGarment = {
+      garment_services: [
+        { id: '1', is_done: true, is_removed: false },
+        { id: '2', is_done: true, is_removed: false },
+      ],
+    };
+    rerender(<GarmentCompletionCelebration />);
     expect(screen.getByTestId('confetti')).toBeInTheDocument();
   });
 });

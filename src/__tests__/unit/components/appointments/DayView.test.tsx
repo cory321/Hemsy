@@ -1,8 +1,13 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { DayView } from '@/components/appointments/views/DayView';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import type { Appointment } from '@/types';
+// Mock timezone action BEFORE importing components that use it
+jest.mock('@/lib/actions/user-timezone', () => ({
+  getCurrentUserTimezone: jest.fn(async () => 'UTC'),
+}));
+import { DayView } from '@/components/appointments/views/DayView';
 
 // Mock Material UI theme
 jest.mock('@mui/material/styles', () => ({
@@ -30,6 +35,15 @@ jest.mock('@mui/material', () => ({
 }));
 
 describe('DayView', () => {
+  const renderWithQuery = (ui: React.ReactElement) => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    return render(
+      <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+    );
+  };
+
   const mockDate = new Date('2024-01-15');
   const dateStr = format(mockDate, 'yyyy-MM-dd');
 
@@ -99,8 +113,8 @@ describe('DayView', () => {
     },
   ];
 
-  it('renders appointments at correct time positions', () => {
-    render(
+  it('renders appointments at correct time positions', async () => {
+    renderWithQuery(
       <DayView
         currentDate={mockDate}
         appointments={mockAppointments}
@@ -109,8 +123,8 @@ describe('DayView', () => {
     );
 
     // Check that client names are rendered (appointments show client names, not titles)
-    expect(screen.getByText('John Doe')).toBeInTheDocument();
-    expect(screen.getByText('Jane Smith')).toBeInTheDocument();
+    expect(await screen.findByText('John Doe')).toBeInTheDocument();
+    expect(await screen.findByText('Jane Smith')).toBeInTheDocument();
 
     // Check appointment details
     expect(screen.getByText(/9:00 AM - 10:00 AM/)).toBeInTheDocument();
@@ -135,7 +149,7 @@ describe('DayView', () => {
       },
     ];
 
-    render(
+    renderWithQuery(
       <DayView
         currentDate={mockDate}
         appointments={[]}
@@ -156,7 +170,7 @@ describe('DayView', () => {
   });
 
   it('shows no appointments message when empty', () => {
-    render(
+    renderWithQuery(
       <DayView
         currentDate={mockDate}
         appointments={[]}
@@ -169,7 +183,7 @@ describe('DayView', () => {
     expect(noAppointmentsText).toBeInTheDocument();
   });
 
-  it('handles appointments with different durations correctly', () => {
+  it('handles appointments with different durations correctly', async () => {
     const appointmentsWithDurations: Appointment[] = [
       {
         ...mockAppointments[0]!,
@@ -185,7 +199,7 @@ describe('DayView', () => {
       },
     ];
 
-    render(
+    renderWithQuery(
       <DayView
         currentDate={mockDate}
         appointments={appointmentsWithDurations}
@@ -195,7 +209,7 @@ describe('DayView', () => {
 
     // Check that both appointments are rendered (using client names)
     // Since both appointments use the same client, there will be multiple "John Doe" elements
-    expect(screen.getAllByText('John Doe')).toHaveLength(2);
+    expect(await screen.findAllByText('John Doe')).toHaveLength(2);
 
     // Check duration displays - verify parts are rendered (layout may split nodes)
     expect(screen.getByText('10:00 AM')).toBeInTheDocument();
@@ -216,7 +230,7 @@ describe('DayView', () => {
       },
     ];
 
-    render(
+    renderWithQuery(
       <DayView
         currentDate={mockDate}
         appointments={[]}

@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { WeekView } from '@/components/appointments/views/WeekView';
 import { format, addDays, startOfWeek } from 'date-fns';
 import type { Appointment } from '@/types';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Mock Material UI theme
 jest.mock('@mui/material/styles', () => ({
@@ -129,6 +130,18 @@ describe('WeekView - Time Slot Click', () => {
     jest.clearAllMocks();
   });
 
+  const createWrapper = ({ children }: { children: React.ReactNode }) => {
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+  };
+
   it('renders with onTimeSlotClick prop', () => {
     const onTimeSlotClick = jest.fn();
 
@@ -138,7 +151,8 @@ describe('WeekView - Time Slot Click', () => {
         appointments={mockAppointments}
         shopHours={mockShopHours}
         onTimeSlotClick={onTimeSlotClick}
-      />
+      />,
+      { wrapper: createWrapper }
     );
 
     // Component should render without errors when onTimeSlotClick is provided
@@ -150,7 +164,7 @@ describe('WeekView - Time Slot Click', () => {
     expect(screen.getByText('5:00 PM')).toBeInTheDocument();
   });
 
-  it('does not call onTimeSlotClick when clicking time slot with existing appointment', () => {
+  it('does not call onTimeSlotClick when clicking time slot with existing appointment', async () => {
     const onTimeSlotClick = jest.fn();
 
     render(
@@ -159,11 +173,12 @@ describe('WeekView - Time Slot Click', () => {
         appointments={mockAppointments}
         shopHours={mockShopHours}
         onTimeSlotClick={onTimeSlotClick}
-      />
+      />,
+      { wrapper: createWrapper }
     );
 
     // Try to click on the 10:00 AM slot on Monday (which has an appointment)
-    const existingAppointment = screen.getByText('John Doe');
+    const existingAppointment = await screen.findByText('John Doe');
     fireEvent.click(existingAppointment);
 
     // Should not call onTimeSlotClick since the slot has an appointment
@@ -182,7 +197,8 @@ describe('WeekView - Time Slot Click', () => {
         appointments={[]}
         shopHours={mockShopHours}
         onTimeSlotClick={onTimeSlotClick}
-      />
+      />,
+      { wrapper: createWrapper }
     );
 
     // When shop is closed, there should be no clickable time slots
@@ -215,7 +231,8 @@ describe('WeekView - Time Slot Click', () => {
         appointments={[]}
         shopHours={mockShopHours}
         // No onTimeSlotClick prop
-      />
+      />,
+      { wrapper: createWrapper }
     );
 
     // Try to click on a time slot
@@ -252,7 +269,8 @@ describe('WeekView - Time Slot Click', () => {
         appointments={[]}
         shopHours={mockShopHours}
         onTimeSlotClick={onTimeSlotClick}
-      />
+      />,
+      { wrapper: createWrapper }
     );
 
     // Look for add appointment hints (they use the text "Add" in WeekView)
@@ -284,7 +302,8 @@ describe('WeekView - Time Slot Click', () => {
         appointments={[]}
         shopHours={mockShopHours}
         onTimeSlotClick={onTimeSlotClick}
-      />
+      />,
+      { wrapper: createWrapper }
     );
 
     // Should not show add appointment hints on mobile
@@ -304,7 +323,8 @@ describe('WeekView - Time Slot Click', () => {
         appointments={[]}
         shopHours={mockShopHours}
         onTimeSlotClick={onTimeSlotClick}
-      />
+      />,
+      { wrapper: createWrapper }
     );
 
     // Time slots should still be rendered but with different styling

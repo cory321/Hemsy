@@ -11,7 +11,7 @@ export type ConfettiCelebrationProps = {
 
 export default function ConfettiCelebration({
   durationMs = 4000,
-  particleCount = 140,
+  particleCount = 200,
 }: ConfettiCelebrationProps) {
   const hasFiredRef = useRef(false);
 
@@ -35,9 +35,10 @@ export default function ConfettiCelebration({
 
       confetti({
         particleCount,
-        spread: 75,
+        spread: 90,
         origin: { y: 0.6 },
         ticks: 200,
+        scalar: 1.0,
       });
 
       const end = Date.now() + durationMs;
@@ -48,22 +49,22 @@ export default function ConfettiCelebration({
         }
 
         confetti({
-          particleCount: 6,
+          particleCount: 8,
           angle: 60,
           spread: 60,
           origin: { x: 0 },
           gravity: 1.1,
           ticks: 200,
-          scalar: 0.9,
+          scalar: 1.0,
         });
         confetti({
-          particleCount: 6,
+          particleCount: 8,
           angle: 120,
           spread: 60,
           origin: { x: 1 },
           gravity: 1.1,
           ticks: 200,
-          scalar: 0.9,
+          scalar: 1.0,
         });
       }, 200);
     })();

@@ -10,8 +10,7 @@ describe('ConfettiCelebration', () => {
       addEventListener: jest.fn(),
       removeEventListener: jest.fn(),
     });
-    // @ts-expect-error override
-    window.matchMedia = matchMedia;
+    (window as any).matchMedia = matchMedia;
 
     const confettiMock = jest.fn();
     jest.mock('canvas-confetti', () => ({

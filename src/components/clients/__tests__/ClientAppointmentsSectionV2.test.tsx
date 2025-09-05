@@ -25,7 +25,7 @@ const mockAppointments: Appointment[] = [
     id: '1',
     shop_id: 'shop-1',
     client_id: 'client-1',
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toISOString().slice(0, 10),
     start_time: '10:00:00',
     end_time: '11:00:00',
     type: 'fitting',
@@ -38,7 +38,7 @@ const mockAppointments: Appointment[] = [
     id: '2',
     shop_id: 'shop-1',
     client_id: 'client-1',
-    date: new Date(Date.now() + 86400000).toISOString().split('T')[0], // Tomorrow
+    date: new Date(Date.now() + 86400000).toISOString().slice(0, 10), // Tomorrow
     start_time: '14:00:00',
     end_time: '14:30:00',
     type: 'consultation',
@@ -51,7 +51,7 @@ const mockAppointments: Appointment[] = [
     id: '3',
     shop_id: 'shop-1',
     client_id: 'client-1',
-    date: new Date(Date.now() - 86400000).toISOString().split('T')[0], // Yesterday
+    date: new Date(Date.now() - 86400000).toISOString().slice(0, 10), // Yesterday
     start_time: '10:00:00',
     end_time: '11:00:00',
     type: 'pickup',
@@ -129,7 +129,7 @@ describe('ClientAppointmentsSectionV2', () => {
   const renderComponent = (props = {}) => {
     return render(
       <QueryClientProvider client={queryClient}>
-        <ClientAppointmentsSectionV2 {...defaultProps} {...props} />
+        <ClientAppointmentsSectionV2 {...defaultProps} {...(props as any)} />
       </QueryClientProvider>
     );
   };
@@ -193,8 +193,7 @@ describe('ClientAppointmentsSectionV2', () => {
     renderComponent();
 
     // Get all selects - first is time period, second is status
-    const selects = screen.getAllByRole('combobox');
-    const timePeriodSelect = selects[0];
+    const timePeriodSelect = screen.getAllByRole('combobox')[0]!;
 
     // Should show "Upcoming" as default text
     expect(screen.getByText('Upcoming')).toBeInTheDocument();
@@ -215,8 +214,7 @@ describe('ClientAppointmentsSectionV2', () => {
     renderComponent();
 
     // Get all selects - first is time period, second is status
-    const selects = screen.getAllByRole('combobox');
-    const statusSelect = selects[1];
+    const statusSelect = screen.getAllByRole('combobox')[1]!;
 
     // Should show "Active Only" as default
     expect(screen.getByText('Active Only')).toBeInTheDocument();

@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen, waitFor, act } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DayView } from '@/components/appointments/views/DayView';
 import '@testing-library/jest-dom';
 
@@ -9,7 +10,21 @@ jest.mock('date-fns', () => ({
   isToday: jest.fn(() => true),
 }));
 
+// Mock timezone action used by useUserTimezone
+jest.mock('@/lib/actions/user-timezone', () => ({
+  getCurrentUserTimezone: jest.fn(async () => 'UTC'),
+}));
+
 describe('DayView - Auto Update Current Time Indicator', () => {
+  const renderWithQuery = (ui: React.ReactElement) => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    return render(
+      <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+    );
+  };
+
   const mockShopHours = [
     {
       day_of_week: 1,
@@ -34,7 +49,7 @@ describe('DayView - Auto Update Current Time Indicator', () => {
 
     const setIntervalSpy = jest.spyOn(global, 'setInterval');
 
-    render(
+    renderWithQuery(
       <DayView
         currentDate={mockDate}
         appointments={[]}
@@ -55,7 +70,7 @@ describe('DayView - Auto Update Current Time Indicator', () => {
 
     const clearIntervalSpy = jest.spyOn(global, 'clearInterval');
 
-    const { unmount } = render(
+    const { unmount } = renderWithQuery(
       <DayView
         currentDate={mockDate}
         appointments={[]}
@@ -74,7 +89,7 @@ describe('DayView - Auto Update Current Time Indicator', () => {
     const initialTime = new Date('2024-01-08T10:00:00');
     jest.setSystemTime(initialTime);
 
-    render(
+    renderWithQuery(
       <DayView
         currentDate={initialTime}
         appointments={[]}
