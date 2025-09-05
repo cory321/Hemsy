@@ -9,6 +9,8 @@ import { AppointmentDetailsDialog } from '@/components/appointments/AppointmentD
 import { AppointmentDialog } from '@/components/appointments/AppointmentDialog';
 import { useRouter } from 'next/navigation';
 import { useInterval } from '@/lib/hooks/useInterval';
+import { useAppointments } from '@/providers/AppointmentProvider';
+import { useQueryClient } from '@tanstack/react-query';
 import type { Appointment } from '@/types';
 import type { WeekDayData, WeekSummaryStats } from '@/lib/actions/dashboard';
 import {
@@ -48,6 +50,8 @@ export function AppointmentsFocus({
   },
 }: AppointmentsFocusProps) {
   const router = useRouter();
+  const { updateAppointment } = useAppointments();
+  const queryClient = useQueryClient();
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] =
@@ -202,10 +206,29 @@ export function AppointmentsFocus({
             setEditDialogOpen(false);
             setSelectedAppointment(null);
           }}
-          onUpdate={async () => {
-            // Handle update
-            setEditDialogOpen(false);
-            setSelectedAppointment(null);
+          onUpdate={async (data) => {
+            try {
+              await updateAppointment(selectedAppointment.id, {
+                id: selectedAppointment.id,
+                date: data.date,
+                startTime: data.startTime,
+                endTime: data.endTime,
+                type: data.type,
+                notes: data.notes || undefined,
+                sendEmail: data.sendEmail,
+              });
+
+              // Refresh dashboard data
+              await queryClient.invalidateQueries({
+                queryKey: ['appointments'],
+              });
+              await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+
+              setEditDialogOpen(false);
+              setSelectedAppointment(null);
+            } catch (error) {
+              console.error('Failed to update appointment:', error);
+            }
           }}
         />
       )}

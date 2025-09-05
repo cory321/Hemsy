@@ -248,27 +248,27 @@ export function AppointmentProvider({
   const updateAppointment = useCallback(
     async (id: string, data: UpdateAppointmentData) => {
       const currentAppointment = state.appointments.get(id);
-      if (!currentAppointment) {
-        toast.error('Appointment not found');
-        return;
+
+      // If appointment is not in state, we can still proceed with the update
+      // This happens when appointments are loaded via React Query on other pages
+      if (currentAppointment) {
+        // Optimistic update only if we have the appointment in state
+        const updates: Partial<Appointment> = {};
+        Object.entries(data).forEach(([key, value]) => {
+          if (value !== undefined) {
+            (updates as any)[key] = value;
+          }
+        });
+
+        dispatch({
+          type: AppointmentActionType.UPDATE_APPOINTMENT_OPTIMISTIC,
+          payload: {
+            id,
+            updates,
+            previousData: currentAppointment,
+          },
+        });
       }
-
-      // Optimistic update - filter out undefined values for exactOptionalPropertyTypes
-      const updates: Partial<Appointment> = {};
-      Object.entries(data).forEach(([key, value]) => {
-        if (value !== undefined) {
-          (updates as any)[key] = value;
-        }
-      });
-
-      dispatch({
-        type: AppointmentActionType.UPDATE_APPOINTMENT_OPTIMISTIC,
-        payload: {
-          id,
-          updates,
-          previousData: currentAppointment,
-        },
-      });
 
       try {
         const appointment = await updateAppointmentAction(data);
@@ -278,22 +278,27 @@ export function AppointmentProvider({
           payload: { appointment },
         });
 
-        // Only show toast for significant updates
+        // Always show toast for significant updates
         if (data.status || data.date || data.startTime) {
           toast.success('Appointment updated successfully');
         }
+
+        // Invalidate relevant queries to ensure UI updates
+        queryClient.invalidateQueries({ queryKey: ['appointments'] });
       } catch (error) {
-        dispatch({
-          type: AppointmentActionType.UPDATE_APPOINTMENT_ERROR,
-          payload: {
-            id,
-            previousData: currentAppointment,
-            error:
-              error instanceof Error
-                ? error.message
-                : 'Failed to update appointment',
-          },
-        });
+        if (currentAppointment) {
+          dispatch({
+            type: AppointmentActionType.UPDATE_APPOINTMENT_ERROR,
+            payload: {
+              id,
+              previousData: currentAppointment,
+              error:
+                error instanceof Error
+                  ? error.message
+                  : 'Failed to update appointment',
+            },
+          });
+        }
         toast.error(
           error instanceof Error
             ? error.message

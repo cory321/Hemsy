@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Box, Tab, Tabs } from '@mui/material';
-import ClientAppointmentsSection from '@/components/clients/ClientAppointmentsSection';
+import { ClientAppointmentsSectionV2 } from '@/components/clients/ClientAppointmentsSectionV2';
 import ClientOrdersSection from '@/components/clients/ClientOrdersSection';
 
 interface ClientDetailTabsProps {
@@ -68,7 +68,7 @@ export default function ClientDetailTabs({
       {activeTab === 'orders' ? (
         <ClientOrdersSection clientId={clientId} clientName={clientName} />
       ) : (
-        <ClientAppointmentsSection
+        <ClientAppointmentsSectionV2
           clientId={clientId}
           clientName={clientName}
           clientEmail={clientEmail ?? ''}

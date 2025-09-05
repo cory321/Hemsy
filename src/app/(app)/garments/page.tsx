@@ -1,6 +1,12 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, {
+  useState,
+  useCallback,
+  useMemo,
+  useEffect,
+  useRef,
+} from 'react';
 import { useAuth, useUser } from '@clerk/nextjs';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import {
@@ -22,6 +28,7 @@ import {
   Skeleton,
   Card,
   CardContent,
+  Fade,
 } from '@mui/material';
 import Grid2 from '@mui/material/Grid2';
 
@@ -74,6 +81,10 @@ export default function GarmentsPage() {
   const [shopId, setShopId] = useState<string | null>(null);
   const [shopLoaded, setShopLoaded] = useState(false);
 
+  // Track the last confirmed stage to prevent flicker
+  const lastConfirmedStageRef = useRef<string | null>(initialStage);
+  const [stageTransitionPending, setStageTransitionPending] = useState(false);
+
   const { userId } = useAuth();
   const { user } = useUser();
 
@@ -102,13 +113,17 @@ export default function GarmentsPage() {
   // Handle stage change with URL update
   const handleStageChange = useCallback(
     (stage: string | null) => {
+      // Mark that we're starting a stage transition
+      if (stage !== selectedStage) {
+        setStageTransitionPending(true);
+      }
       setSelectedStage(stage);
       updateUrlWithStage(stage);
       setSearch('');
     },
     // setSearch is not included as it's defined after this callback and is stable from the hook
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [updateUrlWithStage]
+    [updateUrlWithStage, selectedStage]
   );
 
   // Sync stage from URL params when they change
@@ -159,6 +174,7 @@ export default function GarmentsPage() {
     filters,
     setFilters,
     prefetchNextPage,
+    isPlaceholderData,
   } = useGarmentsSearch(
     shopId!,
     {
@@ -224,6 +240,21 @@ export default function GarmentsPage() {
     }
     return null;
   }, [filteredGarments, isGroupedByClient, sortOrder]);
+
+  // Update the confirmed stage and clear transition state when we have fresh data
+  useEffect(() => {
+    // Only update when we have fresh data for the current stage
+    if (!isFetching && !isPlaceholderData && stageTransitionPending) {
+      lastConfirmedStageRef.current = selectedStage;
+      setStageTransitionPending(false);
+    }
+  }, [isFetching, isPlaceholderData, selectedStage, stageTransitionPending]);
+
+  // Determine which stage name to display
+  // Key insight: Only change the displayed stage when we have the actual data for it
+  const displayedStage = stageTransitionPending
+    ? lastConfirmedStageRef.current // Keep showing old stage during transition
+    : selectedStage; // Show current stage when not transitioning
 
   // Don't show error until we've actually tried to load the shop
   if (!shopId && shopLoaded) {
@@ -342,9 +373,188 @@ export default function GarmentsPage() {
         </Box>
 
         {/* Garment Cards Grid */}
-        <Grid2 spacing={3} columns={{ xs: 4, sm: 8, md: 12, lg: 20 }}>
+        <Grid2 container spacing={3} columns={{ xs: 4, sm: 8, md: 12, lg: 20 }}>
           {Array.from({ length: 12 }).map((_, index) => (
-            <Grid2 size={4} key={index}>
+            <Grid2 size={{ xs: 4, sm: 4, md: 4, lg: 4 }} key={index}>
+              <Card
+                sx={{
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  borderTop: '4px solid',
+                  borderTopColor: 'divider',
+                }}
+              >
+                {/* Image Section Skeleton */}
+                <Box
+                  sx={{
+                    position: 'relative',
+                    paddingTop: '100%',
+                    bgcolor: 'grey.100',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      color: 'text.disabled',
+                      opacity: 1,
+                    }}
+                  >
+                    <i
+                      className="ri ri-t-shirt-line"
+                      style={{ fontSize: 128 }}
+                      aria-hidden
+                    />
+                  </Box>
+                </Box>
+
+                <CardContent sx={{ flexGrow: 1, p: 2 }}>
+                  {/* Garment Name */}
+                  <Skeleton
+                    variant="text"
+                    width="80%"
+                    height={28}
+                    sx={{ mb: 1 }}
+                  />
+
+                  {/* Client Name */}
+                  <Skeleton
+                    variant="text"
+                    width="60%"
+                    height={20}
+                    sx={{ mb: 1 }}
+                  />
+
+                  {/* Due Date Chip */}
+                  <Skeleton
+                    variant="rectangular"
+                    width={100}
+                    height={24}
+                    sx={{ borderRadius: 12, mb: 1 }}
+                  />
+
+                  {/* Price */}
+                  <Skeleton variant="text" width={60} height={24} />
+                </CardContent>
+              </Card>
+            </Grid2>
+          ))}
+        </Grid2>
+      </Box>
+    );
+  }
+
+  // Show loading skeleton while garments are loading (after shop is loaded)
+  if (isLoading && shopId) {
+    return (
+      <Box sx={{ p: 3 }}>
+        {/* Stage Selection Skeleton */}
+        <Box
+          sx={{
+            display: { xs: 'none', sm: 'flex' },
+            alignItems: 'center',
+            mb: 3,
+            gap: 2,
+          }}
+        >
+          {/* Stage Box Skeletons */}
+          {Array.from({ length: 7 }).map((_, index) => (
+            <Box
+              key={index}
+              sx={{ display: 'flex', alignItems: 'center', gap: 2 }}
+            >
+              <Paper
+                sx={{
+                  p: 2,
+                  textAlign: 'center',
+                  borderRadius: 2,
+                  minWidth: '120px',
+                  border: '2px solid',
+                  borderColor: 'divider',
+                }}
+              >
+                <Skeleton
+                  variant="text"
+                  width={40}
+                  height={40}
+                  sx={{ mx: 'auto', mb: 0.5 }}
+                />
+                <Skeleton
+                  variant="text"
+                  width={80}
+                  height={20}
+                  sx={{ mx: 'auto' }}
+                />
+              </Paper>
+              {index < 6 && (
+                <ArrowForwardIcon
+                  sx={{
+                    color: 'text.disabled',
+                    fontSize: 20,
+                  }}
+                />
+              )}
+            </Box>
+          ))}
+        </Box>
+
+        {/* Mobile Stage Dropdown Skeleton */}
+        <Box sx={{ display: { xs: 'block', sm: 'none' }, mb: 3 }}>
+          <Skeleton
+            variant="rectangular"
+            height={56}
+            sx={{ borderRadius: 1 }}
+          />
+        </Box>
+
+        {/* Search Bar Skeleton */}
+        <Box sx={{ mb: 2 }}>
+          <Skeleton
+            variant="rectangular"
+            height={56}
+            sx={{ borderRadius: 2 }}
+          />
+        </Box>
+
+        {/* Controls Skeleton */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mb: 3,
+            flexWrap: 'wrap',
+            gap: 2,
+          }}
+        >
+          {/* Heading */}
+          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+            <Skeleton variant="text" width={150} height={40} />
+            <Skeleton variant="text" width={80} height={24} />
+          </Box>
+
+          {/* Sort Controls */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Skeleton
+              variant="rectangular"
+              width={150}
+              height={40}
+              sx={{ borderRadius: 1 }}
+            />
+            <Skeleton variant="circular" width={32} height={32} />
+          </Box>
+        </Box>
+
+        {/* Garment Cards Grid */}
+        <Grid2 container spacing={3} columns={{ xs: 4, sm: 8, md: 12, lg: 20 }}>
+          {Array.from({ length: 12 }).map((_, index) => (
+            <Grid2 size={{ xs: 4, sm: 4, md: 4, lg: 4 }} key={index}>
               <Card
                 sx={{
                   height: '100%',
@@ -489,7 +699,127 @@ export default function GarmentsPage() {
         </FormControl>
       )}
 
-      {garments.length > 0 ? (
+      {/* Show skeleton when fetching stage data */}
+      {isFetching && !isPlaceholderData && !isFetchingNextPage && !search ? (
+        <>
+          {/* Search Bar Skeleton */}
+          <Box sx={{ mb: 2 }}>
+            <Skeleton
+              variant="rectangular"
+              height={56}
+              sx={{ borderRadius: 2 }}
+            />
+          </Box>
+
+          {/* Controls Skeleton */}
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              mb: 3,
+              flexWrap: 'wrap',
+              gap: 2,
+            }}
+          >
+            {/* Heading */}
+            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+              <Skeleton variant="text" width={150} height={40} />
+              <Skeleton variant="text" width={80} height={24} />
+            </Box>
+
+            {/* Sort Controls */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Skeleton
+                variant="rectangular"
+                width={150}
+                height={40}
+                sx={{ borderRadius: 1 }}
+              />
+              <Skeleton variant="circular" width={32} height={32} />
+            </Box>
+          </Box>
+
+          {/* Garment Cards Grid Skeleton */}
+          <Grid2
+            container
+            spacing={3}
+            columns={{ xs: 4, sm: 8, md: 12, lg: 20 }}
+          >
+            {Array.from({ length: 8 }).map((_, index) => (
+              <Grid2 size={{ xs: 4, sm: 4, md: 4, lg: 4 }} key={index}>
+                <Card
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    borderTop: '4px solid',
+                    borderTopColor: 'divider',
+                  }}
+                >
+                  {/* Image Section Skeleton */}
+                  <Box
+                    sx={{
+                      position: 'relative',
+                      paddingTop: '100%',
+                      bgcolor: 'grey.100',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        color: 'text.disabled',
+                        opacity: 1,
+                      }}
+                    >
+                      <i
+                        className="ri ri-t-shirt-line"
+                        style={{ fontSize: 128 }}
+                        aria-hidden
+                      />
+                    </Box>
+                  </Box>
+
+                  <CardContent sx={{ flexGrow: 1, p: 2 }}>
+                    {/* Garment Name */}
+                    <Skeleton
+                      variant="text"
+                      width="80%"
+                      height={28}
+                      sx={{ mb: 1 }}
+                    />
+
+                    {/* Client Name */}
+                    <Skeleton
+                      variant="text"
+                      width="60%"
+                      height={20}
+                      sx={{ mb: 1 }}
+                    />
+
+                    {/* Due Date Chip */}
+                    <Skeleton
+                      variant="rectangular"
+                      width={100}
+                      height={24}
+                      sx={{ borderRadius: 12, mb: 1 }}
+                    />
+
+                    {/* Price */}
+                    <Skeleton variant="text" width={60} height={24} />
+                  </CardContent>
+                </Card>
+              </Grid2>
+            ))}
+          </Grid2>
+        </>
+      ) : garments.length > 0 ? (
         <>
           {/* Search Bar */}
           <Box sx={{ mb: 2 }}>
@@ -545,7 +875,7 @@ export default function GarmentsPage() {
             {/* Heading */}
             <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
               <Typography variant="h4">
-                {selectedStage ? selectedStage : 'All Garments'}
+                {displayedStage ? displayedStage : 'All Garments'}
               </Typography>
               {totalCount !== undefined && (
                 <Typography variant="body2" color="text.secondary">
@@ -609,79 +939,86 @@ export default function GarmentsPage() {
           </Box>
 
           {/* Garments Grid */}
-          {isGroupedByClient && groupedData ? (
-            // Grouped view by client name
+          <Fade in={!isFetching || isPlaceholderData} timeout={300}>
             <Box>
-              {groupedData.sortedClientNames.map((clientName) => {
-                const clientGarments = groupedData.groups[clientName] || [];
-                return (
-                  <Box key={clientName} sx={{ mb: 4 }}>
-                    {/* Client Name Header */}
-                    <Box
-                      sx={{
-                        borderBottom: 2,
-                        borderColor: 'divider',
-                        pb: 1,
-                        mb: 2,
-                        display: 'flex',
-                        alignItems: 'baseline',
-                        gap: 1,
-                      }}
-                    >
-                      <Typography variant="h6" component="h2">
-                        {clientName}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        ({clientGarments.length} garment
-                        {clientGarments.length !== 1 ? 's' : ''})
-                      </Typography>
-                    </Box>
-
-                    {/* Garments for this client */}
-                    <Grid2
-                      container
-                      spacing={3}
-                      columns={{ xs: 4, sm: 8, md: 12, lg: 20 }}
-                    >
-                      {clientGarments.map((garment) => (
-                        <Grid2
-                          size={{ xs: 4, sm: 4, md: 4, lg: 4 }}
-                          key={garment.id}
+              {isGroupedByClient && groupedData ? (
+                // Grouped view by client name
+                <Box>
+                  {groupedData.sortedClientNames.map((clientName) => {
+                    const clientGarments = groupedData.groups[clientName] || [];
+                    return (
+                      <Box key={clientName} sx={{ mb: 4 }}>
+                        {/* Client Name Header */}
+                        <Box
+                          sx={{
+                            borderBottom: 2,
+                            borderColor: 'divider',
+                            pb: 1,
+                            mb: 2,
+                            display: 'flex',
+                            alignItems: 'baseline',
+                            gap: 1,
+                          }}
                         >
-                          <GarmentCard
-                            garment={garment}
-                            orderId={garment.order_id}
-                            stageColor={getStageColor(
-                              (garment.stage_name || 'New') as any
-                            )}
-                          />
+                          <Typography variant="h6" component="h2">
+                            {clientName}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            ({clientGarments.length} garment
+                            {clientGarments.length !== 1 ? 's' : ''})
+                          </Typography>
+                        </Box>
+
+                        {/* Garments for this client */}
+                        <Grid2
+                          container
+                          spacing={3}
+                          columns={{ xs: 4, sm: 8, md: 12, lg: 20 }}
+                        >
+                          {clientGarments.map((garment) => (
+                            <Grid2
+                              size={{ xs: 4, sm: 4, md: 4, lg: 4 }}
+                              key={garment.id}
+                            >
+                              <GarmentCard
+                                garment={garment}
+                                orderId={garment.order_id}
+                                stageColor={getStageColor(
+                                  (garment.stage_name || 'New') as any
+                                )}
+                              />
+                            </Grid2>
+                          ))}
                         </Grid2>
-                      ))}
+                      </Box>
+                    );
+                  })}
+                </Box>
+              ) : (
+                // Regular grid view
+                <Grid2
+                  container
+                  spacing={3}
+                  columns={{ xs: 4, sm: 8, md: 12, lg: 20 }}
+                >
+                  {filteredGarments.map((garment) => (
+                    <Grid2
+                      size={{ xs: 4, sm: 4, md: 4, lg: 4 }}
+                      key={garment.id}
+                    >
+                      <GarmentCard
+                        garment={garment}
+                        orderId={garment.order_id}
+                        stageColor={getStageColor(
+                          (garment.stage_name || 'New') as any
+                        )}
+                      />
                     </Grid2>
-                  </Box>
-                );
-              })}
-            </Box>
-          ) : (
-            // Regular grid view
-            <Grid2
-              container
-              spacing={3}
-              columns={{ xs: 4, sm: 8, md: 12, lg: 20 }}
-            >
-              {filteredGarments.map((garment) => (
-                <Grid2 size={{ xs: 4, sm: 4, md: 4, lg: 4 }} key={garment.id}>
-                  <GarmentCard
-                    garment={garment}
-                    orderId={garment.order_id}
-                    stageColor={getStageColor(
-                      (garment.stage_name || 'New') as any
-                    )}
-                  />
+                  ))}
                 </Grid2>
-              ))}
-            </Grid2>
-          )}
+              )}
+            </Box>
+          </Fade>
 
           {/* Infinite Scroll Trigger */}
           <InfiniteScrollTrigger

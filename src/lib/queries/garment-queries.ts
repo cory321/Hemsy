@@ -103,6 +103,7 @@ export function useGarmentsPaginated(options: UseGarmentsPaginatedOptions) {
     isFetchingNextPage: result.isFetchingNextPage,
     refetch: result.refetch,
     prefetchNextPage,
+    isPlaceholderData: result.isPlaceholderData,
   };
 }
 

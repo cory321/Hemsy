@@ -8,6 +8,7 @@ import GarmentImageSection from './GarmentImageSection';
 import GarmentRightColumnOptimistic from './GarmentRightColumnOptimistic';
 import ReadyForPickupBanner from '@/components/garments/ReadyForPickupBanner';
 import { useGarment } from '@/contexts/GarmentContext';
+import GarmentCompletionCelebration from '@/components/garments/GarmentCompletionCelebration';
 
 interface GarmentDetailContentProps {
   clientName: string;
@@ -42,6 +43,7 @@ export default function GarmentDetailContent({
 
   return (
     <>
+      <GarmentCompletionCelebration />
       {from === 'order' && orderId ? (
         <Box sx={{ mb: 2 }}>
           <Button

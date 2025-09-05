@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -121,57 +121,9 @@ export function AppointmentDetailsDialog({
     onEdit(appointment, true, true);
   };
 
-  // Mutation for updating appointment
-  const updateMutation = useMutation({
-    mutationFn: updateAppointmentRefactored,
-    onMutate: async (data) => {
-      // Optimistic update using reducer
-      const updates: Partial<Appointment> = {
-        id: appointment.id,
-        shop_id: appointment.shop_id,
-        client_id: appointment.client_id,
-        date: data.date || appointment.date,
-        start_time: data.startTime || appointment.start_time,
-        end_time: data.endTime || appointment.end_time,
-        type: data.type || appointment.type,
-        status: data.status || appointment.status,
-      };
-
-      // Only include notes if it's explicitly being updated
-      if (data.notes !== undefined) {
-        updates.notes = data.notes;
-      }
-
-      dispatch({
-        type: AppointmentActionType.UPDATE_APPOINTMENT_OPTIMISTIC,
-        payload: {
-          id: appointment.id,
-          updates,
-          previousData: appointment,
-        },
-      });
-    },
-    onSuccess: (updatedAppointment) => {
-      dispatch({
-        type: AppointmentActionType.UPDATE_APPOINTMENT_SUCCESS,
-        payload: {
-          appointment: updatedAppointment,
-        },
-      });
-      toast.success('Appointment updated successfully');
-    },
-    onError: (error, variables) => {
-      dispatch({
-        type: AppointmentActionType.UPDATE_APPOINTMENT_ERROR,
-        payload: {
-          id: appointment.id,
-          previousData: appointment,
-          error: error.message,
-        },
-      });
-      toast.error(error.message || 'Failed to update appointment');
-    },
-  });
+  // Use the updateAppointment from context which handles toasts and state management
+  const { updateAppointment: updateAppointmentFromContext } = useAppointments();
+  const [isUpdating, setIsUpdating] = useState(false);
 
   // Mutation for canceling appointment
   const cancelMutation = useMutation({
@@ -225,15 +177,15 @@ export function AppointmentDetailsDialog({
   const handleMarkNoShow = async () => {
     uiDispatch({ type: 'SET_ERROR', payload: null });
     uiDispatch({ type: 'SET_LOADING', payload: true });
+    setIsUpdating(true);
 
     try {
-      // Use refactored flow: update status and trigger email/logging via server action
-      await updateMutation.mutateAsync({
+      // Use the consolidated update function from context
+      await updateAppointmentFromContext(appointment.id, {
         id: appointment.id,
         status: 'no_show',
         sendEmail: true,
       });
-      toast.success('Marked as no-show');
       onClose();
     } catch (err) {
       uiDispatch({
@@ -243,42 +195,41 @@ export function AppointmentDetailsDialog({
       });
     } finally {
       uiDispatch({ type: 'SET_LOADING', payload: false });
+      setIsUpdating(false);
     }
   };
 
   const handleSaveNotes = async () => {
     uiDispatch({ type: 'SET_SAVING_NOTES', payload: true });
+    setIsUpdating(true);
 
-    updateMutation.mutate(
-      {
+    try {
+      await updateAppointmentFromContext(appointment.id, {
         id: appointment.id,
         notes: ui.editedNotes || undefined,
-      },
-      {
-        onSuccess: () => {
-          uiDispatch({
-            type: 'SET_CURRENT_NOTES',
-            payload: ui.editedNotes || null,
-          });
-          uiDispatch({ type: 'SET_EDITING_NOTES', payload: false });
-          uiDispatch({ type: 'SET_SAVING_NOTES', payload: false });
-        },
-        onError: (err) => {
-          uiDispatch({ type: 'SET_SAVING_NOTES', payload: false });
-          uiDispatch({
-            type: 'SET_ERROR',
-            payload: err.message || 'Failed to update',
-          });
-        },
-      }
-    );
+      });
+      uiDispatch({
+        type: 'SET_CURRENT_NOTES',
+        payload: ui.editedNotes || null,
+      });
+      uiDispatch({ type: 'SET_EDITING_NOTES', payload: false });
+    } catch (err) {
+      uiDispatch({
+        type: 'SET_ERROR',
+        payload: err instanceof Error ? err.message : 'Failed to update',
+      });
+    } finally {
+      uiDispatch({ type: 'SET_SAVING_NOTES', payload: false });
+      setIsUpdating(false);
+    }
   };
 
   const handleSaveType = async () => {
     uiDispatch({ type: 'SET_SAVING_TYPE', payload: true });
+    setIsUpdating(true);
 
-    updateMutation.mutate(
-      {
+    try {
+      await updateAppointmentFromContext(appointment.id, {
         id: appointment.id,
         type: ui.editedType as
           | 'consultation'
@@ -286,18 +237,18 @@ export function AppointmentDetailsDialog({
           | 'pickup'
           | 'delivery'
           | 'other',
-      },
-      {
-        onSuccess: () => {
-          uiDispatch({ type: 'SET_CURRENT_TYPE', payload: ui.editedType });
-          uiDispatch({ type: 'SET_EDITING_TYPE', payload: false });
-          uiDispatch({ type: 'SET_SAVING_TYPE', payload: false });
-        },
-        onError: () => {
-          uiDispatch({ type: 'SET_SAVING_TYPE', payload: false });
-        },
-      }
-    );
+      });
+      uiDispatch({ type: 'SET_CURRENT_TYPE', payload: ui.editedType });
+      uiDispatch({ type: 'SET_EDITING_TYPE', payload: false });
+    } catch (err) {
+      uiDispatch({
+        type: 'SET_ERROR',
+        payload: err instanceof Error ? err.message : 'Failed to update',
+      });
+    } finally {
+      uiDispatch({ type: 'SET_SAVING_TYPE', payload: false });
+      setIsUpdating(false);
+    }
   };
 
   const handleCancelEditNotes = () => {
@@ -668,7 +619,7 @@ export function AppointmentDetailsDialog({
                         });
                         uiDispatch({ type: 'SET_EDITING_TYPE', payload: true });
                       }}
-                      disabled={ui.loading || updateMutation.isPending}
+                      disabled={ui.loading || isUpdating}
                       sx={{
                         color: 'primary.main',
                         '&:hover': {
@@ -1000,7 +951,7 @@ export function AppointmentDetailsDialog({
               uiDispatch({ type: 'RESET_MESSAGES' });
               onClose();
             }}
-            disabled={updateMutation.isPending || cancelMutation.isPending}
+            disabled={isUpdating || cancelMutation.isPending}
             sx={{
               color: 'text.secondary',
               borderRadius: 2,
@@ -1028,18 +979,14 @@ export function AppointmentDetailsDialog({
                 <Button
                   variant="contained"
                   startIcon={
-                    updateMutation.isPending ? (
+                    isUpdating ? (
                       <CircularProgress size={18} color="inherit" />
                     ) : (
                       <RemixIcon name="ri-edit-line" size={18} />
                     )
                   }
                   onClick={handleEditClick}
-                  disabled={
-                    updateMutation.isPending ||
-                    cancelMutation.isPending ||
-                    isPast
-                  }
+                  disabled={isUpdating || cancelMutation.isPending || isPast}
                   sx={{
                     borderRadius: 2,
                     py: 1.5,
@@ -1071,11 +1018,7 @@ export function AppointmentDetailsDialog({
                     )
                   }
                   onClick={handleCancelClick}
-                  disabled={
-                    updateMutation.isPending ||
-                    cancelMutation.isPending ||
-                    isPast
-                  }
+                  disabled={isUpdating || cancelMutation.isPending || isPast}
                   sx={{
                     borderRadius: 2,
                     py: 1.5,
@@ -1104,7 +1047,7 @@ export function AppointmentDetailsDialog({
                       <RemixIcon name="ri-user-unfollow-line" size={18} />
                     }
                     onClick={handleMarkNoShow}
-                    disabled={ui.loading || updateMutation.isPending}
+                    disabled={ui.loading || isUpdating}
                     sx={{
                       borderRadius: 2,
                       py: 1.5,
