@@ -16,6 +16,7 @@ export interface ClientsFilters {
   search?: string;
   sortBy?: 'name' | 'created_at' | 'updated_at';
   sortOrder?: 'asc' | 'desc';
+  includeArchived?: boolean;
 }
 
 export async function getClients(
@@ -31,6 +32,11 @@ export async function getClients(
     .from('clients')
     .select('*', { count: 'exact' })
     .eq('shop_id', shop.id);
+
+  // Filter archived clients unless explicitly requested
+  if (!filters?.includeArchived) {
+    query = query.eq('is_archived', false);
+  }
 
   // Apply search filter
   if (filters?.search) {
@@ -227,26 +233,52 @@ export async function updateClient(
   }
 }
 
-export async function deleteClient(clientId: string): Promise<void> {
-  await ensureUserAndShop(); // Ensure user exists but we don't need shop for this delete
+export async function archiveClient(clientId: string): Promise<void> {
+  const { user } = await ensureUserAndShop();
   const supabase = await createSupabaseClient();
 
-  const { error } = await supabase.from('clients').delete().eq('id', clientId);
+  const { error } = await supabase.rpc('archive_client', {
+    p_client_id: clientId,
+    p_user_id: user.id,
+  });
 
   if (error) {
-    throw new Error(`Failed to delete client: ${error.message}`);
+    throw new Error(`Failed to archive client: ${error.message}`);
   }
 }
 
-export async function getAllClients(): Promise<Tables<'clients'>[]> {
+export async function restoreClient(clientId: string): Promise<void> {
+  await ensureUserAndShop();
+  const supabase = await createSupabaseClient();
+
+  const { error } = await supabase.rpc('restore_client', {
+    p_client_id: clientId,
+  });
+
+  if (error) {
+    throw new Error(`Failed to restore client: ${error.message}`);
+  }
+}
+
+// Kept for backwards compatibility - redirects to archiveClient
+export async function deleteClient(clientId: string): Promise<void> {
+  return archiveClient(clientId);
+}
+
+export async function getAllClients(
+  includeArchived = false
+): Promise<Tables<'clients'>[]> {
   const { shop } = await ensureUserAndShop();
   const supabase = await createSupabaseClient();
 
-  const { data, error } = await supabase
-    .from('clients')
-    .select('*')
-    .eq('shop_id', shop.id)
-    .order('first_name', { ascending: true });
+  let query = supabase.from('clients').select('*').eq('shop_id', shop.id);
+
+  // Filter archived clients unless explicitly requested
+  if (!includeArchived) {
+    query = query.eq('is_archived', false);
+  }
+
+  const { data, error } = await query.order('first_name', { ascending: true });
 
   if (error) {
     throw new Error(`Failed to fetch clients: ${error.message}`);
@@ -290,14 +322,18 @@ export async function getClientOrders(clientId: string) {
 }
 
 export async function searchClients(
-  searchTerm: string
+  searchTerm: string,
+  includeArchived = false
 ): Promise<Tables<'clients'>[]> {
   if (!searchTerm || searchTerm.trim().length === 0) {
     return [];
   }
 
   try {
-    const result = await getClients(1, 10, { search: searchTerm });
+    const result = await getClients(1, 10, {
+      search: searchTerm,
+      includeArchived,
+    });
     return result.data;
   } catch (error) {
     console.error('Error searching clients:', error);
@@ -325,6 +361,7 @@ export async function getRecentClients(
       `
       )
       .eq('shop_id', shop.id)
+      .eq('is_archived', false) // Exclude archived clients
       .order('orders.created_at', { ascending: false })
       .limit(limit * 2); // Get more to handle duplicates
 
@@ -335,6 +372,7 @@ export async function getRecentClients(
         .from('clients')
         .select('*')
         .eq('shop_id', shop.id)
+        .eq('is_archived', false) // Exclude archived clients
         .order('created_at', { ascending: false })
         .limit(limit);
 
@@ -433,6 +471,33 @@ export async function getClientOutstandingBalance(
     return totalOutstanding;
   } catch (error) {
     console.error('Error getting client outstanding balance:', error);
+    return 0;
+  }
+}
+
+/**
+ * Gets the count of archived clients for a shop.
+ * Used to determine whether to show the "Show Archived" toggle.
+ */
+export async function getArchivedClientsCount(): Promise<number> {
+  try {
+    const { shop } = await ensureUserAndShop();
+    const supabase = await createSupabaseClient();
+
+    const { count, error } = await supabase
+      .from('clients')
+      .select('*', { count: 'exact', head: true })
+      .eq('shop_id', shop.id)
+      .eq('is_archived', true);
+
+    if (error) {
+      console.error('Failed to get archived clients count:', error);
+      return 0;
+    }
+
+    return count || 0;
+  } catch (error) {
+    console.error('Error getting archived clients count:', error);
     return 0;
   }
 }

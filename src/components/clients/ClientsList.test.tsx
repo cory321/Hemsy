@@ -15,6 +15,18 @@ jest.mock('@/hooks/useDebounce', () => ({
   useDebounce: (value: any) => value,
 }));
 
+// Mock formatPhoneNumber utility
+jest.mock('@/lib/utils/phone', () => ({
+  formatPhoneNumber: (phone: string) => {
+    if (!phone) return '';
+    const cleaned = phone.replace(/\D/g, '');
+    if (cleaned.length === 10) {
+      return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+    }
+    return phone;
+  },
+}));
+
 describe('ClientsList', () => {
   const mockPush = jest.fn();
   const mockGetClientsAction = jest.fn();
@@ -67,6 +79,7 @@ describe('ClientsList', () => {
       <ClientsList
         initialData={mockInitialData}
         getClientsAction={mockGetClientsAction}
+        archivedClientsCount={0}
       />
     );
 
@@ -83,6 +96,7 @@ describe('ClientsList', () => {
       <ClientsList
         initialData={mockInitialData}
         getClientsAction={mockGetClientsAction}
+        archivedClientsCount={0}
       />
     );
 
@@ -97,6 +111,7 @@ describe('ClientsList', () => {
       <ClientsList
         initialData={mockInitialData}
         getClientsAction={mockGetClientsAction}
+        archivedClientsCount={0}
       />
     );
 
@@ -111,6 +126,7 @@ describe('ClientsList', () => {
       <ClientsList
         initialData={mockInitialData}
         getClientsAction={mockGetClientsAction}
+        archivedClientsCount={0}
       />
     );
 
@@ -131,6 +147,7 @@ describe('ClientsList', () => {
       <ClientsList
         initialData={mockInitialData}
         getClientsAction={mockGetClientsAction}
+        archivedClientsCount={0}
       />
     );
 
@@ -144,6 +161,7 @@ describe('ClientsList', () => {
         search: 'john',
         sortBy: 'created_at',
         sortOrder: 'desc',
+        includeArchived: false,
       });
     });
   });
@@ -159,6 +177,7 @@ describe('ClientsList', () => {
       <ClientsList
         initialData={paginatedData}
         getClientsAction={mockGetClientsAction}
+        archivedClientsCount={0}
       />
     );
 
@@ -170,7 +189,11 @@ describe('ClientsList', () => {
       expect(mockGetClientsAction).toHaveBeenCalledWith(
         2,
         10,
-        expect.any(Object)
+        expect.objectContaining({
+          sortBy: 'created_at',
+          sortOrder: 'desc',
+          includeArchived: false,
+        })
       );
     });
   });
@@ -180,6 +203,7 @@ describe('ClientsList', () => {
       <ClientsList
         initialData={mockInitialData}
         getClientsAction={mockGetClientsAction}
+        archivedClientsCount={0}
       />
     );
 
@@ -194,7 +218,11 @@ describe('ClientsList', () => {
       expect(mockGetClientsAction).toHaveBeenCalledWith(
         1,
         25,
-        expect.any(Object)
+        expect.objectContaining({
+          sortBy: 'created_at',
+          sortOrder: 'desc',
+          includeArchived: false,
+        })
       );
     });
   });
@@ -222,6 +250,7 @@ describe('ClientsList', () => {
       <ClientsList
         initialData={emptyData}
         getClientsAction={mockGetClientsAction}
+        archivedClientsCount={0}
       />
     );
 
@@ -241,6 +270,7 @@ describe('ClientsList', () => {
       <ClientsList
         initialData={mockInitialData}
         getClientsAction={mockGetClientsAction}
+        archivedClientsCount={0}
       />
     );
 
@@ -249,6 +279,7 @@ describe('ClientsList', () => {
       <ClientsList
         initialData={emptySearchData}
         getClientsAction={mockGetClientsAction}
+        archivedClientsCount={0}
       />
     );
 
@@ -261,5 +292,119 @@ describe('ClientsList', () => {
     expect(
       screen.getByText('No clients found matching your search')
     ).toBeInTheDocument();
+  });
+
+  it('shows archive toggle when there are archived clients', async () => {
+    render(
+      <ClientsList
+        initialData={mockInitialData}
+        getClientsAction={mockGetClientsAction}
+        archivedClientsCount={3}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Show Archived')).toBeInTheDocument();
+    });
+  });
+
+  it('hides archive toggle when there are no archived clients', async () => {
+    render(
+      <ClientsList
+        initialData={mockInitialData}
+        getClientsAction={mockGetClientsAction}
+        archivedClientsCount={0}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByLabelText('Show Archived')).not.toBeInTheDocument();
+    });
+  });
+
+  it('handles archive toggle change', async () => {
+    const user = userEvent.setup();
+    render(
+      <ClientsList
+        initialData={mockInitialData}
+        getClientsAction={mockGetClientsAction}
+        archivedClientsCount={3}
+      />
+    );
+
+    const archiveToggle = screen.getByLabelText('Show Archived');
+    await user.click(archiveToggle);
+
+    await waitFor(() => {
+      expect(mockGetClientsAction).toHaveBeenCalledWith(1, 10, {
+        search: '',
+        sortBy: 'created_at',
+        sortOrder: 'desc',
+        includeArchived: true,
+      });
+    });
+  });
+
+  it('displays archived client with visual indicators when showing archived', async () => {
+    const user = userEvent.setup();
+
+    // Start with data that has an archived client
+    const dataWithArchivedClient = {
+      ...mockInitialData,
+      data: [
+        {
+          id: 'client3',
+          shop_id: 'shop1',
+          first_name: 'Archived',
+          last_name: 'Client',
+          email: 'archived@example.com',
+          phone_number: '5551111111',
+          accept_email: true,
+          accept_sms: false,
+          notes: null,
+          mailing_address: null,
+          created_at: '2024-01-03T00:00:00Z',
+          updated_at: '2024-01-03T00:00:00Z',
+          is_archived: true,
+          archived_at: '2024-01-04T00:00:00Z',
+          archived_by: 'user1',
+        } as any,
+      ],
+    };
+
+    // Mock to return archived data when includeArchived is true
+    mockGetClientsAction.mockImplementation(
+      async (_page, _pageSize, filters) => {
+        if (filters?.includeArchived) {
+          return dataWithArchivedClient;
+        }
+        return mockInitialData;
+      }
+    );
+
+    render(
+      <ClientsList
+        initialData={mockInitialData}
+        getClientsAction={mockGetClientsAction}
+        archivedClientsCount={1}
+      />
+    );
+
+    // Click the archive toggle to show archived clients
+    const archiveToggle = screen.getByLabelText('Show Archived');
+    await user.click(archiveToggle);
+
+    // Wait for the checkbox to be checked and data to load
+    await waitFor(() => {
+      expect(archiveToggle).toBeChecked();
+    });
+
+    // Check for the archived client
+    await waitFor(() => {
+      expect(screen.getByText('Archived Client')).toBeInTheDocument();
+    });
+
+    // Check for the archived chip
+    expect(screen.getByText('Archived')).toBeInTheDocument();
   });
 });

@@ -1991,6 +1991,14 @@ export type Database = {
         Args: { p_order_id: string };
         Returns: undefined;
       };
+      archive_client: {
+        Args: { p_client_id: string; p_user_id: string };
+        Returns: undefined;
+      };
+      restore_client: {
+        Args: { p_client_id: string };
+        Returns: undefined;
+      };
     };
     Enums: {
       appointment_status:

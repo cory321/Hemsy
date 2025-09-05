@@ -74,8 +74,8 @@ jest.mock('@/components/clients/ClientEditDialog', () => {
   };
 });
 
-jest.mock('@/components/clients/ClientDeleteDialog', () => {
-  return function MockClientDeleteDialog({
+jest.mock('@/components/clients/ClientArchiveDialog', () => {
+  return function MockClientArchiveDialog({
     children,
   }: {
     children: React.ReactNode;

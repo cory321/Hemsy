@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 
 import ClientCreateDialog from '@/components/clients/ClientCreateDialog';
 import ClientEditDialog from '@/components/clients/ClientEditDialog';
-import ClientDeleteDialog from '@/components/clients/ClientDeleteDialog';
+import ClientArchiveDialog from '@/components/clients/ClientArchiveDialog';
 import PresetGarmentIconModal from '@/components/orders/PresetGarmentIconModal';
 
 describe('Dialog close icon presence', () => {
@@ -46,14 +46,14 @@ describe('Dialog close icon presence', () => {
     expect(closeBtn).toBeInTheDocument();
   });
 
-  it('ClientDeleteDialog shows a close icon in the title when opened', () => {
+  it('ClientArchiveDialog shows a close icon in the title when opened', () => {
     render(
-      <ClientDeleteDialog clientId="c1" clientName="Test Client">
-        <button>Open Delete</button>
-      </ClientDeleteDialog>
+      <ClientArchiveDialog clientId="c1" clientName="Test Client">
+        <button>Open Archive</button>
+      </ClientArchiveDialog>
     );
 
-    fireEvent.click(screen.getByText('Open Delete'));
+    fireEvent.click(screen.getByText('Open Archive'));
     const closeBtn = screen.getByRole('button', { name: /close/i });
     expect(closeBtn).toBeInTheDocument();
   });

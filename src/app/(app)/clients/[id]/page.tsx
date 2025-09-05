@@ -17,6 +17,7 @@ import PhoneIcon from '@mui/icons-material/Phone';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import NotesIcon from '@mui/icons-material/Notes';
 import PersonIcon from '@mui/icons-material/Person';
+import ArchiveIcon from '@mui/icons-material/Archive';
 import {
   getClient,
   getClientActiveOrdersCount,
@@ -29,7 +30,8 @@ import {
   getClientReadyForPickupCount,
 } from '@/lib/actions/appointments';
 import ClientEditDialog from '@/components/clients/ClientEditDialog';
-import ClientDeleteDialog from '@/components/clients/ClientDeleteDialog';
+import ClientArchiveDialog from '@/components/clients/ClientArchiveDialog';
+import ClientRestoreButton from '@/components/clients/ClientRestoreButton';
 import ClientOrdersSection from '@/components/clients/ClientOrdersSection';
 import ClientDetailTabs from '@/components/clients/ClientDetailTabs';
 import ClientProfileCard, {
@@ -129,21 +131,40 @@ export default async function ClientDetailPage({
               <Typography variant="h4" component="h1">
                 Client Details
               </Typography>
+              {(client as any).is_archived && (
+                <Chip
+                  icon={<ArchiveIcon />}
+                  label="Archived"
+                  color="default"
+                  size="medium"
+                />
+              )}
             </Box>
             <Box sx={{ display: 'flex', gap: 1 }}>
-              <ClientEditDialog client={client}>
-                <IconButton color="primary" size="large">
-                  <EditIcon />
-                </IconButton>
-              </ClientEditDialog>
-              <ClientDeleteDialog
-                clientId={client.id}
-                clientName={`${client.first_name} ${client.last_name}`}
-              >
-                <IconButton color="error" size="large">
-                  <DeleteIcon />
-                </IconButton>
-              </ClientDeleteDialog>
+              {(client as any).is_archived ? (
+                <ClientRestoreButton
+                  clientId={client.id}
+                  clientName={`${client.first_name} ${client.last_name}`}
+                  variant="contained"
+                  size="medium"
+                />
+              ) : (
+                <>
+                  <ClientEditDialog client={client}>
+                    <IconButton color="primary" size="large">
+                      <EditIcon />
+                    </IconButton>
+                  </ClientEditDialog>
+                  <ClientArchiveDialog
+                    clientId={client.id}
+                    clientName={`${client.first_name} ${client.last_name}`}
+                  >
+                    <IconButton color="warning" size="large">
+                      <ArchiveIcon />
+                    </IconButton>
+                  </ClientArchiveDialog>
+                </>
+              )}
             </Box>
           </Box>
 

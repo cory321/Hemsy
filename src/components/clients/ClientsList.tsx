@@ -18,9 +18,13 @@ import {
   Typography,
   Alert,
   Skeleton,
+  FormControlLabel,
+  Checkbox,
+  Chip,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import ArchiveIcon from '@mui/icons-material/Archive';
 import { useRouter } from 'next/navigation';
 import { useDebounce } from '@/hooks/useDebounce';
 import { formatPhoneNumber } from '@/lib/utils/phone';
@@ -38,16 +42,16 @@ interface ClientsListProps {
   initialData: PaginatedClients;
   getClientsAction: (
     page: number,
-
     pageSize: number,
-
     filters?: ClientsFilters
   ) => Promise<PaginatedClients>;
+  archivedClientsCount: number;
 }
 
 export default function ClientsList({
   initialData,
   getClientsAction,
+  archivedClientsCount,
 }: ClientsListProps) {
   const router = useRouter();
   const [data, setData] = useState<PaginatedClients>(initialData);
@@ -57,6 +61,7 @@ export default function ClientsList({
   const [page, setPage] = useState(initialData.page - 1);
   const [rowsPerPage, setRowsPerPage] = useState(initialData.pageSize);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [showArchived, setShowArchived] = useState(false);
 
   const debouncedSearch = useDebounce(search, 300);
   const getClientsActionRef = useRef(getClientsAction);
@@ -80,6 +85,7 @@ export default function ClientsList({
           search: debouncedSearch,
           sortBy: 'created_at',
           sortOrder: 'desc',
+          includeArchived: showArchived,
         };
         const result = await getClientsActionRef.current(
           page + 1,
@@ -97,7 +103,14 @@ export default function ClientsList({
     };
 
     fetchData();
-  }, [page, rowsPerPage, debouncedSearch, isInitialLoad, getClientsAction]);
+  }, [
+    page,
+    rowsPerPage,
+    debouncedSearch,
+    isInitialLoad,
+    getClientsAction,
+    showArchived,
+  ]);
 
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
@@ -118,22 +131,38 @@ export default function ClientsList({
 
   return (
     <Box>
-      {/* Search Bar */}
-      <TextField
-        fullWidth
-        variant="outlined"
-        placeholder="Search by name, email, or phone..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        sx={{ mb: 3 }}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <SearchIcon />
-            </InputAdornment>
-          ),
-        }}
-      />
+      {/* Search Bar and Archive Toggle */}
+      <Box sx={{ display: 'flex', gap: 2, mb: 3, alignItems: 'center' }}>
+        <TextField
+          fullWidth
+          variant="outlined"
+          placeholder="Search by name, email, or phone..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+          }}
+        />
+        {archivedClientsCount > 0 && (
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={showArchived}
+                onChange={(e) => {
+                  setShowArchived(e.target.checked);
+                  setPage(0); // Reset to first page when toggling
+                }}
+              />
+            }
+            label="Show Archived"
+            sx={{ flexShrink: 0 }}
+          />
+        )}
+      </Box>
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -197,7 +226,10 @@ export default function ClientsList({
                 <TableRow
                   key={client.id}
                   hover
-                  sx={{ cursor: 'pointer' }}
+                  sx={{
+                    cursor: 'pointer',
+                    opacity: (client as any).is_archived ? 0.7 : 1,
+                  }}
                   onClick={() => handleRowClick(client.id)}
                 >
                   <TableCell>
@@ -206,7 +238,9 @@ export default function ClientsList({
                         sx={{
                           width: 40,
                           height: 40,
-                          bgcolor: 'primary.main',
+                          bgcolor: (client as any).is_archived
+                            ? 'grey.400'
+                            : 'primary.main',
                           color: 'primary.contrastText',
                           fontSize: '0.9rem',
                           fontWeight: 600,
@@ -214,9 +248,20 @@ export default function ClientsList({
                       >
                         {getClientInitials(client.first_name, client.last_name)}
                       </Avatar>
-                      <Typography variant="body2">
-                        {client.first_name} {client.last_name}
-                      </Typography>
+                      <Box>
+                        <Typography variant="body2">
+                          {client.first_name} {client.last_name}
+                        </Typography>
+                        {(client as any).is_archived && (
+                          <Chip
+                            icon={<ArchiveIcon />}
+                            label="Archived"
+                            size="small"
+                            color="default"
+                            sx={{ mt: 0.5 }}
+                          />
+                        )}
+                      </Box>
                     </Box>
                   </TableCell>
                   <TableCell>{client.email}</TableCell>

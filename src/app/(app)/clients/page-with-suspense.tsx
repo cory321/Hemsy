@@ -1,7 +1,7 @@
 import { Container, Typography, Box } from '@mui/material';
 import { Suspense } from 'react';
 import ClientsList from '@/components/clients/ClientsList';
-import { getClients } from '@/lib/actions/clients';
+import { getClients, getArchivedClientsCount } from '@/lib/actions/clients';
 import AddClientCtas from '@/components/clients/AddClientCtas';
 import { SkeletonList } from '@/components/ui/Skeleton';
 
@@ -10,10 +10,17 @@ export const dynamic = 'force-dynamic';
 
 // Async component that fetches data
 async function ClientsData() {
-  const initialData = await getClients(1, 10);
+  const [initialData, archivedCount] = await Promise.all([
+    getClients(1, 10),
+    getArchivedClientsCount(),
+  ]);
 
   return (
-    <ClientsList initialData={initialData} getClientsAction={getClients} />
+    <ClientsList
+      initialData={initialData}
+      getClientsAction={getClients}
+      archivedClientsCount={archivedCount}
+    />
   );
 }
 

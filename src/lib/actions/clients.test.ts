@@ -3,9 +3,12 @@ import {
   createClient,
   updateClient,
   deleteClient,
+  archiveClient,
+  restoreClient,
   searchClients,
   getClientActiveOrdersCount,
   getClientOutstandingBalance,
+  getArchivedClientsCount,
 } from './clients';
 import { createClient as createSupabaseClient } from '@/lib/supabase/server';
 import { ensureUserAndShop } from './users';
@@ -26,6 +29,7 @@ const mockSupabase = {
   update: jest.fn().mockReturnThis(),
   delete: jest.fn().mockReturnThis(),
   in: jest.fn().mockReturnThis(),
+  rpc: jest.fn(),
 };
 
 const mockEnsureUserAndShop = ensureUserAndShop as jest.MockedFunction<
@@ -406,7 +410,7 @@ describe('Client Actions', () => {
   });
 
   describe('deleteClient', () => {
-    it('should delete a client', async () => {
+    it('should archive a client (backwards compatibility)', async () => {
       mockEnsureUserAndShop.mockResolvedValue({
         user: {
           id: 'user_123',
@@ -442,14 +446,16 @@ describe('Client Actions', () => {
         },
       });
 
-      mockSupabase.eq.mockResolvedValue({
+      mockSupabase.rpc.mockResolvedValue({
         error: null,
       });
 
       await deleteClient('client_123');
 
-      expect(mockSupabase.delete).toHaveBeenCalled();
-      expect(mockSupabase.eq).toHaveBeenCalledWith('id', 'client_123');
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('archive_client', {
+        p_client_id: 'client_123',
+        p_user_id: 'user_123',
+      });
     });
   });
 
@@ -492,40 +498,31 @@ describe('Client Actions', () => {
         },
       ];
 
-      mockSupabase.from.mockReturnValue({
-        select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            or: jest.fn().mockReturnValue({
-              order: jest.fn().mockReturnValue({
-                range: jest.fn().mockResolvedValue({
-                  data: mockClients,
-                  error: null,
-                  count: 2,
-                }),
-              }),
-            }),
-          }),
-        }),
+      mockEnsureUserAndShop.mockResolvedValue({
+        user: { id: 'user_123' },
+        shop: { id: 'shop_123' },
+      } as any);
+
+      // Mock the full chain for getClients (which searchClients calls internally)
+      mockSupabase.range.mockResolvedValue({
+        data: mockClients,
+        error: null,
+        count: 2,
       });
 
       const result = await searchClients('john');
 
       expect(result).toEqual(mockClients);
-      expect(mockSupabase.from).toHaveBeenCalledWith('clients');
     });
 
     it('should handle search errors gracefully', async () => {
-      mockSupabase.from.mockReturnValue({
-        select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            or: jest.fn().mockReturnValue({
-              order: jest.fn().mockReturnValue({
-                range: jest.fn().mockRejectedValue(new Error('Search failed')),
-              }),
-            }),
-          }),
-        }),
-      });
+      mockEnsureUserAndShop.mockResolvedValue({
+        user: { id: 'user_123' },
+        shop: { id: 'shop_123' },
+      } as any);
+
+      // Mock the getClients call to throw an error
+      mockSupabase.range.mockRejectedValue(new Error('Search failed'));
 
       const result = await searchClients('test');
 
@@ -869,6 +866,468 @@ describe('Client Actions', () => {
       const result = await getClientOutstandingBalance('client_123');
 
       expect(result).toBe(15000); // $0 + $80 + $70 = $150 in cents
+    });
+  });
+
+  describe('archiveClient', () => {
+    it('should archive a client using RPC function', async () => {
+      mockEnsureUserAndShop.mockResolvedValue({
+        user: {
+          id: 'user_123',
+          clerk_user_id: 'clerk_123',
+          email: 'test@example.com',
+          role: 'user',
+          first_name: 'Test',
+          last_name: 'User',
+          created_at: '2024-01-01T00:00:00Z',
+          updated_at: '2024-01-01T00:00:00Z',
+          timezone: 'America/New_York',
+          timezone_offset: -300,
+        },
+        shop: {
+          id: 'shop_123',
+          owner_user_id: 'user_123',
+          name: 'Test Shop',
+          business_name: 'Test Shop LLC',
+          email: 'shop@example.com',
+          phone_number: '555-0123',
+          mailing_address: '123 Test St',
+          location_type: 'shop_location',
+          tax_percent: 0,
+          buffer_time_minutes: 15,
+          trial_countdown_enabled: false,
+          trial_end_date: null,
+          working_hours: null,
+          created_at: '2024-01-01T00:00:00Z',
+          updated_at: '2024-01-01T00:00:00Z',
+          onboarding_completed: true,
+          timezone: 'America/New_York',
+          timezone_offset: -300,
+        },
+      });
+
+      mockSupabase.rpc.mockResolvedValue({
+        error: null,
+      });
+
+      await archiveClient('client_123');
+
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('archive_client', {
+        p_client_id: 'client_123',
+        p_user_id: 'user_123',
+      });
+    });
+
+    it('should throw error when archive fails', async () => {
+      mockEnsureUserAndShop.mockResolvedValue({
+        user: {
+          id: 'user_123',
+          clerk_user_id: 'clerk_123',
+          email: 'test@example.com',
+          role: 'user',
+          first_name: 'Test',
+          last_name: 'User',
+          created_at: '2024-01-01T00:00:00Z',
+          updated_at: '2024-01-01T00:00:00Z',
+          timezone: 'America/New_York',
+          timezone_offset: -300,
+        },
+        shop: {
+          id: 'shop_123',
+          owner_user_id: 'user_123',
+          name: 'Test Shop',
+          business_name: 'Test Shop LLC',
+          email: 'shop@example.com',
+          phone_number: '555-0123',
+          mailing_address: '123 Test St',
+          location_type: 'shop_location',
+          tax_percent: 0,
+          buffer_time_minutes: 15,
+          trial_countdown_enabled: false,
+          trial_end_date: null,
+          working_hours: null,
+          created_at: '2024-01-01T00:00:00Z',
+          updated_at: '2024-01-01T00:00:00Z',
+          onboarding_completed: true,
+          timezone: 'America/New_York',
+          timezone_offset: -300,
+        },
+      });
+
+      mockSupabase.rpc.mockResolvedValue({
+        error: { message: 'Client not found or already archived' },
+      });
+
+      await expect(archiveClient('client_123')).rejects.toThrow(
+        'Failed to archive client: Client not found or already archived'
+      );
+    });
+  });
+
+  describe('restoreClient', () => {
+    it('should restore an archived client using RPC function', async () => {
+      mockEnsureUserAndShop.mockResolvedValue({
+        user: {
+          id: 'user_123',
+          clerk_user_id: 'clerk_123',
+          email: 'test@example.com',
+          role: 'user',
+          first_name: 'Test',
+          last_name: 'User',
+          created_at: '2024-01-01T00:00:00Z',
+          updated_at: '2024-01-01T00:00:00Z',
+          timezone: 'America/New_York',
+          timezone_offset: -300,
+        },
+        shop: {
+          id: 'shop_123',
+          owner_user_id: 'user_123',
+          name: 'Test Shop',
+          business_name: 'Test Shop LLC',
+          email: 'shop@example.com',
+          phone_number: '555-0123',
+          mailing_address: '123 Test St',
+          location_type: 'shop_location',
+          tax_percent: 0,
+          buffer_time_minutes: 15,
+          trial_countdown_enabled: false,
+          trial_end_date: null,
+          working_hours: null,
+          created_at: '2024-01-01T00:00:00Z',
+          updated_at: '2024-01-01T00:00:00Z',
+          onboarding_completed: true,
+          timezone: 'America/New_York',
+          timezone_offset: -300,
+        },
+      });
+
+      mockSupabase.rpc.mockResolvedValue({
+        error: null,
+      });
+
+      await restoreClient('client_123');
+
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('restore_client', {
+        p_client_id: 'client_123',
+      });
+    });
+
+    it('should throw error when restore fails', async () => {
+      mockEnsureUserAndShop.mockResolvedValue({
+        user: {
+          id: 'user_123',
+          clerk_user_id: 'clerk_123',
+          email: 'test@example.com',
+          role: 'user',
+          first_name: 'Test',
+          last_name: 'User',
+          created_at: '2024-01-01T00:00:00Z',
+          updated_at: '2024-01-01T00:00:00Z',
+          timezone: 'America/New_York',
+          timezone_offset: -300,
+        },
+        shop: {
+          id: 'shop_123',
+          owner_user_id: 'user_123',
+          name: 'Test Shop',
+          business_name: 'Test Shop LLC',
+          email: 'shop@example.com',
+          phone_number: '555-0123',
+          mailing_address: '123 Test St',
+          location_type: 'shop_location',
+          tax_percent: 0,
+          buffer_time_minutes: 15,
+          trial_countdown_enabled: false,
+          trial_end_date: null,
+          working_hours: null,
+          created_at: '2024-01-01T00:00:00Z',
+          updated_at: '2024-01-01T00:00:00Z',
+          onboarding_completed: true,
+          timezone: 'America/New_York',
+          timezone_offset: -300,
+        },
+      });
+
+      mockSupabase.rpc.mockResolvedValue({
+        error: { message: 'Client not found or not archived' },
+      });
+
+      await expect(restoreClient('client_123')).rejects.toThrow(
+        'Failed to restore client: Client not found or not archived'
+      );
+    });
+  });
+
+  describe('getArchivedClientsCount', () => {
+    it('should return count of archived clients', async () => {
+      mockEnsureUserAndShop.mockResolvedValue({
+        user: {
+          id: 'user_123',
+          clerk_user_id: 'clerk_123',
+          email: 'test@example.com',
+          role: 'user',
+          first_name: 'Test',
+          last_name: 'User',
+          created_at: '2024-01-01T00:00:00Z',
+          updated_at: '2024-01-01T00:00:00Z',
+          timezone: 'America/New_York',
+          timezone_offset: -300,
+        },
+        shop: {
+          id: 'shop_123',
+          owner_user_id: 'user_123',
+          name: 'Test Shop',
+          business_name: 'Test Shop LLC',
+          email: 'shop@example.com',
+          phone_number: '555-0123',
+          mailing_address: '123 Test St',
+          location_type: 'shop_location',
+          tax_percent: 0,
+          buffer_time_minutes: 15,
+          trial_countdown_enabled: false,
+          trial_end_date: null,
+          working_hours: null,
+          created_at: '2024-01-01T00:00:00Z',
+          updated_at: '2024-01-01T00:00:00Z',
+          onboarding_completed: true,
+          timezone: 'America/New_York',
+          timezone_offset: -300,
+        },
+      });
+
+      const mockSelectFn = jest.fn();
+      const mockSelectChain = {
+        eq: jest.fn().mockReturnThis(),
+      };
+      // The function calls .eq() twice, so the second call should resolve with count
+      mockSelectChain.eq
+        .mockReturnValueOnce(mockSelectChain) // First .eq() for shop_id
+        .mockResolvedValueOnce({
+          // Second .eq() for is_archived
+          count: 5,
+          error: null,
+        });
+
+      mockSupabase.from.mockReturnValue({
+        select: mockSelectFn.mockReturnValue(mockSelectChain),
+      });
+
+      const result = await getArchivedClientsCount();
+
+      expect(result).toBe(5);
+      expect(mockSupabase.from).toHaveBeenCalledWith('clients');
+      expect(mockSelectFn).toHaveBeenCalledWith('*', {
+        count: 'exact',
+        head: true,
+      });
+      expect(mockSelectChain.eq).toHaveBeenCalledWith('shop_id', 'shop_123');
+      expect(mockSelectChain.eq).toHaveBeenCalledWith('is_archived', true);
+    });
+
+    it('should return 0 when error occurs', async () => {
+      mockEnsureUserAndShop.mockResolvedValue({
+        user: {
+          id: 'user_123',
+          clerk_user_id: 'clerk_123',
+          email: 'test@example.com',
+          role: 'user',
+          first_name: 'Test',
+          last_name: 'User',
+          created_at: '2024-01-01T00:00:00Z',
+          updated_at: '2024-01-01T00:00:00Z',
+          timezone: 'America/New_York',
+          timezone_offset: -300,
+        },
+        shop: {
+          id: 'shop_123',
+          owner_user_id: 'user_123',
+          name: 'Test Shop',
+          business_name: 'Test Shop LLC',
+          email: 'shop@example.com',
+          phone_number: '555-0123',
+          mailing_address: '123 Test St',
+          location_type: 'shop_location',
+          tax_percent: 0,
+          buffer_time_minutes: 15,
+          trial_countdown_enabled: false,
+          trial_end_date: null,
+          working_hours: null,
+          created_at: '2024-01-01T00:00:00Z',
+          updated_at: '2024-01-01T00:00:00Z',
+          onboarding_completed: true,
+          timezone: 'America/New_York',
+          timezone_offset: -300,
+        },
+      });
+
+      const mockSelectChain = {
+        eq: jest.fn().mockReturnThis(),
+      };
+      mockSelectChain.eq
+        .mockReturnValueOnce(mockSelectChain)
+        .mockResolvedValueOnce({
+          count: null,
+          error: { message: 'Database error' },
+        });
+
+      mockSupabase.from.mockReturnValue({
+        select: jest.fn().mockReturnValue(mockSelectChain),
+      });
+
+      const result = await getArchivedClientsCount();
+
+      expect(result).toBe(0);
+    });
+  });
+
+  describe('getClients with includeArchived filter', () => {
+    it('should exclude archived clients by default', async () => {
+      mockEnsureUserAndShop.mockResolvedValue({
+        user: {
+          id: 'user_123',
+          clerk_user_id: 'clerk_123',
+          email: 'test@example.com',
+          role: 'user',
+          first_name: 'Test',
+          last_name: 'User',
+          created_at: '2024-01-01T00:00:00Z',
+          updated_at: '2024-01-01T00:00:00Z',
+          timezone: 'America/New_York',
+          timezone_offset: -300,
+        },
+        shop: {
+          id: 'shop_123',
+          owner_user_id: 'user_123',
+          name: 'Test Shop',
+          business_name: 'Test Shop LLC',
+          email: 'shop@example.com',
+          phone_number: '555-0123',
+          mailing_address: '123 Test St',
+          location_type: 'shop_location',
+          tax_percent: 0,
+          buffer_time_minutes: 15,
+          trial_countdown_enabled: false,
+          trial_end_date: null,
+          working_hours: null,
+          created_at: '2024-01-01T00:00:00Z',
+          updated_at: '2024-01-01T00:00:00Z',
+          onboarding_completed: true,
+          timezone: 'America/New_York',
+          timezone_offset: -300,
+        },
+      });
+
+      const mockClients = [
+        {
+          id: 'client-1',
+          shop_id: 'shop-123',
+          first_name: 'John',
+          last_name: 'Doe',
+          email: 'john@example.com',
+          phone_number: '1234567890',
+          is_archived: false,
+        },
+      ];
+
+      const mockSelectChain = {
+        eq: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
+        range: jest.fn().mockResolvedValue({
+          data: mockClients,
+          error: null,
+          count: 1,
+        }),
+      };
+
+      mockSupabase.from.mockReturnValue({
+        select: jest.fn().mockReturnValue(mockSelectChain),
+      });
+
+      const result = await getClients(1, 10);
+
+      expect(mockSelectChain.eq).toHaveBeenCalledWith('shop_id', 'shop_123');
+      expect(mockSelectChain.eq).toHaveBeenCalledWith('is_archived', false);
+      expect(result.data).toEqual(mockClients);
+    });
+
+    it('should include archived clients when includeArchived is true', async () => {
+      mockEnsureUserAndShop.mockResolvedValue({
+        user: {
+          id: 'user_123',
+          clerk_user_id: 'clerk_123',
+          email: 'test@example.com',
+          role: 'user',
+          first_name: 'Test',
+          last_name: 'User',
+          created_at: '2024-01-01T00:00:00Z',
+          updated_at: '2024-01-01T00:00:00Z',
+          timezone: 'America/New_York',
+          timezone_offset: -300,
+        },
+        shop: {
+          id: 'shop_123',
+          owner_user_id: 'user_123',
+          name: 'Test Shop',
+          business_name: 'Test Shop LLC',
+          email: 'shop@example.com',
+          phone_number: '555-0123',
+          mailing_address: '123 Test St',
+          location_type: 'shop_location',
+          tax_percent: 0,
+          buffer_time_minutes: 15,
+          trial_countdown_enabled: false,
+          trial_end_date: null,
+          working_hours: null,
+          created_at: '2024-01-01T00:00:00Z',
+          updated_at: '2024-01-01T00:00:00Z',
+          onboarding_completed: true,
+          timezone: 'America/New_York',
+          timezone_offset: -300,
+        },
+      });
+
+      const mockClients = [
+        {
+          id: 'client-1',
+          shop_id: 'shop-123',
+          first_name: 'John',
+          last_name: 'Doe',
+          email: 'john@example.com',
+          phone_number: '1234567890',
+          is_archived: false,
+        },
+        {
+          id: 'client-2',
+          shop_id: 'shop-123',
+          first_name: 'Jane',
+          last_name: 'Smith',
+          email: 'jane@example.com',
+          phone_number: '0987654321',
+          is_archived: true,
+        },
+      ];
+
+      const mockSelectChain = {
+        eq: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
+        range: jest.fn().mockResolvedValue({
+          data: mockClients,
+          error: null,
+          count: 2,
+        }),
+      };
+
+      mockSupabase.from.mockReturnValue({
+        select: jest.fn().mockReturnValue(mockSelectChain),
+      });
+
+      const result = await getClients(1, 10, { includeArchived: true });
+
+      // Should only have one .eq() call for shop_id, not for is_archived
+      expect(mockSelectChain.eq).toHaveBeenCalledTimes(1);
+      expect(mockSelectChain.eq).toHaveBeenCalledWith('shop_id', 'shop_123');
+      expect(result.data).toEqual(mockClients);
+      expect(result.count).toBe(2);
     });
   });
 });
