@@ -302,7 +302,7 @@ export async function getActiveGarments(): Promise<ActiveGarment[]> {
         is_done,
         is_removed
       ),
-      orders!garments_order_id_fkey (
+      orders!inner (
         status,
         clients!orders_client_id_fkey (
           first_name,
@@ -445,7 +445,7 @@ export async function getReadyForPickupGarments(): Promise<ActiveGarment[]> {
         is_done,
         is_removed
       ),
-      orders!garments_order_id_fkey (
+      orders!inner (
         status,
         clients!orders_client_id_fkey (
           first_name,
