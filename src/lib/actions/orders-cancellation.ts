@@ -46,7 +46,7 @@ function toFieldErrors(error: unknown): FieldErrors {
   if (error instanceof z.ZodError) {
     const out: FieldErrors = {};
     for (const issue of error.issues) {
-      const path = issue.path.join('.') || 'root';
+      const path = Array.isArray(issue.path) ? issue.path.join('.') : 'root';
       if (!out[path]) out[path] = [];
       out[path].push(issue.message);
     }
