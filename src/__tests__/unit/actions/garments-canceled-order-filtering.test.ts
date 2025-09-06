@@ -55,6 +55,8 @@ describe('Garments - Canceled Order Filtering', () => {
       await getGarmentsPaginated({
         shopId: mockShopId,
         limit: 20,
+        sortField: 'created_at',
+        sortOrder: 'desc',
       });
 
       // Verify that canceled orders are excluded
@@ -79,6 +81,8 @@ describe('Garments - Canceled Order Filtering', () => {
       await getGarmentsPaginated({
         shopId: mockShopId,
         limit: 20,
+        sortField: 'created_at',
+        sortOrder: 'desc',
         includeCancelled: true,
       });
 
@@ -106,6 +110,8 @@ describe('Garments - Canceled Order Filtering', () => {
       await getGarmentsPaginated({
         shopId: mockShopId,
         limit: 20,
+        sortField: 'created_at',
+        sortOrder: 'desc',
         onlyCancelled: true,
       });
 
@@ -134,6 +140,8 @@ describe('Garments - Canceled Order Filtering', () => {
       await getGarmentsPaginated({
         shopId: mockShopId,
         limit: 20,
+        sortField: 'created_at',
+        sortOrder: 'desc',
         search: 'test garment',
       });
 
@@ -162,6 +170,7 @@ describe('Garments - Canceled Order Filtering', () => {
         shopId: mockShopId,
         limit: 20,
         sortField: 'client_name',
+        sortOrder: 'desc',
       });
 
       // Verify that the view is used for client name sorting
@@ -188,6 +197,8 @@ describe('Garments - Canceled Order Filtering', () => {
       await getGarmentsPaginated({
         shopId: mockShopId,
         limit: 20,
+        sortField: 'created_at',
+        sortOrder: 'desc',
         stage: 'In Progress' as GarmentStage,
       });
 
@@ -217,6 +228,8 @@ describe('Garments - Canceled Order Filtering', () => {
       await getGarmentsPaginated({
         shopId: mockShopId,
         limit: 20,
+        sortField: 'created_at',
+        sortOrder: 'desc',
         filter: 'overdue',
       });
 
@@ -262,6 +275,8 @@ describe('Garments - Canceled Order Filtering', () => {
       const result = await getGarmentsPaginated({
         shopId: mockShopId,
         limit: 20,
+        sortField: 'created_at',
+        sortOrder: 'desc',
       });
 
       // Verify that stage counts exclude canceled orders
