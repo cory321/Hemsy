@@ -98,7 +98,7 @@ export async function getGarmentsPaginated(
     const needsServiceData = validatedParams.filter === 'overdue';
 
     if (hasSearch) {
-      // Use the view for searching but join with orders for status filtering
+      // Use the view for searching - it now includes order_status
       query = supabase
         .from('garments_with_clients')
         .select(
@@ -107,6 +107,7 @@ export async function getGarmentsPaginated(
         name,
         stage,
         order_id,
+        order_status,
         shop_id,
         image_cloud_id,
         photo_url,
@@ -119,8 +120,7 @@ export async function getGarmentsPaginated(
         is_done,
         client_first_name,
         client_last_name,
-        client_full_name,
-        orders!garments_with_clients_order_id_fkey(status)
+        client_full_name
       `,
           { count: 'exact' }
         )
@@ -177,11 +177,22 @@ export async function getGarmentsPaginated(
     const onlyCancelled = validatedParams.onlyCancelled ?? false;
     const includeCancelled = validatedParams.includeCancelled ?? false;
 
-    if (onlyCancelled) {
-      query = query.eq('orders.status', 'cancelled');
-    } else if (!includeCancelled) {
-      // Exclude cancelled orders by default
-      query = query.neq('orders.status', 'cancelled');
+    if (hasSearch) {
+      // When using the view, filter by order_status directly
+      if (onlyCancelled) {
+        query = query.eq('order_status', 'cancelled');
+      } else if (!includeCancelled) {
+        // Exclude cancelled orders by default
+        query = query.neq('order_status', 'cancelled');
+      }
+    } else {
+      // When using the regular table, filter through the orders relationship
+      if (onlyCancelled) {
+        query = query.eq('orders.status', 'cancelled');
+      } else if (!includeCancelled) {
+        // Exclude cancelled orders by default
+        query = query.neq('orders.status', 'cancelled');
+      }
     }
 
     // Apply due date filter if provided
@@ -260,6 +271,7 @@ export async function getGarmentsPaginated(
         name,
         stage,
         order_id,
+        order_status,
         shop_id,
         image_cloud_id,
         photo_url,
@@ -281,6 +293,14 @@ export async function getGarmentsPaginated(
         // Re-apply stage filter if provided
         if (validatedParams.stage) {
           query = query.eq('stage', validatedParams.stage);
+        }
+
+        // Re-apply cancelled order filters when using the view
+        if (onlyCancelled) {
+          query = query.eq('order_status', 'cancelled');
+        } else if (!includeCancelled) {
+          // Exclude cancelled orders by default
+          query = query.neq('order_status', 'cancelled');
         }
 
         // Re-apply due date filter if provided
