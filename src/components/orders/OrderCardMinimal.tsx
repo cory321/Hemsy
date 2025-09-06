@@ -170,6 +170,10 @@ export default function OrderCardMinimal({
     <Card
       sx={{
         cursor: 'pointer',
+        opacity: order.status === 'cancelled' ? 0.6 : 1,
+        filter: order.status === 'cancelled' ? 'grayscale(50%)' : 'none',
+        borderColor: order.status === 'cancelled' ? 'error.main' : 'divider',
+        borderStyle: order.status === 'cancelled' ? 'dashed' : 'solid',
         '&:hover': {
           bgcolor: 'action.hover',
         },

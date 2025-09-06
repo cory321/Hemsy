@@ -14,6 +14,7 @@ const mockSupabaseClient = {
   from: jest.fn().mockReturnThis(),
   select: jest.fn().mockReturnThis(),
   eq: jest.fn().mockReturnThis(),
+  neq: jest.fn().mockReturnThis(),
   order: jest.fn().mockReturnThis(),
 };
 

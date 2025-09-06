@@ -10,6 +10,7 @@ const mockSupabase: any = {
   from: jest.fn(() => mockSupabase),
   select: jest.fn(() => mockSupabase),
   eq: jest.fn(() => mockSupabase),
+  neq: jest.fn(() => mockSupabase),
   or: jest.fn(() => mockSupabase),
   order: jest.fn(() => mockSupabase),
   range: jest.fn(),

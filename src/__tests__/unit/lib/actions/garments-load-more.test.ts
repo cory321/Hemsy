@@ -56,6 +56,8 @@ describe('loadMoreGarments', () => {
       sortField: 'created_at',
       sortOrder: 'desc',
       limit: 20,
+      includeCancelled: false,
+      onlyCancelled: false,
     });
 
     expect(result).toEqual(mockResult);
@@ -110,9 +112,14 @@ describe('loadMoreGarments', () => {
         lastId: '123',
         lastCreatedAt: '2024-01-01T00:00:00Z',
       },
+      stage: undefined,
+      search: undefined,
+      filter: undefined,
       sortField: 'due_date',
       sortOrder: 'asc',
       limit: 20,
+      includeCancelled: false,
+      onlyCancelled: false,
     });
 
     expect(result).toEqual(mockResult);

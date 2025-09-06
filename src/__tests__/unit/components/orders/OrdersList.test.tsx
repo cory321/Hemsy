@@ -338,9 +338,10 @@ describe('OrdersList', () => {
     await waitFor(() => {
       expect(mockGetOrdersAction).toHaveBeenCalledWith(1, 10, {
         search: 'ORD-001',
-        status: undefined,
         sortBy: 'created_at',
         sortOrder: 'desc',
+        includeCancelled: true,
+        onlyCancelled: false,
       });
     });
   });
@@ -370,6 +371,8 @@ describe('OrdersList', () => {
         paymentStatus: 'paid',
         sortBy: 'created_at',
         sortOrder: 'desc',
+        includeCancelled: true,
+        onlyCancelled: false,
       });
     });
   });
@@ -389,9 +392,10 @@ describe('OrdersList', () => {
     await waitFor(() => {
       expect(mockGetOrdersAction).toHaveBeenCalledWith(2, 10, {
         search: '',
-        status: undefined,
         sortBy: 'created_at',
         sortOrder: 'desc',
+        includeCancelled: true,
+        onlyCancelled: false,
       });
     });
   });
@@ -418,9 +422,10 @@ describe('OrdersList', () => {
     await waitFor(() => {
       expect(mockGetOrdersAction).toHaveBeenCalledWith(1, 25, {
         search: '',
-        status: undefined,
         sortBy: 'created_at',
         sortOrder: 'desc',
+        includeCancelled: true,
+        onlyCancelled: false,
       });
     });
   });

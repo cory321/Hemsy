@@ -9,6 +9,7 @@ import { useGarment } from '@/contexts/GarmentContext';
 export default function GarmentDetailClientOptimistic() {
   const { garment } = useGarment();
   const isGarmentDone = garment?.stage === 'Done';
+  const isOrderCancelled = garment?.order?.status === 'cancelled';
   const [showEditDialog, setShowEditDialog] = useState(false);
 
   const handleClose = () => {
@@ -21,7 +22,14 @@ export default function GarmentDetailClientOptimistic() {
         variant="outlined"
         startIcon={<EditIcon />}
         onClick={() => setShowEditDialog(true)}
-        disabled={isGarmentDone}
+        disabled={isGarmentDone || isOrderCancelled}
+        title={
+          isOrderCancelled
+            ? 'Cannot edit garment for cancelled orders'
+            : isGarmentDone
+              ? 'Cannot edit completed garments'
+              : undefined
+        }
       >
         Edit
       </Button>

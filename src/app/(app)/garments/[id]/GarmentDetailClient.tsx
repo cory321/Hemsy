@@ -15,14 +15,17 @@ interface GarmentDetailClientProps {
     preset_fill_color: string | null;
     notes: string | null;
   };
+  orderStatus?: string;
   onEdit?: () => void;
 }
 
 export default function GarmentDetailClient({
   garment,
+  orderStatus,
   onEdit,
 }: GarmentDetailClientProps) {
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const isOrderCancelled = orderStatus === 'cancelled';
 
   const handleClose = () => {
     setShowEditDialog(false);
@@ -39,6 +42,12 @@ export default function GarmentDetailClient({
         variant="outlined"
         startIcon={<EditIcon />}
         onClick={() => setShowEditDialog(true)}
+        disabled={isOrderCancelled}
+        title={
+          isOrderCancelled
+            ? 'Cannot edit garment for cancelled orders'
+            : undefined
+        }
       >
         Edit
       </Button>

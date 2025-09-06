@@ -43,6 +43,8 @@ export async function loadMoreGarments({
     sortField,
     sortOrder,
     limit: 20,
+    includeCancelled: false,
+    onlyCancelled: false,
   });
 
   return result;

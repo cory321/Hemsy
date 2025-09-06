@@ -27,7 +27,10 @@ export const getGarmentStageCounts = unstable_cache(
     }, {});
   },
   ['garment-stage-counts'],
-  { revalidate: 60 }
+  {
+    revalidate: 60,
+    tags: ['garment-stage-counts'],
+  }
 );
 
 export async function getGarmentsPaginated(

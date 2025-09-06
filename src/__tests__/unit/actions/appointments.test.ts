@@ -269,7 +269,11 @@ describe('getClientReadyForPickupCount', () => {
     // Chain the eq calls and return the final result
     mockGarmentsQuery.eq.mockReturnValue({
       eq: jest.fn().mockReturnValue({
-        eq: jest.fn().mockResolvedValue({ count: expectedCount, error: null }),
+        eq: jest.fn().mockReturnValue({
+          neq: jest
+            .fn()
+            .mockResolvedValue({ count: expectedCount, error: null }),
+        }),
       }),
     });
 
@@ -314,7 +318,9 @@ describe('getClientReadyForPickupCount', () => {
     // Chain the eq calls and return the final result
     mockGarmentsQuery.eq.mockReturnValue({
       eq: jest.fn().mockReturnValue({
-        eq: jest.fn().mockResolvedValue({ count: 0, error: null }),
+        eq: jest.fn().mockReturnValue({
+          neq: jest.fn().mockResolvedValue({ count: 0, error: null }),
+        }),
       }),
     });
 
@@ -356,7 +362,9 @@ describe('getClientReadyForPickupCount', () => {
     // Chain the eq calls and return the final result
     mockGarmentsQuery.eq.mockReturnValue({
       eq: jest.fn().mockReturnValue({
-        eq: jest.fn().mockResolvedValue({ count: null, error: null }),
+        eq: jest.fn().mockReturnValue({
+          neq: jest.fn().mockResolvedValue({ count: null, error: null }),
+        }),
       }),
     });
 
@@ -406,9 +414,11 @@ describe('getClientReadyForPickupCount', () => {
     // Chain the eq calls and return the final result with error
     mockGarmentsQuery.eq.mockReturnValue({
       eq: jest.fn().mockReturnValue({
-        eq: jest.fn().mockResolvedValue({
-          count: null,
-          error: new Error('Database error'),
+        eq: jest.fn().mockReturnValue({
+          neq: jest.fn().mockResolvedValue({
+            count: null,
+            error: new Error('Database error'),
+          }),
         }),
       }),
     });

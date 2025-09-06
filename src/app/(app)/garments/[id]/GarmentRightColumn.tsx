@@ -64,7 +64,11 @@ export default function GarmentRightColumn({
             )}
           </Typography>
         </Box>
-        <GarmentDetailClient garment={garment} onEdit={refreshHistory} />
+        <GarmentDetailClient
+          garment={garment}
+          orderStatus={garment.order?.status}
+          onEdit={refreshHistory}
+        />
       </Box>
 
       {/* Key Dates */}
@@ -108,6 +112,7 @@ export default function GarmentRightColumn({
           garmentId={garment.id}
           services={garment.garment_services || []}
           onServiceChange={refreshHistory}
+          orderStatus={garment.order?.status}
         />
       </Box>
 

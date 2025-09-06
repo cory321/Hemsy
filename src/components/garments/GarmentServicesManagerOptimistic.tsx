@@ -29,6 +29,7 @@ import {
   Chip,
   LinearProgress,
   Tooltip,
+  Alert,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -89,6 +90,7 @@ export default function GarmentServicesManagerOptimistic() {
     restoreService,
   } = useGarment();
   const isGarmentDone = garment?.stage === 'Done';
+  const isOrderCancelled = garment?.order?.status === 'cancelled';
   const [loading, setLoading] = useState(false);
   const [togglingServiceId, setTogglingServiceId] = useState<string | null>(
     null
@@ -325,6 +327,7 @@ export default function GarmentServicesManagerOptimistic() {
             onClick={() => setShowAddDialog(true)}
             disabled={
               isGarmentDone ||
+              isOrderCancelled ||
               togglingServiceId !== null ||
               restoringServiceId !== null
             }
@@ -447,6 +450,7 @@ export default function GarmentServicesManagerOptimistic() {
                                   disabled={
                                     loading ||
                                     isGarmentDone ||
+                                    isOrderCancelled ||
                                     togglingServiceId === service.id ||
                                     restoringServiceId !== null
                                   }
@@ -484,6 +488,7 @@ export default function GarmentServicesManagerOptimistic() {
                                 disabled={
                                   loading ||
                                   isGarmentDone ||
+                                  isOrderCancelled ||
                                   togglingServiceId !== null ||
                                   restoringServiceId !== null
                                 }
@@ -512,6 +517,7 @@ export default function GarmentServicesManagerOptimistic() {
                                       disabled={
                                         loading ||
                                         isGarmentDone ||
+                                        isOrderCancelled ||
                                         !!service.is_done ||
                                         togglingServiceId !== null ||
                                         restoringServiceId !== null
@@ -541,6 +547,7 @@ export default function GarmentServicesManagerOptimistic() {
                                 disabled={
                                   loading ||
                                   isGarmentDone ||
+                                  isOrderCancelled ||
                                   togglingServiceId !== null ||
                                   restoringServiceId !== null
                                 }

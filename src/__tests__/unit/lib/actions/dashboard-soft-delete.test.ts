@@ -35,6 +35,7 @@ describe('Dashboard - Soft Delete Service Filtering', () => {
   const mockQueryBuilder = {
     select: jest.fn(),
     eq: jest.fn(),
+    neq: jest.fn(),
     not: jest.fn(),
     order: jest.fn(),
     limit: jest.fn(),
@@ -63,6 +64,7 @@ describe('Dashboard - Soft Delete Service Filtering', () => {
     mockSupabaseClient.from.mockReturnValue(mockQueryBuilder);
     mockQueryBuilder.select.mockReturnValue(mockQueryBuilder);
     mockQueryBuilder.eq.mockReturnValue(mockQueryBuilder);
+    mockQueryBuilder.neq.mockReturnValue(mockQueryBuilder);
     mockQueryBuilder.not.mockReturnValue(mockQueryBuilder);
     mockQueryBuilder.order.mockReturnValue(mockQueryBuilder);
     mockQueryBuilder.limit.mockReturnValue(mockQueryBuilder);

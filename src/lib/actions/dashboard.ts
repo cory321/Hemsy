@@ -62,11 +62,12 @@ export async function getGarmentsDueToday(): Promise<number> {
 
   const { count, error } = await supabase
     .from('garments')
-    .select('*', { count: 'exact', head: true })
+    .select('*, orders!inner(status)', { count: 'exact', head: true })
     .eq('shop_id', shop.id)
     .eq('due_date', today)
     .neq('stage', 'Done')
-    .neq('stage', 'Ready For Pickup');
+    .neq('stage', 'Ready For Pickup')
+    .neq('orders.status', 'cancelled');
 
   if (error) {
     console.error('Error fetching garments due today:', error);
@@ -243,9 +244,10 @@ export async function getGarmentStageCounts(): Promise<Record<string, number>> {
   for (const stage of stages) {
     const { count, error } = await supabase
       .from('garments')
-      .select('*', { count: 'exact', head: true })
+      .select('*, orders!inner(status)', { count: 'exact', head: true })
       .eq('shop_id', shop.id)
-      .eq('stage', stage as any);
+      .eq('stage', stage as any)
+      .neq('orders.status', 'cancelled');
 
     if (error) {
       console.error(`Error fetching ${stage} garments:`, error);
@@ -301,6 +303,7 @@ export async function getActiveGarments(): Promise<ActiveGarment[]> {
         is_removed
       ),
       orders!garments_order_id_fkey (
+        status,
         clients!orders_client_id_fkey (
           first_name,
           last_name
@@ -310,6 +313,7 @@ export async function getActiveGarments(): Promise<ActiveGarment[]> {
     )
     .eq('shop_id', shop.id)
     .not('stage', 'in', '("Done","Ready For Pickup")')
+    .neq('orders.status', 'cancelled')
     .order('due_date', { ascending: true, nullsFirst: false })
     .limit(20); // Get more garments to ensure we can find the 3 highest priority ones
 
@@ -442,6 +446,7 @@ export async function getReadyForPickupGarments(): Promise<ActiveGarment[]> {
         is_removed
       ),
       orders!garments_order_id_fkey (
+        status,
         clients!orders_client_id_fkey (
           first_name,
           last_name
@@ -451,6 +456,7 @@ export async function getReadyForPickupGarments(): Promise<ActiveGarment[]> {
     )
     .eq('shop_id', shop.id)
     .eq('stage', 'Ready For Pickup')
+    .neq('orders.status', 'cancelled')
     .order('created_at', { ascending: false })
     .limit(3); // Get only the 3 most recent
 
@@ -548,11 +554,12 @@ export async function getWeekOverviewData(): Promise<WeekDayData[]> {
   // Fetch garments due this week
   const { data: garments, error: garmentsError } = await supabase
     .from('garments')
-    .select('due_date')
+    .select('due_date, orders!inner(status)')
     .eq('shop_id', shop.id)
     .gte('due_date', startDateStr)
     .lte('due_date', endDateStr)
-    .not('stage', 'in', '("Done","Ready For Pickup")');
+    .not('stage', 'in', '("Done","Ready For Pickup")')
+    .neq('orders.status', 'cancelled');
 
   if (garmentsError) {
     console.error('Error fetching week garments:', garmentsError);
@@ -652,12 +659,14 @@ export async function getOverdueGarmentsCount(): Promise<number> {
 				id,
 				is_done,
 				is_removed
-			)
+			),
+			orders!inner(status)
 		`
     )
     .eq('shop_id', shop.id)
     .lt('due_date', today)
-    .not('stage', 'in', '("Done","Ready For Pickup")');
+    .not('stage', 'in', '("Done","Ready For Pickup")')
+    .neq('orders.status', 'cancelled');
 
   if (error) {
     console.error('Error fetching overdue garments:', error);
@@ -714,17 +723,19 @@ export async function getOverdueGarmentsForAlert(): Promise<{
 				is_done,
 				is_removed
 			),
-			orders!garments_order_id_fkey (
-				clients!orders_client_id_fkey (
-					first_name,
-					last_name
-				)
+		orders!inner (
+			status,
+			clients!orders_client_id_fkey (
+				first_name,
+				last_name
 			)
-		`
+		)
+	`
     )
     .eq('shop_id', shop.id)
     .lt('due_date', today)
     .not('stage', 'in', '("Done","Ready For Pickup")')
+    .neq('orders.status', 'cancelled')
     .order('due_date', { ascending: true }); // Most overdue first
 
   if (error) {
@@ -790,17 +801,19 @@ export async function getGarmentsDueTodayForAlert(): Promise<{
 			name,
 			due_date,
 			stage,
-			orders!garments_order_id_fkey (
-				clients!orders_client_id_fkey (
-					first_name,
-					last_name
-				)
+		orders!inner (
+			status,
+			clients!orders_client_id_fkey (
+				first_name,
+				last_name
 			)
-		`
+		)
+	`
     )
     .eq('shop_id', shop.id)
     .eq('due_date', today)
     .not('stage', 'in', '("Done","Ready For Pickup")')
+    .neq('orders.status', 'cancelled')
     .order('name', { ascending: true });
 
   if (error) {

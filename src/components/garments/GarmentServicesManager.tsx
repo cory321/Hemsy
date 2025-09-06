@@ -64,16 +64,19 @@ interface GarmentServicesManagerProps {
   garmentId: string;
   services: Service[];
   onServiceChange?: () => void;
+  orderStatus?: string;
 }
 
 export default function GarmentServicesManager({
   garmentId,
   services,
   onServiceChange,
+  orderStatus,
 }: GarmentServicesManagerProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isOrderCancelled = orderStatus === 'cancelled';
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [editPrice, setEditPrice] = useState('0.00');
@@ -294,6 +297,7 @@ export default function GarmentServicesManager({
             variant="outlined"
             size="small"
             onClick={() => setShowAddDialog(true)}
+            disabled={isOrderCancelled}
           >
             Add Service
           </Button>
@@ -355,7 +359,7 @@ export default function GarmentServicesManager({
                             <IconButton
                               edge="end"
                               onClick={() => handleRestoreService(service.id)}
-                              disabled={loading}
+                              disabled={loading || isOrderCancelled}
                               size="small"
                               aria-label="Restore service"
                             >
@@ -383,7 +387,7 @@ export default function GarmentServicesManager({
                                   service.is_done || false
                                 )
                               }
-                              disabled={loading}
+                              disabled={loading || isOrderCancelled}
                               startIcon={
                                 service.is_done ? (
                                   <CheckCircleIcon />
@@ -405,7 +409,7 @@ export default function GarmentServicesManager({
                                   (service.unit_price_cents / 100).toFixed(2)
                                 );
                               }}
-                              disabled={loading}
+                              disabled={loading || isOrderCancelled}
                               size="small"
                             >
                               <EditIcon fontSize="small" />
@@ -413,7 +417,7 @@ export default function GarmentServicesManager({
                             <IconButton
                               edge="end"
                               onClick={() => handleRemoveService(service.id)}
-                              disabled={loading}
+                              disabled={loading || isOrderCancelled}
                               size="small"
                             >
                               <DeleteIcon fontSize="small" />

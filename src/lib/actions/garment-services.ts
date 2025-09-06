@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { ensureUserAndShop } from '@/lib/auth/user-shop';
 import { recalculateAndUpdateGarmentStage } from './garment-stage-helpers';
+import { canModifyGarmentServices } from './orders-cancellation';
 
 interface ToggleServiceCompletionInput {
   garmentServiceId: string;
@@ -23,18 +24,7 @@ export async function toggleServiceCompletion(
     await ensureUserAndShop();
     const supabase = await createClient();
 
-    // Update the service completion status
-    const { error: updateError } = await supabase
-      .from('garment_services')
-      .update({ is_done: input.isDone })
-      .eq('id', input.garmentServiceId);
-
-    if (updateError) {
-      console.error('Error updating service:', updateError);
-      return { success: false, error: 'Failed to update service' };
-    }
-
-    // Get the garment ID from the service
+    // Get the garment ID from the service first to check permissions
     const { data: service, error: serviceError } = await supabase
       .from('garment_services')
       .select('garment_id')
@@ -44,6 +34,26 @@ export async function toggleServiceCompletion(
     if (serviceError || !service) {
       console.error('Error fetching service:', serviceError);
       return { success: false, error: 'Failed to fetch service details' };
+    }
+
+    // Check if services can be modified (not cancelled order)
+    const canModify = await canModifyGarmentServices(service.garment_id);
+    if (!canModify) {
+      return {
+        success: false,
+        error: 'Cannot modify services for cancelled orders',
+      };
+    }
+
+    // Update the service completion status
+    const { error: updateError } = await supabase
+      .from('garment_services')
+      .update({ is_done: input.isDone })
+      .eq('id', input.garmentServiceId);
+
+    if (updateError) {
+      console.error('Error updating service:', updateError);
+      return { success: false, error: 'Failed to update service' };
     }
 
     // Recalculate and update garment stage

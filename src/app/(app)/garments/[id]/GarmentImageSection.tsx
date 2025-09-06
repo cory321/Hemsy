@@ -340,20 +340,12 @@ export default function GarmentImageSection({
 
             {/* Schedule Appointment Button - only show if shopId is available */}
             {shopId && (
-              <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
+              <Box sx={{ mt: 3 }}>
                 <Button
-                  variant="contained"
-                  size="large"
+                  variant="outlined"
                   startIcon={<EventIcon />}
                   onClick={handleOpenAppointmentDialog}
-                  sx={{
-                    minWidth: 200,
-                    fontWeight: 500,
-                    bgcolor: 'primary.main',
-                    '&:hover': {
-                      bgcolor: 'primary.dark',
-                    },
-                  }}
+                  fullWidth
                 >
                   Schedule Appointment
                 </Button>

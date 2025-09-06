@@ -30,6 +30,8 @@ const GetGarmentsPaginatedSchema = z.object({
   stage: z.custom<GarmentStage>().optional(),
   search: z.string().optional(),
   filter: z.enum(['due-today', 'overdue']).optional(),
+  includeCancelled: z.boolean().optional(),
+  onlyCancelled: z.boolean().optional(),
 });
 
 export type GetGarmentsPaginatedParams = z.infer<
@@ -96,8 +98,7 @@ export async function getGarmentsPaginated(
     const needsServiceData = validatedParams.filter === 'overdue';
 
     if (hasSearch) {
-      // Use the view for searching (includes client names)
-      // Note: The view doesn't include service data, so we'll need to handle overdue filtering differently
+      // Use the view for searching but join with orders for status filtering
       query = supabase
         .from('garments_with_clients')
         .select(
@@ -118,7 +119,8 @@ export async function getGarmentsPaginated(
         is_done,
         client_first_name,
         client_last_name,
-        client_full_name
+        client_full_name,
+        orders!garments_with_clients_order_id_fkey(status)
       `,
           { count: 'exact' }
         )
@@ -169,6 +171,17 @@ export async function getGarmentsPaginated(
     // Apply stage filter if provided
     if (validatedParams.stage) {
       query = query.eq('stage', validatedParams.stage);
+    }
+
+    // Apply cancelled order filters (with defaults)
+    const onlyCancelled = validatedParams.onlyCancelled ?? false;
+    const includeCancelled = validatedParams.includeCancelled ?? false;
+
+    if (onlyCancelled) {
+      query = query.eq('orders.status', 'cancelled');
+    } else if (!includeCancelled) {
+      // Exclude cancelled orders by default
+      query = query.neq('orders.status', 'cancelled');
     }
 
     // Apply due date filter if provided
@@ -501,9 +514,13 @@ export async function getGarmentsPaginated(
         stages.map(async (s) => {
           const { count: c } = await supabase
             .from('garments')
-            .select('*', { count: 'exact', head: true })
+            .select('id, orders!inner(status)', {
+              count: 'exact',
+              head: true,
+            })
             .eq('shop_id', validatedParams.shopId)
-            .eq('stage', s);
+            .eq('stage', s)
+            .neq('orders.status', 'cancelled');
           return [s as string, c ?? 0] as const;
         })
       );

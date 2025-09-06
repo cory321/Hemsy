@@ -50,17 +50,33 @@ describe('Dashboard Actions', () => {
     from: jest.fn(),
   };
 
-  const mockQueryBuilder = {
-    select: jest.fn(),
-    eq: jest.fn(),
-    in: jest.fn(),
-    gte: jest.fn(),
-    lte: jest.fn(),
-    or: jest.fn(),
-    order: jest.fn(),
-    limit: jest.fn(),
-    neq: jest.fn(),
+  // Create a more sophisticated mock that can handle chaining
+  const createMockQueryBuilder = () => {
+    const mockQueryBuilder = {
+      select: jest.fn(),
+      eq: jest.fn(),
+      in: jest.fn(),
+      gte: jest.fn(),
+      lte: jest.fn(),
+      or: jest.fn(),
+      order: jest.fn(),
+      limit: jest.fn(),
+      neq: jest.fn(),
+      not: jest.fn(),
+      lt: jest.fn(),
+    };
+
+    // Make all methods return the same instance for chaining
+    Object.keys(mockQueryBuilder).forEach((key) => {
+      mockQueryBuilder[key as keyof typeof mockQueryBuilder] = jest
+        .fn()
+        .mockReturnValue(mockQueryBuilder);
+    });
+
+    return mockQueryBuilder;
   };
+
+  let mockQueryBuilder = createMockQueryBuilder();
 
   const mockShop = {
     id: 'shop-123',
@@ -74,6 +90,10 @@ describe('Dashboard Actions', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Create a fresh mock query builder for each test
+    mockQueryBuilder = createMockQueryBuilder();
+
     mockAuth.mockResolvedValue({ userId: 'clerk-123' } as any);
     mockCreateClient.mockResolvedValue(mockSupabaseClient as any);
     mockEnsureUserAndShop.mockResolvedValue({
@@ -86,17 +106,8 @@ describe('Dashboard Actions', () => {
       return '2024-01-15';
     });
 
-    // Chain the query builder methods
+    // Set up the supabase client to return our mock query builder
     mockSupabaseClient.from.mockReturnValue(mockQueryBuilder);
-    mockQueryBuilder.select.mockReturnValue(mockQueryBuilder);
-    mockQueryBuilder.eq.mockReturnValue(mockQueryBuilder);
-    mockQueryBuilder.in.mockReturnValue(mockQueryBuilder);
-    mockQueryBuilder.gte.mockReturnValue(mockQueryBuilder);
-    mockQueryBuilder.lte.mockReturnValue(mockQueryBuilder);
-    mockQueryBuilder.or.mockReturnValue(mockQueryBuilder);
-    mockQueryBuilder.order.mockReturnValue(mockQueryBuilder);
-    mockQueryBuilder.limit.mockReturnValue(mockQueryBuilder);
-    mockQueryBuilder.neq.mockReturnValue(mockQueryBuilder);
   });
 
   describe('getTodayAppointmentsDetailed', () => {
@@ -300,47 +311,60 @@ describe('Dashboard Actions', () => {
 
   describe('getGarmentsDueToday', () => {
     it('fetches count of garments due today successfully', async () => {
-      // Mock the final neq call to return the result
-      const finalResult = {
+      // Mock the final neq call in the chain to return the result
+      const finalMock = jest.fn().mockResolvedValue({
         count: 5,
         error: null,
-      };
+      });
 
-      // Create a separate mock for the final chain step
-      const finalQueryBuilder = { ...mockQueryBuilder };
-      finalQueryBuilder.neq = jest.fn().mockResolvedValue(finalResult);
-      mockQueryBuilder.neq.mockReturnValue(finalQueryBuilder);
+      // Override the last neq call to return the final result
+      (mockQueryBuilder.neq as jest.Mock).mockImplementation((field, value) => {
+        if (field === 'orders.status' && value === 'cancelled') {
+          return finalMock();
+        }
+        return mockQueryBuilder;
+      });
 
       const result = await getGarmentsDueToday();
 
       expect(mockEnsureUserAndShop).toHaveBeenCalled();
       expect(mockSupabaseClient.from).toHaveBeenCalledWith('garments');
-      expect(mockQueryBuilder.select).toHaveBeenCalledWith('*', {
-        count: 'exact',
-        head: true,
-      });
+      expect(mockQueryBuilder.select).toHaveBeenCalledWith(
+        '*, orders!inner(status)',
+        {
+          count: 'exact',
+          head: true,
+        }
+      );
       expect(mockQueryBuilder.eq).toHaveBeenCalledWith('shop_id', 'shop-123');
       expect(mockQueryBuilder.eq).toHaveBeenCalledWith(
         'due_date',
         '2024-01-15'
       );
       expect(mockQueryBuilder.neq).toHaveBeenCalledWith('stage', 'Done');
-      expect(finalQueryBuilder.neq).toHaveBeenCalledWith(
+      expect(mockQueryBuilder.neq).toHaveBeenCalledWith(
         'stage',
         'Ready For Pickup'
+      );
+      expect(mockQueryBuilder.neq).toHaveBeenCalledWith(
+        'orders.status',
+        'cancelled'
       );
       expect(result).toBe(5);
     });
 
     it('returns 0 when count is null', async () => {
-      const finalResult = {
+      const finalMock = jest.fn().mockResolvedValue({
         count: null,
         error: null,
-      };
+      });
 
-      const finalQueryBuilder = { ...mockQueryBuilder };
-      finalQueryBuilder.neq = jest.fn().mockResolvedValue(finalResult);
-      mockQueryBuilder.neq.mockReturnValue(finalQueryBuilder);
+      (mockQueryBuilder.neq as jest.Mock).mockImplementation((field, value) => {
+        if (field === 'orders.status' && value === 'cancelled') {
+          return finalMock();
+        }
+        return mockQueryBuilder;
+      });
 
       const result = await getGarmentsDueToday();
 
@@ -348,14 +372,17 @@ describe('Dashboard Actions', () => {
     });
 
     it('throws error when database query fails', async () => {
-      const finalResult = {
+      const finalMock = jest.fn().mockResolvedValue({
         count: null,
         error: { message: 'Database error' },
-      };
+      });
 
-      const finalQueryBuilder = { ...mockQueryBuilder };
-      finalQueryBuilder.neq = jest.fn().mockResolvedValue(finalResult);
-      mockQueryBuilder.neq.mockReturnValue(finalQueryBuilder);
+      (mockQueryBuilder.neq as jest.Mock).mockImplementation((field, value) => {
+        if (field === 'orders.status' && value === 'cancelled') {
+          return finalMock();
+        }
+        return mockQueryBuilder;
+      });
 
       await expect(getGarmentsDueToday()).rejects.toThrow(
         'Failed to fetch garments'
@@ -365,22 +392,24 @@ describe('Dashboard Actions', () => {
 
   describe('getDashboardStats', () => {
     it('fetches dashboard statistics successfully', async () => {
-      // Set up mocks for the individual functions
-      mockQueryBuilder.in.mockResolvedValue({
+      // Set up mock for appointments (uses .in() as final method)
+      (mockQueryBuilder.in as jest.Mock).mockResolvedValue({
         count: 3,
         error: null,
       });
 
-      const finalGarmentsResult = {
+      // Set up mock for garments (uses .neq() as final method)
+      const garmentsResultMock = jest.fn().mockResolvedValue({
         count: 5,
         error: null,
-      };
+      });
 
-      const finalGarmentsQueryBuilder = { ...mockQueryBuilder };
-      finalGarmentsQueryBuilder.neq = jest
-        .fn()
-        .mockResolvedValue(finalGarmentsResult);
-      mockQueryBuilder.neq.mockReturnValue(finalGarmentsQueryBuilder);
+      (mockQueryBuilder.neq as jest.Mock).mockImplementation((field, value) => {
+        if (field === 'orders.status' && value === 'cancelled') {
+          return garmentsResultMock();
+        }
+        return mockQueryBuilder;
+      });
 
       const result = await getDashboardStats();
 

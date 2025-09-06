@@ -55,6 +55,8 @@ export interface OrdersFilters {
   paymentStatus?: string;
   sortBy?: 'created_at' | 'order_due_date' | 'total_cents' | 'status';
   sortOrder?: 'asc' | 'desc';
+  includeCancelled?: boolean;
+  onlyCancelled?: boolean;
 }
 
 export async function getOrdersPaginated(
@@ -105,8 +107,17 @@ export async function getOrdersPaginated(
     );
   }
 
-  // Apply status filter
-  if (filters?.status && filters.status !== 'all') {
+  // Apply cancelled order filters
+  const { includeCancelled = false, onlyCancelled = false } = filters || {};
+
+  if (onlyCancelled) {
+    query = query.eq('status', 'cancelled');
+  } else if (!includeCancelled) {
+    query = query.neq('status', 'cancelled');
+  }
+
+  // Apply status filter (after cancelled filter)
+  if (filters?.status && filters.status !== 'all' && !onlyCancelled) {
     query = query.eq('status', filters.status);
   }
 
@@ -787,15 +798,18 @@ export async function getGarmentWithInvoiceData(garmentId: string) {
   }
 }
 
-export async function getOrdersByClient(clientId: string) {
+export async function getOrdersByClient(
+  clientId: string,
+  includeCancelled = false
+) {
   'use server';
 
   try {
     const { shop } = await ensureUserAndShop();
     const supabase = await createSupabaseClient();
 
-    // Fetch orders for the client with garments count
-    const { data: orders, error: ordersError } = await supabase
+    // Build query to fetch orders for the client with garments count
+    let query = supabase
       .from('orders')
       .select(
         `
@@ -809,8 +823,17 @@ export async function getOrdersByClient(clientId: string) {
       `
       )
       .eq('shop_id', shop.id)
-      .eq('client_id', clientId)
-      .order('created_at', { ascending: false });
+      .eq('client_id', clientId);
+
+    // Exclude cancelled orders by default
+    if (!includeCancelled) {
+      query = query.neq('status', 'cancelled');
+    }
+
+    const { data: orders, error: ordersError } = await query.order(
+      'created_at',
+      { ascending: false }
+    );
 
     if (ordersError) {
       console.error('Error fetching orders:', ordersError);

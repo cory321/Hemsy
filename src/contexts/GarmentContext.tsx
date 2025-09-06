@@ -53,6 +53,7 @@ interface Garment {
   order?: {
     id: string;
     order_number: string;
+    status: string;
     client: {
       id: string;
       first_name: string;

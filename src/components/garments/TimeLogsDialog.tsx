@@ -30,6 +30,7 @@ interface TimeLogsDialogProps {
   onClose: () => void;
   garmentId: string;
   onChanged?: () => void;
+  orderStatus?: string | undefined;
 }
 
 export default function TimeLogsDialog({
@@ -37,12 +38,14 @@ export default function TimeLogsDialog({
   onClose,
   garmentId,
   onChanged,
+  orderStatus,
 }: TimeLogsDialogProps) {
   const [entries, setEntries] = useState<any[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editHoursInput, setEditHoursInput] = useState<string>('');
   const [editMinutesInput, setEditMinutesInput] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
+  const isOrderCancelled = orderStatus === 'cancelled';
 
   async function refresh() {
     try {
@@ -169,12 +172,24 @@ export default function TimeLogsDialog({
                       <Stack direction="row" gap={1}>
                         <IconButton
                           aria-label="edit"
+                          disabled={isOrderCancelled}
+                          title={
+                            isOrderCancelled
+                              ? 'Cannot edit time entries for cancelled orders'
+                              : undefined
+                          }
                           onClick={() => startEdit(e)}
                         >
                           <EditIcon />
                         </IconButton>
                         <IconButton
                           aria-label="delete"
+                          disabled={isOrderCancelled}
+                          title={
+                            isOrderCancelled
+                              ? 'Cannot delete time entries for cancelled orders'
+                              : undefined
+                          }
                           onClick={() => handleDelete(e.id)}
                         >
                           <DeleteIcon />

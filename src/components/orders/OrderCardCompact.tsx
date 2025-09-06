@@ -271,6 +271,8 @@ export default function OrderCardCompact({
       sx={{
         cursor: 'pointer',
         transition: 'all 0.2s ease-in-out',
+        opacity: order.status === 'cancelled' ? 0.6 : 1,
+        filter: order.status === 'cancelled' ? 'grayscale(50%)' : 'none',
         '&:hover': {
           bgcolor: 'action.hover',
           transform: 'translateY(-1px)',
@@ -282,7 +284,8 @@ export default function OrderCardCompact({
           outlineOffset: '2px',
         },
         border: 1,
-        borderColor: 'divider',
+        borderColor: order.status === 'cancelled' ? 'error.main' : 'divider',
+        borderStyle: order.status === 'cancelled' ? 'dashed' : 'solid',
         position: 'relative',
       }}
       onClick={() => onClick(order.id)}

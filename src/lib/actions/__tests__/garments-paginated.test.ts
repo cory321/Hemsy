@@ -14,8 +14,10 @@ const mockSupabaseClient: any = {
   from: jest.fn((): any => mockSupabaseClient),
   select: jest.fn(() => mockSupabaseClient),
   eq: jest.fn(() => mockSupabaseClient),
+  neq: jest.fn(() => mockSupabaseClient),
   lt: jest.fn(() => mockSupabaseClient),
   gt: jest.fn(() => mockSupabaseClient),
+  not: jest.fn(() => mockSupabaseClient),
   or: jest.fn(() => mockSupabaseClient),
   order: jest.fn(() => mockSupabaseClient),
   limit: jest.fn(() => mockSupabaseClient),
@@ -84,6 +86,8 @@ describe('getGarmentsPaginated', () => {
       sortField: 'created_at',
       sortOrder: 'desc',
       limit: 20,
+      includeCancelled: false,
+      onlyCancelled: false,
     };
 
     const result = await getGarmentsPaginated(params);
@@ -346,12 +350,16 @@ describe('getGarmentsPaginated', () => {
           // Configure the final result for this stage count query
           const stageCount =
             stageCountMocks[value as keyof typeof stageCountMocks];
-          // Return a thenable object that acts like the Supabase client
-          return Promise.resolve({
-            count: stageCount,
-            data: null,
-            error: null,
-          });
+          // Return a mock chain that includes neq method
+          return {
+            neq: jest.fn(() =>
+              Promise.resolve({
+                count: stageCount,
+                data: null,
+                error: null,
+              })
+            ),
+          };
         }
         // For other eq calls, return the client for chaining
         return mockSupabaseClient;
@@ -428,12 +436,18 @@ describe('getGarmentsPaginated', () => {
           field === 'stage' &&
           Object.keys(expectedStageCounts).includes(value)
         ) {
-          return Promise.resolve({
-            count:
-              expectedStageCounts[value as keyof typeof expectedStageCounts],
-            data: null,
-            error: null,
-          });
+          const stageCount =
+            expectedStageCounts[value as keyof typeof expectedStageCounts];
+          // Return a mock chain that includes neq method
+          return {
+            neq: jest.fn(() =>
+              Promise.resolve({
+                count: stageCount,
+                data: null,
+                error: null,
+              })
+            ),
+          };
         }
         return mockSupabaseClient;
       }

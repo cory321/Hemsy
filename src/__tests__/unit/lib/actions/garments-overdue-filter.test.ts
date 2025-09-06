@@ -53,6 +53,7 @@ describe('getGarmentsPaginated - Overdue Filtering', () => {
     const mockQuery = {
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
+      neq: jest.fn().mockReturnThis(),
       lt: jest.fn().mockReturnThis(),
       not: jest.fn().mockReturnThis(),
       order: jest.fn().mockReturnThis(),
@@ -166,6 +167,7 @@ describe('getGarmentsPaginated - Overdue Filtering', () => {
     const mockQuery = {
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
+      neq: jest.fn().mockReturnThis(),
       lt: jest.fn().mockReturnThis(),
       not: jest.fn().mockReturnThis(),
       order: jest.fn().mockReturnThis(),
@@ -223,6 +225,7 @@ describe('getGarmentsPaginated - Overdue Filtering', () => {
     const mockQuery = {
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
+      neq: jest.fn().mockReturnThis(),
       lt: jest.fn().mockReturnThis(),
       not: jest.fn().mockReturnThis(),
       order: jest.fn().mockReturnThis(),
@@ -267,6 +270,9 @@ describe('getGarmentsPaginated - Overdue Filtering', () => {
     const mockQuery = {
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
+      neq: jest.fn().mockReturnThis(),
+      lt: jest.fn().mockReturnThis(),
+      not: jest.fn().mockReturnThis(),
       order: jest.fn().mockReturnThis(),
       limit: jest.fn().mockReturnThis(),
       data: mockGarments,

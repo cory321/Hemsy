@@ -25,6 +25,7 @@ import { getInvoicePaymentHistory } from '@/lib/actions/payments';
 import { getOrderStatusLabel } from '@/lib/utils/orderStatus';
 import OrderDetailClient from './OrderDetailClient';
 import OptimisticOrderWrapper from './OptimisticOrderWrapper';
+import OrderCancellationSection from '@/components/orders/OrderCancellationSection';
 import type { Database } from '@/types/supabase';
 import { formatPhoneNumber } from '@/lib/utils/phone';
 import {
@@ -662,6 +663,25 @@ export default async function OrderDetailPage({
             </Grid>
           </CardContent>
         </Card>
+
+        {/* Order Cancellation Section */}
+        {order && (
+          <OrderCancellationSection
+            order={{
+              id: order.id,
+              order_number: order.order_number,
+              status: order.status,
+              total_cents: order.total_cents,
+            }}
+            garments={
+              garments?.map((g: any) => ({
+                id: g.id,
+                name: g.name,
+                stage: g.stage,
+              })) || []
+            }
+          />
+        )}
 
         {/* Services and Payment History Sections */}
         <OptimisticOrderWrapper

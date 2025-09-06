@@ -46,6 +46,7 @@ export default function GarmentTimeTracker({
 }: GarmentTimeTrackerProps) {
   const { garment } = useGarment();
   const isGarmentDone = garment?.stage === 'Done';
+  const isOrderCancelled = garment?.order?.status === 'cancelled';
 
   const [entries, setEntries] = useState<any[]>([]);
   const [totalMinutes, setTotalMinutes] = useState(0);
@@ -163,7 +164,14 @@ export default function GarmentTimeTracker({
               startIcon={<AddIcon />}
               variant="outlined"
               onClick={() => setIsAddOpen(true)}
-              disabled={isGarmentDone}
+              disabled={isGarmentDone || isOrderCancelled}
+              title={
+                isOrderCancelled
+                  ? 'Cannot track time for cancelled orders'
+                  : isGarmentDone
+                    ? 'Cannot track time for completed garments'
+                    : undefined
+              }
             >
               Add Time
             </Button>
@@ -185,7 +193,14 @@ export default function GarmentTimeTracker({
                   <Stack direction="row" gap={1}>
                     <IconButton
                       aria-label="edit"
-                      disabled={isGarmentDone}
+                      disabled={isGarmentDone || isOrderCancelled}
+                      title={
+                        isOrderCancelled
+                          ? 'Cannot edit time entries for cancelled orders'
+                          : isGarmentDone
+                            ? 'Cannot edit time entries for completed garments'
+                            : undefined
+                      }
                       onClick={() => {
                         setEditingEntry(e);
                         const hrs = Math.floor((e.minutes || 0) / 60);
@@ -199,7 +214,14 @@ export default function GarmentTimeTracker({
                     </IconButton>
                     <IconButton
                       aria-label="delete"
-                      disabled={isGarmentDone}
+                      disabled={isGarmentDone || isOrderCancelled}
+                      title={
+                        isOrderCancelled
+                          ? 'Cannot delete time entries for cancelled orders'
+                          : isGarmentDone
+                            ? 'Cannot delete time entries for completed garments'
+                            : undefined
+                      }
                       onClick={() => handleDelete(e.id)}
                     >
                       <DeleteIcon />
@@ -351,6 +373,7 @@ export default function GarmentTimeTracker({
         onClose={() => setLogsOpen(false)}
         garmentId={garmentId}
         onChanged={refresh}
+        orderStatus={garment?.order?.status}
       />
     </Card>
   );

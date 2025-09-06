@@ -723,10 +723,14 @@ export async function getClientReadyForPickupCount(
   // Query garments using the garments_with_clients view for easier filtering
   const { count, error } = await supabase
     .from('garments_with_clients')
-    .select('id', { count: 'exact', head: true })
+    .select('id, orders!garments_with_clients_order_id_fkey(status)', {
+      count: 'exact',
+      head: true,
+    })
     .eq('shop_id', shopId)
     .eq('client_id', clientId)
-    .eq('stage', 'Ready For Pickup');
+    .eq('stage', 'Ready For Pickup')
+    .neq('orders.status', 'cancelled');
 
   if (error) {
     console.error('Failed to fetch ready for pickup count:', error);

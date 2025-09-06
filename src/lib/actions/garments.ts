@@ -8,6 +8,7 @@ import { recalculateAndUpdateGarmentStage } from './garment-stage-helpers';
 import { syncInvoiceWithGarmentServices } from './invoice-sync';
 import { convertLocalToUTC } from '@/lib/utils/date-time-utc';
 import { getShopTimezone } from '@/lib/utils/timezone-helpers';
+import { canModifyGarmentServices } from './orders-cancellation';
 
 // Schema for updating garment
 const UpdateGarmentSchema = z.object({
@@ -194,6 +195,12 @@ export async function addServiceToGarment(
       throw new Error('Garment not found');
     }
 
+    // Check if services can be modified (not cancelled order)
+    const canModify = await canModifyGarmentServices(input.garmentId);
+    if (!canModify) {
+      throw new Error('Cannot modify services for cancelled orders');
+    }
+
     let serviceData: any;
 
     if (input.serviceId) {
@@ -307,6 +314,12 @@ export async function removeServiceFromGarment(input: {
       throw new Error('Service not found');
     }
 
+    // Check if services can be modified (not cancelled order)
+    const canModify = await canModifyGarmentServices(input.garmentId);
+    if (!canModify) {
+      throw new Error('Cannot modify services for cancelled orders');
+    }
+
     // Check if already removed
     if ((service as any).is_removed) {
       throw new Error('Service is already removed');
@@ -400,6 +413,12 @@ export async function restoreRemovedService(input: {
       throw new Error('Service not found');
     }
 
+    // Check if services can be modified (not cancelled order)
+    const canModify = await canModifyGarmentServices(input.garmentId);
+    if (!canModify) {
+      throw new Error('Cannot modify services for cancelled orders');
+    }
+
     // Check if actually removed
     if (!(service as any).is_removed) {
       throw new Error('Service is not removed');
@@ -487,6 +506,12 @@ export async function updateGarmentService(
       oldService.garments.orders.shop_id !== shop.id
     ) {
       throw new Error('Service not found');
+    }
+
+    // Check if services can be modified (not cancelled order)
+    const canModify = await canModifyGarmentServices(oldService.garment_id);
+    if (!canModify) {
+      throw new Error('Cannot modify services for cancelled orders');
     }
 
     // Check if service is completed - completed services cannot be edited

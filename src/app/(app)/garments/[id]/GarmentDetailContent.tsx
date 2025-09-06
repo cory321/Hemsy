@@ -7,6 +7,7 @@ import Link from 'next/link';
 import GarmentImageSection from './GarmentImageSection';
 import GarmentRightColumnOptimistic from './GarmentRightColumnOptimistic';
 import ReadyForPickupBanner from '@/components/garments/ReadyForPickupBanner';
+import CancelledOrderBanner from '@/components/garments/CancelledOrderBanner';
 import { useGarment } from '@/contexts/GarmentContext';
 import GarmentCompletionCelebration from '@/components/garments/GarmentCompletionCelebration';
 
@@ -57,6 +58,14 @@ export default function GarmentDetailContent({
           </Button>
         </Box>
       ) : null}
+
+      {/* Show Cancelled Order Banner when order is cancelled */}
+      {garment.order?.status === 'cancelled' && (
+        <CancelledOrderBanner
+          orderNumber={garment.order.order_number}
+          orderId={garment.order.id}
+        />
+      )}
 
       {/* Show Ready for Pickup Banner when stage is "Ready For Pickup" */}
       {garment.stage === 'Ready For Pickup' && (

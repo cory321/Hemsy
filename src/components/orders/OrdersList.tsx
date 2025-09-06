@@ -151,12 +151,20 @@ export default function OrdersList({
         const status = statusFilter === 'all' ? undefined : statusFilter;
         const paymentStatus =
           paymentStatusFilter === 'all' ? undefined : paymentStatusFilter;
+
+        // Handle cancelled order filtering
+        const onlyCancelled = statusFilter === 'cancelled';
+        const includeCancelled =
+          statusFilter === 'all' || statusFilter === 'cancelled';
+
         const filters: OrdersFilters = {
           search: debouncedSearch,
-          ...(status && { status }),
+          ...(status && status !== 'cancelled' && { status }),
           ...(paymentStatus && { paymentStatus }),
           sortBy: 'created_at',
           sortOrder: 'desc',
+          includeCancelled,
+          onlyCancelled,
         };
         const result = await getOrdersActionRef.current(
           page + 1,

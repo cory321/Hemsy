@@ -46,6 +46,8 @@ export default async function GarmentsPage({ searchParams }: PageProps) {
     shopId: shop.id,
     ...filters,
     limit: 20,
+    includeCancelled: false,
+    onlyCancelled: false,
   });
 
   // compute stageCounts from first page if provided; fallback to zeros

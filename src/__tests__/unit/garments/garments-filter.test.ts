@@ -19,6 +19,7 @@ describe('Garments Filter - Due Today and Overdue', () => {
   const mockQuery = {
     select: jest.fn().mockReturnThis(),
     eq: jest.fn().mockReturnThis(),
+    neq: jest.fn().mockReturnThis(),
     lt: jest.fn().mockReturnThis(),
     not: jest.fn().mockReturnThis(),
     or: jest.fn().mockReturnThis(),
@@ -114,6 +115,7 @@ describe('Garments Filter - Due Today and Overdue', () => {
       const viewQuery = {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
+        neq: jest.fn().mockReturnThis(),
         lt: jest.fn().mockReturnThis(),
         not: jest.fn().mockReturnThis(),
         or: jest.fn().mockReturnThis(),
@@ -209,6 +211,7 @@ describe('Garments Filter - Due Today and Overdue', () => {
       const viewQuery = {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
+        neq: jest.fn().mockReturnThis(),
         lt: jest.fn().mockReturnThis(),
         not: jest.fn().mockReturnThis(),
         or: jest.fn().mockReturnThis(),
