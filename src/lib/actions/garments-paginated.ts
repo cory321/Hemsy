@@ -154,7 +154,8 @@ export async function getGarmentsPaginated(
         created_at,
         event_date,
         is_done,
-        orders!garments_order_id_fkey (
+        orders!inner (
+          status,
           clients!orders_client_id_fkey (
             first_name,
             last_name
@@ -534,7 +535,7 @@ export async function getGarmentsPaginated(
         stages.map(async (s) => {
           const { count: c } = await supabase
             .from('garments')
-            .select('id, orders!inner(status)', {
+            .select('*, orders!inner(status)', {
               count: 'exact',
               head: true,
             })
