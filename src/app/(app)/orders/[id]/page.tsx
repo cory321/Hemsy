@@ -25,7 +25,7 @@ import { getInvoicePaymentHistory } from '@/lib/actions/payments';
 import { getOrderStatusLabel } from '@/lib/utils/orderStatus';
 import OrderDetailClient from './OrderDetailClient';
 import OptimisticOrderWrapper from './OptimisticOrderWrapper';
-import OrderCancellationSection from '@/components/orders/OrderCancellationSection';
+import OrderHeaderActions from '@/components/orders/OrderHeaderActions';
 import type { Database } from '@/types/supabase';
 import { formatPhoneNumber } from '@/lib/utils/phone';
 import {
@@ -364,20 +364,27 @@ export default async function OrderDetailPage({
                 : ''}
             </Typography>
           </Box>
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-            <Button variant="outlined" startIcon={<EditIcon />}>
-              Edit
-            </Button>
-            {order && (
-              <OrderDetailClient
-                order={order}
-                invoice={invoice}
-                shopSettings={{
-                  invoice_prefix: shopSettings?.invoice_prefix ?? 'INV',
-                }}
-              />
-            )}
-          </Box>
+          {order && (
+            <OrderHeaderActions
+              order={{
+                id: order.id,
+                order_number: order.order_number,
+                status: order.status,
+                total_cents: order.total_cents,
+              }}
+              invoice={invoice}
+              shopSettings={{
+                invoice_prefix: shopSettings?.invoice_prefix ?? 'INV',
+              }}
+              garments={
+                garments?.map((g: any) => ({
+                  id: g.id,
+                  name: g.name,
+                  stage: g.stage,
+                })) || []
+              }
+            />
+          )}
         </Box>
 
         {/* Condensed Order Overview */}
@@ -663,25 +670,6 @@ export default async function OrderDetailPage({
             </Grid>
           </CardContent>
         </Card>
-
-        {/* Order Cancellation Section */}
-        {order && (
-          <OrderCancellationSection
-            order={{
-              id: order.id,
-              order_number: order.order_number,
-              status: order.status,
-              total_cents: order.total_cents,
-            }}
-            garments={
-              garments?.map((g: any) => ({
-                id: g.id,
-                name: g.name,
-                stage: g.stage,
-              })) || []
-            }
-          />
-        )}
 
         {/* Services and Payment History Sections */}
         <OptimisticOrderWrapper

@@ -320,20 +320,32 @@ export default function GarmentServicesManagerOptimistic() {
           }}
         >
           <Typography variant="h6">Services</Typography>
-          <Button
-            startIcon={<AddIcon />}
-            variant="outlined"
-            size="small"
-            onClick={() => setShowAddDialog(true)}
-            disabled={
-              isGarmentDone ||
-              isOrderCancelled ||
-              togglingServiceId !== null ||
-              restoringServiceId !== null
+          <Tooltip
+            title={
+              isGarmentDone
+                ? 'Cannot add services to completed garments'
+                : isOrderCancelled
+                  ? 'Cannot add services to cancelled orders'
+                  : ''
             }
           >
-            Add Service
-          </Button>
+            <span>
+              <Button
+                startIcon={<AddIcon />}
+                variant="outlined"
+                size="small"
+                onClick={() => setShowAddDialog(true)}
+                disabled={
+                  isGarmentDone ||
+                  isOrderCancelled ||
+                  togglingServiceId !== null ||
+                  restoringServiceId !== null
+                }
+              >
+                Add Service
+              </Button>
+            </span>
+          </Tooltip>
         </Box>
 
         {/* Progress Indicator */}
@@ -394,29 +406,43 @@ export default function GarmentServicesManagerOptimistic() {
                                 <InfoIcon fontSize="small" color="action" />
                               </Tooltip>
                             )}
-                            <IconButton
-                              size="small"
-                              onClick={async () => {
-                                setRestoringServiceId(service.id);
-                                try {
-                                  await restoreService(service.id);
-                                } finally {
-                                  setRestoringServiceId(null);
-                                }
-                              }}
-                              disabled={
-                                loading ||
-                                togglingServiceId !== null ||
-                                restoringServiceId === service.id
+                            <Tooltip
+                              title={
+                                isGarmentDone
+                                  ? 'Cannot restore services for completed garments'
+                                  : isOrderCancelled
+                                    ? 'Cannot restore services for cancelled orders'
+                                    : 'Restore service'
                               }
-                              aria-label="Restore service"
                             >
-                              {restoringServiceId === service.id ? (
-                                <CircularProgress size={20} />
-                              ) : (
-                                <RestoreFromTrashIcon fontSize="small" />
-                              )}
-                            </IconButton>
+                              <span>
+                                <IconButton
+                                  size="small"
+                                  onClick={async () => {
+                                    setRestoringServiceId(service.id);
+                                    try {
+                                      await restoreService(service.id);
+                                    } finally {
+                                      setRestoringServiceId(null);
+                                    }
+                                  }}
+                                  disabled={
+                                    loading ||
+                                    isGarmentDone ||
+                                    isOrderCancelled ||
+                                    togglingServiceId !== null ||
+                                    restoringServiceId === service.id
+                                  }
+                                  aria-label="Restore service"
+                                >
+                                  {restoringServiceId === service.id ? (
+                                    <CircularProgress size={20} />
+                                  ) : (
+                                    <RestoreFromTrashIcon fontSize="small" />
+                                  )}
+                                </IconButton>
+                              </span>
+                            </Tooltip>
                           </>
                         ) : (
                           <>

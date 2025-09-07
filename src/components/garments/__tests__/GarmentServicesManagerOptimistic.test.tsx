@@ -9,6 +9,9 @@ import '@testing-library/jest-dom';
 // Mock the services actions
 jest.mock('@/lib/actions/services', () => ({
   searchServices: jest.fn(),
+  getFrequentlyUsedServices: jest
+    .fn()
+    .mockResolvedValue({ success: true, data: [] }),
 }));
 
 // Mock the GarmentContext
@@ -114,6 +117,7 @@ describe('GarmentServicesManagerOptimistic', () => {
         removeService: mockRemoveService,
         updateService: mockUpdateService,
         toggleServiceComplete: mockToggleServiceComplete,
+        restoreService: mockRestoreService,
       });
     });
 
@@ -298,6 +302,25 @@ describe('GarmentServicesManagerOptimistic', () => {
         expect(mockRemoveService).toHaveBeenCalledWith('service-1');
       });
     });
+
+    it('should allow restoring soft-deleted services', async () => {
+      const user = userEvent.setup();
+
+      render(<GarmentServicesManagerOptimistic />);
+
+      // Find the restore button for the soft-deleted service
+      const restoreButton = screen.getByRole('button', {
+        name: /restore service/i,
+      });
+      expect(restoreButton).not.toBeDisabled();
+
+      // Click restore button
+      await user.click(restoreButton);
+
+      await waitFor(() => {
+        expect(mockRestoreService).toHaveBeenCalledWith('service-3');
+      });
+    });
   });
 
   describe('When garment is Done', () => {
@@ -312,6 +335,7 @@ describe('GarmentServicesManagerOptimistic', () => {
         removeService: mockRemoveService,
         updateService: mockUpdateService,
         toggleServiceComplete: mockToggleServiceComplete,
+        restoreService: mockRestoreService,
       });
     });
 
@@ -355,6 +379,60 @@ describe('GarmentServicesManagerOptimistic', () => {
       });
     });
 
+    it('should disable restore button for soft-deleted services', () => {
+      render(<GarmentServicesManagerOptimistic />);
+
+      // Find the restore button for the soft-deleted service
+      const restoreButton = screen.getByRole('button', {
+        name: /restore service/i,
+      });
+      expect(restoreButton).toBeDisabled();
+    });
+
+    it('should show tooltip explaining why Add Service is disabled', async () => {
+      const user = userEvent.setup();
+      render(<GarmentServicesManagerOptimistic />);
+
+      // Find the disabled Add Service button
+      const addButton = screen.getByRole('button', { name: /add service/i });
+
+      // Hover over the button's parent span to show tooltip
+      const addButtonWrapper = addButton.closest('span');
+      if (addButtonWrapper) {
+        await user.hover(addButtonWrapper);
+      }
+
+      // Check if tooltip appears
+      await waitFor(() => {
+        expect(
+          screen.getByText('Cannot add services to completed garments')
+        ).toBeInTheDocument();
+      });
+    });
+
+    it('should show tooltip explaining why restore is disabled', async () => {
+      const user = userEvent.setup();
+      render(<GarmentServicesManagerOptimistic />);
+
+      // Find the disabled restore button
+      const restoreButton = screen.getByRole('button', {
+        name: /restore service/i,
+      });
+
+      // Hover over the button's parent span to show tooltip
+      const restoreButtonWrapper = restoreButton.closest('span');
+      if (restoreButtonWrapper) {
+        await user.hover(restoreButtonWrapper);
+      }
+
+      // Check if tooltip appears
+      await waitFor(() => {
+        expect(
+          screen.getByText('Cannot restore services for completed garments')
+        ).toBeInTheDocument();
+      });
+    });
+
     it('should show disabled message when no services exist', () => {
       mockUseGarment.mockReturnValue({
         garment: {
@@ -366,6 +444,7 @@ describe('GarmentServicesManagerOptimistic', () => {
         removeService: mockRemoveService,
         updateService: mockUpdateService,
         toggleServiceComplete: mockToggleServiceComplete,
+        restoreService: mockRestoreService,
       });
 
       render(<GarmentServicesManagerOptimistic />);
@@ -403,6 +482,7 @@ describe('GarmentServicesManagerOptimistic', () => {
         removeService: mockRemoveService,
         updateService: mockUpdateService,
         toggleServiceComplete: mockToggleServiceComplete,
+        restoreService: mockRestoreService,
       });
 
       render(<GarmentServicesManagerOptimistic />);
@@ -419,6 +499,7 @@ describe('GarmentServicesManagerOptimistic', () => {
         removeService: mockRemoveService,
         updateService: mockUpdateService,
         toggleServiceComplete: mockToggleServiceComplete,
+        restoreService: mockRestoreService,
       });
 
       // Component should handle this without crashing
@@ -440,6 +521,7 @@ describe('GarmentServicesManagerOptimistic', () => {
         removeService: mockRemoveService,
         updateService: mockUpdateService,
         toggleServiceComplete: mockToggleServiceComplete,
+        restoreService: mockRestoreService,
       });
 
       render(<GarmentServicesManagerOptimistic />);
