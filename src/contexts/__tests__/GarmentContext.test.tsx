@@ -49,7 +49,7 @@ const mockGarment = {
   order: {
     id: 'order-123',
     order_number: 'ORD-001',
-    status: 'active',
+    status: 'in_progress',
     client: {
       id: 'client-123',
       first_name: 'Jane',

@@ -2010,7 +2010,7 @@ export type Database = {
       garment_stage_enum: 'New' | 'In Progress' | 'Ready For Pickup' | 'Done';
       order_status:
         | 'new'
-        | 'active'
+        | 'in_progress'
         | 'ready_for_pickup'
         | 'completed'
         | 'cancelled';
@@ -2154,7 +2154,7 @@ export const Constants = {
       garment_stage_enum: ['New', 'In Progress', 'Ready For Pickup', 'Done'],
       order_status: [
         'new',
-        'active',
+        'in_progress',
         'ready_for_pickup',
         'completed',
         'cancelled',

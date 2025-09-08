@@ -60,7 +60,7 @@ const getStatusColor = (status: string) => {
   switch (status) {
     case 'new':
       return 'default';
-    case 'active':
+    case 'in_progress':
       return 'info';
     case 'ready_for_pickup':
       return 'warning';
@@ -77,8 +77,8 @@ const getStatusLabel = (status: string) => {
   switch (status) {
     case 'new':
       return 'New';
-    case 'active':
-      return 'Active';
+    case 'in_progress':
+      return 'In Progress';
     case 'ready_for_pickup':
       return 'Ready For Pickup';
     case 'completed':
@@ -279,7 +279,7 @@ export default function OrdersList({
             >
               <MenuItem value="all">All Order Statuses</MenuItem>
               <MenuItem value="new">New</MenuItem>
-              <MenuItem value="active">Active</MenuItem>
+              <MenuItem value="in_progress">In Progress</MenuItem>
               <MenuItem value="ready_for_pickup">Ready For Pickup</MenuItem>
               <MenuItem value="completed">Completed</MenuItem>
               <MenuItem value="cancelled">Cancelled</MenuItem>

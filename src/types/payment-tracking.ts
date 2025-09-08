@@ -1,7 +1,7 @@
 // Payment and refund tracking types
 export type OrderStatus =
   | 'new'
-  | 'active'
+  | 'in_progress'
   | 'ready_for_pickup'
   | 'completed'
   | 'cancelled';

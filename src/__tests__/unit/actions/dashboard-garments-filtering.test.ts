@@ -91,7 +91,7 @@ describe('Dashboard - Active Garments Filtering', () => {
                 },
               ],
               orders: {
-                status: 'active',
+                status: 'in_progress',
                 clients: {
                   first_name: 'John',
                   last_name: 'Doe',
@@ -208,7 +208,7 @@ describe('Dashboard - Active Garments Filtering', () => {
               due_date: '2024-01-10', // 5 days overdue
               garment_services: [],
               orders: {
-                status: 'active',
+                status: 'in_progress',
                 clients: { first_name: 'Jane', last_name: 'Smith' },
               },
             },
@@ -220,7 +220,7 @@ describe('Dashboard - Active Garments Filtering', () => {
               due_date: '2024-01-15', // Today
               garment_services: [],
               orders: {
-                status: 'active',
+                status: 'in_progress',
                 clients: { first_name: 'Bob', last_name: 'Johnson' },
               },
             },

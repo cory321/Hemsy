@@ -400,7 +400,7 @@ export async function getRecentClients(
 
 /**
  * Gets the count of active orders for a specific client.
- * Active orders include: 'new', 'active', 'ready_for_pickup' statuses.
+ * Active orders include: 'new', 'in_progress', 'ready_for_pickup' statuses.
  * Excludes: 'completed' and 'cancelled' statuses.
  */
 export async function getClientActiveOrdersCount(
@@ -415,7 +415,7 @@ export async function getClientActiveOrdersCount(
       .select('*', { count: 'exact', head: true })
       .eq('shop_id', shop.id)
       .eq('client_id', clientId)
-      .in('status', ['new', 'active', 'ready_for_pickup']);
+      .in('status', ['new', 'in_progress', 'ready_for_pickup']);
 
     if (error) {
       console.error('Failed to get client active orders count:', error);

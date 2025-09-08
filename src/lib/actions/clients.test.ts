@@ -674,7 +674,7 @@ describe('Client Actions', () => {
       // Verify that the function correctly filters for active statuses
       expect(mockChain.in).toHaveBeenCalledWith('status', [
         'new',
-        'active',
+        'in_progress',
         'ready_for_pickup',
       ]);
     });

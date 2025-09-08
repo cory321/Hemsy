@@ -157,7 +157,7 @@ export interface OrderWithGarmentCount extends Order {
 export type GarmentStage = 'New' | 'In Progress' | 'Ready For Pickup' | 'Done';
 export type OrderStatus =
   | 'new'
-  | 'active'
+  | 'in_progress'
   | 'ready_for_pickup'
   | 'completed'
   | 'cancelled';

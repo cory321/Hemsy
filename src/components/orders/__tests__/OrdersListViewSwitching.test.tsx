@@ -82,7 +82,7 @@ const mockInitialData: any = {
     {
       id: 'order-1',
       order_number: '2024-001',
-      status: 'active',
+      status: 'in_progress',
       order_due_date: new Date(
         Date.now() + 2 * 24 * 60 * 60 * 1000
       ).toISOString(),

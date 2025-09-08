@@ -84,7 +84,7 @@ const mockGarment = {
   order: {
     id: 'test-order-id',
     order_number: 'ORD-001',
-    status: 'active',
+    status: 'in_progress',
     shop_id: 'test-shop-id',
     client: {
       id: 'test-client-id',

@@ -19,7 +19,7 @@ describe('Order Cancellation Utils', () => {
     it('should return null for non-cancelled orders', () => {
       const statuses: OrderStatus[] = [
         'new',
-        'active',
+        'in_progress',
         'ready_for_pickup',
         'completed',
       ];
@@ -35,7 +35,7 @@ describe('Order Cancellation Utils', () => {
     it('should return true for cancellable order statuses', () => {
       const cancellableStatuses: OrderStatus[] = [
         'new',
-        'active',
+        'in_progress',
         'ready_for_pickup',
       ];
 
@@ -61,7 +61,7 @@ describe('Order Cancellation Utils', () => {
     it('should return false for non-cancelled orders', () => {
       const nonCancelledStatuses: OrderStatus[] = [
         'new',
-        'active',
+        'in_progress',
         'ready_for_pickup',
         'completed',
       ];
@@ -82,7 +82,7 @@ describe('Order Cancellation Utils', () => {
     it('should return null for non-cancelled orders', () => {
       const nonCancelledStatuses: OrderStatus[] = [
         'new',
-        'active',
+        'in_progress',
         'ready_for_pickup',
         'completed',
       ];

@@ -51,7 +51,7 @@ export default function OrderStatusWithActions({
     switch (status) {
       case 'new':
         return 'default';
-      case 'active':
+      case 'in_progress':
         return 'info';
       case 'ready_for_pickup':
         return 'warning';

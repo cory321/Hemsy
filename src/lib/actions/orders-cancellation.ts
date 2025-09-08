@@ -237,7 +237,7 @@ export async function restoreOrder(
           (stage) => stage === 'In Progress' || stage === 'Ready For Pickup'
         )
       ) {
-        calculatedStatus = 'active';
+        calculatedStatus = 'in_progress';
       }
       // Otherwise, order is new (all garments are New)
     }

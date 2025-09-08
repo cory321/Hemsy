@@ -7,7 +7,7 @@ Order status is now automatically derived from garment stages, completely decoup
 ## Order Status Values
 
 - **`new`** - All garments are in 'New' stage (no work has started)
-- **`active`** - Mixed garment stages indicating work is in progress
+- **`in_progress`** - Mixed garment stages indicating work is in progress
 - **`ready`** - All garments are either 'Ready For Pickup' or 'Done' (but not all Done)
 - **`completed`** - All garments are in 'Done' stage (all picked up)
 - **`cancelled`** - Order has been cancelled (set manually)
@@ -19,7 +19,7 @@ Order status is now automatically derived from garment stages, completely decoup
 - **Condition**: All garments in the order are in 'New' stage
 - **Meaning**: No work has started on any garment yet
 
-### Status: `active`
+### Status: `in_progress`
 
 - **Condition**: Mixed garment stages (not all garments at the same completion level)
 - **Examples**:
