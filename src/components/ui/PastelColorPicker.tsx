@@ -370,7 +370,7 @@ export function PastelColorPicker({
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
-                aria-hidden
+                aria-hidden="true"
               >
                 <CheckIcon sx={{ fontSize: 14 }} />
               </Box>

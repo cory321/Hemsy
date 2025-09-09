@@ -81,7 +81,7 @@ const TestDashboardComponent = ({ mockData }: { mockData: any }) => {
             {mockData.readyForPickupGarments &&
               mockData.readyForPickupGarments.length > 0 && (
                 <ReadyForPickupSectionClient
-                  garments={mockData.readyForPickupGarments.slice(0, 3)}
+                  garments={mockData.readyForPickupGarments.slice(0, 5)}
                   totalCount={mockData.stageCounts['Ready For Pickup'] || 0}
                 />
               )}

@@ -199,7 +199,7 @@ async function DashboardContent() {
               {data.readyForPickupGarments &&
                 data.readyForPickupGarments.length > 0 && (
                   <ReadyForPickupSectionClient
-                    garments={data.readyForPickupGarments.slice(0, 3)}
+                    garments={data.readyForPickupGarments.slice(0, 5)}
                     totalCount={data.stageCounts['Ready For Pickup'] || 0}
                   />
                 )}

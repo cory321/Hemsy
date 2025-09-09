@@ -482,7 +482,7 @@ export async function getReadyForPickupGarments(): Promise<ActiveGarment[]> {
     .eq('stage', 'Ready For Pickup')
     .neq('orders.status', 'cancelled')
     .order('created_at', { ascending: false })
-    .limit(3); // Get only the 3 most recent
+    .limit(5); // Get only the 5 most recent
 
   if (error) {
     console.error('Error fetching ready for pickup garments:', error);

@@ -43,7 +43,7 @@ function RemixIcon({
     <i
       className={`ri ${name}`}
       style={{ fontSize: size, color: color || 'currentColor' }}
-      aria-hidden
+      aria-hidden="true"
     />
   );
 }

@@ -19,7 +19,11 @@ export default function MorePage() {
   const { signOut } = useClerk();
   function RemixIcon({ name, size = 22 }: { name: string; size?: number }) {
     return (
-      <i className={`ri ${name}`} style={{ fontSize: size }} aria-hidden />
+      <i
+        className={`ri ${name}`}
+        style={{ fontSize: size }}
+        aria-hidden="true"
+      />
     );
   }
   const menuItems = [
@@ -81,7 +85,7 @@ export default function MorePage() {
               secondaryAction={
                 <i
                   className="ri-arrow-right-s-line"
-                  aria-hidden
+                  aria-hidden="true"
                   style={{ color: 'var(--mui-palette-action-active)' }}
                 />
               }

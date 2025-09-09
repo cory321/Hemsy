@@ -29,8 +29,24 @@ import { Logo } from './Logo';
 // Icons
 import { useState } from 'react';
 
-function RemixIcon({ name, size = 22 }: { name: string; size?: number }) {
-  return <i className={`ri ${name}`} style={{ fontSize: size }} aria-hidden />;
+function RemixIcon({
+  name,
+  size = 22,
+  isDecorative = true,
+  ariaLabel,
+}: {
+  name: string;
+  size?: number;
+  isDecorative?: boolean;
+  ariaLabel?: string;
+}) {
+  const iconProps = isDecorative
+    ? { 'aria-hidden': true as const }
+    : { 'aria-label': ariaLabel || `${name} icon`, role: 'img' as const };
+
+  return (
+    <i className={`ri ${name}`} style={{ fontSize: size }} {...iconProps} />
+  );
 }
 
 // Navigation items configuration
@@ -326,7 +342,7 @@ function TabletNav() {
             >
               <i
                 className="ri-menu-line"
-                aria-hidden
+                aria-hidden="true"
                 style={{ fontSize: 22 }}
               />
             </IconButton>
