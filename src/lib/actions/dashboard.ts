@@ -34,7 +34,6 @@ export interface BusinessHealthData {
 
   // Enhanced MVP fields
   dailyAverageThisMonth: number;
-  projectedMonthEndRevenue: number;
   periodContext: 'early' | 'mid' | 'late';
   transactionCount: number;
 
@@ -862,18 +861,10 @@ export async function getBusinessHealthData(): Promise<BusinessHealthData> {
     monthlyRevenueComparison = 100;
   }
 
-  // Calculate daily average and projection
+  // Calculate daily average
   const daysIntoMonth = currentDay;
   const dailyAverageThisMonth =
     daysIntoMonth > 0 ? currentMonthRevenueCents / daysIntoMonth : 0;
-
-  // Get days in current month for projection
-  const daysInCurrentMonth = new Date(
-    today.getFullYear(),
-    today.getMonth() + 1,
-    0
-  ).getDate();
-  const projectedMonthEndRevenue = dailyAverageThisMonth * daysInCurrentMonth;
 
   // Determine period context
   let periodContext: 'early' | 'mid' | 'late' = 'early';
@@ -930,7 +921,6 @@ export async function getBusinessHealthData(): Promise<BusinessHealthData> {
 
     // Enhanced fields
     dailyAverageThisMonth,
-    projectedMonthEndRevenue,
     periodContext,
     transactionCount,
     rolling30DayRevenue: rolling30DayRevenueCents,

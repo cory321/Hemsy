@@ -15,6 +15,7 @@ describe('getBusinessHealthData', () => {
   const mockShop = {
     id: 'shop-123',
     name: 'Test Shop',
+    timezone: 'America/New_York',
   };
 
   const mockUser = {
@@ -30,6 +31,29 @@ describe('getBusinessHealthData', () => {
     });
     (auth as unknown as jest.Mock).mockResolvedValue({
       userId: 'clerk-user-123',
+    });
+
+    // Mock the timezone lookup that happens at the beginning of getBusinessHealthData
+    mockSupabase.from.mockImplementation((table: string) => {
+      if (table === 'shops') {
+        return {
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          single: jest.fn().mockResolvedValue({
+            data: { timezone: 'America/New_York' },
+            error: null,
+          }),
+        };
+      }
+      // Default fallback for other tables
+      return {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        neq: jest.fn().mockReturnThis(),
+        in: jest.fn().mockReturnThis(),
+        gte: jest.fn().mockReturnThis(),
+        lt: jest.fn().mockResolvedValue({ data: [] }),
+      };
     });
   });
 
@@ -99,15 +123,25 @@ describe('getBusinessHealthData', () => {
       mockSupabase.from.mockImplementation((table: string) => {
         callCount++;
 
-        if (table === 'orders') {
+        // Always handle timezone lookup first
+        if (table === 'shops') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({
+              data: { timezone: 'America/New_York' },
+              error: null,
+            }),
+          };
+        } else if (table === 'orders') {
           return {
             select: jest.fn().mockReturnThis(),
             eq: jest.fn().mockReturnThis(),
             neq: jest.fn().mockResolvedValue(mockUnpaidOrders),
           };
         } else if (table === 'payments') {
-          const isThisMonth = callCount === 2;
-          const isLastMonth = callCount === 3;
+          const isThisMonth = callCount === 3; // Adjusted for timezone call
+          const isLastMonth = callCount === 4; // Adjusted for timezone call
 
           return {
             select: jest.fn().mockReturnThis(),
@@ -165,14 +199,24 @@ describe('getBusinessHealthData', () => {
       mockSupabase.from.mockImplementation((table: string) => {
         callCount++;
 
-        if (table === 'orders') {
+        // Always handle timezone lookup first
+        if (table === 'shops') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({
+              data: { timezone: 'America/New_York' },
+              error: null,
+            }),
+          };
+        } else if (table === 'orders') {
           return {
             select: jest.fn().mockReturnThis(),
             eq: jest.fn().mockReturnThis(),
             neq: jest.fn().mockResolvedValue({ data: [] }),
           };
         } else if (table === 'payments') {
-          const isThisMonth = callCount === 2;
+          const isThisMonth = callCount === 3; // Adjusted for timezone call
 
           return {
             select: jest.fn().mockReturnThis(),
@@ -210,14 +254,28 @@ describe('getBusinessHealthData', () => {
     });
 
     it('should handle zero revenue correctly', async () => {
-      mockSupabase.from.mockImplementation(() => ({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        neq: jest.fn().mockReturnThis(),
-        in: jest.fn().mockReturnThis(),
-        gte: jest.fn().mockReturnThis(),
-        lt: jest.fn().mockResolvedValue({ data: [] }),
-      }));
+      mockSupabase.from.mockImplementation((table: string) => {
+        // Always handle timezone lookup first
+        if (table === 'shops') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({
+              data: { timezone: 'America/New_York' },
+              error: null,
+            }),
+          };
+        }
+
+        return {
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          neq: jest.fn().mockReturnThis(),
+          in: jest.fn().mockReturnThis(),
+          gte: jest.fn().mockReturnThis(),
+          lt: jest.fn().mockResolvedValue({ data: [] }),
+        };
+      });
 
       const result = await getBusinessHealthData();
 

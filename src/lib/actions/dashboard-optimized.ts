@@ -235,7 +235,6 @@ async function getBusinessMetricsConsolidatedInternal(shopId: string) {
   const daysElapsed = currentDay;
   const dailyAverageThisMonth =
     daysElapsed > 0 ? currentMonthRevenueCents / daysElapsed : 0;
-  const projectedMonthEndRevenue = dailyAverageThisMonth * daysInMonth;
 
   const periodContext =
     currentDay <= 10 ? 'early' : currentDay <= 20 ? 'mid' : 'late';
@@ -265,7 +264,6 @@ async function getBusinessMetricsConsolidatedInternal(shopId: string) {
     rolling30DayLabel: `${rolling30StartDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${shopNow.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
     previous30DayLabel: `${previous30StartDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${previous30EndDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
     dailyAverageThisMonth,
-    projectedMonthEndRevenue,
     periodContext,
     transactionCount: currentMonthRevenue.data?.length || 0,
     rolling30DayRevenue: rolling30RevenueCents,

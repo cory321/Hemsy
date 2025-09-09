@@ -287,7 +287,6 @@ describe('DashboardServerOptimized', () => {
       rolling30DayLabel: 'Dec 16 - Jan 15',
       previous30DayLabel: 'Nov 16 - Dec 15',
       dailyAverageThisMonth: 3333,
-      projectedMonthEndRevenue: 100000,
       periodContext: 'mid' as const,
       transactionCount: 15,
       rolling30DayRevenue: 75000,

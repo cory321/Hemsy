@@ -35,7 +35,6 @@ interface BusinessHealthProps {
 
   // Enhanced fields
   dailyAverageThisMonth?: number;
-  projectedMonthEndRevenue?: number;
   periodContext?: 'early' | 'mid' | 'late';
   transactionCount?: number;
   rolling30DayRevenue?: number;
@@ -70,7 +69,6 @@ export function BusinessHealth({
 
   // Enhanced fields
   dailyAverageThisMonth = 0,
-  projectedMonthEndRevenue = 0,
   periodContext = 'early',
   transactionCount = 0,
   rolling30DayRevenue = 0,
@@ -145,10 +143,6 @@ export function BusinessHealth({
   };
 
   const percentageDisplay = getSmartPercentageDisplay();
-
-  // Forecast logic with gating
-  const shouldShowForecast =
-    !loading && transactionCount >= 3 && periodContext !== 'late';
 
   // Period context display
   const getPeriodContextText = () => {
@@ -268,41 +262,6 @@ export function BusinessHealth({
             vs {loading ? '...' : formatCurrency(previousRevenueCents)} (
             {loading ? 'comparison period' : comparisonLabel})
           </Typography>
-
-          {/* Forecast with Trust Qualifier */}
-          {shouldShowForecast && viewMode === 'mtd' && (
-            <Typography
-              variant="caption"
-              sx={{
-                color: refinedColors.text.secondary,
-                display: 'block',
-                mt: 0.5,
-                fontStyle: 'italic',
-                wordBreak: 'break-word',
-                lineHeight: 1.3,
-              }}
-            >
-              On track for ~{formatCurrency(projectedMonthEndRevenue)} this
-              month (based on current pace)
-            </Typography>
-          )}
-
-          {!shouldShowForecast &&
-            !loading &&
-            viewMode === 'mtd' &&
-            transactionCount < 3 && (
-              <Typography
-                variant="caption"
-                sx={{
-                  color: refinedColors.text.secondary,
-                  display: 'block',
-                  mt: 0.5,
-                  fontStyle: 'italic',
-                }}
-              >
-                Too few transactions to forecast
-              </Typography>
-            )}
         </Box>
 
         {/* Unpaid Balance Section - conditionally rendered */}
