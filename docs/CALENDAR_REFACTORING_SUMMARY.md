@@ -2,7 +2,7 @@
 
 ## Architecture Overview
 
-We've designed and implemented a comprehensive refactoring of the Threadfolio V2 calendar system to efficiently handle hundreds of thousands of appointments using:
+We've designed and implemented a comprehensive refactoring of the Hemsy calendar system to efficiently handle hundreds of thousands of appointments using:
 
 1. **Time-Range Queries** - Fixed window queries (month/week/day) instead of pagination
 2. **React Query** - Advanced caching and background prefetching

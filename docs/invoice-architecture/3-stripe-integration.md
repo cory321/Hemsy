@@ -4,7 +4,7 @@ _Last updated: January 2025_
 
 ## Overview
 
-This document details the comprehensive Stripe integration approach for Threadfolio's Invoice Management feature, covering payment processing, webhook handling, security implementation, and error management strategies.
+This document details the comprehensive Stripe integration approach for Hemsyoice Management feature, covering payment processing, webhook handling, security implementation, and error management strategies.
 
 ## Table of Contents
 
@@ -23,7 +23,7 @@ This document details the comprehensive Stripe integration approach for Threadfo
 
 ```mermaid
 graph TB
-    subgraph "Threadfolio Application"
+    subgraph "Hemsy Application"
         A[Payment UI Components]
         B[Server Actions]
         C[Webhook Handlers]
@@ -1081,7 +1081,7 @@ export class StripeErrorTracking {
 
 ## Conclusion
 
-This Stripe integration architecture provides a secure, reliable, and scalable payment processing system for Threadfolio. Key strengths include:
+This Stripe integration architecture provides a secure, reliable, and scalable payment processing system for Hemsy. Key strengths include:
 
 - **Security First**: PCI compliance through Stripe Elements and secure token handling
 - **Reliability**: Comprehensive error handling and webhook resilience

@@ -63,7 +63,7 @@ export default function ColorPaletteDemo() {
         variant="h4"
         sx={{ mb: 4, color: 'primary.main', fontWeight: 700 }}
       >
-        Threadfolio V2 Color Palette
+        Hemsy Color Palette
       </Typography>
 
       {/* Primary Colors */}

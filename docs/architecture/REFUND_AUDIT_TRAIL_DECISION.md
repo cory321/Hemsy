@@ -12,7 +12,7 @@ We maintain our own `refunds` table alongside Stripe's records to provide platfo
 
 ## Context
 
-Threadfolio uses Stripe Connect with Standard accounts where:
+Hemsy uses Stripe Connect with Standard accounts where:
 
 - Seamstresses are the merchant of record (direct charges)
 - Each seamstress has their own Stripe Dashboard access

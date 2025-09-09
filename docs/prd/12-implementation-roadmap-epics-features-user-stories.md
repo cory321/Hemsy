@@ -20,7 +20,7 @@
 - **Feature 1.1.3: Business Settings CRUD**
   - **User Story**: As a seamstress, I want to update my business settings (name, working hours, payment preference) so my data stays current.
 - **Feature 1.1.4: Free-Trial Activation**
-  - **User Story**: As a seamstress, I want a 14-day free trial (no card required) so I can evaluate Threadfolio risk-free.
+  - **User Story**: As a seamstress, I want a 14-day free trial (no card required) so I can evaluate Hemsy risk-free.
 
 ---
 
@@ -101,7 +101,7 @@
 - **Feature 7.1.1: Marketing Pages**
   - **User Story**: As a visitor, I want fast-loading, SEO-optimized pages (Home, Features, Pricing, FAQ, Contact, Privacy, Terms) so I can evaluate and sign up.
 - **Feature 7.1.2: Subscription Flow Post-Trial**
-  - **User Story**: As a seamstress, I want to subscribe via Stripe Billing when my free trial ends so I continue using Threadfolio.
+  - **User Story**: As a seamstress, I want to subscribe via Stripe Billing when my free trial ends so I continue using Hemsy.
 
 ---
 

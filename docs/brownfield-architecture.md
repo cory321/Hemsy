@@ -1,8 +1,8 @@
-# Threadfolio V2 Brownfield Architecture Document
+# Hemsy Brownfield Architecture Document
 
 ## Introduction
 
-This document captures the current state of the Threadfolio V2 codebase, including real-world patterns, technical debt, and integration constraints. It is optimized for AI agents and contributors working on enhancements and maintenance.
+This document captures the current state of the Hemsy codebase, including real-world patterns, technical debt, and integration constraints. It is optimized for AI agents and contributors working on enhancements and maintenance.
 
 ### Document Scope
 

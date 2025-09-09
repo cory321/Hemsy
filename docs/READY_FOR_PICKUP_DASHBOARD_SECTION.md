@@ -2,7 +2,7 @@
 
 ## Overview
 
-The dashboard now includes a dedicated "Ready For Pickup" section that displays the latest 3 garments ready for customer pickup. This section appears directly below the main Garment Pipeline section and provides quick visibility into completed items awaiting collection.
+The dashboard now includes a dedicated "Ready For Pickup" section that displays the latest 5 garments ready for customer pickup. This section appears directly below the main Garment Pipeline section and provides quick visibility into completed items awaiting collection.
 
 ## Visual Design
 
@@ -25,7 +25,7 @@ The dashboard now includes a dedicated "Ready For Pickup" section that displays 
 
 - **Icon**: LocalShipping icon in a colored box
 - **Title**: "Ready For Pickup"
-- **Subtitle**: Dynamic count (e.g., "3 garments ready for customer pickup")
+- **Subtitle**: Dynamic count (e.g., "5 garments ready for customer pickup")
 - **View All Button**: Quick navigation to filtered garments page
 
 ### 2. Garment Items (Compact View)
@@ -69,7 +69,7 @@ Each garment item displays:
 
 - Fetches garments with stage "Ready For Pickup"
 - Orders by most recent first (`created_at DESC`)
-- Limits to 3 garments
+- Limits to 5 garments
 - Includes client name and service data
 - Returns typed `ActiveGarment[]` array
 
@@ -78,7 +78,7 @@ Each garment item displays:
 ### Display Rules
 
 1. **Section Visibility**: Only shown when there are garments ready for pickup
-2. **Item Count**: Maximum of 3 items displayed
+2. **Item Count**: Maximum of 5 items displayed
 3. **Sorting**: Most recently marked as ready shown first
 4. **Progress**: All items show 100% progress (since they're complete)
 

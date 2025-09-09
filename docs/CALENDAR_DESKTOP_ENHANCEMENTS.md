@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document outlines the significant improvements made to the calendar component specifically for desktop responsive view in the Threadfolio V2 application.
+This document outlines the significant improvements made to the calendar component specifically for desktop responsive view in the Hemsy application.
 
 ## Key Features Added
 

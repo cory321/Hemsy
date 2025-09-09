@@ -8,7 +8,7 @@
               │
               ▼
 ┌────────────────────────────┐
-│  Threadfolio App (PWA)     │
+│  Hemsy App (PWA)     │
 │  Next.js 15+ (App Router)  │
 │  MUI, React Server Components │
 └─────────────┬──────────────┘

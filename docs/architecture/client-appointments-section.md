@@ -454,7 +454,7 @@ export function useClientAppointments(
 
 ## Conclusion
 
-The Client Appointments Section represents a natural evolution of Threadfolio's client management capabilities. By following this architecture, we ensure a seamless, performant, and user-centric implementation that scales with the business needs of seamstresses.
+The Client Appointments Section represents a natural evolution of Hemsy's client management capabilities. By following this architecture, we ensure a seamless, performant, and user-centric implementation that scales with the business needs of seamstresses.
 
 This design prioritizes:
 

@@ -1,5 +1,5 @@
 /**
- * Threadfolio V2 Color Palette
+ * Hemsy Color Palette
  *
  * A warm, crafted color palette inspired by fabric and textile tones.
  * These colors evoke the feeling of a professional tailoring studio.

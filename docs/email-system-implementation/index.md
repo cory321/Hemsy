@@ -1,6 +1,6 @@
-# Threadfolio Email System Implementation Guide
+# Hemsy Email System Implementation Guide
 
-This guide contains step-by-step implementation instructions for adding the email notification system to Threadfolio V2.
+This guide contains step-by-step implementation instructions for adding the email notification system to Hemsy.
 
 ## Implementation Phases
 

@@ -4,7 +4,7 @@ _Last updated: January 2025_
 
 ## Overview
 
-This document outlines the comprehensive security architecture and PCI compliance strategy for Threadfolio's Invoice Management feature, ensuring secure payment processing while maintaining the trust of seamstresses and their clients.
+This document outlines the comprehensive security architecture and PCI compliance strategy for Hemsy's Invoice Management feature, ensuring secure payment processing while maintaining the trust of seamstresses and their clients.
 
 ## Table of Contents
 
@@ -1173,4 +1173,4 @@ This comprehensive security architecture ensures:
 - **Incident Response**: Automated detection and response capabilities
 - **Continuous Monitoring**: Real-time security monitoring and alerting
 
-The architecture prioritizes security while maintaining usability for seamstresses and their clients, ensuring trust in Threadfolio's payment processing capabilities.
+The architecture prioritizes security while maintaining usability for seamstresses and their clients, ensuring trust in Hemsy's payment processing capabilities.

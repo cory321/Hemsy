@@ -1,6 +1,6 @@
-# Threadfolio V2 Documentation
+# Hemsy Documentation
 
-This directory contains all project documentation for Threadfolio V2.
+This directory contains all project documentation for Hemsy.
 
 ## Core Documents
 

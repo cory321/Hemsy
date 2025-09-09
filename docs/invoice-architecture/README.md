@@ -1,6 +1,6 @@
-# Threadfolio Invoice Management - Technical Architecture Documentation
+# Hemsy Invoice Management - Technical Architecture Documentation
 
-This directory contains the comprehensive technical architecture documentation for implementing the Invoice Management feature in Threadfolio. These documents provide detailed implementation guidance for developers.
+This directory contains the comprehensive technical architecture documentation for implementing the Invoice Management feature in Hemsy. These documents provide detailed implementation guidance for developers.
 
 ## 📚 Documentation Structure
 
@@ -230,4 +230,4 @@ For questions about the architecture:
 
 ---
 
-_These documents represent the complete technical blueprint for implementing Threadfolio's Invoice Management feature. Follow them carefully to ensure a secure, performant, and maintainable implementation._
+_These documents represent the complete technical blueprint for implementing Hemsy's Invoice Management feature. Follow them carefully to ensure a secure, performant, and maintainable implementation._

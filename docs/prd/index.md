@@ -1,8 +1,8 @@
-# Threadfolio Product Requirements Document (PRD)
+# Hemsy Product Requirements Document (PRD)
 
 ## Table of Contents
 
-- [Threadfolio Product Requirements Document (PRD)](#table-of-contents)
+- [Hemsy Product Requirements Document (PRD)](#table-of-contents)
   - [1. Executive Summary](./1-executive-summary.md)
   - [2. Product Goals & Scope](./2-product-goals-scope.md)
   - [3. Core Features](./3-core-features.md)

@@ -1,6 +1,6 @@
 # Playwright E2E Testing with Clerk Authentication
 
-This document explains how to run end-to-end tests with Clerk authentication in the Threadfolio V2 application.
+This document explains how to run end-to-end tests with Clerk authentication in the Hemsy application.
 
 ## Overview
 

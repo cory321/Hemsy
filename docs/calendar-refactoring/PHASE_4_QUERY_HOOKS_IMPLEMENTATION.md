@@ -17,7 +17,7 @@ Verify and test the React Query hooks and server actions for efficient data fetc
 
 ### 1. Verify Query Hooks File (10 minutes)
 
-Check the hooks at: `/Users/corywilliams/Threadfolio V2/src/lib/queries/appointment-queries.ts`
+Check the hooks at: `/Users/corywilliams/Hemsy/src/lib/queries/appointment-queries.ts`
 
 Key hooks to verify:
 
@@ -55,7 +55,7 @@ import {
 
 ### 3. Test Server Actions (10 minutes)
 
-Verify the refactored server actions at: `/Users/corywilliams/Threadfolio V2/src/lib/actions/appointments-refactored.ts`
+Verify the refactored server actions at: `/Users/corywilliams/Hemsy/src/lib/actions/appointments-refactored.ts`
 
 Test the time-range function:
 
@@ -82,7 +82,7 @@ async function testServerAction() {
 
 ### 4. Verify Edge Runtime Route (10 minutes)
 
-Check the API route at: `/Users/corywilliams/Threadfolio V2/src/app/api/appointments/time-range/route.ts`
+Check the API route at: `/Users/corywilliams/Hemsy/src/app/api/appointments/time-range/route.ts`
 
 Test the endpoint:
 

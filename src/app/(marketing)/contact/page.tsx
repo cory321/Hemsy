@@ -81,7 +81,7 @@ export default function ContactPage() {
             You can also reach us at:
           </Typography>
           <Typography variant="body1" sx={{ mt: 1 }}>
-            support@threadfolio.com
+            support@hemsy.app
           </Typography>
         </Box>
       </Box>

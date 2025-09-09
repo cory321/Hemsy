@@ -2,8 +2,8 @@
 jest.mock('@/lib/config/email.config', () => {
   const emailConfig = {
     sender: {
-      address: 'test@threadfolio.com',
-      name: 'Threadfolio Test',
+      address: 'test@hemsy.app',
+      name: 'Hemsy Test',
       replyTo: undefined as string | undefined,
       get formatted() {
         return `${this.name} <${this.address}>`;
@@ -19,7 +19,7 @@ jest.mock('@/lib/config/email.config', () => {
       app: 'http://localhost:3000',
       confirmation: 'http://localhost:3000/confirm',
     },
-    dev: { overrideRecipient: 'test@threadfolio.com' },
+    dev: { overrideRecipient: 'test@hemsy.app' },
   } as const;
 
   return {

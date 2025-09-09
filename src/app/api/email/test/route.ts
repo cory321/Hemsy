@@ -21,11 +21,11 @@ export async function POST(request: NextRequest) {
         process.env.NODE_ENV !== 'production'
           ? [process.env.EMAIL_DEV_OVERRIDE || 'cory321@gmail.com']
           : [email],
-      subject: 'Threadfolio Email System Test',
+      subject: 'Hemsy Email System Test',
       react: EmailTemplate({
-        title: '🎉 Threadfolio Email System Test',
+        title: '🎉 Hemsy Email System Test',
         content:
-          'Congratulations! Your Threadfolio email system is working correctly using the official Resend Next.js patterns.',
+          'Congratulations! Your Hemsy email system is working correctly using the official Resend Next.js patterns.',
         details: [
           { label: 'From', value: emailConfig.sender.formatted },
           { label: 'System', value: 'Resend API with React Templates' },
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
           { label: 'API Route', value: '/api/email/test' },
         ],
         footer:
-          'This test email was sent from your Threadfolio V2 development environment using the official Resend Next.js integration patterns.',
+          'This test email was sent from your Hemsy development environment using the official Resend Next.js integration patterns.',
       }),
     };
 

@@ -1,5 +1,5 @@
 // =====================================================
-// THREADFOLIO V2 DATABASE BACKUP TYPES
+// Hemsy DATABASE BACKUP TYPES
 // Generated: 2024-12-19
 // Purpose: TypeScript definitions for database backup
 // =====================================================

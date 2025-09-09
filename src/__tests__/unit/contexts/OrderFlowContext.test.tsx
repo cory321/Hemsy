@@ -112,7 +112,7 @@ describe('OrderFlowContext', () => {
       notes: '',
     };
 
-    localStorage.setItem('threadfolio_order_draft', JSON.stringify(storedData));
+    localStorage.setItem('hemsy_order_draft', JSON.stringify(storedData));
 
     render(
       <OrderFlowProvider>
@@ -140,7 +140,7 @@ describe('OrderFlowContext', () => {
       notes: '',
     };
 
-    localStorage.setItem('threadfolio_order_draft', JSON.stringify(storedData));
+    localStorage.setItem('hemsy_order_draft', JSON.stringify(storedData));
 
     const mockClient = {
       id: 'new-client-123',

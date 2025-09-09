@@ -3,7 +3,7 @@
 /**
  * Database Setup Script
  *
- * This script creates the necessary database tables for Threadfolio V2.
+ * This script creates the necessary database tables for Hemsy.
  * It sets up the core schema including users, shops, and clients tables.
  */
 
@@ -18,7 +18,7 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 import { createClient } from '@supabase/supabase-js';
 
 async function setupDatabase() {
-  console.log('🛠️  Setting up Threadfolio V2 Database');
+  console.log('🛠️  Setting up Hemsy Database');
   console.log('====================================\n');
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;

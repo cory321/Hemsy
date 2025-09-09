@@ -93,7 +93,7 @@ export default function GarmentImageUpload({
         ) : (
           <CldUploadWidget
             uploadPreset={
-              process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'threadfolio'
+              process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'hemsy'
             }
             signatureEndpoint="/api/sign-cloudinary-params"
             onSuccess={handleUploadSuccess}
@@ -181,7 +181,7 @@ export default function GarmentImageUpload({
       ) : (
         <CldUploadWidget
           uploadPreset={
-            process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'threadfolio'
+            process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'hemsy'
           }
           signatureEndpoint="/api/sign-cloudinary-params"
           onSuccess={handleUploadSuccess}

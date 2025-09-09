@@ -26,9 +26,9 @@ export default function FAQPage() {
         'Absolutely. We use bank-level encryption, secure cloud hosting, and follow industry best practices for data security.',
     },
     {
-      question: 'Can I use Threadfolio on my phone?',
+      question: 'Can I use Hemsy on my phone?',
       answer:
-        'Yes! Threadfolio is designed mobile-first. It works perfectly on any smartphone, tablet, or computer.',
+        'Yes! Hemsy is designed mobile-first. It works perfectly on any smartphone, tablet, or computer.',
     },
     {
       question: 'Do you offer customer support?',

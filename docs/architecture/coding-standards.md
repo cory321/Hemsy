@@ -1,4 +1,4 @@
-# Threadfolio V2 Coding Standards
+# Hemsy Coding Standards
 
 ## Table of Contents
 
@@ -20,9 +20,9 @@
 
 ## 1. Introduction
 
-This document defines the coding standards for all developers and AI agents working on Threadfolio V2. These standards are **mandatory** and ensure consistency, maintainability, and quality across the codebase.
+This document defines the coding standards for all developers and AI agents working on Hemsy. These standards are **mandatory** and ensure consistency, maintainability, and quality across the codebase.
 
-**Note**: Threadfolio V2 is a mobile-first web application built with Next.js. While we prioritize mobile user experience and performance, we are not implementing PWA features or offline functionality at this time to reduce complexity.
+**Note**: Hemsy is a mobile-first web application built with Next.js. While we prioritize mobile user experience and performance, we are not implementing PWA features or offline functionality at this time to reduce complexity.
 
 ### Key Documents to Read First
 

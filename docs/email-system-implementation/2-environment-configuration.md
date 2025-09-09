@@ -24,7 +24,7 @@ Configure environment variables and external services for the email system.
 #### Development Key
 
 1. Click "Create API Key"
-2. Name: "Threadfolio Development"
+2. Name: "Hemsy Development"
 3. Permission: "Full Access"
 4. Domain: Select "All domains" for development
 5. Copy the key starting with `re_`
@@ -121,31 +121,31 @@ export {};
 ```typescript
 // src/lib/config/email.config.ts
 export const emailConfig = {
-  resend: {
-    apiKey: process.env.RESEND_API_KEY!,
-  },
-  sender: {
-    address: process.env.EMAIL_FROM_ADDRESS || 'noreply@threadfolio.com',
-    name: process.env.EMAIL_FROM_NAME || 'Threadfolio',
-    replyTo: process.env.EMAIL_REPLY_TO,
-  },
-  features: {
-    previewMode: process.env.EMAIL_PREVIEW_MODE === 'true',
-    enabled: process.env.ENABLE_EMAIL_SENDING !== 'false',
-    logLevel: process.env.EMAIL_LOG_LEVEL || 'info',
-  },
-  limits: {
-    ratePerHour: parseInt(process.env.EMAIL_RATE_LIMIT_PER_HOUR || '100'),
-  },
-  urls: {
-    app: process.env.NEXT_PUBLIC_APP_URL!,
-    confirmation: process.env.NEXT_PUBLIC_CONFIRMATION_URL!,
-  },
+	resend: {
+		apiKey: process.env.RESEND_API_KEY!,
+	},
+	sender: {
+		address: process.env.EMAIL_FROM_ADDRESS || 'noreply@hemsy.app',
+		name: process.env.EMAIL_FROM_NAME || 'Hemsy'
+		replyTo: process.env.EMAIL_REPLY_TO,
+	},
+	features: {
+		previewMode: process.env.EMAIL_PREVIEW_MODE === 'true',
+		enabled: process.env.ENABLE_EMAIL_SENDING !== 'false',
+		logLevel: process.env.EMAIL_LOG_LEVEL || 'info',
+	},
+	limits: {
+		ratePerHour: parseInt(process.env.EMAIL_RATE_LIMIT_PER_HOUR || '100'),
+	},
+	urls: {
+		app: process.env.NEXT_PUBLIC_APP_URL!,
+		confirmation: process.env.NEXT_PUBLIC_CONFIRMATION_URL!,
+	},
 } as const;
 
 // Validation
 if (!emailConfig.resend.apiKey && emailConfig.features.enabled) {
-  throw new Error('RESEND_API_KEY is required when email sending is enabled');
+	throw new Error('RESEND_API_KEY is required when email sending is enabled');
 }
 ```
 
@@ -159,35 +159,35 @@ import { Resend } from 'resend';
 import { emailConfig } from '@/lib/config/email.config';
 
 async function testEmailConfig() {
-  console.log('Testing email configuration...\n');
+	console.log('Testing email configuration...\n');
 
-  // Check environment
-  console.log('Environment:', process.env.NODE_ENV);
-  console.log('Preview Mode:', emailConfig.features.previewMode);
-  console.log(
-    'From:',
-    `${emailConfig.sender.name} <${emailConfig.sender.address}>`
-  );
+	// Check environment
+	console.log('Environment:', process.env.NODE_ENV);
+	console.log('Preview Mode:', emailConfig.features.previewMode);
+	console.log(
+		'From:',
+		`${emailConfig.sender.name} <${emailConfig.sender.address}>`
+	);
 
-  // Test Resend connection
-  if (!emailConfig.features.previewMode) {
-    try {
-      const resend = new Resend(emailConfig.resend.apiKey);
-      const response = await resend.emails.send({
-        from: `${emailConfig.sender.name} <${emailConfig.sender.address}>`,
-        to: 'delivered@resend.dev', // Resend test address
-        subject: 'Threadfolio Email Test',
-        text: 'This is a test email from Threadfolio email system setup.',
-      });
+	// Test Resend connection
+	if (!emailConfig.features.previewMode) {
+		try {
+			const resend = new Resend(emailConfig.resend.apiKey);
+			const response = await resend.emails.send({
+				from: `${emailConfig.sender.name} <${emailConfig.sender.address}>`,
+				to: 'delivered@resend.dev', // Resend test address
+				subject: 'Hemsy
+				text: 'This is a test email from Hemsy email system setup.',
+			});
 
-      console.log('\n✅ Email sent successfully!');
-      console.log('Message ID:', response.data?.id);
-    } catch (error) {
-      console.error('\n❌ Failed to send test email:', error);
-    }
-  } else {
-    console.log('\n⚠️  Preview mode is ON - no emails will be sent');
-  }
+			console.log('\n✅ Email sent successfully!');
+			console.log('Message ID:', response.data?.id);
+		} catch (error) {
+			console.error('\n❌ Failed to send test email:', error);
+		}
+	} else {
+		console.log('\n⚠️  Preview mode is ON - no emails will be sent');
+	}
 }
 
 testEmailConfig();

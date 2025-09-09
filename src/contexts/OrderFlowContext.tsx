@@ -103,7 +103,7 @@ const OrderFlowContext = createContext<OrderFlowContextType | undefined>(
   undefined
 );
 
-const STORAGE_KEY = 'threadfolio_order_draft';
+const STORAGE_KEY = 'hemsy_order_draft';
 
 const initialOrderDraft: OrderDraft = {
   clientId: '',

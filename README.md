@@ -1,4 +1,4 @@
-# Threadfolio V2
+# Hemsy
 
 A mobile-first PWA for seamstresses and tailoring businesses built with Next.js 15+.
 
@@ -146,4 +146,4 @@ The application is configured for deployment on Vercel with:
 
 ## 📄 License
 
-Private - Threadfolio V2
+Private - Hemsy

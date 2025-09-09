@@ -2,7 +2,7 @@
 
 ## Overview
 
-Order cancellation in Threadfolio V2 implements a "soft cancellation" approach that preserves all data while freezing the ability to modify services on associated garments. This ensures complete audit trails and enables order restoration capabilities.
+Order cancellation in Hemsy implements a "soft cancellation" approach that preserves all data while freezing the ability to modify services on associated garments. This ensures complete audit trails and enables order restoration capabilities.
 
 ## Core Principles
 
@@ -162,7 +162,7 @@ Order cancellation in Threadfolio V2 implements a "soft cancellation" approach t
 
 ## Summary
 
-Order cancellation in Threadfolio V2 is designed as a reversible state change that:
+Order cancellation in Hemsy is designed as a reversible state change that:
 
 - Preserves all work history
 - Prevents further modifications

@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 import { Container, Skeleton, Box } from '@mui/material';
 
 export const metadata: Metadata = {
-  title: 'Invoices | Threadfolio',
+  title: 'Invoices | Hemsy',
   description: 'Manage your invoices and payments',
 };
 

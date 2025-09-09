@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This document outlines a comprehensive refactoring strategy for the Threadfolio garments page to align with Next.js 15 best practices and improve performance. The refactor moves from a client-heavy TanStack Query implementation to a server-first approach using Next.js App Router patterns.
+This document outlines a comprehensive refactoring strategy for the Hemsy garments page to align with Next.js 15 best practices and improve performance. The refactor moves from a client-heavy TanStack Query implementation to a server-first approach using Next.js App Router patterns.
 
 **Key Changes:**
 

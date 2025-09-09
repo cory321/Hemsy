@@ -38,11 +38,11 @@ To offload legal and compliance burden to seamstresses and Stripe, you need to s
 
 ### Before (Destination Charges)
 
-- **Threadfolio** is merchant of record
-- **Threadfolio** handles tax compliance
-- **Threadfolio** handles disputes
-- **Threadfolio** name on statements
-- **Threadfolio** bears all compliance burden
+- **Hemsy** is merchant of record
+- **Hemsy** handles tax compliance
+- **Hemsy** handles disputes
+- **Hemsy** name on statements
+- **Hemsy** bears all compliance burden
 
 ### After (Direct Charges)
 
@@ -63,7 +63,7 @@ To offload legal and compliance burden to seamstresses and Stripe, you need to s
 
 ### What Changes (Minor)
 
-- Statement descriptor shows seamstress business name (not Threadfolio)
+- Statement descriptor shows seamstress business name (not Hemsy)
 - Disputes handled by seamstresses in their Stripe dashboard
 - Refunds deduct from seamstress balance (not platform)
 - Tax forms (1099s) sent by Stripe to seamstresses

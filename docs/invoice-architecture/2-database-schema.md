@@ -4,7 +4,7 @@ _Last updated: January 2025_
 
 ## Overview
 
-This document defines the complete database schema for Threadfolio's Invoice Management feature, including table structures, relationships, indexes, and Row Level Security (RLS) policies for Supabase.
+This document defines the complete database schema for Hemsy's Invoice Management feature, including table structures, relationships, indexes, and Row Level Security (RLS) policies for Supabase.
 
 ## Table of Contents
 
@@ -705,7 +705,7 @@ export interface Database {
 
 ## Conclusion
 
-This database schema provides a robust foundation for Threadfolio's invoice management feature with:
+This database schema provides a robust foundation for Hemsy's invoice management feature with:
 
 - Strong data integrity through constraints and triggers
 - Optimized query performance through strategic indexing

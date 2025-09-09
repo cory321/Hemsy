@@ -108,7 +108,7 @@ async function executeMigration(
 }
 
 async function runMigrations(specificMigration?: string) {
-  console.log('🛠️  Threadfolio V2 Migration Runner');
+  console.log('🛠️  Hemsy Migration Runner');
   console.log('====================================\n');
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;

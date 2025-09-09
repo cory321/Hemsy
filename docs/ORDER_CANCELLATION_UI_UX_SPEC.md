@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document provides detailed UI/UX specifications for implementing order cancellation in Threadfolio V2. All designs follow Material UI patterns and prioritize mobile-first responsive design.
+This document provides detailed UI/UX specifications for implementing order cancellation in Hemsy. All designs follow Material UI patterns and prioritize mobile-first responsive design.
 
 ## Visual Design System
 

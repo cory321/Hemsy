@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 import { Container, CircularProgress, Box } from '@mui/material';
 
 export const metadata: Metadata = {
-  title: 'Invoice Details | Threadfolio',
+  title: 'Invoice Details | Hemsy',
   description: 'View invoice details and payment history',
 };
 

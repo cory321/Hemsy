@@ -1,8 +1,8 @@
-# 🧪 Threadfolio V2 - Testing Guide
+# 🧪 Hemsy - Testing Guide
 
 ## 📋 Overview
 
-This guide provides **specific examples and patterns** for writing tests in Threadfolio V2. All team members must follow these patterns to ensure consistent, comprehensive test coverage.
+This guide provides **specific examples and patterns** for writing tests in Hemsy. All team members must follow these patterns to ensure consistent, comprehensive test coverage.
 
 ---
 
@@ -300,7 +300,7 @@ test.describe('Client Management', () => {
   test.beforeEach(async ({ page }) => {
     // Sign in as test user
     await page.goto('/sign-in');
-    await page.fill('[data-testid="email"]', 'test@threadfolio.com');
+    await page.fill('[data-testid="email"]', 'test@hemsy.app');
     await page.fill('[data-testid="password"]', 'testpassword');
     await page.click('[data-testid="sign-in-button"]');
     await page.waitForURL('/dashboard');

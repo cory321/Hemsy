@@ -49,7 +49,7 @@ const ConfirmPaymentSchema = z.object({
  * Scenario: Seamstress charges client's credit card for tailoring services
  * - Card Holder: Client (customer receiving services)
  * - Merchant: Seamstress (connected account providing services)
- * - Platform: Threadfolio (facilitates the transaction)
+ * - Platform: Hemsy (facilitates the transaction)
  *
  * Payment Flow:
  * 1. Client's card is charged via Stripe PaymentIntent

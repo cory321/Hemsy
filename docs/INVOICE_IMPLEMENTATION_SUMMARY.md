@@ -1,6 +1,6 @@
 # Invoice Management Implementation Summary
 
-This document summarizes the invoice management feature implementation for Threadfolio V2.
+This document summarizes the invoice management feature implementation for Hemsy.
 
 ## ✅ Completed Features
 

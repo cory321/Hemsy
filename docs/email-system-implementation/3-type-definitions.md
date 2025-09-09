@@ -352,7 +352,7 @@ export const EMAIL_VARIABLES: EmailVariableConfig[] = [
       {
         key: 'confirmation_link',
         description: 'Confirmation URL',
-        example: 'https://app.threadfolio.com/confirm/...',
+        example: 'https://hemsy.app/confirm/...',
       },
       {
         key: 'shop_name',
@@ -411,7 +411,7 @@ export const EMAIL_CONSTRAINTS = {
 } as const;
 
 // Default email footer
-export const EMAIL_FOOTER = '\n\n--\nPowered by Threadfolio';
+export const EMAIL_FOOTER = '\n\n--\nPowered by Hemsy';
 ```
 
 ### 3. Create Validation Schemas

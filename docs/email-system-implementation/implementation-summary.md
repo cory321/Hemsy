@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide summarizes the implementation of the Threadfolio email notification system. Follow the phases in order for best results.
+This guide summarizes the implementation of the Hemsy email notification system. Follow the phases in order for best results.
 
 ## Quick Implementation Checklist
 

@@ -1,16 +1,16 @@
-# Threadfolio Product Requirements Document (PRD)
+# Hemsy Product Requirements Document (PRD)
 
 ---
 
 ## 1. Executive Summary
 
-**Threadfolio** is a **mobile-first PWA** designed for seamstresses and tailoring businesses. It provides a **fast, connectivity-aware workflow** to manage clients, orders, garments, appointments, and invoices. The app removes friction in daily operations with a streamlined, conflict-free scheduling system and integrated invoicing.
+**Hemsy** is a **mobile-first PWA** designed for seamstresses and tailoring businesses. It provides a **fast, connectivity-aware workflow** to manage clients, orders, garments, appointments, and invoices. The app removes friction in daily operations with a streamlined, conflict-free scheduling system and integrated invoicing.
 
 **Target Users:** Solo seamstresses, small-to-medium tailoring shops, alteration businesses, custom garment makers, and mobile tailors.
 
 **Problem:** Seamstresses often manage workflows using paper, spreadsheets, or generic software that doesn’t match their needs.
 
-**Solution:** Threadfolio mirrors how seamstresses work, enabling quick actions, visual tracking, and professional invoicing.
+**Solution:** Hemsy mirrors how seamstresses work, enabling quick actions, visual tracking, and professional invoicing.
 
 ---
 
@@ -98,7 +98,7 @@
 
 - **Client Payments:** Upfront vs after services, determined by seamstress preferences.
 - **Payment Options:** Cash/external POS (manual), Stripe Checkout (online).
-- **Recurring Billing:** Stripe Billing for Threadfolio subscriptions.
+- **Recurring Billing:** Stripe Billing for Hemsy subscriptions.
 - **Trial Handling:** Trial countdown with upgrade prompts.
 
 ---
@@ -160,7 +160,7 @@
 - **Feature 1.1.3: Business Settings CRUD**
   - **User Story**: As a seamstress, I want to update my business settings (name, working hours, payment preference) so my data stays current.
 - **Feature 1.1.4: Free-Trial Activation**
-  - **User Story**: As a seamstress, I want a 14-day free trial (no card required) so I can evaluate Threadfolio risk-free.
+  - **User Story**: As a seamstress, I want a 14-day free trial (no card required) so I can evaluate Hemsy risk-free.
 
 ---
 
@@ -241,7 +241,7 @@
 - **Feature 7.1.1: Marketing Pages**
   - **User Story**: As a visitor, I want fast-loading, SEO-optimized pages (Home, Features, Pricing, FAQ, Contact, Privacy, Terms) so I can evaluate and sign up.
 - **Feature 7.1.2: Subscription Flow Post-Trial**
-  - **User Story**: As a seamstress, I want to subscribe via Stripe Billing when my free trial ends so I continue using Threadfolio.
+  - **User Story**: As a seamstress, I want to subscribe via Stripe Billing when my free trial ends so I continue using Hemsy.
 
 ---
 

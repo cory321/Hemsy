@@ -7,15 +7,15 @@ import {
 } from './helpers/clerk-auth.helper';
 
 /**
- * E2E tests for core Threadfolio features requiring authentication.
+ * E2E tests for core Hemsy features requiring authentication.
  * These tests demonstrate testing the actual business logic of the application.
  */
-test.describe('Threadfolio Core Features', () => {
+test.describe('Hemsy Core Features', () => {
   // Only run if Clerk is configured
   test.beforeAll(() => {
     if (!isClerkTestingConfigured()) {
       console.log(
-        '⚠️  Skipping Threadfolio feature tests - Clerk testing not configured'
+        '⚠️  Skipping Hemsy feature tests - Clerk testing not configured'
       );
       test.skip();
     }

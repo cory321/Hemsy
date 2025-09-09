@@ -3,7 +3,7 @@
 ## Project Structure Overview
 
 ```
-threadfolio-v2/
+hemsy/
 ├── 📁 Root Configuration
 ├── 📁 Documentation (docs/)
 ├── 📁 Source Code (src/)
@@ -18,7 +18,7 @@ threadfolio-v2/
 ### Root Level
 
 ```
-threadfolio-v2/
+hemsy/
 ├── .env.local                 # Environment variables (local)
 ├── .eslintrc.json            # Legacy ESLint configuration
 ├── .gitignore                # Git ignore rules

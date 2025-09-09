@@ -7,4 +7,4 @@
 
 ---
 
-_End of Threadfolio Architecture Specification_
+_End of Hemsy Architecture Specification_

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Comprehensive testing guide for the Threadfolio email notification system.
+Comprehensive testing guide for the Hemsy email notification system.
 
 ## Testing Pyramid
 

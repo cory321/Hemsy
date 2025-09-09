@@ -1,10 +1,10 @@
-# Threadfolio Compliance Strategy
+# Hemsy Compliance Strategy
 
 ## Current Model: Destination Charges
 
 ### What This Means
 
-- Threadfolio is the **Merchant of Record**
+- Hemsy is the **Merchant of Record**
 - Platform bears primary compliance responsibilities
 - All payments flow through platform account first
 
@@ -41,7 +41,7 @@
 ### Risk Mitigation Strategies
 
 1. **Terms of Service**
-   - Clearly state Threadfolio as payment processor
+   - Clearly state Hemsy as payment processor
    - Define relationship with seamstresses
    - Include dispute and refund policies
 
