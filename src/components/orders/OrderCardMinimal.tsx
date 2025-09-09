@@ -204,7 +204,7 @@ export default function OrderCardMinimal({
                 sx={{ minWidth: 0, justifySelf: 'start' }}
               >
                 <Typography variant="body2" fontWeight="bold">
-                  #{order.order_number?.slice(-4) || order.id.slice(0, 4)}
+                  #{order.order_number?.slice(-3) || order.id.slice(0, 4)}
                 </Typography>
               </Box>
 

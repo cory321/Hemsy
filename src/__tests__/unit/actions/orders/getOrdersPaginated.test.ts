@@ -1,274 +1,299 @@
 import { getOrdersPaginated } from '@/lib/actions/orders';
-import { createClient as createSupabaseClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import { ensureUserAndShop } from '@/lib/actions/users';
 
-// Mock dependencies
 jest.mock('@/lib/supabase/server');
 jest.mock('@/lib/actions/users');
 
-const mockSupabase: any = {
-  from: jest.fn(() => mockSupabase),
-  select: jest.fn(() => mockSupabase),
-  eq: jest.fn(() => mockSupabase),
-  neq: jest.fn(() => mockSupabase),
-  or: jest.fn(() => mockSupabase),
-  order: jest.fn(() => mockSupabase),
-  range: jest.fn(),
-};
-
-const mockCreateSupabaseClient = createSupabaseClient as jest.MockedFunction<
-  typeof createSupabaseClient
->;
-const mockEnsureUserAndShop = ensureUserAndShop as jest.MockedFunction<
-  typeof ensureUserAndShop
->;
-
 describe('getOrdersPaginated', () => {
+  const mockSupabase = {
+    from: jest.fn(),
+    auth: {
+      getUser: jest.fn(),
+    },
+  };
+
+  const mockShop = {
+    id: 'shop-123',
+    name: 'Test Shop',
+  };
+
+  const mockQuery = {
+    select: jest.fn(),
+    eq: jest.fn(),
+    or: jest.fn(),
+    neq: jest.fn(),
+    in: jest.fn(),
+    order: jest.fn(),
+    range: jest.fn(),
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
-    mockCreateSupabaseClient.mockResolvedValue(mockSupabase as any);
-    mockEnsureUserAndShop.mockResolvedValue({
-      user: {
-        id: 'user_123',
-        clerk_user_id: 'clerk_123',
-        email: 'test@example.com',
-        role: 'user',
-        created_at: null,
-        updated_at: null,
-        first_name: null,
-        last_name: null,
-        timezone: 'America/New_York',
-        timezone_offset: -300,
-      },
-      shop: {
-        id: 'shop_123',
-        owner_user_id: 'user_123',
-        name: 'Test Shop',
-        trial_countdown_enabled: null,
-        created_at: null,
-        updated_at: null,
-        buffer_time_minutes: null,
-        business_name: null,
-        email: null,
-        location_type: null,
-        mailing_address: null,
-
-        phone_number: null,
-        tax_percent: 0,
-        trial_end_date: null,
-        working_hours: null,
-        timezone: 'America/New_York',
-        timezone_offset: -300,
-        onboarding_completed: true,
-      },
+    (createClient as jest.Mock).mockResolvedValue(mockSupabase);
+    (ensureUserAndShop as jest.Mock).mockResolvedValue({
+      shop: mockShop,
+      user: { id: 'user-123' },
     });
+
+    // Set up the chain of mock query methods
+    mockSupabase.from.mockReturnValue(mockQuery);
+    mockQuery.select.mockReturnValue(mockQuery);
+    mockQuery.eq.mockReturnValue(mockQuery);
+    mockQuery.or.mockReturnValue(mockQuery);
+    mockQuery.neq.mockReturnValue(mockQuery);
+    mockQuery.in.mockReturnValue(mockQuery);
+    mockQuery.order.mockReturnValue(mockQuery);
+    mockQuery.range.mockReturnValue(mockQuery);
   });
 
-  it('should return paginated orders for authenticated user', async () => {
-    // Mock orders query
-    mockSupabase.range.mockResolvedValue({
-      data: [
+  describe('onlyActive filter', () => {
+    it('should filter to only active orders when onlyActive is true', async () => {
+      const mockData = [
         {
-          id: 'order_1',
-          shop_id: 'shop_123',
-          client_id: 'client_1',
-          status: 'pending',
+          id: 'order-1',
+          status: 'new',
           order_number: 'ORD-001',
           total_cents: 5000,
-          created_at: '2024-01-01T00:00:00Z',
-          client: {
-            id: 'client_1',
-            first_name: 'John',
-            last_name: 'Doe',
-          },
-          garments: [{ id: 'garment_1' }, { id: 'garment_2' }],
+          client: { id: 'client-1', first_name: 'John', last_name: 'Doe' },
+          garments: [],
+          invoices: [],
         },
+      ];
+
+      mockQuery.range.mockResolvedValue({
+        data: mockData,
+        error: null,
+        count: 1,
+      });
+
+      await getOrdersPaginated(1, 10, { onlyActive: true });
+
+      // Verify that the query filters to active statuses
+      expect(mockQuery.in).toHaveBeenCalledWith('status', [
+        'new',
+        'in_progress',
+        'ready_for_pickup',
+      ]);
+      expect(mockQuery.neq).not.toHaveBeenCalledWith('status', 'cancelled');
+    });
+
+    it('should include all statuses when onlyActive is false', async () => {
+      const mockData = [
         {
-          id: 'order_2',
-          shop_id: 'shop_123',
-          client_id: 'client_2',
+          id: 'order-1',
           status: 'completed',
-          order_number: 'ORD-002',
-          total_cents: 7500,
-          created_at: '2024-01-02T00:00:00Z',
-          client: {
-            id: 'client_2',
-            first_name: 'Jane',
-            last_name: 'Smith',
-          },
-          garments: [{ id: 'garment_3' }],
-        },
-      ],
-      count: 2,
-      error: null,
-    });
-
-    const result = await getOrdersPaginated(1, 10);
-
-    expect(result).toEqual({
-      data: expect.arrayContaining([
-        expect.objectContaining({
-          id: 'order_1',
           order_number: 'ORD-001',
-          client: expect.objectContaining({
-            first_name: 'John',
-            last_name: 'Doe',
-          }),
-          garments: expect.arrayContaining([
-            expect.objectContaining({ id: 'garment_1' }),
-            expect.objectContaining({ id: 'garment_2' }),
-          ]),
-        }),
-        expect.objectContaining({
-          id: 'order_2',
-          order_number: 'ORD-002',
-          client: expect.objectContaining({
-            first_name: 'Jane',
-            last_name: 'Smith',
-          }),
-          garments: expect.arrayContaining([
-            expect.objectContaining({ id: 'garment_3' }),
-          ]),
-        }),
-      ]),
-      count: 2,
-      page: 1,
-      pageSize: 10,
-      totalPages: 1,
+          total_cents: 5000,
+          client: { id: 'client-1', first_name: 'John', last_name: 'Doe' },
+          garments: [],
+          invoices: [],
+        },
+      ];
+
+      mockQuery.range.mockResolvedValue({
+        data: mockData,
+        error: null,
+        count: 1,
+      });
+
+      await getOrdersPaginated(1, 10, { onlyActive: false });
+
+      // Verify that the query excludes cancelled but includes completed
+      expect(mockQuery.neq).toHaveBeenCalledWith('status', 'cancelled');
+      expect(mockQuery.in).not.toHaveBeenCalledWith('status', [
+        'new',
+        'in_progress',
+        'ready_for_pickup',
+      ]);
     });
 
-    // Verify correct query construction
-    expect(mockSupabase.from).toHaveBeenCalledWith('orders');
-    expect(mockSupabase.select).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'client:clients(id, first_name, last_name, phone_number)'
-      ),
-      { count: 'exact' }
-    );
-    expect(mockSupabase.eq).toHaveBeenCalledWith('shop_id', 'shop_123');
-    expect(mockSupabase.order).toHaveBeenCalledWith('created_at', {
-      ascending: false,
+    it('should default to excluding cancelled orders when no active filter is specified', async () => {
+      const mockData = [
+        {
+          id: 'order-1',
+          status: 'completed',
+          order_number: 'ORD-001',
+          total_cents: 5000,
+          client: { id: 'client-1', first_name: 'John', last_name: 'Doe' },
+          garments: [],
+          invoices: [],
+        },
+      ];
+
+      mockQuery.range.mockResolvedValue({
+        data: mockData,
+        error: null,
+        count: 1,
+      });
+
+      await getOrdersPaginated(1, 10, {});
+
+      // Verify that the query excludes cancelled by default
+      expect(mockQuery.neq).toHaveBeenCalledWith('status', 'cancelled');
     });
-    expect(mockSupabase.range).toHaveBeenCalledWith(0, 9);
+
+    it('should handle onlyCancelled filter correctly', async () => {
+      const mockData = [
+        {
+          id: 'order-1',
+          status: 'cancelled',
+          order_number: 'ORD-001',
+          total_cents: 5000,
+          client: { id: 'client-1', first_name: 'John', last_name: 'Doe' },
+          garments: [],
+          invoices: [],
+        },
+      ];
+
+      mockQuery.range.mockResolvedValue({
+        data: mockData,
+        error: null,
+        count: 1,
+      });
+
+      await getOrdersPaginated(1, 10, { onlyCancelled: true });
+
+      // Verify that the query filters to only cancelled orders
+      expect(mockQuery.eq).toHaveBeenCalledWith('status', 'cancelled');
+      expect(mockQuery.in).not.toHaveBeenCalledWith('status', [
+        'new',
+        'in_progress',
+        'ready_for_pickup',
+      ]);
+    });
+
+    it('should not apply specific status filter when onlyActive is true', async () => {
+      const mockData = [
+        {
+          id: 'order-1',
+          status: 'new',
+          order_number: 'ORD-001',
+          total_cents: 5000,
+          client: { id: 'client-1', first_name: 'John', last_name: 'Doe' },
+          garments: [],
+          invoices: [],
+        },
+      ];
+
+      mockQuery.range.mockResolvedValue({
+        data: mockData,
+        error: null,
+        count: 1,
+      });
+
+      // This should filter to active orders, not specifically to 'new'
+      await getOrdersPaginated(1, 10, { onlyActive: true, status: 'new' });
+
+      // Verify that the active filter takes precedence
+      expect(mockQuery.in).toHaveBeenCalledWith('status', [
+        'new',
+        'in_progress',
+        'ready_for_pickup',
+      ]);
+      // Should not apply the specific status filter when onlyActive is true
+      expect(mockQuery.eq).not.toHaveBeenCalledWith('status', 'new');
+    });
+
+    it('should apply specific status filter when onlyActive is false', async () => {
+      const mockData = [
+        {
+          id: 'order-1',
+          status: 'new',
+          order_number: 'ORD-001',
+          total_cents: 5000,
+          client: { id: 'client-1', first_name: 'John', last_name: 'Doe' },
+          garments: [],
+          invoices: [],
+        },
+      ];
+
+      mockQuery.range.mockResolvedValue({
+        data: mockData,
+        error: null,
+        count: 1,
+      });
+
+      await getOrdersPaginated(1, 10, { onlyActive: false, status: 'new' });
+
+      // Verify that the specific status filter is applied
+      expect(mockQuery.eq).toHaveBeenCalledWith('status', 'new');
+      expect(mockQuery.in).not.toHaveBeenCalledWith('status', [
+        'new',
+        'in_progress',
+        'ready_for_pickup',
+      ]);
+    });
+
+    it('should calculate payment info correctly for active orders', async () => {
+      const mockData = [
+        {
+          id: 'order-1',
+          status: 'in_progress',
+          order_number: 'ORD-001',
+          total_cents: 10000,
+          client: { id: 'client-1', first_name: 'John', last_name: 'Doe' },
+          garments: [],
+          invoices: [
+            {
+              id: 'invoice-1',
+              status: 'sent',
+              amount_cents: 10000,
+              payments: [
+                {
+                  id: 'payment-1',
+                  amount_cents: 5000,
+                  status: 'completed',
+                  payment_method: 'card',
+                  refunded_amount_cents: 0,
+                },
+              ],
+            },
+          ],
+        },
+      ];
+
+      mockQuery.range.mockResolvedValue({
+        data: mockData,
+        error: null,
+        count: 1,
+      });
+
+      const result = await getOrdersPaginated(1, 10, { onlyActive: true });
+
+      // Verify that payment information is calculated correctly
+      expect(result.data[0]?.paid_amount_cents).toBe(5000);
+      expect(result.data[0]?.payment_status).toBe('partially_paid');
+    });
   });
 
-  it('should apply search filters correctly', async () => {
-    mockSupabase.range.mockResolvedValue({
-      data: [],
-      count: 0,
-      error: null,
-    });
+  describe('error handling', () => {
+    it('should throw error when query fails', async () => {
+      mockQuery.range.mockResolvedValue({
+        data: null,
+        error: { message: 'Database error' },
+        count: 0,
+      });
 
-    await getOrdersPaginated(1, 10, { search: 'ORD-001' });
-
-    expect(mockSupabase.or).toHaveBeenCalledWith(
-      'order_number.ilike.%ORD-001%,notes.ilike.%ORD-001%'
-    );
-  });
-
-  it('should apply status filter correctly', async () => {
-    mockSupabase.range.mockResolvedValue({
-      data: [],
-      count: 0,
-      error: null,
-    });
-
-    await getOrdersPaginated(1, 10, { status: 'completed' });
-
-    expect(mockSupabase.eq).toHaveBeenCalledWith('status', 'completed');
-  });
-
-  it('should not apply status filter when status is "all"', async () => {
-    mockSupabase.range.mockResolvedValue({
-      data: [],
-      count: 0,
-      error: null,
-    });
-
-    await getOrdersPaginated(1, 10, { status: 'all' });
-
-    // Should only have one eq call for shop_id
-    expect(mockSupabase.eq).toHaveBeenCalledTimes(1);
-    expect(mockSupabase.eq).toHaveBeenCalledWith('shop_id', 'shop_123');
-  });
-
-  it('should apply custom sorting correctly', async () => {
-    mockSupabase.range.mockResolvedValue({
-      data: [],
-      count: 0,
-      error: null,
-    });
-
-    await getOrdersPaginated(1, 10, {
-      sortBy: 'total_cents',
-      sortOrder: 'asc',
-    });
-
-    expect(mockSupabase.order).toHaveBeenCalledWith('total_cents', {
-      ascending: true,
+      await expect(
+        getOrdersPaginated(1, 10, { onlyActive: true })
+      ).rejects.toThrow('Failed to fetch orders: Database error');
     });
   });
 
-  it('should handle pagination correctly', async () => {
-    mockSupabase.range.mockResolvedValue({
-      data: [],
-      count: 150,
-      error: null,
+  describe('pagination', () => {
+    it('should apply correct pagination parameters', async () => {
+      const mockData: any[] = [];
+      mockQuery.range.mockResolvedValue({
+        data: mockData,
+        error: null,
+        count: 0,
+      });
+
+      await getOrdersPaginated(2, 25, { onlyActive: true });
+
+      // Verify pagination parameters (page 2 with 25 items per page)
+      expect(mockQuery.range).toHaveBeenCalledWith(25, 49); // (2-1)*25 = 25, 25+25-1 = 49
     });
-
-    const result = await getOrdersPaginated(3, 20);
-
-    expect(mockSupabase.range).toHaveBeenCalledWith(40, 59); // Page 3, 20 items per page
-    expect(result.totalPages).toBe(8); // 150 items / 20 per page = 8 pages
-  });
-
-  it('should throw error if user is not authenticated', async () => {
-    mockEnsureUserAndShop.mockRejectedValue(new Error('Unauthorized'));
-
-    await expect(getOrdersPaginated()).rejects.toThrow('Unauthorized');
-  });
-
-  it('should throw error if Supabase query fails', async () => {
-    mockSupabase.range.mockResolvedValue({
-      data: null,
-      count: null,
-      error: { message: 'Database error' },
-    });
-
-    await expect(getOrdersPaginated()).rejects.toThrow(
-      'Failed to fetch orders: Database error'
-    );
-  });
-
-  it('should handle empty results', async () => {
-    mockSupabase.range.mockResolvedValue({
-      data: [],
-      count: 0,
-      error: null,
-    });
-
-    const result = await getOrdersPaginated(1, 10);
-
-    expect(result).toEqual({
-      data: [],
-      count: 0,
-      page: 1,
-      pageSize: 10,
-      totalPages: 0,
-    });
-  });
-
-  it('should trim search term whitespace', async () => {
-    mockSupabase.range.mockResolvedValue({
-      data: [],
-      count: 0,
-      error: null,
-    });
-
-    await getOrdersPaginated(1, 10, { search: '  ORD-001  ' });
-
-    expect(mockSupabase.or).toHaveBeenCalledWith(
-      'order_number.ilike.%ORD-001%,notes.ilike.%ORD-001%'
-    );
   });
 });

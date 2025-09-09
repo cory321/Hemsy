@@ -219,14 +219,15 @@ export function CalendarWithReducer({
   }
 
   return (
-    <Container maxWidth="lg">
+    <Box sx={{ p: 3 }}>
       {/* Page Header */}
       <Box
         sx={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          py: 3,
+          pt: 1,
+          pb: 3,
           mb: 2,
         }}
       >
@@ -314,6 +315,6 @@ export function CalendarWithReducer({
           }
         />
       )}
-    </Container>
+    </Box>
   );
 }

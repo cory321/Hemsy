@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Container, Typography, Box, Paper } from '@mui/material';
+import { Typography, Box, Paper } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 
 import ServiceList from '@/components/services/ServiceList';
@@ -28,8 +28,8 @@ export default function ServicesClient({
   const otherServices = services.filter((s) => !s.frequently_used);
 
   return (
-    <Container maxWidth="lg">
-      <Box sx={{ mt: 4, mb: 4 }}>
+    <Box sx={{ p: 3 }}>
+      <Box sx={{ mt: 2, mb: 4 }}>
         <Grid
           container
           justifyContent="space-between"
@@ -88,6 +88,6 @@ export default function ServicesClient({
           </Box>
         )}
       </Box>
-    </Container>
+    </Box>
   );
 }

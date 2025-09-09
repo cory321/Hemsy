@@ -15,7 +15,8 @@ jest.mock('@/hooks/useDebounce', () => ({
   useDebounce: (value: string) => value,
 }));
 
-// Mock OrderCard components with more realistic content
+// Mock OrderCard component with realistic content
+
 jest.mock('@/components/orders/OrderCardMinimal', () => ({
   __esModule: true,
   default: ({ order, onClick }: any) => {
@@ -42,7 +43,7 @@ jest.mock('@/components/orders/OrderCardMinimal', () => ({
         data-testid={`order-card-${order.id}`}
         onClick={() => onClick(order.id)}
       >
-        <div>#{order.order_number?.slice(-4) || order.id.slice(0, 4)}</div>
+        <div>#{order.order_number?.slice(-3) || order.id.slice(0, 4)}</div>
         <div>{clientName}</div>
         <div>
           {garmentCount} garment{garmentCount !== 1 ? 's' : ''}
@@ -50,104 +51,6 @@ jest.mock('@/components/orders/OrderCardMinimal', () => ({
         <div>${(order.total_cents / 100).toFixed(2)}</div>
         <div>{statusLabel}</div>
         <div>{paymentStatus}</div>
-        {order.created_at && (
-          <div>
-            {new Date(order.created_at).toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-            })}
-          </div>
-        )}
-      </div>
-    );
-  },
-}));
-
-jest.mock('@/components/orders/OrderCardCompact', () => ({
-  __esModule: true,
-  default: ({ order, onClick }: any) => {
-    const clientName = order.client
-      ? `${order.client.first_name} ${order.client.last_name}`.trim()
-      : 'No Client';
-    const garmentCount = order.garments?.length || 0;
-    const statusLabel =
-      order.status === 'pending'
-        ? 'Pending'
-        : order.status === 'paid'
-          ? 'Paid'
-          : order.status?.charAt(0)?.toUpperCase() + order.status?.slice(1);
-    const paymentStatus =
-      order.payment_status === 'pending'
-        ? 'Pending'
-        : order.payment_status === 'paid'
-          ? 'Paid'
-          : order.payment_status?.charAt(0)?.toUpperCase() +
-            order.payment_status?.slice(1);
-
-    return (
-      <div
-        data-testid={`order-card-${order.id}`}
-        onClick={() => onClick(order.id)}
-      >
-        <div>Order #{order.order_number}</div>
-        <div>{clientName}</div>
-        <div>
-          {garmentCount} garment{garmentCount !== 1 ? 's' : ''}
-        </div>
-        <div>${(order.total_cents / 100).toFixed(2)}</div>
-        <div>{statusLabel}</div>
-        <div>{paymentStatus}</div>
-        <div data-testid="PhoneIcon">📞</div>
-        {order.created_at && (
-          <div>
-            {new Date(order.created_at).toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-            })}
-          </div>
-        )}
-      </div>
-    );
-  },
-}));
-
-jest.mock('@/components/orders/OrderCardDetailed', () => ({
-  __esModule: true,
-  default: ({ order, onClick }: any) => {
-    const clientName = order.client
-      ? `${order.client.first_name} ${order.client.last_name}`.trim()
-      : 'No Client';
-    const garmentCount = order.garments?.length || 0;
-    const statusLabel =
-      order.status === 'pending'
-        ? 'Pending'
-        : order.status === 'paid'
-          ? 'Paid'
-          : order.status?.charAt(0)?.toUpperCase() + order.status?.slice(1);
-    const paymentStatus =
-      order.payment_status === 'pending'
-        ? 'Pending'
-        : order.payment_status === 'paid'
-          ? 'Paid'
-          : order.payment_status?.charAt(0)?.toUpperCase() +
-            order.payment_status?.slice(1);
-
-    return (
-      <div
-        data-testid={`order-card-${order.id}`}
-        onClick={() => onClick(order.id)}
-      >
-        <div>Order #{order.order_number}</div>
-        <div>{clientName}</div>
-        <div>
-          {garmentCount} garment{garmentCount !== 1 ? 's' : ''}
-        </div>
-        <div>${(order.total_cents / 100).toFixed(2)}</div>
-        <div>{statusLabel}</div>
-        <div>{paymentStatus}</div>
-        <div data-testid="PhoneIcon">📞</div>
         {order.created_at && (
           <div>
             {new Date(order.created_at).toLocaleDateString('en-US', {
@@ -259,11 +162,11 @@ describe('OrdersList', () => {
 
     // Wait for the orders to be displayed (after initial load completes)
     await waitFor(() => {
-      expect(screen.getByText('Order #ORD-001')).toBeInTheDocument();
+      expect(screen.getByText('#001')).toBeInTheDocument();
     });
 
     // Check if other order details are displayed
-    expect(screen.getByText('Order #ORD-002')).toBeInTheDocument();
+    expect(screen.getByText('#002')).toBeInTheDocument();
     expect(screen.getByText('John Doe')).toBeInTheDocument();
     expect(screen.getByText('Jane Smith')).toBeInTheDocument();
     expect(screen.getByText('$50.00')).toBeInTheDocument();
@@ -340,8 +243,9 @@ describe('OrdersList', () => {
         search: 'ORD-001',
         sortBy: 'created_at',
         sortOrder: 'desc',
-        includeCancelled: true,
+        includeCancelled: false,
         onlyCancelled: false,
+        onlyActive: true,
       });
     });
   });
@@ -371,8 +275,9 @@ describe('OrdersList', () => {
         paymentStatus: 'paid',
         sortBy: 'created_at',
         sortOrder: 'desc',
-        includeCancelled: true,
+        includeCancelled: false,
         onlyCancelled: false,
+        onlyActive: true,
       });
     });
   });
@@ -394,8 +299,9 @@ describe('OrdersList', () => {
         search: '',
         sortBy: 'created_at',
         sortOrder: 'desc',
-        includeCancelled: true,
+        includeCancelled: false,
         onlyCancelled: false,
+        onlyActive: true,
       });
     });
   });
@@ -424,8 +330,9 @@ describe('OrdersList', () => {
         search: '',
         sortBy: 'created_at',
         sortOrder: 'desc',
-        includeCancelled: true,
+        includeCancelled: false,
         onlyCancelled: false,
+        onlyActive: true,
       });
     });
   });
@@ -493,8 +400,11 @@ describe('OrdersList', () => {
     );
 
     // Wait for the empty state message to appear
+    // Since default filter is now 'active' (not 'all'), it shows the filtered message
     await waitFor(() => {
-      expect(screen.getByText('No orders yet')).toBeInTheDocument();
+      expect(
+        screen.getByText('No orders found matching your filters')
+      ).toBeInTheDocument();
     });
   });
 
@@ -576,7 +486,7 @@ describe('OrdersList', () => {
 
     // Wait for orders to be displayed
     await waitFor(() => {
-      expect(screen.getByText('Order #ORD-001')).toBeInTheDocument();
+      expect(screen.getByText('#001')).toBeInTheDocument();
     });
 
     // Check that dates are formatted correctly (e.g., "Jan 1, 2024" format)
@@ -588,6 +498,137 @@ describe('OrdersList', () => {
       expect(element.textContent).toMatch(
         /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2}, \d{4}$/
       );
+    });
+  });
+
+  describe('Active Orders Filter', () => {
+    it('should default to "All Active Orders" filter', async () => {
+      render(
+        <OrdersList
+          initialData={mockInitialData}
+          getOrdersAction={mockGetOrdersAction}
+        />
+      );
+
+      // Check that "All Active Orders" text is displayed as the default
+      expect(screen.getByText('All Active Orders')).toBeInTheDocument();
+    });
+
+    it('should show "All Active Orders" as the first option in the dropdown', async () => {
+      const user = userEvent.setup();
+      render(
+        <OrdersList
+          initialData={mockInitialData}
+          getOrdersAction={mockGetOrdersAction}
+        />
+      );
+
+      // Click on the order status select dropdown
+      const orderStatusDropdown = screen.getByText('All Active Orders');
+      await user.click(orderStatusDropdown);
+
+      // Check that "All Active Orders" option is available
+      const activeOrdersOption = await screen.findByRole('option', {
+        name: 'All Active Orders',
+      });
+      expect(activeOrdersOption).toBeInTheDocument();
+
+      // Check that "All Order Statuses" is no longer available
+      expect(
+        screen.queryByRole('option', {
+          name: 'All Order Statuses',
+        })
+      ).not.toBeInTheDocument();
+    });
+
+    it('should filter to active orders by default', async () => {
+      const user = userEvent.setup();
+      render(
+        <OrdersList
+          initialData={mockInitialData}
+          getOrdersAction={mockGetOrdersAction}
+        />
+      );
+
+      // Trigger any action that would cause filtering (like search)
+      const searchInput = screen.getByPlaceholderText(
+        'Search by order number or notes...'
+      );
+      await user.type(searchInput, 'test');
+
+      await waitFor(() => {
+        expect(mockGetOrdersAction).toHaveBeenCalledWith(1, 10, {
+          search: 'test',
+          sortBy: 'created_at',
+          sortOrder: 'desc',
+          includeCancelled: false,
+          onlyCancelled: false,
+          onlyActive: true,
+        });
+      });
+    });
+
+    it('should switch to specific status when selected', async () => {
+      const user = userEvent.setup();
+      render(
+        <OrdersList
+          initialData={mockInitialData}
+          getOrdersAction={mockGetOrdersAction}
+        />
+      );
+
+      // Click on the order status select dropdown
+      const orderStatusDropdown = screen.getByText('All Active Orders');
+      await user.click(orderStatusDropdown);
+
+      // Select 'New' from the menu
+      const newStatusOption = await screen.findByRole('option', {
+        name: 'New',
+      });
+      await user.click(newStatusOption);
+
+      await waitFor(() => {
+        expect(mockGetOrdersAction).toHaveBeenCalledWith(1, 10, {
+          search: '',
+          status: 'new',
+          sortBy: 'created_at',
+          sortOrder: 'desc',
+          includeCancelled: false,
+          onlyCancelled: false,
+          onlyActive: false,
+        });
+      });
+    });
+
+    it('should handle cancelled status filter correctly', async () => {
+      const user = userEvent.setup();
+      render(
+        <OrdersList
+          initialData={mockInitialData}
+          getOrdersAction={mockGetOrdersAction}
+        />
+      );
+
+      // Click on the order status select dropdown
+      const orderStatusDropdown = screen.getByText('All Active Orders');
+      await user.click(orderStatusDropdown);
+
+      // Select 'Cancelled' from the menu
+      const cancelledOption = await screen.findByRole('option', {
+        name: 'Cancelled',
+      });
+      await user.click(cancelledOption);
+
+      await waitFor(() => {
+        expect(mockGetOrdersAction).toHaveBeenCalledWith(1, 10, {
+          search: '',
+          sortBy: 'created_at',
+          sortOrder: 'desc',
+          includeCancelled: true,
+          onlyCancelled: true,
+          onlyActive: false,
+        });
+      });
     });
   });
 });

@@ -1,4 +1,4 @@
-import { Container, Typography, Box } from '@mui/material';
+import { Typography, Box } from '@mui/material';
 import { Suspense } from 'react';
 import AddClientCtas from '@/components/clients/AddClientCtas';
 import ClientsListWrapper from './ClientsListWrapper';
@@ -9,8 +9,8 @@ export const dynamic = 'force-dynamic';
 
 export default function ClientsPage() {
   return (
-    <Container maxWidth="lg">
-      <Box sx={{ mt: 4, mb: 4 }}>
+    <Box sx={{ p: 3 }}>
+      <Box sx={{ mt: 2, mb: 4 }}>
         {/* Header with title and desktop CTA - loads immediately */}
         <Box
           sx={{
@@ -33,6 +33,6 @@ export default function ClientsPage() {
 
         {/* Mobile FAB is rendered inside AddClientCtas */}
       </Box>
-    </Container>
+    </Box>
   );
 }

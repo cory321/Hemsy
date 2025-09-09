@@ -19,6 +19,29 @@ export interface DashboardStats {
   garmentsDueToday: number;
 }
 
+export interface BusinessHealthData {
+  currentMonthRevenueCents: number;
+  lastMonthRevenueCents: number;
+  monthlyRevenueComparison: number;
+  unpaidBalanceCents: number;
+  unpaidOrdersCount: number;
+  currentPeriodLabel: string; // e.g., "Dec 1-8"
+  comparisonPeriodLabel: string; // e.g., "Nov 1-8"
+  rolling30DayLabel: string; // e.g., "Nov 9 - Dec 8"
+  previous30DayLabel: string; // e.g., "Oct 9 - Nov 8"
+
+  // Enhanced MVP fields
+  dailyAverageThisMonth: number;
+  projectedMonthEndRevenue: number;
+  periodContext: 'early' | 'mid' | 'late';
+  transactionCount: number;
+
+  // Rolling 30-day toggle data
+  rolling30DayRevenue: number;
+  previous30DayRevenue: number;
+  rolling30DayComparison: number;
+}
+
 /**
  * Get the count of appointments for today
  */
@@ -602,6 +625,312 @@ export async function getWeekOverviewData(): Promise<WeekDayData[]> {
   }
 
   return weekData;
+}
+
+/**
+ * Get business health data for dashboard
+ */
+export async function getBusinessHealthData(): Promise<BusinessHealthData> {
+  const { userId } = await auth();
+  if (!userId) throw new Error('Unauthorized');
+
+  const { shop } = await ensureUserAndShop();
+  const supabase = await createClient();
+
+  // Calculate date ranges
+  const today = new Date();
+  const currentDay = today.getDate();
+
+  // This month: from 1st to today
+  const firstDayThisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  const endOfTodayThisMonth = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate() + 1
+  );
+
+  // Same period last month: from 1st to same day number
+  const firstDayLastMonth = new Date(
+    today.getFullYear(),
+    today.getMonth() - 1,
+    1
+  );
+  const sameDayLastMonth = new Date(
+    today.getFullYear(),
+    today.getMonth() - 1,
+    Math.min(
+      currentDay,
+      new Date(today.getFullYear(), today.getMonth(), 0).getDate()
+    )
+  );
+  const endOfSameDayLastMonth = new Date(
+    sameDayLastMonth.getFullYear(),
+    sameDayLastMonth.getMonth(),
+    sameDayLastMonth.getDate() + 1
+  );
+
+  const [
+    unpaidOrdersResult,
+    monthlyPaymentsResult,
+    lastMonthPaymentsResult,
+    rolling30DayResult,
+    previous30DayResult,
+  ] = await Promise.all([
+    // 1. Get unpaid orders for balance calculation
+    supabase
+      .from('orders')
+      .select(
+        `
+        total_cents,
+        invoices(
+          payments(
+            amount_cents,
+            status,
+            refunded_amount_cents
+          )
+        )
+      `
+      )
+      .eq('shop_id', shop.id)
+      .neq('status', 'cancelled'),
+
+    // 2. This month's revenue (month-to-date)
+    supabase
+      .from('payments')
+      .select(
+        `
+        amount_cents,
+        refunded_amount_cents,
+        invoice:invoices!inner(
+          shop_id
+        )
+      `
+      )
+      .eq('invoice.shop_id', shop.id)
+      .in('status', ['completed', 'partially_refunded'])
+      .gte('created_at', firstDayThisMonth.toISOString())
+      .lt('created_at', endOfTodayThisMonth.toISOString()),
+
+    // 3. Same period last month (for fair comparison)
+    supabase
+      .from('payments')
+      .select(
+        `
+        amount_cents,
+        refunded_amount_cents,
+        invoice:invoices!inner(
+          shop_id
+        )
+      `
+      )
+      .eq('invoice.shop_id', shop.id)
+      .in('status', ['completed', 'partially_refunded'])
+      .gte('created_at', firstDayLastMonth.toISOString())
+      .lt('created_at', endOfSameDayLastMonth.toISOString()),
+
+    // 4. Rolling 30 days revenue
+    supabase
+      .from('payments')
+      .select(
+        `
+        amount_cents,
+        refunded_amount_cents,
+        invoice:invoices!inner(
+          shop_id
+        )
+      `
+      )
+      .eq('invoice.shop_id', shop.id)
+      .in('status', ['completed', 'partially_refunded'])
+      .gte(
+        'created_at',
+        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+      ),
+
+    // 5. Previous 30 days revenue (31-60 days ago)
+    supabase
+      .from('payments')
+      .select(
+        `
+        amount_cents,
+        refunded_amount_cents,
+        invoice:invoices!inner(
+          shop_id
+        )
+      `
+      )
+      .eq('invoice.shop_id', shop.id)
+      .in('status', ['completed', 'partially_refunded'])
+      .gte(
+        'created_at',
+        new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString()
+      )
+      .lt(
+        'created_at',
+        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+      ),
+  ]);
+
+  // Calculate unpaid balance
+  let unpaidBalanceCents = 0;
+  let unpaidOrdersCount = 0;
+
+  if (unpaidOrdersResult.data) {
+    unpaidOrdersResult.data.forEach((order) => {
+      let paidAmount = 0;
+      if (order.invoices && Array.isArray(order.invoices)) {
+        order.invoices.forEach((invoice: any) => {
+          if (invoice.payments && Array.isArray(invoice.payments)) {
+            invoice.payments.forEach((payment: any) => {
+              if (
+                ['completed', 'partially_refunded'].includes(payment.status)
+              ) {
+                paidAmount +=
+                  payment.amount_cents - (payment.refunded_amount_cents || 0);
+              }
+            });
+          }
+        });
+      }
+
+      const unpaidAmount = order.total_cents - paidAmount;
+      if (unpaidAmount > 0) {
+        unpaidBalanceCents += unpaidAmount;
+        unpaidOrdersCount++;
+      }
+    });
+  }
+
+  // Calculate monthly revenue totals
+  const currentMonthRevenueCents =
+    monthlyPaymentsResult.data?.reduce(
+      (sum, payment) =>
+        sum + (payment.amount_cents - (payment.refunded_amount_cents || 0)),
+      0
+    ) || 0;
+
+  const lastMonthRevenueCents =
+    lastMonthPaymentsResult.data?.reduce(
+      (sum, payment) =>
+        sum + (payment.amount_cents - (payment.refunded_amount_cents || 0)),
+      0
+    ) || 0;
+
+  // Calculate rolling 30-day data
+  const rolling30DayRevenueCents =
+    rolling30DayResult.data?.reduce(
+      (sum, payment) =>
+        sum + (payment.amount_cents - (payment.refunded_amount_cents || 0)),
+      0
+    ) || 0;
+
+  const previous30DayRevenueCents =
+    previous30DayResult.data?.reduce(
+      (sum, payment) =>
+        sum + (payment.amount_cents - (payment.refunded_amount_cents || 0)),
+      0
+    ) || 0;
+
+  // Calculate rolling 30-day comparison
+  let rolling30DayComparison = 0;
+  if (previous30DayRevenueCents > 0) {
+    rolling30DayComparison = Math.round(
+      ((rolling30DayRevenueCents - previous30DayRevenueCents) /
+        previous30DayRevenueCents) *
+        100
+    );
+  } else if (rolling30DayRevenueCents > 0) {
+    rolling30DayComparison = 100;
+  }
+
+  // Calculate month-over-month comparison
+  let monthlyRevenueComparison = 0;
+  if (lastMonthRevenueCents > 0) {
+    monthlyRevenueComparison = Math.round(
+      ((currentMonthRevenueCents - lastMonthRevenueCents) /
+        lastMonthRevenueCents) *
+        100
+    );
+  } else if (currentMonthRevenueCents > 0) {
+    // Don't show misleading +100% - will be handled in UI
+    monthlyRevenueComparison = 100;
+  }
+
+  // Calculate daily average and projection
+  const daysIntoMonth = currentDay;
+  const dailyAverageThisMonth =
+    daysIntoMonth > 0 ? currentMonthRevenueCents / daysIntoMonth : 0;
+
+  // Get days in current month for projection
+  const daysInCurrentMonth = new Date(
+    today.getFullYear(),
+    today.getMonth() + 1,
+    0
+  ).getDate();
+  const projectedMonthEndRevenue = dailyAverageThisMonth * daysInCurrentMonth;
+
+  // Determine period context
+  let periodContext: 'early' | 'mid' | 'late' = 'early';
+  if (currentDay > 20) {
+    periodContext = 'late';
+  } else if (currentDay > 10) {
+    periodContext = 'mid';
+  }
+
+  // Count transactions this month
+  const transactionCount = monthlyPaymentsResult.data?.length || 0;
+
+  // Create readable period labels
+  const monthNames = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+
+  const currentMonthName = monthNames[today.getMonth()];
+  const lastMonthName = monthNames[firstDayLastMonth.getMonth()];
+
+  const currentPeriodLabel = `${currentMonthName} 1-${currentDay}`;
+  const comparisonPeriodLabel = `${lastMonthName} 1-${sameDayLastMonth.getDate()}`;
+
+  // Create rolling 30-day labels
+  const rolling30Start = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const rolling30End = new Date();
+  const previous30Start = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
+  const previous30End = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  const rolling30DayLabel = `${monthNames[rolling30Start.getMonth()]} ${rolling30Start.getDate()} - ${monthNames[rolling30End.getMonth()]} ${rolling30End.getDate()}`;
+  const previous30DayLabel = `${monthNames[previous30Start.getMonth()]} ${previous30Start.getDate()} - ${monthNames[previous30End.getMonth()]} ${previous30End.getDate()}`;
+
+  return {
+    currentMonthRevenueCents,
+    lastMonthRevenueCents,
+    monthlyRevenueComparison,
+    unpaidBalanceCents,
+    unpaidOrdersCount,
+    currentPeriodLabel,
+    comparisonPeriodLabel,
+    rolling30DayLabel,
+    previous30DayLabel,
+
+    // Enhanced fields
+    dailyAverageThisMonth,
+    projectedMonthEndRevenue,
+    periodContext,
+    transactionCount,
+    rolling30DayRevenue: rolling30DayRevenueCents,
+    previous30DayRevenue: previous30DayRevenueCents,
+    rolling30DayComparison,
+  };
 }
 
 /**

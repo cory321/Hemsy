@@ -57,6 +57,7 @@ export interface OrdersFilters {
   sortOrder?: 'asc' | 'desc';
   includeCancelled?: boolean;
   onlyCancelled?: boolean;
+  onlyActive?: boolean;
 }
 
 export async function getOrdersPaginated(
@@ -108,16 +109,28 @@ export async function getOrdersPaginated(
   }
 
   // Apply cancelled order filters
-  const { includeCancelled = false, onlyCancelled = false } = filters || {};
+  const {
+    includeCancelled = false,
+    onlyCancelled = false,
+    onlyActive = false,
+  } = filters || {};
 
   if (onlyCancelled) {
     query = query.eq('status', 'cancelled');
+  } else if (onlyActive) {
+    // For active orders, include only: new, in_progress, ready_for_pickup
+    query = query.in('status', ['new', 'in_progress', 'ready_for_pickup']);
   } else if (!includeCancelled) {
     query = query.neq('status', 'cancelled');
   }
 
   // Apply status filter (after cancelled filter)
-  if (filters?.status && filters.status !== 'all' && !onlyCancelled) {
+  if (
+    filters?.status &&
+    filters.status !== 'all' &&
+    !onlyCancelled &&
+    !onlyActive
+  ) {
     query = query.eq('status', filters.status);
   }
 
@@ -858,5 +871,214 @@ export async function getOrdersByClient(
       error: error instanceof Error ? error.message : 'Failed to fetch orders',
       orders: [],
     };
+  }
+}
+
+export interface OrderStats {
+  // Unpaid Balance
+  unpaidCount: number;
+  unpaidAmountCents: number;
+
+  // Due This Week
+  dueThisWeekCount: number;
+  dueThisWeekAmountCents: number;
+
+  // Monthly Revenue (collected)
+  monthlyRevenueCents: number;
+  monthlyRevenueComparison: number; // percentage change vs last month
+
+  // In Progress
+  inProgressCount: number;
+  inProgressAmountCents: number;
+}
+
+export async function getOrderStats(): Promise<OrderStats> {
+  'use server';
+
+  try {
+    const { shop } = await ensureUserAndShop();
+    const supabase = await createSupabaseClient();
+
+    // Calculate dates
+    const today = new Date();
+    const weekFromNow = new Date(today);
+    weekFromNow.setDate(weekFromNow.getDate() + 7);
+
+    const firstDayThisMonth = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      1
+    );
+    const firstDayLastMonth = new Date(
+      today.getFullYear(),
+      today.getMonth() - 1,
+      1
+    );
+    const firstDayNextMonth = new Date(
+      today.getFullYear(),
+      today.getMonth() + 1,
+      1
+    );
+
+    const [
+      unpaidOrdersResult,
+      dueThisWeekResult,
+      monthlyPaymentsResult,
+      lastMonthPaymentsResult,
+      inProgressResult,
+    ] = await Promise.all([
+      // 1. Unpaid Balance (orders with payment_status unpaid or partially_paid)
+      supabase
+        .from('orders')
+        .select(
+          `
+          total_cents,
+          invoices(
+            payments(
+              amount_cents,
+              status,
+              refunded_amount_cents
+            )
+          )
+        `
+        )
+        .eq('shop_id', shop.id)
+        .neq('status', 'cancelled'),
+
+      // 2. Due This Week
+      supabase
+        .from('orders')
+        .select('total_cents, order_due_date')
+        .eq('shop_id', shop.id)
+        .neq('status', 'cancelled')
+        .neq('status', 'completed')
+        .gte('order_due_date', today.toISOString().split('T')[0])
+        .lte('order_due_date', weekFromNow.toISOString().split('T')[0]),
+
+      // 3. This Month's Revenue (actual payments)
+      supabase
+        .from('payments')
+        .select(
+          `
+          amount_cents,
+          refunded_amount_cents,
+          invoice:invoices!inner(
+            shop_id
+          )
+        `
+        )
+        .eq('invoice.shop_id', shop.id)
+        .in('status', ['completed', 'partially_refunded'])
+        .gte('created_at', firstDayThisMonth.toISOString())
+        .lt('created_at', firstDayNextMonth.toISOString()),
+
+      // 4. Last Month's Revenue (for comparison)
+      supabase
+        .from('payments')
+        .select(
+          `
+          amount_cents,
+          refunded_amount_cents,
+          invoice:invoices!inner(
+            shop_id
+          )
+        `
+        )
+        .eq('invoice.shop_id', shop.id)
+        .in('status', ['completed', 'partially_refunded'])
+        .gte('created_at', firstDayLastMonth.toISOString())
+        .lt('created_at', firstDayThisMonth.toISOString()),
+
+      // 5. In Progress Orders
+      supabase
+        .from('orders')
+        .select('total_cents')
+        .eq('shop_id', shop.id)
+        .eq('status', 'in_progress'),
+    ]);
+
+    // Calculate unpaid amounts
+    let unpaidTotal = 0;
+    let unpaidCount = 0;
+
+    if (unpaidOrdersResult.data) {
+      unpaidOrdersResult.data.forEach((order) => {
+        let paidAmount = 0;
+        if (order.invoices && Array.isArray(order.invoices)) {
+          order.invoices.forEach((invoice: any) => {
+            if (invoice.payments && Array.isArray(invoice.payments)) {
+              invoice.payments.forEach((payment: any) => {
+                if (
+                  ['completed', 'partially_refunded'].includes(payment.status)
+                ) {
+                  paidAmount +=
+                    payment.amount_cents - (payment.refunded_amount_cents || 0);
+                }
+              });
+            }
+          });
+        }
+
+        const unpaidAmount = order.total_cents - paidAmount;
+        if (unpaidAmount > 0) {
+          unpaidTotal += unpaidAmount;
+          unpaidCount++;
+        }
+      });
+    }
+
+    // Calculate other totals
+    const dueThisWeekTotal =
+      dueThisWeekResult.data?.reduce(
+        (sum, order) => sum + order.total_cents,
+        0
+      ) || 0;
+
+    const monthlyRevenueTotal =
+      monthlyPaymentsResult.data?.reduce(
+        (sum, payment) =>
+          sum + (payment.amount_cents - (payment.refunded_amount_cents || 0)),
+        0
+      ) || 0;
+
+    const lastMonthRevenueTotal =
+      lastMonthPaymentsResult.data?.reduce(
+        (sum, payment) =>
+          sum + (payment.amount_cents - (payment.refunded_amount_cents || 0)),
+        0
+      ) || 0;
+
+    const inProgressTotal =
+      inProgressResult.data?.reduce(
+        (sum, order) => sum + order.total_cents,
+        0
+      ) || 0;
+
+    // Calculate month-over-month comparison
+    let monthlyComparison = 0;
+    if (lastMonthRevenueTotal > 0) {
+      monthlyComparison = Math.round(
+        ((monthlyRevenueTotal - lastMonthRevenueTotal) /
+          lastMonthRevenueTotal) *
+          100
+      );
+    } else if (monthlyRevenueTotal > 0) {
+      // If last month was 0 but this month has revenue, show 100% increase
+      monthlyComparison = 100;
+    }
+
+    return {
+      unpaidCount,
+      unpaidAmountCents: unpaidTotal,
+      dueThisWeekCount: dueThisWeekResult.data?.length || 0,
+      dueThisWeekAmountCents: dueThisWeekTotal,
+      monthlyRevenueCents: monthlyRevenueTotal,
+      monthlyRevenueComparison: monthlyComparison,
+      inProgressCount: inProgressResult.data?.length || 0,
+      inProgressAmountCents: inProgressTotal,
+    };
+  } catch (error) {
+    console.error('Error in getOrderStats:', error);
+    throw new Error('Failed to fetch order statistics');
   }
 }

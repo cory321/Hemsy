@@ -1,19 +1,27 @@
-import { Container, Typography, Box, Button, Fab } from '@mui/material';
+import { Typography, Box, Button, Fab } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import AddIcon from '@mui/icons-material/Add';
 import Link from 'next/link';
 import OrdersList from '@/components/orders/OrdersList';
-import { getOrdersPaginated } from '@/lib/actions/orders';
+import OrderStatsCards from '@/components/orders/OrderStatsCards';
+import { BusinessHealth } from '@/components/dashboard/business-overview/BusinessHealth';
+import { getOrdersPaginated, getOrderStats } from '@/lib/actions/orders';
+import { getBusinessHealthData } from '@/lib/actions/dashboard';
 
 // Force dynamic rendering since this page uses authentication
 export const dynamic = 'force-dynamic';
 
 export default async function OrdersPage() {
-  // Fetch initial data server-side
-  const initialData = await getOrdersPaginated(1, 10);
+  // Fetch initial data server-side with active orders filter by default
+  const [initialData, statsData, businessHealthData] = await Promise.all([
+    getOrdersPaginated(1, 10, { onlyActive: true }),
+    getOrderStats(),
+    getBusinessHealthData(),
+  ]);
 
   return (
-    <Container maxWidth="lg">
-      <Box sx={{ mt: 4, mb: 4 }}>
+    <Box sx={{ p: 3 }}>
+      <Box sx={{ mt: 2, mb: 4 }}>
         {/* Header with title and desktop CTA */}
         <Box
           sx={{
@@ -37,11 +45,35 @@ export default async function OrdersPage() {
           </Button>
         </Box>
 
-        {/* Orders List with pagination */}
-        <OrdersList
-          initialData={initialData}
-          getOrdersAction={getOrdersPaginated}
-        />
+        {/* Main Content Grid */}
+        <Grid container spacing={3}>
+          {/* Left Column - Main Content */}
+          <Grid size={{ xs: 12, lg: 9 }}>
+            {/* Orders List with pagination */}
+            <OrdersList
+              initialData={initialData}
+              getOrdersAction={getOrdersPaginated}
+            />
+          </Grid>
+
+          {/* Right Column - Business Metrics */}
+          <Grid size={{ xs: 12, lg: 3 }}>
+            {/* Business Health */}
+            <Box sx={{ mb: 3 }}>
+              <BusinessHealth
+                {...businessHealthData}
+                hideUnpaidBalance={true}
+              />
+            </Box>
+
+            {/* Order Stats */}
+            <OrderStatsCards
+              stats={statsData}
+              excludeMonthlyRevenue={true}
+              verticalLayout={true}
+            />
+          </Grid>
+        </Grid>
 
         {/* Floating Action Button */}
         <Fab
@@ -59,6 +91,6 @@ export default async function OrdersPage() {
           <AddIcon />
         </Fab>
       </Box>
-    </Container>
+    </Box>
   );
 }

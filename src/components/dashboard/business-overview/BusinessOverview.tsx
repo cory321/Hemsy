@@ -11,6 +11,8 @@ import { AppointmentDialogWithConflictCheck } from '@/components/appointments/Ap
 import CreateServiceDialog from '@/components/services/CreateServiceDialog';
 import { useAppointments } from '@/providers/AppointmentProvider';
 import type { ShopHours } from '@/types';
+import type { BusinessHealthData } from '@/lib/actions/dashboard';
+import type { ActivityItem } from '@/lib/actions/recent-activity';
 
 interface BusinessOverviewProps {
   shopId: string;
@@ -19,12 +21,18 @@ interface BusinessOverviewProps {
     buffer_time_minutes: number;
     default_appointment_duration: number;
   };
+  businessHealthData?: BusinessHealthData | undefined;
+  recentActivity?: ActivityItem[] | undefined;
+  loading?: boolean;
 }
 
 export function BusinessOverview({
   shopId,
   shopHours,
   calendarSettings,
+  businessHealthData,
+  recentActivity,
+  loading = false,
 }: BusinessOverviewProps) {
   const router = useRouter();
   const [clientDialogOpen, setClientDialogOpen] = useState(false);
@@ -64,10 +72,14 @@ export function BusinessOverview({
       <QuickActions onAction={handleQuickAction} />
 
       {/* Revenue Card */}
-      <BusinessHealth onViewFinances={handleViewFinances} />
+      <BusinessHealth
+        {...businessHealthData}
+        onViewFinances={handleViewFinances}
+        loading={loading}
+      />
 
       {/* Recent Activity */}
-      <RecentActivity />
+      <RecentActivity activities={recentActivity || []} loading={loading} />
 
       {/* Dialogs */}
       <ClientCreateDialog

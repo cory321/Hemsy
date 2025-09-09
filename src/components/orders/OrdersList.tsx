@@ -21,24 +21,16 @@ import {
   InputLabel,
   CircularProgress,
   Backdrop,
-  ToggleButton,
-  ToggleButtonGroup,
-  Tooltip,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import PersonIcon from '@mui/icons-material/Person';
-import ViewListIcon from '@mui/icons-material/ViewList';
-import ViewAgendaIcon from '@mui/icons-material/ViewAgenda';
-import DashboardIcon from '@mui/icons-material/Dashboard';
 import { useRouter } from 'next/navigation';
 import { useDebounce } from '@/hooks/useDebounce';
 import { format } from 'date-fns';
 import type { PaginatedOrders, OrdersFilters } from '@/lib/actions/orders';
 import type { Database } from '@/types/supabase';
 import OrderCardMinimal from './OrderCardMinimal';
-import OrderCardCompact from './OrderCardCompact';
-import OrderCardDetailed from './OrderCardDetailed';
 
 interface OrdersListProps {
   initialData: PaginatedOrders;
@@ -90,8 +82,6 @@ const getStatusLabel = (status: string) => {
   }
 };
 
-type ViewMode = 'minimal' | 'compact' | 'detailed';
-
 export default function OrdersList({
   initialData,
   getOrdersAction,
@@ -102,27 +92,16 @@ export default function OrdersList({
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<
-    Database['public']['Enums']['order_status'] | 'all'
-  >('all');
+    Database['public']['Enums']['order_status'] | 'active' | 'all'
+  >('active');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('all');
   const [page, setPage] = useState(initialData.page - 1);
   const [rowsPerPage, setRowsPerPage] = useState(initialData.pageSize);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isFiltering, setIsFiltering] = useState(false);
 
-  // View mode state with localStorage persistence
-  const [viewMode, setViewMode] = useState<ViewMode>('compact');
-
   const debouncedSearch = useDebounce(search, 300);
   const getOrdersActionRef = useRef(getOrdersAction);
-
-  // Load view preference from localStorage on mount
-  useEffect(() => {
-    const savedView = localStorage.getItem('orderListViewMode') as ViewMode;
-    if (savedView && ['minimal', 'compact', 'detailed'].includes(savedView)) {
-      setViewMode(savedView);
-    }
-  }, []);
 
   useEffect(() => {
     getOrdersActionRef.current = getOrdersAction;
@@ -139,7 +118,7 @@ export default function OrdersList({
       // Use isFiltering for search/status changes, loading for pagination
       const isSearchOrStatusChange =
         debouncedSearch !== '' ||
-        statusFilter !== 'all' ||
+        statusFilter !== 'active' ||
         paymentStatusFilter !== 'all';
       if (isSearchOrStatusChange) {
         setIsFiltering(true);
@@ -148,14 +127,16 @@ export default function OrdersList({
       }
       setError(null);
       try {
-        const status = statusFilter === 'all' ? undefined : statusFilter;
+        const status = statusFilter === 'active' ? undefined : statusFilter;
         const paymentStatus =
           paymentStatusFilter === 'all' ? undefined : paymentStatusFilter;
 
         // Handle cancelled order filtering
         const onlyCancelled = statusFilter === 'cancelled';
-        const includeCancelled =
-          statusFilter === 'all' || statusFilter === 'cancelled';
+        const includeCancelled = statusFilter === 'cancelled';
+
+        // Handle active orders filtering (exclude completed and cancelled)
+        const onlyActive = statusFilter === 'active';
 
         const filters: OrdersFilters = {
           search: debouncedSearch,
@@ -165,6 +146,7 @@ export default function OrdersList({
           sortOrder: 'desc',
           includeCancelled,
           onlyCancelled,
+          onlyActive,
         };
         const result = await getOrdersActionRef.current(
           page + 1,
@@ -205,16 +187,6 @@ export default function OrdersList({
     router.push(`/orders/${orderId}`);
   };
 
-  const handleViewModeChange = (
-    _event: React.MouseEvent<HTMLElement>,
-    newMode: ViewMode | null
-  ) => {
-    if (newMode !== null) {
-      setViewMode(newMode);
-      localStorage.setItem('orderListViewMode', newMode);
-    }
-  };
-
   // The paid amount is now calculated on the server from actual invoice payments
   // No need to estimate here anymore
   const ordersWithPaymentInfo = data.data;
@@ -223,46 +195,20 @@ export default function OrdersList({
     <Box data-testid="orders-list">
       {/* Filters */}
       <Stack spacing={2} sx={{ mb: 3 }}>
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-          <TextField
-            fullWidth
-            variant="outlined"
-            placeholder="Search by order number or notes..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            }}
-          />
-          {/* View Mode Toggle */}
-          <ToggleButtonGroup
-            value={viewMode}
-            exclusive
-            onChange={handleViewModeChange}
-            aria-label="view mode"
-            size="small"
-          >
-            <ToggleButton value="minimal" aria-label="minimal view">
-              <Tooltip title="Minimal View">
-                <ViewListIcon />
-              </Tooltip>
-            </ToggleButton>
-            <ToggleButton value="compact" aria-label="compact view">
-              <Tooltip title="Compact View">
-                <ViewAgendaIcon />
-              </Tooltip>
-            </ToggleButton>
-            <ToggleButton value="detailed" aria-label="detailed view">
-              <Tooltip title="Detailed View">
-                <DashboardIcon />
-              </Tooltip>
-            </ToggleButton>
-          </ToggleButtonGroup>
-        </Box>
+        <TextField
+          fullWidth
+          variant="outlined"
+          placeholder="Search by order number or notes..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+          }}
+        />
         <Box sx={{ display: 'flex', gap: 2 }}>
           <FormControl size="small" sx={{ minWidth: 200 }}>
             <InputLabel>Order Status</InputLabel>
@@ -273,11 +219,11 @@ export default function OrdersList({
                 setStatusFilter(
                   e.target.value as
                     | Database['public']['Enums']['order_status']
-                    | 'all'
+                    | 'active'
                 )
               }
             >
-              <MenuItem value="all">All Order Statuses</MenuItem>
+              <MenuItem value="active">All Active Orders</MenuItem>
               <MenuItem value="new">New</MenuItem>
               <MenuItem value="in_progress">In Progress</MenuItem>
               <MenuItem value="ready_for_pickup">Ready For Pickup</MenuItem>
@@ -356,36 +302,13 @@ export default function OrdersList({
               </CardContent>
             </Card>
           ) : (
-            ordersWithPaymentInfo.map((order) => {
-              // Render different card component based on view mode
-              switch (viewMode) {
-                case 'minimal':
-                  return (
-                    <OrderCardMinimal
-                      key={order.id}
-                      order={order}
-                      onClick={handleCardClick}
-                    />
-                  );
-                case 'detailed':
-                  return (
-                    <OrderCardDetailed
-                      key={order.id}
-                      order={order}
-                      onClick={handleCardClick}
-                    />
-                  );
-                case 'compact':
-                default:
-                  return (
-                    <OrderCardCompact
-                      key={order.id}
-                      order={order}
-                      onClick={handleCardClick}
-                    />
-                  );
-              }
-            })
+            ordersWithPaymentInfo.map((order) => (
+              <OrderCardMinimal
+                key={order.id}
+                order={order}
+                onClick={handleCardClick}
+              />
+            ))
           )}
         </Stack>
       </Box>
