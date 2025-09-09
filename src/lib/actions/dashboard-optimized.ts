@@ -413,11 +413,21 @@ async function getAppointmentsDataConsolidatedInternal(shopId: string) {
   // Get garments due this week for summary stats
   const { data: weekGarments, error: garmentsError } = await supabase
     .from('garments')
-    .select('*, orders!inner(status)')
+    .select(
+      `
+      *,
+      garment_services (
+        id,
+        is_done,
+        is_removed
+      ),
+      orders!inner(status)
+    `
+    )
     .eq('shop_id', shopId)
     .gte('due_date', weekStartStr)
     .lte('due_date', weekEndStr)
-    .neq('stage', 'Done')
+    .not('stage', 'in', '("Done","Ready For Pickup")')
     .neq('orders.status', 'cancelled');
 
   if (garmentsError) {
@@ -427,15 +437,12 @@ async function getAppointmentsDataConsolidatedInternal(shopId: string) {
   const totalGarmentsDue = weekGarments?.length || 0;
   const totalOverdue =
     weekGarments?.filter((g) => {
-      const dueDateInfo = getDueDateInfo(g.due_date);
-      if (!dueDateInfo) return false;
-      // Create a basic GarmentOverdueInfo object
-      const overdueInfo = {
-        isOverdue: dueDateInfo.daysUntilDue < 0,
-        overdueDays:
-          dueDateInfo.daysUntilDue < 0 ? Math.abs(dueDateInfo.daysUntilDue) : 0,
-      };
-      return overdueInfo.isOverdue;
+      // Use the proper isGarmentOverdue logic that considers service completion
+      return isGarmentOverdue({
+        due_date: g.due_date,
+        stage: g.stage as GarmentStage,
+        garment_services: g.garment_services || [],
+      });
     }).length || 0;
 
   const weekSummaryStats: WeekSummaryStats = {

@@ -1,0 +1,30 @@
+#!/usr/bin/env sh
+
+# Get the commit message from the file
+commit_msg=$(cat "$1")
+
+# Remove leading/trailing whitespace and get length
+commit_msg_trimmed=$(echo "$commit_msg" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+commit_length=${#commit_msg_trimmed}
+
+# Check if commit message is empty
+if [ -z "$commit_msg_trimmed" ]; then
+    echo "❌ Commit message cannot be empty"
+    exit 1
+fi
+
+# Check commit message length (max 200 characters)
+if [ "$commit_length" -gt 200 ]; then
+    echo "❌ Commit message too long: $commit_length characters"
+    echo "   Maximum allowed: 200 characters"
+    echo "   Your message: '$commit_msg_trimmed'"
+    echo ""
+    echo "💡 Tips for concise commit messages:"
+    echo "   • Focus on the most important changes"
+    echo "   • Use bullet points in the body if needed"
+    echo "   • Consider breaking large changes into smaller commits"
+    exit 1
+fi
+
+# Success message
+echo "✅ Commit message length OK: $commit_length characters (max 200)"
