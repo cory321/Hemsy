@@ -2,6 +2,8 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { ensureUserAndShop } from '@/lib/auth/user-shop';
+import { formatInTimezone } from '@/lib/utils/date-time-utc';
+import { getShopTimezone } from '@/lib/utils/timezone-helpers';
 
 export interface ActivityItem {
   id: string;
@@ -21,6 +23,9 @@ export async function getRecentActivity(
     const supabase = await createClient();
     const { shop } = await ensureUserAndShop();
     const shopId = shop.id;
+
+    // Get shop timezone for proper time formatting
+    const shopTimezone = await getShopTimezone(shopId);
 
     const activities: ActivityItem[] = [];
     const now = new Date();
@@ -167,17 +172,26 @@ export async function getRecentActivity(
         const clientName = client
           ? `${client.first_name} ${client.last_name}`
           : 'Unknown Client';
-        const startTime = new Date(appointment.start_at!);
-        const timeStr = startTime.toLocaleTimeString('en-US', {
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true,
-        });
 
-        const isToday = startTime.toDateString() === now.toDateString();
-        const isTomorrow =
-          startTime.toDateString() ===
-          new Date(now.getTime() + 24 * 60 * 60 * 1000).toDateString();
+        // Convert UTC start_at to shop timezone for proper display
+        const startTimeUTC = new Date(appointment.start_at!);
+        const timeStr = formatInTimezone(startTimeUTC, shopTimezone, 'h:mm a');
+
+        // Format dates in shop timezone for comparison
+        const appointmentDateStr = formatInTimezone(
+          startTimeUTC,
+          shopTimezone,
+          'yyyy-MM-dd'
+        );
+        const nowInShopTZ = formatInTimezone(now, shopTimezone, 'yyyy-MM-dd');
+        const tomorrowInShopTZ = formatInTimezone(
+          new Date(now.getTime() + 24 * 60 * 60 * 1000),
+          shopTimezone,
+          'yyyy-MM-dd'
+        );
+
+        const isToday = appointmentDateStr === nowInShopTZ;
+        const isTomorrow = appointmentDateStr === tomorrowInShopTZ;
 
         let timeDetail = timeStr;
         if (isToday) {
@@ -185,7 +199,12 @@ export async function getRecentActivity(
         } else if (isTomorrow) {
           timeDetail = `tomorrow at ${timeStr}`;
         } else {
-          timeDetail = `${startTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at ${timeStr}`;
+          const monthDay = formatInTimezone(
+            startTimeUTC,
+            shopTimezone,
+            'MMM d'
+          );
+          timeDetail = `${monthDay} at ${timeStr}`;
         }
 
         const isConfirmed = appointment.status === 'confirmed';
