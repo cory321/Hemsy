@@ -85,6 +85,45 @@ describe('DashboardAlertsClient', () => {
     expect(screen.getByText('3 garments due today')).toBeInTheDocument();
   });
 
+  it('shows correct "and X more" count for overdue preview', () => {
+    const bigOverdue = {
+      count: 18,
+      garments: [
+        {
+          id: 'g1',
+          name: 'Blue Cardigan',
+          client_name: 'Sheppy Scott',
+          due_date: '2024-01-01',
+          days_overdue: 6,
+        },
+        {
+          id: 'g2',
+          name: 'Test SVG Icon Garment',
+          client_name: 'Sheppy Scott',
+          due_date: '2024-01-01',
+          days_overdue: 8,
+        },
+        {
+          id: 'g3',
+          name: 'Test Order With Invoice',
+          client_name: 'Sheppy Scott',
+          due_date: '2024-01-01',
+          days_overdue: 8,
+        },
+      ] as any,
+    };
+
+    render(
+      <DashboardAlertsClient
+        overdueData={bigOverdue}
+        dueTodayData={{ count: 0, garments: [] }}
+      />
+    );
+
+    // Should say "+ and 15 more" (18 total - 3 listed)
+    expect(screen.getByText(/and 15 more/)).toBeInTheDocument();
+  });
+
   it('navigates to garments page with overdue filter when View all is clicked', () => {
     render(
       <DashboardAlertsClient
