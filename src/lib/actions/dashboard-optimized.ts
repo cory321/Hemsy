@@ -13,7 +13,10 @@ import {
 } from '@/lib/utils/date-time-utils';
 import { getShopTimezone } from '@/lib/utils/timezone-helpers';
 import { toZonedTime, format as formatTz } from 'date-fns-tz';
-import { compareGarmentsByStageAndProgress } from '@/lib/utils/garment-priority';
+import {
+  compareGarmentsByStageAndProgress,
+  sortGarmentsByPriority,
+} from '@/lib/utils/garment-priority';
 import type { Appointment, GarmentStage } from '@/types';
 import type {
   BusinessHealthData,
@@ -585,12 +588,12 @@ async function getGarmentsDataConsolidatedInternal(shopId: string) {
     }
   });
 
-  // Sort active garments by priority
-  activeGarments.sort(compareGarmentsByStageAndProgress);
+  // Sort active garments by due-date-aware priority (older dashboard logic)
+  const sortedActiveGarments = sortGarmentsByPriority(activeGarments);
 
   return {
     stageCounts,
-    activeGarments,
+    activeGarments: sortedActiveGarments.slice(0, 3),
     readyForPickupGarments,
   };
 }

@@ -48,10 +48,12 @@ export function DashboardAlertsClient({
       })
       .join(', ');
 
-    // Show "and X more" if the total count is greater than 2
-    if (!showAll && totalCount > 2) {
-      const remainingCount = totalCount - 2;
-      return `${formattedList}, and ${remainingCount} more`;
+    // Show "and X more" if the total count exceeds the number shown
+    if (!showAll && totalCount > garments.length) {
+      const remainingCount = totalCount - garments.length;
+      return remainingCount > 0
+        ? `${formattedList}, and ${remainingCount} more`
+        : formattedList;
     }
 
     return formattedList;
