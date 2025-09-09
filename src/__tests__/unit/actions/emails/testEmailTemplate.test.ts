@@ -11,7 +11,7 @@ jest.mock('@/lib/supabase/server', () => ({
   createClient: jest.fn(),
 }));
 
-jest.mock('@/lib/actions/users', () => ({
+jest.mock('@/lib/auth/user-shop', () => ({
   ensureUserAndShop: jest.fn(),
 }));
 
@@ -36,7 +36,7 @@ jest.mock('@/lib/services/email/template-renderer');
 
 import { testEmailTemplate } from '@/lib/actions/emails/email-settings';
 import { createClient } from '@/lib/supabase/server';
-import { ensureUserAndShop } from '@/lib/actions/users';
+import { ensureUserAndShop } from '@/lib/auth/user-shop';
 import { TemplateRenderer } from '@/lib/services/email/template-renderer';
 import { getResendClient } from '@/lib/services/email/resend-client';
 

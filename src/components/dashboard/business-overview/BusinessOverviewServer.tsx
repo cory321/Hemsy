@@ -3,7 +3,7 @@ import { BusinessOverviewClient } from './BusinessOverviewClient';
 import { getBusinessHealthData } from '@/lib/actions/dashboard';
 import { getShopHours } from '@/lib/actions/shop-hours';
 import { getCalendarSettings } from '@/lib/actions/calendar-settings';
-import { ensureUserAndShop } from '@/lib/actions/users';
+import { ensureUserAndShop } from '@/lib/auth/user-shop';
 import { getRecentActivity } from '@/lib/actions/recent-activity';
 import { BusinessOverview } from './BusinessOverview';
 import type { ShopHours } from '@/types';

@@ -1,9 +1,9 @@
 import { getOrderStats } from '@/lib/actions/orders';
 import { createClient } from '@/lib/supabase/server';
-import { ensureUserAndShop } from '@/lib/actions/users';
+import { ensureUserAndShop } from '@/lib/auth/user-shop';
 
 jest.mock('@/lib/supabase/server');
-jest.mock('@/lib/actions/users');
+jest.mock('@/lib/auth/user-shop');
 
 describe('getOrderStats', () => {
   const mockShop = {

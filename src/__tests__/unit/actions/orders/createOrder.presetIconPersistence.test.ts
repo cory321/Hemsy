@@ -5,7 +5,7 @@ jest.mock('@/lib/supabase/server');
 jest.mock('@/lib/utils/timezone-helpers', () => ({
   getShopTimezone: jest.fn(async () => 'UTC'),
 }));
-jest.mock('@/lib/actions/users', () => ({
+jest.mock('@/lib/auth/user-shop', () => ({
   ensureUserAndShop: jest.fn().mockResolvedValue({
     user: { id: 'test-user-id' },
     shop: { id: 'test-shop-id' },
@@ -20,6 +20,7 @@ describe('createOrder persists garment preset icon and colors', () => {
     select: jest.fn().mockReturnThis(),
     single: jest.fn(),
     eq: jest.fn().mockReturnThis(),
+    maybeSingle: jest.fn(),
   } as any;
 
   beforeEach(() => {

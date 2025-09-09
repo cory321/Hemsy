@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { createClient as createSupabaseClient } from '@/lib/supabase/server';
 import { assignDefaultGarmentNames } from '@/lib/utils/order-normalization';
-import { ensureUserAndShop } from './users';
+import { ensureUserAndShop } from '@/lib/auth/user-shop';
 import type { Tables, Database } from '@/types/supabase';
 import { convertLocalToUTC } from '@/lib/utils/date-time-utc';
 import { getShopTimezone } from '@/lib/utils/timezone-helpers';

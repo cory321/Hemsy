@@ -3,7 +3,7 @@
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { createClient as createSupabaseClient } from '@/lib/supabase/server';
-import { ensureUserAndShop } from './users';
+import { ensureUserAndShop } from '@/lib/auth/user-shop';
 import type { Database } from '@/types/supabase';
 
 // Input schemas for validation

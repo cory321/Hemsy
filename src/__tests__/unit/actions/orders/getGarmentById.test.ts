@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 
 // Mock dependencies
 jest.mock('@/lib/supabase/server');
-jest.mock('@/lib/actions/users', () => ({
+jest.mock('@/lib/auth/user-shop', () => ({
   ensureUserAndShop: jest.fn().mockResolvedValue({
     user: { id: 'test-user-id' },
     shop: { id: 'test-shop-id' },

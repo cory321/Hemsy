@@ -1,5 +1,6 @@
 'use server';
 
+import { cache } from 'react';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { createClient as createSupabaseClient } from '@/lib/supabase/server';
 import type { Tables } from '@/types/supabase';
@@ -13,8 +14,11 @@ export interface UserWithShop {
  * Ensures that a user and their shop exist in the database.
  * Creates them if they don't exist.
  * This function is idempotent and handles race conditions.
+ *
+ * Uses React cache to deduplicate calls within the same request cycle,
+ * significantly improving performance during dashboard loads.
  */
-export async function ensureUserAndShop(): Promise<UserWithShop> {
+export const ensureUserAndShop = cache(async (): Promise<UserWithShop> => {
   const { userId } = await auth();
   if (!userId) {
     throw new Error('Unauthorized - no Clerk user ID found');
@@ -27,9 +31,9 @@ export async function ensureUserAndShop(): Promise<UserWithShop> {
 
   const supabase = await createSupabaseClient();
 
-  // Log the attempt for debugging
+  // Log the attempt for debugging (only when actually executed, not cached)
   console.log(
-    `[ensureUserAndShop] Processing user: ${userId}, email: ${clerkUser.emailAddresses[0]?.emailAddress}`
+    `[ensureUserAndShop] Processing user: ${userId}, email: ${clerkUser.emailAddresses[0]?.emailAddress} (cache miss - executing)`
   );
 
   // First, try to get the user
@@ -159,7 +163,7 @@ export async function ensureUserAndShop(): Promise<UserWithShop> {
     user: userData!,
     shop: shopData!,
   };
-}
+});
 
 /**
  * Gets the display name for a shop, preferring business_name over name

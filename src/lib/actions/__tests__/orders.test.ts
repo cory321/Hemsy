@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 
 // Mock dependencies
 jest.mock('@/lib/supabase/server');
-jest.mock('../users', () => ({
+jest.mock('@/lib/auth/user-shop', () => ({
   ensureUserAndShop: jest.fn().mockResolvedValue({
     user: { id: 'test-user-id' },
     shop: { id: 'test-shop-id' },
@@ -16,6 +16,7 @@ const mockSupabaseClient = {
   eq: jest.fn().mockReturnThis(),
   neq: jest.fn().mockReturnThis(),
   order: jest.fn().mockReturnThis(),
+  maybeSingle: jest.fn(),
 };
 
 describe('getOrdersByClient', () => {
