@@ -71,7 +71,7 @@ export async function handleRefundWebhook(request: Request) {
             refund_type: 'full', // We can't determine this from webhook alone
             refund_method: 'stripe',
             merchant_notes:
-              'Created outside Threadfolio platform - synced via webhook',
+              'Created outside Hemsy platform - synced via webhook',
             processed_at: new Date(refund.created * 1000).toISOString(),
             stripe_metadata: refund.metadata,
           });

@@ -4,7 +4,7 @@ _Last updated: January 2025_
 
 ## Overview
 
-This document outlines the comprehensive mobile-first performance optimization strategy for Threadfolio's Invoice Management feature, ensuring fast, responsive, and reliable payment experiences on mobile devices.
+This document outlines the comprehensive mobile-first performance optimization strategy for Hemsyoice Management feature, ensuring fast, responsive, and reliable payment experiences on mobile devices.
 
 ## Table of Contents
 
@@ -320,7 +320,7 @@ module.exports = {
 
 ```typescript
 // public/sw.js
-const CACHE_NAME = 'threadfolio-v1';
+const CACHE_NAME = 'hemsy-v1';
 const STATIC_ASSETS = [
   '/fonts/roboto-latin-400.woff2',
   '/fonts/roboto-latin-500.woff2',
@@ -772,7 +772,7 @@ export class OfflineInvoiceManager {
   private db: Promise<IDBDatabase>;
 
   constructor() {
-    this.db = openDB<InvoiceDB>('threadfolio-invoices', 1, {
+    this.db = openDB<InvoiceDB>('hemsy-invoices', 1, {
       upgrade(db) {
         // Invoice store
         const invoiceStore = db.createObjectStore('invoices', {

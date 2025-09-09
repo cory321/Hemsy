@@ -1,4 +1,4 @@
-# Threadfolio Invoice Management Feature - Product Requirements Document (PRD)
+# Hemsy Invoice Management Feature - Product Requirements Document (PRD)
 
 ## Goals and Background Context
 
@@ -13,7 +13,7 @@
 
 ### Background Context
 
-Threadfolio is a mobile-first PWA for seamstresses and tailoring businesses that currently manages clients, orders, garments, and appointments. The Invoice Management feature addresses a critical gap in the business workflow - the ability to collect payments professionally and efficiently. Currently, seamstresses must manage payments outside the system, leading to disconnected financial records and manual payment tracking. This feature integrates payment collection directly into the order workflow, supporting both business models where payment is required upfront (common for custom work) and where payment is collected after service completion (common for alterations). By leveraging Stripe for online payments while also supporting cash and external POS systems, we accommodate the diverse payment preferences of small tailoring businesses.
+Hemsy is a mobile-first PWA for seamstresses and tailoring businesses that currently manages clients, orders, garments, and appointments. The Invoice Management feature addresses a critical gap in the business workflow - the ability to collect payments professionally and efficiently. Currently, seamstresses must manage payments outside the system, leading to disconnected financial records and manual payment tracking. This feature integrates payment collection directly into the order workflow, supporting both business models where payment is required upfront (common for custom work) and where payment is collected after service completion (common for alterations). By leveraging Stripe for online payments while also supporting cash and external POS systems, we accommodate the diverse payment preferences of small tailoring businesses.
 
 ### Change Log
 
@@ -55,7 +55,7 @@ Threadfolio is a mobile-first PWA for seamstresses and tailoring businesses that
 
 ### Overall UX Vision
 
-The invoice interface should seamlessly integrate into Threadfolio's existing mobile-first design, maintaining consistency with the current order and client management flows. The payment experience should feel professional yet approachable, building trust through clear communication of payment status and security indicators. The interface should minimize cognitive load by presenting payment options contextually - showing relevant actions based on payment timing settings and current invoice state.
+The invoice interface should seamlessly integrate into Hemsy's existing mobile-first design, maintaining consistency with the current order and client management flows. The payment experience should feel professional yet approachable, building trust through clear communication of payment status and security indicators. The interface should minimize cognitive load by presenting payment options contextually - showing relevant actions based on payment timing settings and current invoice state.
 
 ### Key Interaction Paradigms
 
@@ -79,11 +79,11 @@ The invoice interface should seamlessly integrate into Threadfolio's existing mo
 
 ### Accessibility: WCAG AA
 
-Following Threadfolio's existing accessibility standards, ensuring all payment interfaces are screen reader compatible, keyboard navigable, and provide sufficient color contrast for payment status indicators.
+Following Hemsy's existing accessibility standards, ensuring all payment interfaces are screen reader compatible, keyboard navigable, and provide sufficient color contrast for payment status indicators.
 
 ### Branding
 
-Maintain Threadfolio's existing visual design system with its professional yet warm aesthetic tailored for seamstresses. Payment interfaces should feel trustworthy while staying consistent with the app's existing color palette, typography, and component library.
+Maintain Hemsy's existing visual design system with its professional yet warm aesthetic tailored for seamstresses. Payment interfaces should feel trustworthy while staying consistent with the app's existing color palette, typography, and component library.
 
 ### Target Device and Platforms: Web Responsive
 
@@ -93,15 +93,15 @@ Mobile-first responsive design optimized for smartphones (primary use case) whil
 
 ### Repository Structure: Monorepo
 
-The invoice feature will be developed within Threadfolio's existing monorepo structure, maintaining consistency with the current codebase organization.
+The invoice feature will be developed within Hemsy's existing monorepo structure, maintaining consistency with the current codebase organization.
 
 ### Service Architecture
 
-**Monolith with Server Actions** - The invoice feature will follow Threadfolio's existing architecture pattern using Next.js 15+ App Router with Server Actions for backend logic. All invoice operations (creation, payment processing, status updates) will be implemented as Server Actions, maintaining the pattern of server-side business logic with client-side UI components.
+**Monolith with Server Actions** - The invoice feature will follow Hemsy's existing architecture pattern using Next.js 15+ App Router with Server Actions for backend logic. All invoice operations (creation, payment processing, status updates) will be implemented as Server Actions, maintaining the pattern of server-side business logic with client-side UI components.
 
 ### Testing Requirements
 
-**Full Testing Pyramid** - Following Threadfolio's mandatory testing requirements:
+**Full Testing Pyramid** - Following Hemsy's mandatory testing requirements:
 
 - Unit tests for all invoice components and business logic (minimum 80% coverage)
 - Integration tests for Stripe webhook handling and invoice Server Actions
@@ -110,15 +110,15 @@ The invoice feature will be developed within Threadfolio's existing monorepo str
 
 ### Additional Technical Assumptions and Requests
 
-- **Framework Stack**: Next.js 15+ (App Router), TypeScript (strict mode), Material UI v5+, maintaining consistency with existing Threadfolio tech stack
+- **Framework Stack**: Next.js 15+ (App Router), TypeScript (strict mode), Material UI v5+, maintaining consistency with existing Hemsy tech stack
 - **Database**: Supabase with Row Level Security (RLS) policies for invoice data isolation between shops
 - **Authentication**: Clerk Auth for shop owner authentication, with public routes for payment links
 - **Payment Processing**: Stripe integration using Payment Links API and Payment Intents API for MVP simplicity
 - **State Management**: React Query for invoice data fetching and optimistic updates
-- **Email Service**: Integration with existing Threadfolio email system (Resend) for payment notifications
+- **Email Service**: Integration with existing Hemsy email system (Resend) for payment notifications
 - **Environment Management**: Separate Stripe keys for development/staging/production environments
 - **Error Monitoring**: Integration with existing error tracking system for payment failure monitoring
-- **API Design**: RESTful Server Actions following existing Threadfolio patterns with proper TypeScript typing
+- **API Design**: RESTful Server Actions following existing Hemsy patterns with proper TypeScript typing
 - **Mobile Optimization**: Touch-optimized payment forms using Material UI components
 - **Offline Handling**: Graceful degradation for payment operations when offline
 - **Security**: HTTPS-only for all payment pages, secure webhook signature verification
@@ -251,7 +251,7 @@ _Provide payment insights, reporting, and financial analytics for business manag
 2: Templates include default content with placeholder variables for dynamic data
 3: Template editor supports preview with sample data
 4: Templates save successfully and validate required variables
-5: Email sending service integrated with existing Threadfolio email system (Resend)
+5: Email sending service integrated with existing Hemsy email system (Resend)
 6: Server Actions created for sending each email type with proper data injection
 7: Email send failures logged with appropriate error handling
 
@@ -575,8 +575,8 @@ _[To be populated after checklist execution]_
 
 ### UX Expert Prompt
 
-Review the Invoice Management PRD and create detailed UX mockups focusing on the mobile-first payment experience, ensuring seamless integration with Threadfolio's existing design system while maintaining trust and clarity in all payment interactions.
+Review the Invoice Management PRD and create detailed UX mockups focusing on the mobile-first payment experience, ensuring seamless integration with Hemsy's existing design system while maintaining trust and clarity in all payment interactions.
 
 ### Architect Prompt
 
-Using this Invoice Management PRD, create a comprehensive technical architecture document that details the implementation approach for Stripe integration, database schema design, Server Actions structure, and security considerations while maintaining consistency with Threadfolio's existing architecture patterns.
+Using this Invoice Management PRD, create a comprehensive technical architecture document that details the implementation approach for Stripe integration, database schema design, Server Actions structure, and security considerations while maintaining consistency with Hemsy's existing architecture patterns.

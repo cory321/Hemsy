@@ -7,7 +7,7 @@ export const resend = new Resend(process.env.RESEND_API_KEY);
 export const emailConfig = {
   sender: {
     address: process.env.EMAIL_FROM_ADDRESS || 'onboarding@resend.dev',
-    name: process.env.EMAIL_FROM_NAME || 'Threadfolio',
+    name: process.env.EMAIL_FROM_NAME || 'Hemsy',
     replyTo: process.env.EMAIL_REPLY_TO,
     // Following Resend format: "Name <email@domain.com>"
     get formatted() {

@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This document outlines the architectural refactoring of the Threadfolio V2 calendar and appointment booking system to efficiently handle hundreds of thousands of appointments using time-range queries, React Query caching, Next.js 15 Server Actions, and Edge Runtime optimization.
+This document outlines the architectural refactoring of the Hemsy calendar and appointment booking system to efficiently handle hundreds of thousands of appointments using time-range queries, React Query caching, Next.js 15 Server Actions, and Edge Runtime optimization.
 
 ## Core Architecture Principles
 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Clerk UserButton component has been integrated into Threadfolio V2 with a responsive design that adapts to different screen sizes while maintaining consistent user experience.
+The Clerk UserButton component has been integrated into Hemsy with a responsive design that adapts to different screen sizes while maintaining consistent user experience.
 
 ## Implementation Details
 

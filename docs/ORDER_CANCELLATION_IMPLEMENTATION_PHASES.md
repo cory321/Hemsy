@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document outlines the phased approach to implementing order cancellation functionality in Threadfolio V2. The implementation is divided into 6 phases to ensure systematic development with proper testing at each stage.
+This document outlines the phased approach to implementing order cancellation functionality in Hemsy. The implementation is divided into 6 phases to ensure systematic development with proper testing at each stage.
 
 ## Phase 0: Database Schema Updates (No migrations needed)
 

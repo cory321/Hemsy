@@ -1,6 +1,6 @@
 {
-  "name": "Threadfolio - Seamstress Business Management",
-  "short_name": "Threadfolio",
+  "name": "Hemsy - Seamstress Business Management",
+  "short_name": "Hemsy",
   "description": "Mobile-first PWA for seamstresses and tailoring businesses",
   "start_url": "/",
   "display": "standalone",

@@ -4,7 +4,7 @@ import { config } from 'dotenv';
 config({ path: '.env.local' });
 
 async function testEmailAPI() {
-  console.log('Testing Threadfolio Email API (Resend + Next.js patterns)...\n');
+  console.log('Testing Hemsy Email API (Resend + Next.js patterns)...\n');
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const testEmail = 'cory321@gmail.com';

@@ -1,6 +1,6 @@
 # Responsive Layout System
 
-This directory contains the responsive layout components and utilities for Threadfolio V2.
+This directory contains the responsive layout components and utilities for Hemsy.
 
 ## Overview
 

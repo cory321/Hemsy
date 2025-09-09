@@ -290,7 +290,7 @@ export async function sendInvoiceEmail(
 
     // Send email via Resend
     const emailOptions: any = {
-      from: `${getShopDisplayName(shop)} <${process.env.RESEND_FROM_EMAIL || 'noreply@threadfolio.com'}>`,
+      from: `${getShopDisplayName(shop)} <${process.env.RESEND_FROM_EMAIL || 'noreply@hemsy.app'}>`,
       to: invoice.client.email,
       subject,
       html: htmlBody,

@@ -295,7 +295,7 @@ export default function OnboardingPage() {
     <Container maxWidth="sm">
       <Box sx={{ mt: 4, mb: 4 }}>
         <Typography variant="h4" component="h1" align="center" gutterBottom>
-          Welcome to Threadfolio
+          Welcome to Hemsy
         </Typography>
         <Typography
           variant="body1"

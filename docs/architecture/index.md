@@ -1,8 +1,8 @@
-# Threadfolio Architecture Specification
+# Hemsytecture Specification
 
 ## Table of Contents
 
-- [Threadfolio Architecture Specification](#table-of-contents)
+- [Hemsy Architecture Specification](#table-of-contents)
   - [Table of Contents](./table-of-contents.md)
   - [1. Introduction](./1-introduction.md)
   - [2. Architectural Goals](./2-architectural-goals.md)

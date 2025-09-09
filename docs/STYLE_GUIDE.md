@@ -1,4 +1,4 @@
-# Threadfolio V2 Style Guide
+# Hemsy Style Guide
 
 ## Table of Contents
 
@@ -19,7 +19,7 @@
 
 ## Introduction
 
-This style guide defines the visual language and design system for Threadfolio V2, a mobile-first PWA for seamstresses and tailoring businesses. It ensures consistency across all user interfaces and provides implementation guidance for developers.
+This style guide defines the visual language and design system for Hemsy, a mobile-first PWA for seamstresses and tailoring businesses. It ensures consistency across all user interfaces and provides implementation guidance for developers.
 
 ### Core Design Principles
 
@@ -44,7 +44,7 @@ This style guide defines the visual language and design system for Threadfolio V
 
 ### Visual Personality
 
-The Threadfolio brand embodies the warmth of a professional tailoring studio with modern digital efficiency. Our interfaces feel handcrafted yet systematic, personal yet scalable.
+The Hemsy brand embodies the warmth of a professional tailoring studio with modern digital efficiency. Our interfaces feel handcrafted yet systematic, personal yet scalable.
 
 ## Color System
 

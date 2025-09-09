@@ -56,10 +56,10 @@ async function testEmailConfig() {
       const response = await resend.emails.send({
         from: `${emailConfig.sender.name} <${emailConfig.sender.address}>`,
         to: 'cory321@gmail.com', // Your email address
-        subject: 'Threadfolio Email System Test',
+        subject: 'Hemsy Email System Test',
         html: `
-					<h2>🎉 Threadfolio Email System Test</h2>
-					<p>Congratulations! Your Threadfolio email system is working correctly.</p>
+					<h2>🎉 Hemsy Email System Test</h2>
+					<p>Congratulations! Your Hemsy email system is working correctly.</p>
 					<hr>
 					<h3>Configuration Details:</h3>
 					<ul>
@@ -70,12 +70,12 @@ async function testEmailConfig() {
 					</ul>
 					<p>You can now proceed with implementing the full email system for appointment confirmations, reminders, and notifications.</p>
 					<br>
-					<p><em>This test email was sent from your Threadfolio V2 development environment.</em></p>
+					<p><em>This test email was sent from your Hemsy development environment.</em></p>
 				`,
         text: `
-Threadfolio Email System Test
+Hemsy System Test
 
-Congratulations! Your Threadfolio email system is working correctly.
+Congratulations! Your Hemsy email system is working correctly.
 
 Configuration Details:
 - From: ${emailConfig.sender.name} <${emailConfig.sender.address}>
@@ -85,7 +85,7 @@ Configuration Details:
 
 You can now proceed with implementing the full email system for appointment confirmations, reminders, and notifications.
 
-This test email was sent from your Threadfolio V2 development environment.
+This test email was sent from your Hemsy development environment.
 				`,
       });
 

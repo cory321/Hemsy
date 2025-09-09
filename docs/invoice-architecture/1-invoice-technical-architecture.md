@@ -4,7 +4,7 @@ _Last updated: January 2025_
 
 ## Executive Summary
 
-This document provides the comprehensive technical architecture for Threadfolio's Invoice Management feature, integrating payment processing capabilities into the existing mobile-first PWA architecture. The design supports flexible payment timing models (before/after service), multiple payment methods (Stripe, cash, external POS), and maintains consistency with Threadfolio's existing patterns.
+This document provides the comprehensive technical architecture for Hemsy's Invoice Management feature, integrating payment processing capabilities into the existing mobile-first PWA architecture. The design supports flexible payment timing models (before/after service), multiple payment methods (Stripe, cash, external POS), and maintains consistency with Hemsy's existing patterns.
 
 ## Table of Contents
 
@@ -25,7 +25,7 @@ This document provides the comprehensive technical architecture for Threadfolio'
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
-│                    Threadfolio App (PWA)                    │
+│                    Hemsy App (PWA)                    │
 ├─────────────────────────────────────────────────────────────┤
 │  ┌──────────────┐  ┌──────────────┐  ┌─────────────────┐  │
 │  │   Orders     │  │   Clients    │  │    Settings     │  │
@@ -715,4 +715,4 @@ export const paymentSecurityMiddleware = async (request: Request) => {
 
 ## Conclusion
 
-This technical architecture provides a solid foundation for implementing Threadfolio's invoice management feature. The design prioritizes security, performance, and user experience while maintaining consistency with existing system patterns. The modular approach allows for incremental implementation following the epic structure defined in the PRD.
+This technical architecture provides a solid foundation for implementing Hemsy's invoice management feature. The design prioritizes security, performance, and user experience while maintaining consistency with existing system patterns. The modular approach allows for incremental implementation following the epic structure defined in the PRD.

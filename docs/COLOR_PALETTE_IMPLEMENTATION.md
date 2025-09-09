@@ -1,4 +1,4 @@
-# Threadfolio V2 Color Palette Implementation
+# Hemsy Color Palette Implementation
 
 ## Overview
 
@@ -141,4 +141,4 @@ To see all colors in action:
   - Different screen brightness levels
   - Color blindness simulators
 
-The warm, professional palette creates a cohesive visual experience that reflects the craftsmanship and attention to detail that Threadfolio V2's users bring to their work.
+The warm, professional palette creates a cohesive visual experience that reflects the craftsmanship and attention to detail that Hemsy's users bring to their work.

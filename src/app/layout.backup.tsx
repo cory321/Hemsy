@@ -7,8 +7,9 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Threadfolio - Seamstress Business Management',
-  description: 'Mobile-first PWA for seamstresses and tailoring businesses',
+  title: 'Hemsy - Seamstress Business Management',
+  description:
+    'Business Management App for seamstresses and tailoring businesses',
   manifest: '/manifest.json',
   icons: {
     icon: '/favicon.ico',
@@ -19,8 +20,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  maximumScale: 5,
+  userScalable: true,
   themeColor: '#605143',
 };
 

@@ -11,7 +11,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Payment Successful | Threadfolio',
+  title: 'Payment Successful | Hemsy',
   description: 'Your payment has been processed successfully',
 };
 

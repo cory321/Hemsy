@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Threadfolio V2 is a mobile-first PWA for seamstresses and tailoring businesses built with Next.js 15+ App Router, TypeScript, Material UI, Supabase, Clerk Auth, and Stripe.
+Hemsy is a mobile-first PWA for seamstresses and tailoring businesses built with Next.js 15+ App Router, TypeScript, Material UI, Supabase, Clerk Auth, and Stripe.
 
 ## Key Commands
 

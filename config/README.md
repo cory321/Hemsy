@@ -1,6 +1,6 @@
 # Configuration Files
 
-This directory contains all configuration files for the Threadfolio V2 project.
+This directory contains all configuration files for the Hemsy project.
 
 ## Files Overview
 

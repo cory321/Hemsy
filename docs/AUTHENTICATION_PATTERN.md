@@ -1,8 +1,8 @@
-# Threadfolio V2 Authentication Pattern
+# Hemsy Authentication Pattern
 
 ## Overview
 
-Threadfolio V2 uses a hybrid authentication approach:
+Hemsy uses a hybrid authentication approach:
 
 - **Clerk** for user authentication and session management
 - **Supabase** for data storage without using Supabase Auth

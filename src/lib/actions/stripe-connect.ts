@@ -83,7 +83,7 @@ export async function createConnectAccount(
       metadata: {
         shop_id: shop.id,
         shop_name: shop.name,
-        platform: 'threadfolio',
+        platform: 'hemsy',
       },
     });
 
@@ -471,7 +471,7 @@ export async function updateConnectAccountWithTestData(): Promise<{
       await stripe.accounts.update(accountId, {
         business_profile: {
           mcc: '5045', // Computer software stores
-          url: 'https://threadfolio.com',
+          url: 'https://hemsy.app',
         },
       });
 
@@ -498,7 +498,7 @@ export async function updateConnectAccountWithTestData(): Promise<{
         },
         business_profile: {
           mcc: '5045', // Computer software stores
-          url: 'https://threadfolio.com',
+          url: 'https://hemsy.app',
         },
         // For individual accounts (most seamstresses)
         individual: {
@@ -780,7 +780,7 @@ export async function createTestMerchant(input: {
       metadata: {
         shop_id: shop.id,
         shop_name: shop.name,
-        platform: 'threadfolio',
+        platform: 'hemsy',
         test_account: 'true',
       },
       // Pre-populate with test data to enable charges immediately
@@ -790,7 +790,7 @@ export async function createTestMerchant(input: {
       },
       business_profile: {
         mcc: '5045', // Computer software stores
-        url: 'https://threadfolio.com',
+        url: 'https://hemsy.app',
       },
       // Request capabilities
       capabilities: {

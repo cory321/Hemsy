@@ -135,8 +135,8 @@ export async function testEmailDelivery(testEmail?: string): Promise<{
 
     const result = await resendClient.send({
       to: recipientEmail,
-      subject: 'Threadfolio Email Test',
-      text: 'This is a test email from your Threadfolio email system. If you received this, your email configuration is working correctly!',
+      subject: 'Hemsy Email Test',
+      text: 'This is a test email from your Hemsy email system. If you received this, your email configuration is working correctly!',
     });
 
     if (!result.success) {

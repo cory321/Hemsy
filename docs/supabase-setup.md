@@ -1,6 +1,6 @@
 # Supabase Setup Guide
 
-This guide walks through setting up Supabase for Threadfolio V2, including creating tables and configuring authentication.
+This guide walks through setting up Supabase for Hemsy, including creating tables and configuring authentication.
 
 ## Prerequisites
 

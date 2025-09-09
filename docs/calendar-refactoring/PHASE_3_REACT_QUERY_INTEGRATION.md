@@ -17,13 +17,13 @@ Integrate React Query provider and verify the query infrastructure is working co
 
 ### 1. Activate React Query Provider (10 minutes)
 
-The provider is already created at: `/Users/corywilliams/Threadfolio V2/src/providers/QueryProvider.tsx`
+The provider is already created at: `/Users/corywilliams/Hemsy/src/providers/QueryProvider.tsx`
 
 Activate it in the root layout:
 
 ```bash
 # Navigate to project root
-cd "/Users/corywilliams/Threadfolio V2"
+cd "/Users/corywilliams/Hemsy"
 
 # Backup current layout
 cp src/app/layout.tsx src/app/layout.backup.tsx
@@ -78,7 +78,7 @@ npm run dev
 
 ### 4. Verify Query Key Factory (5 minutes)
 
-Check the query key factory at: `/Users/corywilliams/Threadfolio V2/src/lib/queries/appointment-keys.ts`
+Check the query key factory at: `/Users/corywilliams/Hemsy/src/lib/queries/appointment-keys.ts`
 
 Test TypeScript types:
 

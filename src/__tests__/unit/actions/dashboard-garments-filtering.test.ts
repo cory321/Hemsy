@@ -321,7 +321,7 @@ describe('Dashboard - Active Garments Filtering', () => {
       expect(result).toHaveLength(0);
     });
 
-    it('should return at most 3 ready for pickup garments from non-canceled orders', async () => {
+    it('should return at most 5 ready for pickup garments from non-canceled orders', async () => {
       const mockQuery = {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -374,13 +374,13 @@ describe('Dashboard - Active Garments Filtering', () => {
 
       const result = await getReadyForPickupGarments();
 
-      // Verify that limit is set to 3
-      expect(mockQuery.limit).toHaveBeenCalledWith(3);
+      // Verify that limit is set to 5
+      expect(mockQuery.limit).toHaveBeenCalledWith(5);
 
       // Verify that canceled orders are excluded
       expect(mockQuery.neq).toHaveBeenCalledWith('orders.status', 'cancelled');
 
-      // Result should have at most 3 items
+      // Result should have at most 5 items
       expect(result).toHaveLength(3);
     });
   });

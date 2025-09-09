@@ -1,4 +1,4 @@
-# Threadfolio Architecture Specification
+# Hemsy Architecture Specification
 
 _Last updated: August 1, 2025_
 
@@ -26,7 +26,7 @@ _Last updated: August 1, 2025_
 
 ## 1. Introduction
 
-This document captures the **end-to-end system architecture** for Threadfolio—a mobile-first PWA for seamstresses. It unifies frontend, backend, data, and infrastructure views to guide development, ensure consistency, and enable AI-driven agents to iterate autonomously.
+This document captures the **end-to-end system architecture** for Hemsy—a mobile-first PWA for seamstresses. It unifies frontend, backend, data, and infrastructure views to guide development, ensure consistency, and enable AI-driven agents to iterate autonomously.
 
 ---
 
@@ -50,7 +50,7 @@ This document captures the **end-to-end system architecture** for Threadfolio—
               │
               ▼
 ┌────────────────────────────┐
-│  Threadfolio App (PWA)     │
+│  Hemsy App (PWA)     │
 │  Next.js 15+ (App Router)  │
 │  MUI, React Server Components │
 └─────────────┬──────────────┘
@@ -203,4 +203,4 @@ CLERK_WEBHOOK_SECRET=
 
 ---
 
-_End of Threadfolio Architecture Specification_
+_End of Hemsytecture Specification_

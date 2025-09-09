@@ -35,7 +35,7 @@ import {
 } from '@mui/material';
 
 export const metadata: Metadata = {
-  title: 'Payment Settings - Threadfolio',
+  title: 'Payment Settings - Hemsy',
   description:
     'Manage your payment settings and connect your Stripe account to receive payments directly',
 };

@@ -206,7 +206,7 @@ BEGIN
      E'Hi {client_name},\n\nPlease confirm your appointment scheduled for {appointment_time} by clicking the link below:\n\n{confirmation_link}\n\nIf you have any questions, please contact us.\n\nThank you,\n{shop_name}'),
     ('appointment_confirmed',
      '{client_name} confirmed their appointment',
-     E'Hi {seamstress_name},\n\n{client_name} has confirmed their appointment scheduled for {appointment_time}.\n\nYou can view all your appointments in Threadfolio.\n\nThank you,\nThreadfolio')
+     E'Hi {seamstress_name},\n\n{client_name} has confirmed their appointment scheduled for {appointment_time}.\n\nYou can view all your appointments in Hemsy.\n\nThank you,\nHemsy')
   ) AS t(email_type, subject, body);
 END;
 $$ LANGUAGE plpgsql;

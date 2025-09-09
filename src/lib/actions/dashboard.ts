@@ -12,6 +12,8 @@ import {
   type GarmentOverdueInfo,
 } from '@/lib/utils/date-time-utils';
 import { compareGarmentsByStageAndProgress } from '@/lib/utils/garment-priority';
+import { getShopTimezone } from '@/lib/utils/timezone-helpers';
+import { toZonedTime } from 'date-fns-tz';
 import type { Appointment, GarmentStage } from '@/types';
 
 export interface DashboardStats {
@@ -32,7 +34,6 @@ export interface BusinessHealthData {
 
   // Enhanced MVP fields
   dailyAverageThisMonth: number;
-  projectedMonthEndRevenue: number;
   periodContext: 'early' | 'mid' | 'late';
   transactionCount: number;
 
@@ -481,7 +482,7 @@ export async function getReadyForPickupGarments(): Promise<ActiveGarment[]> {
     .eq('stage', 'Ready For Pickup')
     .neq('orders.status', 'cancelled')
     .order('created_at', { ascending: false })
-    .limit(3); // Get only the 3 most recent
+    .limit(5); // Get only the 5 most recent
 
   if (error) {
     console.error('Error fetching ready for pickup garments:', error);
@@ -637,8 +638,12 @@ export async function getBusinessHealthData(): Promise<BusinessHealthData> {
   const { shop } = await ensureUserAndShop();
   const supabase = await createClient();
 
-  // Calculate date ranges
-  const today = new Date();
+  // Get shop timezone for consistent calculations
+  const shopTimezone = await getShopTimezone(shop.id);
+
+  // Calculate date ranges using shop timezone
+  const now = new Date();
+  const today = toZonedTime(now, shopTimezone);
   const currentDay = today.getDate();
 
   // This month: from 1st to today
@@ -856,18 +861,10 @@ export async function getBusinessHealthData(): Promise<BusinessHealthData> {
     monthlyRevenueComparison = 100;
   }
 
-  // Calculate daily average and projection
+  // Calculate daily average
   const daysIntoMonth = currentDay;
   const dailyAverageThisMonth =
     daysIntoMonth > 0 ? currentMonthRevenueCents / daysIntoMonth : 0;
-
-  // Get days in current month for projection
-  const daysInCurrentMonth = new Date(
-    today.getFullYear(),
-    today.getMonth() + 1,
-    0
-  ).getDate();
-  const projectedMonthEndRevenue = dailyAverageThisMonth * daysInCurrentMonth;
 
   // Determine period context
   let periodContext: 'early' | 'mid' | 'late' = 'early';
@@ -924,7 +921,6 @@ export async function getBusinessHealthData(): Promise<BusinessHealthData> {
 
     // Enhanced fields
     dailyAverageThisMonth,
-    projectedMonthEndRevenue,
     periodContext,
     transactionCount,
     rolling30DayRevenue: rolling30DayRevenueCents,

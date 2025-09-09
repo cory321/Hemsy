@@ -18,7 +18,7 @@ Apply database optimizations including new indexes, BRIN indexes for large datas
 
 ### 1. Review Migration File (10 minutes)
 
-Review the migration at: `/Users/corywilliams/Threadfolio V2/supabase/migrations/004_optimize_appointment_indexes.sql`
+Review the migration at: `/Users/corywilliams/Hemsy/supabase/migrations/004_optimize_appointment_indexes.sql`
 
 Key changes:
 
@@ -31,7 +31,7 @@ Key changes:
 
 ```bash
 # Navigate to project root
-cd "/Users/corywilliams/Threadfolio V2"
+cd "/Users/corywilliams/Hemsy"
 
 # Check migration status
 npx supabase migration list

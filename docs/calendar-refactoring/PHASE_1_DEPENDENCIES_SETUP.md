@@ -19,7 +19,7 @@ Install required dependencies and prepare the project environment for the calend
 
 ```bash
 # Navigate to project root
-cd "/Users/corywilliams/Threadfolio V2"
+cd "/Users/corywilliams/Hemsy"
 
 # Install React Query and related packages
 npm install @tanstack/react-query@^5.17.0 @tanstack/react-query-devtools@^5.17.0 react-hot-toast@^2.4.1

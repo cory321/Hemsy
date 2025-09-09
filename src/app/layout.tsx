@@ -18,7 +18,7 @@ const nunito = Nunito({
 });
 
 export const metadata: Metadata = {
-  title: 'Threadfolio - Seamstress Business Management',
+  title: 'Hemsy - Seamstress Business Management',
   description: 'Mobile-first PWA for seamstresses and tailoring businesses',
   manifest: '/manifest.json',
   icons: {
@@ -33,8 +33,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  maximumScale: 5,
+  userScalable: true,
   themeColor: '#605143',
 };
 

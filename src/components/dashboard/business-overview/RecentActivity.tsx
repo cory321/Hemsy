@@ -92,11 +92,18 @@ export function RecentActivity({
           {displayActivities.map((activity) => (
             <Box key={activity.id}>
               <Box
-                sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  mb: 0.5,
+                }}
               >
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  {activity.text}
-                </Typography>
+                <Box sx={{ flex: 1, mr: 1 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    {activity.text}
+                  </Typography>
+                </Box>
                 <Chip
                   size="small"
                   label={activity.type}
@@ -105,6 +112,7 @@ export function RecentActivity({
                     fontSize: '0.65rem',
                     bgcolor: refinedColors.type[activity.type],
                     color: 'white',
+                    flexShrink: 0,
                     '& .MuiChip-label': {
                       px: 0.75,
                     },

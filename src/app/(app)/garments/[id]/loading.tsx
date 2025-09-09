@@ -50,7 +50,7 @@ export default function Loading() {
                     <i
                       className="ri ri-shirt-line"
                       style={{ fontSize: 96 }}
-                      aria-hidden
+                      aria-hidden="true"
                     />
                   </Box>
                 </Box>

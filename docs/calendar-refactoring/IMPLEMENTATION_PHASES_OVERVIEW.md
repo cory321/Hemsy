@@ -2,7 +2,7 @@
 
 ## 🎯 Project Goal
 
-Refactor the Threadfolio V2 calendar system to efficiently handle hundreds of thousands of appointments using React Query, sliding window fetching, and optimized database queries.
+Refactor the Hemsy calendar system to efficiently handle hundreds of thousands of appointments using React Query, sliding window fetching, and optimized database queries.
 
 ## 📋 Phase Summary
 

@@ -94,7 +94,7 @@ describe.skip('Stripe Connect Actions', () => {
         email: 'seamstress@example.com',
         business_type: 'individual',
         metadata: expect.objectContaining({
-          platform: 'threadfolio',
+          platform: 'hemsy',
         }),
       });
     });

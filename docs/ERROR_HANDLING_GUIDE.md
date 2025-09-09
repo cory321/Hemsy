@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide documents the error handling strategy implemented in Threadfolio V2 to ensure graceful error handling in production without breaking the application.
+This guide documents the error handling strategy implemented in Hemsy to ensure graceful error handling in production without breaking the application.
 
 ## Architecture
 

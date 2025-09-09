@@ -428,7 +428,7 @@ export function SettingsClient() {
                 </Box>
                 <Divider sx={{ my: 2 }} />
                 <Typography variant="body2" color="text.secondary">
-                  Need help? Contact support at support@threadfolio.com
+                  Need help? Contact support at support@hemsy.app
                 </Typography>
               </CardContent>
             </Card>

@@ -4,7 +4,7 @@ _Last updated: January 2025_
 
 ## Overview
 
-This document defines the comprehensive Server Actions architecture for Threadfolio's Invoice Management feature, following Next.js 15+ App Router patterns with a focus on type safety, error handling, and transaction integrity.
+This document defines the comprehensive Server Actions architecture for Hemsy's Invoice Management feature, following Next.js 15+ App Router patterns with a focus on type safety, error handling, and transaction integrity.
 
 ## Table of Contents
 

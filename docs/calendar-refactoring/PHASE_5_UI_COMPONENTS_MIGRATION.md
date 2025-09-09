@@ -19,7 +19,7 @@ Migrate the calendar UI components to use React Query hooks with sliding window 
 
 ```bash
 # Navigate to project root
-cd "/Users/corywilliams/Threadfolio V2"
+cd "/Users/corywilliams/Hemsy"
 
 # Backup appointments page
 cp src/app/(app)/appointments/page.tsx \
@@ -48,7 +48,7 @@ mv src/app/(app)/appointments/AppointmentsClientRefactored.tsx \
 
 ### 3. Verify CalendarWithQuery Component (10 minutes)
 
-Check the new calendar at: `/Users/corywilliams/Threadfolio V2/src/components/appointments/CalendarWithQuery.tsx`
+Check the new calendar at: `/Users/corywilliams/Hemsy/src/components/appointments/CalendarWithQuery.tsx`
 
 Key features to verify:
 

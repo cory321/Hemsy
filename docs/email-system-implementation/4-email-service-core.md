@@ -479,10 +479,10 @@ Thank you,
 
 {client_name} has confirmed their appointment scheduled for {appointment_time}.
 
-You can view all your appointments in Threadfolio.
+You can view all your appointments in Hemsy.
 
 Thank you,
-Threadfolio`,
+Hemsy`,
     },
   };
 }

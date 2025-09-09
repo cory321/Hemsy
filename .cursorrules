@@ -1,8 +1,8 @@
-# Threadfolio V2 - Cursor Project Rules
+# Hemsy - Cursor Project Rules
 
 ## Project Context
 
-You are working on **Threadfolio V2**, a mobile-first PWA for seamstresses and tailoring businesses.
+You are working on **Hemsy**, a mobile-first PWA for seamstresses and tailoring businesses.
 
 ### 📋 **ALWAYS READ THESE FIRST:**
 
@@ -41,6 +41,20 @@ You are working on **Threadfolio V2**, a mobile-first PWA for seamstresses and t
 6. Use TypeScript strictly
 7. Follow the implementation phases in order
 8. **MANDATORY**: Write tests alongside all feature implementations
+
+### 📝 **Commit Message Guidelines:**
+
+When generating commit messages, **ALWAYS** follow these rules:
+
+- **Maximum 200 characters** (strictly enforced by pre-commit hook)
+- Use imperative mood (e.g., "Add feature" not "Added feature")
+- Be specific and descriptive about what changed
+- Focus on the WHAT and WHY, not the HOW
+- Examples of good commit messages:
+  - "Add client search functionality with debounced input and real-time filtering"
+  - "Fix appointment scheduling bug where overlapping times were allowed"
+  - "Update order status workflow to include pending payment state"
+- **NEVER** exceed 200 characters - the commit will be rejected by Git hooks
 
 ### 🧪 **Testing Requirements (MANDATORY):**
 
@@ -259,4 +273,4 @@ mcp_context7_get-library-docs(
 
 ---
 
-**Remember**: This is a real production application for seamstresses. Every decision should prioritize user experience, performance, and reliability.
+**Remember**: Every decision should prioritize user experience, performance, and reliability.

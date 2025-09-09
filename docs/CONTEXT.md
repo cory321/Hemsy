@@ -1,4 +1,4 @@
-# 🧠 Threadfolio V2 - AI Agent Context Guide
+# 🧠 Hemsy - AI Agent Context Guide
 
 ## 📖 **Essential Documents** (READ FIRST)
 

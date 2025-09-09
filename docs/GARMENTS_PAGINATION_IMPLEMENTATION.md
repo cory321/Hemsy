@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the pagination implementation for the garments list in Threadfolio V2, designed to handle thousands of garments efficiently while maintaining a fast, accessible, and optimistic user experience.
+This document describes the pagination implementation for the garments list in Hemsy, designed to handle thousands of garments efficiently while maintaining a fast, accessible, and optimistic user experience.
 
 ## Architecture
 

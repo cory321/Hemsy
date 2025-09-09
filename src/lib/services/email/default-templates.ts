@@ -70,10 +70,10 @@ Thank you,
 Previous time: {previous_time}
 New time: {appointment_time}
 
-You can view details in Threadfolio.
+You can view details in Hemsy.
 
 Thank you,
-Threadfolio`,
+Hemsy`,
     },
     appointment_canceled_seamstress: {
       subject: 'Appointment canceled: {client_name}',
@@ -81,10 +81,10 @@ Threadfolio`,
 
 {client_name}'s appointment scheduled for {previous_time} has been canceled.
 
-You can view details in Threadfolio.
+You can view details in Hemsy.
 
 Thank you,
-Threadfolio`,
+Hemsy`,
     },
     appointment_reminder: {
       subject: 'Appointment reminder: {shop_name}',
@@ -164,10 +164,10 @@ Thank you,
 
 {client_name} has confirmed their appointment scheduled for {appointment_time}.
 
-You can view all your appointments in Threadfolio.
+You can view all your appointments in Hemsy.
 
 Thank you,
-Threadfolio`,
+Hemsy`,
     },
   };
 }

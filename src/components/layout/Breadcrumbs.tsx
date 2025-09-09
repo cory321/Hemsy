@@ -118,7 +118,7 @@ export function Breadcrumbs() {
     <i
       className="ri ri-arrow-right-s-line"
       style={{ fontSize: 14 }}
-      aria-hidden
+      aria-hidden="true"
     />
   );
 
@@ -167,7 +167,7 @@ export function Breadcrumbs() {
                 fontSize: '1rem',
                 color: 'var(--mui-palette-text-secondary)',
               }}
-              aria-hidden
+              aria-hidden="true"
             />
             <Typography
               variant="body2"

@@ -30,7 +30,6 @@ describe('BusinessHealth', () => {
 
     // Enhanced fields
     dailyAverageThisMonth: 134375, // ~$1,343.75 per day
-    projectedMonthEndRevenue: 4166250, // ~$41,662.50
     periodContext: 'early' as const,
     transactionCount: 5,
     rolling30DayRevenue: 1200000, // $12,000

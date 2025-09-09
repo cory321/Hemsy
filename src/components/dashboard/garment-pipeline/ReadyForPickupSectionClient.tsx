@@ -100,7 +100,7 @@ export function ReadyForPickupSectionClient({
             variant="caption"
             sx={{ color: 'text.secondary', fontStyle: 'italic' }}
           >
-            Showing latest 3 of {totalCount} garments • Click &ldquo;View
+            Showing latest 5 of {totalCount} garments • Click &ldquo;View
             All&rdquo; to see more
           </Typography>
         </Box>

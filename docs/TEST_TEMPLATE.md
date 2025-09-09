@@ -348,7 +348,7 @@ test.describe('[Feature Name]', () => {
   test.beforeEach(async ({ page }) => {
     // Set up authentication
     await page.goto('/sign-in');
-    await page.fill('[data-testid="email"]', 'test@threadfolio.com');
+    await page.fill('[data-testid="email"]', 'test@hemsy.app');
     await page.fill('[data-testid="password"]', 'testpassword');
     await page.click('[data-testid="sign-in-button"]');
     await page.waitForURL('/dashboard');

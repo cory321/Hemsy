@@ -1,8 +1,8 @@
-# Responsive Design Guide for Threadfolio V2
+# Responsive Design Guide for Hemsy
 
 ## Overview
 
-Threadfolio V2 is built with a **mobile-first** responsive design approach. This guide explains how to implement responsive features that seamlessly adapt between mobile and desktop views.
+Hemsy is built with a **mobile-first** responsive design approach. This guide explains how to implement responsive features that seamlessly adapt between mobile and desktop views.
 
 ## Key Responsive Components
 
@@ -286,7 +286,7 @@ function ClientProfile() {
 
 ## Summary
 
-The responsive system in Threadfolio V2 provides:
+The responsive system in Hemsy provides:
 
 - Automatic navigation adaptation
 - Powerful responsive hooks and utilities
