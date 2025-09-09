@@ -12,6 +12,8 @@ import {
   type GarmentOverdueInfo,
 } from '@/lib/utils/date-time-utils';
 import { compareGarmentsByStageAndProgress } from '@/lib/utils/garment-priority';
+import { getShopTimezone } from '@/lib/utils/timezone-helpers';
+import { toZonedTime } from 'date-fns-tz';
 import type { Appointment, GarmentStage } from '@/types';
 
 export interface DashboardStats {
@@ -637,8 +639,12 @@ export async function getBusinessHealthData(): Promise<BusinessHealthData> {
   const { shop } = await ensureUserAndShop();
   const supabase = await createClient();
 
-  // Calculate date ranges
-  const today = new Date();
+  // Get shop timezone for consistent calculations
+  const shopTimezone = await getShopTimezone(shop.id);
+
+  // Calculate date ranges using shop timezone
+  const now = new Date();
+  const today = toZonedTime(now, shopTimezone);
   const currentDay = today.getDate();
 
   // This month: from 1st to today

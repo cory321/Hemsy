@@ -1,9 +1,9 @@
-import { DashboardServer } from '@/components/DashboardServer';
+import { DashboardServerOptimized } from '@/components/DashboardServerOptimized';
 
-// Force dynamic rendering to prevent caching issues with recent activity
+// Force dynamic rendering since we use cookies() for auth
+// Data-level caching is handled by unstable_cache in dashboard-optimized.ts
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
 export default function DashboardPage() {
-  return <DashboardServer />;
+  return <DashboardServerOptimized />;
 }
