@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   Box,
   Button,
@@ -32,30 +32,18 @@ export function ClientOrdersSection({
   clientId,
   clientName,
 }: ClientOrdersSectionProps) {
-  const [orders, setOrders] = useState<OrderWithGarmentCount[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        setLoading(true);
-        const ordersData = await getClientOrders(clientId);
-        const normalized = ordersData.map((o) => ({
-          ...o,
-          total: (o.total_cents ?? 0) / 100,
-        }));
-        setOrders(normalized);
-      } catch (err) {
-        setError('Failed to load orders');
-        console.error('Error fetching orders:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOrders();
-  }, [clientId]);
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['client', clientId, 'orders'],
+    queryFn: async () => {
+      const ordersData = await getClientOrders(clientId);
+      return ordersData.map((o) => ({
+        ...o,
+        total: (o.total_cents ?? 0) / 100,
+      })) as OrderWithGarmentCount[];
+    },
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: false,
+  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -95,7 +83,7 @@ export function ClientOrdersSection({
             sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
           >
             <ShoppingBagIcon color="primary" />
-            Orders ({orders.length})
+            Orders ({data?.length ?? 0})
           </Typography>
 
           <Button
@@ -111,7 +99,7 @@ export function ClientOrdersSection({
 
         <Divider sx={{ mb: 2 }} />
 
-        {loading ? (
+        {isLoading ? (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 2 }}>
             <Skeleton variant="rounded" height={80} />
             <Skeleton variant="rounded" height={80} />
@@ -119,9 +107,9 @@ export function ClientOrdersSection({
           </Box>
         ) : error ? (
           <Typography color="error" sx={{ mt: 2 }}>
-            {error}
+            {String((error as any)?.message || 'Failed to load orders')}
           </Typography>
-        ) : orders.length === 0 ? (
+        ) : (data?.length ?? 0) === 0 ? (
           <Typography
             color="text.secondary"
             sx={{ mt: 2, textAlign: 'center' }}
@@ -130,7 +118,7 @@ export function ClientOrdersSection({
           </Typography>
         ) : (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {orders.map((order) => (
+            {(data ?? []).map((order) => (
               <OrderListItem
                 key={order.id}
                 order={order}

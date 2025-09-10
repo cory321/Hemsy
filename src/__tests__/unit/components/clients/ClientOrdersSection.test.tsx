@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { ClientOrdersSection } from '@/components/clients/ClientOrdersSection';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { getClientOrders } from '@/lib/actions/clients';
 
 // Mock the server action
@@ -27,6 +28,14 @@ describe('ClientOrdersSection', () => {
     clientId: 'client-123',
     clientName: 'John Doe',
   };
+  const renderWithQuery = (ui: React.ReactElement) => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    return render(
+      <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+    );
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -37,7 +46,7 @@ describe('ClientOrdersSection', () => {
       () => new Promise(() => {}) // Never resolves to keep loading state
     );
 
-    render(<ClientOrdersSection {...mockProps} />);
+    renderWithQuery(<ClientOrdersSection {...mockProps} />);
 
     // Check for loading skeletons by looking for elements with MuiSkeleton class
     const container = screen.getByText('Orders (0)').closest('.MuiCard-root');
@@ -68,10 +77,10 @@ describe('ClientOrdersSection', () => {
 
     (getClientOrders as jest.Mock).mockResolvedValue(mockOrders);
 
-    render(<ClientOrdersSection {...mockProps} />);
+    renderWithQuery(<ClientOrdersSection {...mockProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText('Orders (2)')).toBeInTheDocument();
+      expect(screen.getByText(/Orders \(2\)/)).toBeInTheDocument();
       expect(screen.getByText('Order #ORD-001')).toBeInTheDocument();
       expect(screen.getByText('Order #ORD-002')).toBeInTheDocument();
     });
@@ -87,10 +96,10 @@ describe('ClientOrdersSection', () => {
   it('should render empty state when no orders exist', async () => {
     (getClientOrders as jest.Mock).mockResolvedValue([]);
 
-    render(<ClientOrdersSection {...mockProps} />);
+    renderWithQuery(<ClientOrdersSection {...mockProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText('Orders (0)')).toBeInTheDocument();
+      expect(screen.getByText(/Orders \(0\)/)).toBeInTheDocument();
       expect(
         screen.getByText(`No orders yet for ${mockProps.clientName}`)
       ).toBeInTheDocument();
@@ -102,10 +111,10 @@ describe('ClientOrdersSection', () => {
       new Error('Failed to fetch orders')
     );
 
-    render(<ClientOrdersSection {...mockProps} />);
+    renderWithQuery(<ClientOrdersSection {...mockProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText('Failed to load orders')).toBeInTheDocument();
+      expect(screen.getByText('Failed to fetch orders')).toBeInTheDocument();
     });
   });
 
@@ -114,10 +123,10 @@ describe('ClientOrdersSection', () => {
       new Error('Network error')
     );
 
-    render(<ClientOrdersSection {...mockProps} />);
+    renderWithQuery(<ClientOrdersSection {...mockProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText('Failed to load orders')).toBeInTheDocument();
+      expect(screen.getByText('Network error')).toBeInTheDocument();
     });
   });
 });

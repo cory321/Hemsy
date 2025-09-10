@@ -27,6 +27,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { archiveClient } from '@/lib/actions/clients';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/useToast';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface ClientArchiveDialogProps {
   clientId: string;
@@ -44,6 +45,7 @@ export default function ClientArchiveDialog({
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
 
   const handleOpen = () => {
     setOpen(true);
@@ -63,6 +65,8 @@ export default function ClientArchiveDialog({
       await archiveClient(clientId);
       setOpen(false);
       showToast(`${clientName} has been archived successfully`, 'success');
+      // Invalidate clients list queries so the list updates immediately on return
+      await queryClient.invalidateQueries({ queryKey: ['clients'] });
       router.push('/clients');
       router.refresh();
     } catch (err) {

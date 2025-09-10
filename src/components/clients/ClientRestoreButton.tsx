@@ -6,6 +6,7 @@ import RestoreIcon from '@mui/icons-material/Restore';
 import { restoreClient } from '@/lib/actions/clients';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/useToast';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface ClientRestoreButtonProps {
   clientId: string;
@@ -23,6 +24,7 @@ export default function ClientRestoreButton({
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
 
   const handleRestore = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent row click when clicking restore
@@ -31,6 +33,8 @@ export default function ClientRestoreButton({
     try {
       await restoreClient(clientId);
       showToast(`${clientName} has been restored successfully`, 'success');
+      // Invalidate clients list queries so the list updates immediately
+      await queryClient.invalidateQueries({ queryKey: ['clients'] });
       router.refresh();
     } catch (error) {
       console.error('Failed to restore client:', error);

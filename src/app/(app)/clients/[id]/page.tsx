@@ -40,6 +40,12 @@ import ClientProfileCard, {
 import { createClient } from '@/lib/supabase/server';
 import { auth } from '@clerk/nextjs/server';
 import { formatPhoneNumber } from '@/lib/utils/phone';
+import {
+  HydrationBoundary,
+  QueryClient,
+  dehydrate,
+} from '@tanstack/react-query';
+import { getClientOrders } from '@/lib/actions/clients';
 
 // Force dynamic rendering since this page uses authentication
 export const dynamic = 'force-dynamic';
@@ -114,6 +120,14 @@ export default async function ClientDetailPage({
         day: 'numeric',
       });
     };
+
+    // Prepare SSR hydration for orders list (first render)
+    const queryClient = new QueryClient();
+    await queryClient.prefetchQuery({
+      queryKey: ['client', client.id, 'orders'],
+      queryFn: () => getClientOrders(client.id),
+      staleTime: 30 * 1000,
+    });
 
     return (
       <Container maxWidth="lg">
@@ -296,34 +310,36 @@ export default async function ClientDetailPage({
                 outstandingBalanceCents={outstandingBalanceCents}
               />
 
-              {shopData?.id ? (
-                <ClientDetailTabs
-                  clientId={client.id}
-                  clientName={`${client.first_name} ${client.last_name}`}
-                  clientEmail={client.email}
-                  clientPhone={client.phone_number}
-                  clientAcceptEmail={client.accept_email ?? false}
-                  clientAcceptSms={client.accept_sms ?? false}
-                  shopId={shopData.id}
-                  shopHours={shopHours.map((hour) => ({
-                    day_of_week: hour.day_of_week,
-                    open_time: hour.open_time,
-                    close_time: hour.close_time,
-                    is_closed: hour.is_closed ?? false,
-                  }))}
-                  calendarSettings={{
-                    buffer_time_minutes:
-                      calendarSettings.buffer_time_minutes ?? 0,
-                    default_appointment_duration:
-                      calendarSettings.default_appointment_duration ?? 30,
-                  }}
-                />
-              ) : (
-                <ClientOrdersSection
-                  clientId={client.id}
-                  clientName={`${client.first_name} ${client.last_name}`}
-                />
-              )}
+              <HydrationBoundary state={dehydrate(queryClient)}>
+                {shopData?.id ? (
+                  <ClientDetailTabs
+                    clientId={client.id}
+                    clientName={`${client.first_name} ${client.last_name}`}
+                    clientEmail={client.email}
+                    clientPhone={client.phone_number}
+                    clientAcceptEmail={client.accept_email ?? false}
+                    clientAcceptSms={client.accept_sms ?? false}
+                    shopId={shopData.id}
+                    shopHours={shopHours.map((hour) => ({
+                      day_of_week: hour.day_of_week,
+                      open_time: hour.open_time,
+                      close_time: hour.close_time,
+                      is_closed: hour.is_closed ?? false,
+                    }))}
+                    calendarSettings={{
+                      buffer_time_minutes:
+                        calendarSettings.buffer_time_minutes ?? 0,
+                      default_appointment_duration:
+                        calendarSettings.default_appointment_duration ?? 30,
+                    }}
+                  />
+                ) : (
+                  <ClientOrdersSection
+                    clientId={client.id}
+                    clientName={`${client.first_name} ${client.last_name}`}
+                  />
+                )}
+              </HydrationBoundary>
             </Grid>
           </Grid>
         </Box>

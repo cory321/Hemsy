@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import ClientCreateDialog from '@/components/clients/ClientCreateDialog';
 import ClientEditDialog from '@/components/clients/ClientEditDialog';
@@ -47,10 +48,15 @@ describe('Dialog close icon presence', () => {
   });
 
   it('ClientArchiveDialog shows a close icon in the title when opened', () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
     render(
-      <ClientArchiveDialog clientId="c1" clientName="Test Client">
-        <button>Open Archive</button>
-      </ClientArchiveDialog>
+      <QueryClientProvider client={queryClient}>
+        <ClientArchiveDialog clientId="c1" clientName="Test Client">
+          <button>Open Archive</button>
+        </ClientArchiveDialog>
+      </QueryClientProvider>
     );
 
     fireEvent.click(screen.getByText('Open Archive'));

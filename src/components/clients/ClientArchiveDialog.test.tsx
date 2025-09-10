@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import { useRouter } from 'next/navigation';
 import ClientArchiveDialog from './ClientArchiveDialog';
@@ -21,6 +22,14 @@ jest.mock('@/hooks/useToast', () => ({
 }));
 
 describe('ClientArchiveDialog', () => {
+  const renderWithQuery = (ui: React.ReactElement) => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    return render(
+      <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+    );
+  };
   const mockPush = jest.fn();
   const mockRefresh = jest.fn();
   const mockArchiveClient = archiveClient as jest.MockedFunction<
@@ -36,7 +45,7 @@ describe('ClientArchiveDialog', () => {
   });
 
   it('should render the trigger button', () => {
-    render(
+    renderWithQuery(
       <ClientArchiveDialog clientId="client1" clientName="John Doe">
         <button>Archive Client</button>
       </ClientArchiveDialog>
@@ -48,7 +57,7 @@ describe('ClientArchiveDialog', () => {
   it('should open dialog when trigger is clicked', async () => {
     const user = userEvent.setup();
 
-    render(
+    renderWithQuery(
       <ClientArchiveDialog clientId="client1" clientName="John Doe">
         <button>Archive Client</button>
       </ClientArchiveDialog>
@@ -66,7 +75,7 @@ describe('ClientArchiveDialog', () => {
   it('should display archive information in the dialog', async () => {
     const user = userEvent.setup();
 
-    render(
+    renderWithQuery(
       <ClientArchiveDialog clientId="client1" clientName="Jane Smith">
         <button>Archive</button>
       </ClientArchiveDialog>
@@ -89,7 +98,7 @@ describe('ClientArchiveDialog', () => {
   it('should close dialog when cancel is clicked', async () => {
     const user = userEvent.setup();
 
-    render(
+    renderWithQuery(
       <ClientArchiveDialog clientId="client1" clientName="John Doe">
         <button>Archive Client</button>
       </ClientArchiveDialog>
@@ -109,7 +118,7 @@ describe('ClientArchiveDialog', () => {
     const user = userEvent.setup();
     mockArchiveClient.mockResolvedValueOnce(undefined);
 
-    render(
+    renderWithQuery(
       <ClientArchiveDialog clientId="client123" clientName="John Doe">
         <button>Archive Client</button>
       </ClientArchiveDialog>
@@ -136,7 +145,7 @@ describe('ClientArchiveDialog', () => {
     const errorMessage = 'Failed to archive client';
     mockArchiveClient.mockRejectedValueOnce(new Error(errorMessage));
 
-    render(
+    renderWithQuery(
       <ClientArchiveDialog clientId="client1" clientName="John Doe">
         <button>Archive Client</button>
       </ClientArchiveDialog>
@@ -169,7 +178,7 @@ describe('ClientArchiveDialog', () => {
     });
     mockArchiveClient.mockReturnValueOnce(archivePromise);
 
-    render(
+    renderWithQuery(
       <ClientArchiveDialog clientId="client1" clientName="John Doe">
         <button>Archive Client</button>
       </ClientArchiveDialog>
@@ -198,7 +207,7 @@ describe('ClientArchiveDialog', () => {
   it('should close dialog using the X button', async () => {
     const user = userEvent.setup();
 
-    render(
+    renderWithQuery(
       <ClientArchiveDialog clientId="client1" clientName="John Doe">
         <button>Archive Client</button>
       </ClientArchiveDialog>

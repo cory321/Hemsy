@@ -383,14 +383,63 @@ async function getAppointmentsDataConsolidatedInternal(shopId: string) {
     (apt) => apt.date === today
   );
 
-  // Find next appointment
-  const nextAppointment: Appointment | null =
+  // Find next appointment - first check within the week data
+  let nextAppointment: Appointment | null =
     appointments.find((apt) => {
       if (apt.date > today) return true;
       if (apt.date === today && apt.start_time > currentTimeForComparison)
         return true;
       return false;
     }) || null;
+
+  // If no next appointment found in current week, query for the next one beyond the week
+  if (!nextAppointment) {
+    const { data: futureAppointments, error: futureError } = await supabase
+      .from('appointments')
+      .select(
+        `
+        id,
+        shop_id,
+        date,
+        start_time,
+        end_time,
+        status,
+        type,
+        notes,
+        client_id,
+        order_id,
+        reminder_sent,
+        created_at,
+        updated_at,
+        client:clients (
+          id,
+          shop_id,
+          first_name,
+          last_name,
+          email,
+          phone_number,
+          accept_sms,
+          accept_email,
+          notes,
+          mailing_address,
+          created_at,
+          updated_at
+        )
+      `
+      )
+      .eq('shop_id', shopId)
+      .gt('date', weekEndStr) // Look beyond the current week
+      .in('status', ['pending', 'confirmed'])
+      .order('date', { ascending: true })
+      .order('start_time', { ascending: true })
+      .limit(1);
+
+    if (futureError) {
+      console.error('Error fetching future appointments:', futureError);
+    } else if (futureAppointments && futureAppointments.length > 0) {
+      nextAppointment = futureAppointments[0] as unknown as Appointment;
+    }
+  }
 
   // Calculate week overview data
   const weekOverviewData: WeekDayData[] = [];

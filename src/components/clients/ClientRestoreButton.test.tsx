@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useRouter } from 'next/navigation';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ClientRestoreButton from './ClientRestoreButton';
 import { restoreClient } from '@/lib/actions/clients';
 
@@ -25,6 +26,19 @@ describe('ClientRestoreButton', () => {
   const mockRestoreClient = restoreClient as jest.MockedFunction<
     typeof restoreClient
   >;
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  const renderWithQuery = (ui: React.ReactElement) => {
+    const utils = render(
+      <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+    );
+    const wrappedRerender = (nextUi: React.ReactElement) =>
+      utils.rerender(
+        <QueryClientProvider client={queryClient}>{nextUi}</QueryClientProvider>
+      );
+    return { ...utils, rerender: wrappedRerender } as typeof utils;
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -34,7 +48,9 @@ describe('ClientRestoreButton', () => {
   });
 
   it('should render restore button with correct text', () => {
-    render(<ClientRestoreButton clientId="client1" clientName="John Doe" />);
+    renderWithQuery(
+      <ClientRestoreButton clientId="client1" clientName="John Doe" />
+    );
 
     expect(
       screen.getByRole('button', { name: /restore/i })
@@ -45,7 +61,9 @@ describe('ClientRestoreButton', () => {
   it('should show tooltip with client name on hover', async () => {
     const user = userEvent.setup();
 
-    render(<ClientRestoreButton clientId="client1" clientName="John Doe" />);
+    renderWithQuery(
+      <ClientRestoreButton clientId="client1" clientName="John Doe" />
+    );
 
     const button = screen.getByRole('button', { name: /restore/i });
     await user.hover(button);
@@ -61,7 +79,9 @@ describe('ClientRestoreButton', () => {
     const user = userEvent.setup();
     mockRestoreClient.mockResolvedValueOnce(undefined);
 
-    render(<ClientRestoreButton clientId="client123" clientName="John Doe" />);
+    renderWithQuery(
+      <ClientRestoreButton clientId="client123" clientName="John Doe" />
+    );
 
     const button = screen.getByRole('button', { name: /restore/i });
     await user.click(button);
@@ -81,7 +101,9 @@ describe('ClientRestoreButton', () => {
     });
     mockRestoreClient.mockReturnValueOnce(restorePromise);
 
-    render(<ClientRestoreButton clientId="client1" clientName="John Doe" />);
+    renderWithQuery(
+      <ClientRestoreButton clientId="client1" clientName="John Doe" />
+    );
 
     const button = screen.getByRole('button', { name: /restore/i });
     await user.click(button);
@@ -104,7 +126,9 @@ describe('ClientRestoreButton', () => {
     const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
     mockRestoreClient.mockRejectedValueOnce(new Error('Failed to restore'));
 
-    render(<ClientRestoreButton clientId="client1" clientName="John Doe" />);
+    renderWithQuery(
+      <ClientRestoreButton clientId="client1" clientName="John Doe" />
+    );
 
     const button = screen.getByRole('button', { name: /restore/i });
     await user.click(button);
@@ -127,7 +151,7 @@ describe('ClientRestoreButton', () => {
     const handleRowClick = jest.fn();
     mockRestoreClient.mockResolvedValueOnce(undefined);
 
-    render(
+    renderWithQuery(
       <div onClick={handleRowClick}>
         <ClientRestoreButton clientId="client1" clientName="John Doe" />
       </div>
@@ -141,7 +165,7 @@ describe('ClientRestoreButton', () => {
   });
 
   it('should render with different variants', () => {
-    const { rerender } = render(
+    const { rerender } = renderWithQuery(
       <ClientRestoreButton
         clientId="client1"
         clientName="John Doe"
@@ -163,7 +187,7 @@ describe('ClientRestoreButton', () => {
   });
 
   it('should render with different sizes', () => {
-    const { rerender } = render(
+    const { rerender } = renderWithQuery(
       <ClientRestoreButton
         clientId="client1"
         clientName="John Doe"

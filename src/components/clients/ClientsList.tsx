@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   Box,
   TextField,
@@ -21,6 +22,8 @@ import {
   FormControlLabel,
   Checkbox,
   Chip,
+  LinearProgress,
+  CircularProgress,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -54,13 +57,10 @@ export default function ClientsList({
   archivedClientsCount,
 }: ClientsListProps) {
   const router = useRouter();
-  const [data, setData] = useState<PaginatedClients>(initialData);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(initialData.page - 1);
   const [rowsPerPage, setRowsPerPage] = useState(initialData.pageSize);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [showArchived, setShowArchived] = useState(false);
 
   const debouncedSearch = useDebounce(search, 300);
@@ -70,15 +70,15 @@ export default function ClientsList({
     getClientsActionRef.current = getClientsAction;
   }, [getClientsAction]);
 
-  useEffect(() => {
-    // Skip the initial load since we already have data
-    if (isInitialLoad) {
-      setIsInitialLoad(false);
-      return;
-    }
+  const isInitialQueryKey =
+    page === initialData.page - 1 &&
+    rowsPerPage === initialData.pageSize &&
+    debouncedSearch === '' &&
+    showArchived === false;
 
-    const fetchData = async () => {
-      setLoading(true);
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ['clients', page, rowsPerPage, debouncedSearch, showArchived],
+    queryFn: async () => {
       setError(null);
       try {
         const filters: ClientsFilters = {
@@ -87,30 +87,25 @@ export default function ClientsList({
           sortOrder: 'desc',
           includeArchived: showArchived,
         };
-        const result = await getClientsActionRef.current(
+        return await getClientsActionRef.current(
           page + 1,
           rowsPerPage,
           filters
         );
-        setData(result);
       } catch (err) {
         setError(
           err instanceof Error ? err.message : 'Failed to fetch clients'
         );
-      } finally {
-        setLoading(false);
+        throw err;
       }
-    };
-
-    fetchData();
-  }, [
-    page,
-    rowsPerPage,
-    debouncedSearch,
-    isInitialLoad,
-    getClientsAction,
-    showArchived,
-  ]);
+    },
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: false,
+    // Keep previous data while fetching new to minimize UI flicker
+    placeholderData: (prev) => prev,
+    // Provide initial data only for the initial hydrated key
+    ...(isInitialQueryKey ? { initialData } : {}),
+  });
 
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
@@ -156,13 +151,26 @@ export default function ClientsList({
                   setShowArchived(e.target.checked);
                   setPage(0); // Reset to first page when toggling
                 }}
+                disabled={isLoading}
               />
             }
-            label="Show Archived"
+            label={
+              <Box
+                sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}
+              >
+                <span>Show Archived</span>
+                {!isLoading && isFetching && <CircularProgress size={14} />}
+              </Box>
+            }
             sx={{ flexShrink: 0 }}
           />
         )}
       </Box>
+
+      {/* Background loading indicator while keeping table content */}
+      {!isLoading && isFetching && (
+        <LinearProgress sx={{ mb: 1 }} aria-label="Loading clients" />
+      )}
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -183,7 +191,7 @@ export default function ClientsList({
             </TableRow>
           </TableHead>
           <TableBody>
-            {loading ? (
+            {isLoading ? (
               // Loading skeletons
               Array.from({ length: rowsPerPage }).map((_, index) => (
                 <TableRow key={index}>
@@ -207,7 +215,7 @@ export default function ClientsList({
                   </TableCell>
                 </TableRow>
               ))
-            ) : data.data.length === 0 ? (
+            ) : (data?.data?.length ?? 0) === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} align="center">
                   <Typography
@@ -222,7 +230,7 @@ export default function ClientsList({
                 </TableCell>
               </TableRow>
             ) : (
-              data.data.map((client) => (
+              (data?.data ?? []).map((client) => (
                 <TableRow
                   key={client.id}
                   hover
@@ -295,7 +303,7 @@ export default function ClientsList({
         <TablePagination
           rowsPerPageOptions={[5, 10, 25, 50]}
           component="div"
-          count={data.count}
+          count={data?.count ?? 0}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}

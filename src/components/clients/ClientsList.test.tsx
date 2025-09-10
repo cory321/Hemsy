@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { useRouter } from 'next/navigation';
 import ClientsList from './ClientsList';
 import type { PaginatedClients } from '@/lib/actions/clients';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
@@ -30,6 +31,14 @@ jest.mock('@/lib/utils/phone', () => ({
 describe('ClientsList', () => {
   const mockPush = jest.fn();
   const mockGetClientsAction = jest.fn();
+  const renderWithQuery = (ui: React.ReactElement) => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    return render(
+      <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+    );
+  };
 
   const mockInitialData: PaginatedClients = {
     data: [
@@ -75,7 +84,7 @@ describe('ClientsList', () => {
   });
 
   it('renders initial client data', async () => {
-    render(
+    renderWithQuery(
       <ClientsList
         initialData={mockInitialData}
         getClientsAction={mockGetClientsAction}
@@ -92,7 +101,7 @@ describe('ClientsList', () => {
   });
 
   it('formats phone numbers correctly', async () => {
-    render(
+    renderWithQuery(
       <ClientsList
         initialData={mockInitialData}
         getClientsAction={mockGetClientsAction}
@@ -107,7 +116,7 @@ describe('ClientsList', () => {
   });
 
   it('displays notes or dash when no notes', async () => {
-    render(
+    renderWithQuery(
       <ClientsList
         initialData={mockInitialData}
         getClientsAction={mockGetClientsAction}
@@ -122,7 +131,7 @@ describe('ClientsList', () => {
   });
 
   it('navigates to client detail page on row click', async () => {
-    render(
+    renderWithQuery(
       <ClientsList
         initialData={mockInitialData}
         getClientsAction={mockGetClientsAction}
@@ -143,7 +152,7 @@ describe('ClientsList', () => {
   it('handles search functionality', async () => {
     const user = userEvent.setup();
 
-    render(
+    renderWithQuery(
       <ClientsList
         initialData={mockInitialData}
         getClientsAction={mockGetClientsAction}
@@ -173,7 +182,7 @@ describe('ClientsList', () => {
       totalPages: 3,
     };
 
-    render(
+    renderWithQuery(
       <ClientsList
         initialData={paginatedData}
         getClientsAction={mockGetClientsAction}
@@ -199,7 +208,7 @@ describe('ClientsList', () => {
   });
 
   it('handles rows per page change', async () => {
-    render(
+    renderWithQuery(
       <ClientsList
         initialData={mockInitialData}
         getClientsAction={mockGetClientsAction}
@@ -246,7 +255,7 @@ describe('ClientsList', () => {
       count: 0,
     };
     mockGetClientsAction.mockResolvedValueOnce(emptyData);
-    render(
+    renderWithQuery(
       <ClientsList
         initialData={emptyData}
         getClientsAction={mockGetClientsAction}
@@ -266,7 +275,7 @@ describe('ClientsList', () => {
       count: 0,
     };
 
-    const { rerender } = render(
+    const { rerender } = renderWithQuery(
       <ClientsList
         initialData={mockInitialData}
         getClientsAction={mockGetClientsAction}
@@ -295,7 +304,7 @@ describe('ClientsList', () => {
   });
 
   it('shows archive toggle when there are archived clients', async () => {
-    render(
+    renderWithQuery(
       <ClientsList
         initialData={mockInitialData}
         getClientsAction={mockGetClientsAction}
@@ -309,7 +318,7 @@ describe('ClientsList', () => {
   });
 
   it('hides archive toggle when there are no archived clients', async () => {
-    render(
+    renderWithQuery(
       <ClientsList
         initialData={mockInitialData}
         getClientsAction={mockGetClientsAction}
@@ -324,7 +333,7 @@ describe('ClientsList', () => {
 
   it('handles archive toggle change', async () => {
     const user = userEvent.setup();
-    render(
+    renderWithQuery(
       <ClientsList
         initialData={mockInitialData}
         getClientsAction={mockGetClientsAction}
@@ -382,7 +391,7 @@ describe('ClientsList', () => {
       }
     );
 
-    render(
+    renderWithQuery(
       <ClientsList
         initialData={mockInitialData}
         getClientsAction={mockGetClientsAction}

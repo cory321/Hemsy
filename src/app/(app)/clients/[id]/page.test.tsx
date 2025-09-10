@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { notFound } from 'next/navigation';
 import ClientDetailPage from './page';
 import { getClient } from '@/lib/actions/clients';
@@ -99,6 +100,12 @@ jest.mock('@/components/clients/ClientOrdersSection', () => {
 describe('ClientDetailPage', () => {
   const mockGetClient = getClient as jest.MockedFunction<typeof getClient>;
   const mockNotFound = notFound as jest.MockedFunction<typeof notFound>;
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  const wrapWithQuery = (ui: React.ReactElement) => (
+    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+  );
 
   const mockClient: Tables<'clients'> = {
     id: 'client1',
@@ -124,7 +131,7 @@ describe('ClientDetailPage', () => {
 
     const params = Promise.resolve({ id: 'client1' });
     const Component = await ClientDetailPage({ params });
-    render(Component);
+    render(wrapWithQuery(Component));
 
     expect(screen.getByText('John Doe')).toBeInTheDocument();
     expect(screen.getByText('john@example.com')).toBeInTheDocument();
@@ -143,7 +150,7 @@ describe('ClientDetailPage', () => {
 
     const params = Promise.resolve({ id: 'client1' });
     const Component = await ClientDetailPage({ params });
-    render(Component);
+    render(wrapWithQuery(Component));
 
     // Find the Communication Preferences section
     const preferencesSection = screen
@@ -178,7 +185,7 @@ describe('ClientDetailPage', () => {
 
     const params = Promise.resolve({ id: 'client1' });
     const Component = await ClientDetailPage({ params });
-    render(Component);
+    render(wrapWithQuery(Component));
 
     expect(screen.getByText('(555) 123-4567')).toBeInTheDocument();
   });
@@ -188,7 +195,7 @@ describe('ClientDetailPage', () => {
 
     const params = Promise.resolve({ id: 'client1' });
     const Component = await ClientDetailPage({ params });
-    render(Component);
+    render(wrapWithQuery(Component));
 
     // Find the Record Information section
     const recordSection = screen
@@ -212,7 +219,7 @@ describe('ClientDetailPage', () => {
 
     const params = Promise.resolve({ id: 'client1' });
     const Component = await ClientDetailPage({ params });
-    render(Component);
+    render(wrapWithQuery(Component));
 
     // There are two edit triggers (header pencil and card button)
     expect(screen.getAllByTestId('edit-dialog').length).toBeGreaterThanOrEqual(
@@ -241,7 +248,7 @@ describe('ClientDetailPage', () => {
 
     const params = Promise.resolve({ id: 'client2' });
     const Component = await ClientDetailPage({ params });
-    render(Component);
+    render(wrapWithQuery(Component));
 
     expect(screen.getByText('Jane Smith')).toBeInTheDocument();
     expect(screen.getByText('jane@example.com')).toBeInTheDocument();
@@ -297,7 +304,7 @@ describe('ClientDetailPage', () => {
 
     const params = Promise.resolve({ id: 'test-client-id' });
     const Component = await ClientDetailPage({ params });
-    render(Component);
+    render(wrapWithQuery(Component));
 
     expect(mockGetClient).toHaveBeenCalledWith('test-client-id');
   });
@@ -307,7 +314,7 @@ describe('ClientDetailPage', () => {
 
     const params = Promise.resolve({ id: 'client1' });
     const Component = await ClientDetailPage({ params });
-    render(Component);
+    render(wrapWithQuery(Component));
 
     // Contact heading moved into the profile card
     expect(screen.getByText('Contact Information')).toBeInTheDocument();
@@ -328,7 +335,7 @@ describe('ClientDetailPage', () => {
 
     const params = Promise.resolve({ id: 'client1' });
     const Component = await ClientDetailPage({ params });
-    render(Component);
+    render(wrapWithQuery(Component));
 
     // Find the Notes section
     const notesSection = screen.getByText('Notes').closest('.MuiCard-root');

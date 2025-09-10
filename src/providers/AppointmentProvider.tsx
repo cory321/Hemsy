@@ -181,6 +181,14 @@ export function AppointmentProvider({
           payload: { appointment, tempId },
         });
 
+        // Invalidate React Query caches so lists refresh automatically
+        queryClient.invalidateQueries({ queryKey: ['appointments'] });
+        if (data.clientId) {
+          queryClient.invalidateQueries({
+            queryKey: ['appointments', 'client', data.clientId],
+          });
+        }
+
         // Format date and time for the toast message
         const appointmentDate = new Date(
           `${appointment.date}T${appointment.start_time}`
@@ -445,6 +453,18 @@ export function AppointmentProvider({
               type: AppointmentActionType.APPOINTMENT_CREATED_REMOTE,
               payload: { appointment: data as Appointment },
             });
+
+            // Invalidate queries for this client and all appointments to refresh lists
+            queryClient.invalidateQueries({ queryKey: ['appointments'] });
+            if ((payload.new as any)?.client_id) {
+              queryClient.invalidateQueries({
+                queryKey: [
+                  'appointments',
+                  'client',
+                  (payload.new as any).client_id,
+                ],
+              });
+            }
           }
         }
       )
@@ -479,6 +499,18 @@ export function AppointmentProvider({
               type: AppointmentActionType.APPOINTMENT_UPDATED_REMOTE,
               payload: { appointment: data as Appointment },
             });
+
+            // Invalidate queries to ensure lists reflect updates
+            queryClient.invalidateQueries({ queryKey: ['appointments'] });
+            if ((payload.new as any)?.client_id) {
+              queryClient.invalidateQueries({
+                queryKey: [
+                  'appointments',
+                  'client',
+                  (payload.new as any).client_id,
+                ],
+              });
+            }
           }
         }
       )

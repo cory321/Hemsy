@@ -31,7 +31,7 @@ import { AppointmentDetailsDialog } from '@/components/appointments/AppointmentD
 import { AppointmentDialog } from '@/components/appointments/AppointmentDialog';
 import { useAppointments } from '@/providers/AppointmentProvider';
 import { clientAppointmentKeys } from '@/lib/queries/client-appointment-queries';
-import { isDateTimeInPast } from '@/lib/utils/date-time-utils';
+import { isDateTimeInPast, parseDateString } from '@/lib/utils/date-time-utils';
 
 interface AppointmentCardV2Props {
   appointment: Appointment;
@@ -239,7 +239,7 @@ export const AppointmentCardV2 = memo(function AppointmentCardV2({
                 }}
               >
                 <CalendarMonthIcon sx={{ fontSize: 16 }} />{' '}
-                {new Date(appointment.date).toLocaleDateString('en-US', {
+                {parseDateString(appointment.date).toLocaleDateString('en-US', {
                   weekday: 'long',
                   year: 'numeric',
                   month: 'long',

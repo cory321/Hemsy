@@ -721,16 +721,14 @@ export async function getClientReadyForPickupCount(
   if (shopError || !shopData) throw new Error('Unauthorized access to shop');
 
   // Query garments using the garments_with_clients view for easier filtering
+  // The view exposes "order_status"; we can filter directly without relationship syntax
   const { count, error } = await supabase
     .from('garments_with_clients')
-    .select('id, orders!garments_with_clients_order_id_fkey(status)', {
-      count: 'exact',
-      head: true,
-    })
+    .select('*', { count: 'exact', head: true })
     .eq('shop_id', shopId)
     .eq('client_id', clientId)
     .eq('stage', 'Ready For Pickup')
-    .neq('orders.status', 'cancelled');
+    .neq('order_status', 'cancelled');
 
   if (error) {
     console.error('Failed to fetch ready for pickup count:', error);
