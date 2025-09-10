@@ -8,6 +8,10 @@ import { ensureUserAndShop } from '@/lib/auth/user-shop';
 import type { Tables, Database } from '@/types/supabase';
 import { convertLocalToUTC } from '@/lib/utils/date-time-utc';
 import { getShopTimezone } from '@/lib/utils/timezone-helpers';
+import {
+  invalidateBusinessMetricsRPCCache,
+  invalidateGarmentPipelineRPCCache,
+} from './rpc-optimized';
 
 export interface PaginatedOrders {
   data: Array<
@@ -465,11 +469,21 @@ export async function createOrder(
       }
     }
 
-    // Revalidate and redirect handled by caller if desired
+    // Invalidate caches after successful order creation
     try {
       revalidatePath('/orders');
       revalidatePath('/garments');
-    } catch {}
+      revalidatePath('/dashboard');
+
+      // Invalidate RPC caches since new order affects business metrics and garments
+      await Promise.all([
+        invalidateBusinessMetricsRPCCache(),
+        invalidateGarmentPipelineRPCCache(),
+      ]);
+    } catch (error) {
+      console.error('Cache invalidation failed:', error);
+      // Don't fail the order creation if cache invalidation fails
+    }
 
     return { success: true, orderId };
   } catch (error) {

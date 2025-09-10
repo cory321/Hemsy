@@ -1,7 +1,6 @@
 'use server';
 
 import { cache } from 'react';
-// import { unstable_cache } from 'next/cache'; // Not used due to cookies limitation
 import { createClient } from '@/lib/supabase/server';
 import { ensureUserAndShop } from '@/lib/auth/user-shop';
 import {
@@ -26,6 +25,12 @@ import type {
 } from './dashboard';
 import type { ActivityItem } from './recent-activity';
 import { getRecentActivity } from './recent-activity';
+import {
+  getShopHours,
+  getCalendarSettings,
+  preloadShopHours,
+  preloadCalendarSettings,
+} from './static-data-cache';
 
 // ============================================================================
 // CONSOLIDATED DATA FETCHING - Reduces 15+ calls to 6 strategic calls
@@ -157,19 +162,15 @@ async function getBusinessMetricsConsolidatedInternal(shopId: string) {
       .gte('created_at', previous30StartStr)
       .lt('created_at', previous30EndStr),
 
-    // Shop hours
-    supabase
-      .from('shop_hours')
-      .select('*')
-      .eq('shop_id', shopId)
-      .order('day_of_week'),
+    // Shop hours (using cached version for better performance)
+    getShopHours(shopId)
+      .then((data) => ({ data, error: null }))
+      .catch((error) => ({ data: [], error })),
 
-    // Calendar settings
-    supabase
-      .from('calendar_settings')
-      .select('*')
-      .eq('shop_id', shopId)
-      .single(),
+    // Calendar settings (using cached version for better performance)
+    getCalendarSettings(shopId)
+      .then((data) => ({ data, error: null }))
+      .catch((error) => ({ data: null, error })),
 
     // Recent activity
     getRecentActivity(5)

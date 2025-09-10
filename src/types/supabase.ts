@@ -1972,6 +1972,22 @@ export type Database = {
           subject: string;
         }[];
       };
+      get_business_dashboard_metrics_consolidated: {
+        Args: { p_shop_id: string };
+        Returns: Json;
+      };
+      get_garment_pipeline_data_consolidated: {
+        Args: { p_shop_id: string };
+        Returns: Json;
+      };
+      get_dashboard_alerts_consolidated: {
+        Args: { p_shop_id: string };
+        Returns: Json;
+      };
+      get_client_detail_data_consolidated: {
+        Args: { p_client_id: string; p_shop_id: string };
+        Returns: Json;
+      };
       gtrgm_compress: {
         Args: { '': unknown };
         Returns: unknown;

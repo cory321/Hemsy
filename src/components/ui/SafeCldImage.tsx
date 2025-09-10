@@ -17,6 +17,10 @@ interface SafeCldImageProps {
   fallbackIconKey?: string | null | undefined;
   fallbackIconColor?: string | null | undefined;
   onError?: () => void;
+  // LCP optimization props
+  priority?: boolean;
+  loading?: 'eager' | 'lazy';
+  fetchPriority?: 'high' | 'low' | 'auto';
 }
 
 /**
@@ -34,6 +38,9 @@ export default function SafeCldImage({
   fallbackIconKey,
   fallbackIconColor,
   onError,
+  priority = false,
+  loading = 'lazy',
+  fetchPriority = 'auto',
 }: SafeCldImageProps) {
   console.log('[SafeCldImage] Component rendered with:', {
     src,
@@ -205,6 +212,8 @@ export default function SafeCldImage({
             ...style,
           }}
           onError={handleError}
+          loading={loading}
+          fetchPriority={fetchPriority}
           suppressHydrationWarning
         />
       </Box>
@@ -222,6 +231,8 @@ export default function SafeCldImage({
         height={height}
         style={style}
         onError={handleError}
+        loading={loading}
+        fetchPriority={fetchPriority}
         suppressHydrationWarning
       />
     );

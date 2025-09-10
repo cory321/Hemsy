@@ -1,8 +1,9 @@
 import { getGarmentById } from '@/lib/actions/orders';
-import { getShopHours } from '@/lib/actions/shop-hours';
-import { getCalendarSettings } from '@/lib/actions/calendar-settings';
-import { auth } from '@clerk/nextjs/server';
-import { createClient } from '@/lib/supabase/server';
+import {
+  getShopHours,
+  getCalendarSettings,
+} from '@/lib/actions/static-data-cache';
+import { ensureUserAndShop } from '@/lib/auth/user-shop';
 import { notFound } from 'next/navigation';
 import GarmentDetailPageClient from './GarmentDetailPageClient';
 
@@ -38,7 +39,7 @@ export default async function GarmentDetailPage({
 
   const garment = result.garment as any;
 
-  // Get shop data for appointments functionality
+  // Get shop data and settings using optimized functions
   let shopData = null;
   let shopHours: any[] = [];
   let calendarSettings = {
@@ -47,40 +48,22 @@ export default async function GarmentDetailPage({
   };
 
   try {
-    const { userId } = await auth();
-    if (userId) {
-      const supabase = await createClient();
+    // Use optimized ensureUserAndShop instead of manual queries (single call)
+    const { user, shop } = await ensureUserAndShop();
+    shopData = shop;
 
-      const { data: userData } = await supabase
-        .from('users')
-        .select('id')
-        .eq('clerk_user_id', userId)
-        .single();
+    // Fetch shop hours and calendar settings in parallel using cached functions
+    const [rawShopHours, rawCalendarSettings] = await Promise.all([
+      getShopHours(shop.id),
+      getCalendarSettings(shop.id),
+    ]);
 
-      if (userData) {
-        const { data: shop } = await supabase
-          .from('shops')
-          .select('id')
-          .eq('owner_user_id', userData.id)
-          .single();
-
-        if (shop) {
-          shopData = shop;
-          // Fetch shop hours and calendar settings in parallel
-          const [rawShopHours, rawCalendarSettings] = await Promise.all([
-            getShopHours(),
-            getCalendarSettings(),
-          ]);
-
-          shopHours = rawShopHours;
-          calendarSettings = {
-            buffer_time_minutes: rawCalendarSettings.buffer_time_minutes ?? 0,
-            default_appointment_duration:
-              rawCalendarSettings.default_appointment_duration ?? 30,
-          };
-        }
-      }
-    }
+    shopHours = rawShopHours || [];
+    calendarSettings = {
+      buffer_time_minutes: rawCalendarSettings?.buffer_time_minutes ?? 0,
+      default_appointment_duration:
+        rawCalendarSettings?.default_appointment_duration ?? 30,
+    };
   } catch (error) {
     console.error('Error fetching shop data:', error);
     // Continue without shop data - appointment functionality will be disabled

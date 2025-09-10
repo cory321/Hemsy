@@ -4,6 +4,11 @@ import { createClient } from '@/lib/supabase/server';
 import { auth } from '@clerk/nextjs/server';
 import type { Database } from '@/types/supabase';
 import type { GarmentStage } from '@/types';
+import {
+  invalidateGarmentPipelineRPCCache,
+  invalidateDashboardAlertsRPCCache,
+} from './rpc-optimized';
+import { invalidateAllStaticDataCache } from './static-data-cache';
 
 export async function getGarmentsAndStages(shopId: string) {
   const supabase = await createClient();
@@ -125,6 +130,14 @@ export async function updateGarmentStage(
     console.error('Error tracking stage change in history:', historyError);
     // Don't fail the update if history tracking fails
   }
+
+  // Invalidate related caches after successful stage update
+  await Promise.all([
+    invalidateGarmentPipelineRPCCache(),
+    invalidateDashboardAlertsRPCCache(),
+  ]);
+
+  return { success: true };
 }
 
 export async function getGarmentById(

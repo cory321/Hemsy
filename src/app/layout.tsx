@@ -48,6 +48,17 @@ export default function RootLayout({
 
   return (
     <html lang="en">
+      <head>
+        {/* LCP OPTIMIZATION: Preload critical resources */}
+        <link rel="preconnect" href="https://res.cloudinary.com" />
+        <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin=""
+        />
+      </head>
       <body className={`${nunito.variable} ${nunito.className}`}>
         <DateLocalizationProvider>
           {hasClerkKey ? (

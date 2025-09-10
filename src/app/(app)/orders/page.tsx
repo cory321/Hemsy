@@ -6,18 +6,21 @@ import OrdersList from '@/components/orders/OrdersList';
 import OrderStatsCards from '@/components/orders/OrderStatsCards';
 import { BusinessHealth } from '@/components/dashboard/business-overview/BusinessHealth';
 import { getOrdersPaginated, getOrderStats } from '@/lib/actions/orders';
-import { getBusinessHealthData } from '@/lib/actions/dashboard';
+import { getDashboardDataOptimized } from '@/lib/actions/dashboard-optimized';
 
 // Force dynamic rendering since this page uses authentication
 export const dynamic = 'force-dynamic';
 
 export default async function OrdersPage() {
   // Fetch initial data server-side with active orders filter by default
-  const [initialData, statsData, businessHealthData] = await Promise.all([
+  const [initialData, statsData, dashboardData] = await Promise.all([
     getOrdersPaginated(1, 10, { onlyActive: true }),
     getOrderStats(),
-    getBusinessHealthData(),
+    getDashboardDataOptimized(),
   ]);
+
+  // Extract business health data from optimized dashboard data
+  const businessHealthData = dashboardData.businessHealthData;
 
   return (
     <Box sx={{ p: 3 }}>
