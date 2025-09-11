@@ -3,12 +3,12 @@ import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { GarmentProvider, useGarment } from '../GarmentContext';
 import { toggleServiceCompletion } from '@/lib/actions/garment-services';
-import { toast } from 'sonner';
+import { showSuccessToast, showErrorToast } from '@/lib/utils/toast';
 
 // Mock dependencies
 jest.mock('@/lib/actions/garments');
 jest.mock('@/lib/actions/garment-services');
-jest.mock('sonner');
+jest.mock('@/lib/utils/toast');
 
 const mockGarment = {
   id: 'garment-123',
@@ -227,7 +227,7 @@ describe('GarmentContext - toggleServiceComplete', () => {
       expect(screen.getByTestId('garment-stage')).toHaveTextContent('New');
 
       // Should show error toast
-      expect(toast.error).toHaveBeenCalledWith('Failed to update service');
+      expect(showErrorToast).toHaveBeenCalledWith('Failed to update service');
     });
   });
 
@@ -248,7 +248,9 @@ describe('GarmentContext - toggleServiceComplete', () => {
     await userEvent.click(toggleButton);
 
     await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith('Service marked as complete');
+      expect(showSuccessToast).toHaveBeenCalledWith(
+        'Service marked as complete'
+      );
     });
   });
 
@@ -277,7 +279,7 @@ describe('GarmentContext - toggleServiceComplete', () => {
     await userEvent.click(toggleButton);
 
     await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith(
+      expect(showSuccessToast).toHaveBeenCalledWith(
         'Service marked as incomplete'
       );
     });
@@ -300,7 +302,9 @@ describe('GarmentContext - toggleServiceComplete', () => {
 
     await waitFor(() => {
       // Should show generic error toast
-      expect(toast.error).toHaveBeenCalledWith('An unexpected error occurred');
+      expect(showErrorToast).toHaveBeenCalledWith(
+        'An unexpected error occurred'
+      );
 
       // Should rollback to original state
       expect(screen.getByTestId('service-service-1-status')).toHaveTextContent(

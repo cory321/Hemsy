@@ -4,11 +4,13 @@
  */
 
 import { createClient } from '@/lib/actions/clients';
-import { toast } from 'react-hot-toast';
+import { showSuccessToast } from '@/lib/utils/toast';
 
-// Mock the toast to capture calls
-jest.mock('react-hot-toast');
-const mockToast = toast as jest.Mocked<typeof toast>;
+// Mock the consolidated toast system
+jest.mock('@/lib/utils/toast');
+const mockShowSuccessToast = showSuccessToast as jest.MockedFunction<
+  typeof showSuccessToast
+>;
 
 // Mock the client action
 jest.mock('@/lib/actions/clients');
@@ -19,8 +21,6 @@ const mockCreateClient = createClient as jest.MockedFunction<
 describe('Client Creation Toast Integration', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockToast.success = jest.fn();
-    mockToast.error = jest.fn();
   });
 
   it('should call toast.success when client is created successfully', async () => {
@@ -64,11 +64,11 @@ describe('Client Creation Toast Integration', () => {
 
     if (result.success) {
       // This is the line we added to ClientCreateDialog.tsx
-      toast.success('Client created successfully');
+      showSuccessToast('Client created successfully');
     }
 
     // Verify the toast was called
-    expect(mockToast.success).toHaveBeenCalledWith(
+    expect(mockShowSuccessToast).toHaveBeenCalledWith(
       'Client created successfully'
     );
   });
@@ -92,11 +92,11 @@ describe('Client Creation Toast Integration', () => {
     });
 
     if (result.success) {
-      toast.success('Client created successfully');
+      showSuccessToast('Client created successfully');
     }
     // Note: Error handling is done through the error state, not toast.error
 
     // Verify no success toast was called
-    expect(mockToast.success).not.toHaveBeenCalled();
+    expect(mockShowSuccessToast).not.toHaveBeenCalled();
   });
 });

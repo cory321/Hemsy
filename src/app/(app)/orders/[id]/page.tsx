@@ -28,6 +28,7 @@ import OptimisticOrderWrapper from './OptimisticOrderWrapper';
 import OrderHeaderActions from '@/components/orders/OrderHeaderActions';
 import type { Database } from '@/types/supabase';
 import { formatPhoneNumber } from '@/lib/utils/phone';
+import { formatDateSafe } from '@/lib/utils/date-time-utils';
 import {
   calculatePaymentStatus,
   type PaymentInfo,
@@ -358,10 +359,7 @@ export default async function OrderDetailPage({
               Order {order?.order_number || `#${order?.id.slice(0, 8)}`}
             </Typography>
             <Typography color="text.secondary">
-              Created on{' '}
-              {order?.created_at
-                ? new Date(order.created_at).toLocaleDateString()
-                : ''}
+              Created on {formatDateSafe(order?.created_at)}
             </Typography>
           </Box>
           {order && (
@@ -653,16 +651,10 @@ export default async function OrderDetailPage({
                     }}
                   >
                     <Typography variant="caption" color="text.secondary">
-                      Created:{' '}
-                      {order?.created_at
-                        ? new Date(order.created_at).toLocaleDateString()
-                        : '-'}
+                      Created: {formatDateSafe(order?.created_at)}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      Due:{' '}
-                      {order?.order_due_date
-                        ? new Date(order.order_due_date).toLocaleDateString()
-                        : 'Not set'}
+                      Due: {formatDateSafe(order?.order_due_date)}
                     </Typography>
                   </Box>
                 </Box>

@@ -15,6 +15,7 @@ import { resolveGarmentDisplayImage } from '@/utils/displayImage';
 import { getStageColor } from '@/constants/garmentStages';
 import {
   getEnhancedDueDateInfo,
+  formatDateSafe,
   type GarmentOverdueInfo,
 } from '@/lib/utils/date-time-utils';
 import { GarmentStage } from '@/types';
@@ -267,8 +268,7 @@ const GarmentCard: React.FC<GarmentCardProps> = ({
         {/* Event Date */}
         {garment.event_date && (
           <Typography variant="caption" color="text.secondary" display="block">
-            Event:{' '}
-            {new Date(garment.event_date + 'T12:00:00').toLocaleDateString()}
+            Event: {formatDateSafe(garment.event_date)}
           </Typography>
         )}
 

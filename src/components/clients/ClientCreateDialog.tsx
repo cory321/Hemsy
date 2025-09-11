@@ -25,7 +25,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import type { Client } from '@/types';
 import { createClient } from '@/lib/actions/clients';
 import PhoneInput from '@/components/ui/PhoneInput';
-import { toast } from 'react-hot-toast';
+import { showSuccessToast, showErrorToast } from '@/lib/utils/toast';
 
 const clientSchema = z.object({
   first_name: z.string().min(1, 'First name is required'),
@@ -93,7 +93,7 @@ export default function ClientCreateDialog({
       });
 
       if (result.success) {
-        toast.success('Client created successfully');
+        showSuccessToast('Client created successfully');
         onCreated(result.data);
         internalClose();
       } else {

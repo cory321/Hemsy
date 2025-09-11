@@ -3,37 +3,17 @@
 import { useState } from 'react';
 import { Button } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
-import GarmentEditDialog from '@/components/garments/GarmentEditDialog';
+import GarmentEditDialogOptimistic from '@/components/garments/GarmentEditDialogOptimistic';
+import { useGarment } from '@/contexts/GarmentContext';
 
-interface GarmentDetailClientProps {
-  garment: {
-    id: string;
-    name: string;
-    due_date: string | null;
-    event_date: string | null;
-    preset_icon_key: string | null;
-    preset_fill_color: string | null;
-    notes: string | null;
-  };
-  orderStatus?: string;
-  onEdit?: () => void;
-}
-
-export default function GarmentDetailClient({
-  garment,
-  orderStatus,
-  onEdit,
-}: GarmentDetailClientProps) {
+export default function GarmentDetailClient() {
+  const { garment } = useGarment();
+  const isGarmentDone = garment?.stage === 'Done';
+  const isOrderCancelled = garment?.order?.status === 'cancelled';
   const [showEditDialog, setShowEditDialog] = useState(false);
-  const isOrderCancelled = orderStatus === 'cancelled';
 
   const handleClose = () => {
     setShowEditDialog(false);
-  };
-
-  const handleSuccess = () => {
-    handleClose();
-    onEdit?.();
   };
 
   return (
@@ -42,21 +22,21 @@ export default function GarmentDetailClient({
         variant="outlined"
         startIcon={<EditIcon />}
         onClick={() => setShowEditDialog(true)}
-        disabled={isOrderCancelled}
+        disabled={isGarmentDone || isOrderCancelled}
         title={
           isOrderCancelled
             ? 'Cannot edit garment for cancelled orders'
-            : undefined
+            : isGarmentDone
+              ? 'Cannot edit completed garments'
+              : undefined
         }
       >
         Edit
       </Button>
 
-      <GarmentEditDialog
+      <GarmentEditDialogOptimistic
         open={showEditDialog}
         onClose={handleClose}
-        onSuccess={handleSuccess}
-        garment={garment}
       />
     </>
   );

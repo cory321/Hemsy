@@ -33,6 +33,7 @@ import {
   type PaymentInfo,
 } from '@/lib/utils/payment-calculations';
 import { getStageColor } from '@/constants/garmentStages';
+import { formatDateSafe } from '@/lib/utils/date-time-utils';
 import type { GarmentStage } from '@/types';
 
 interface GarmentInfo {
@@ -476,7 +477,7 @@ export default function EnhancedInvoiceLineItems({
                     color="text.secondary"
                     sx={{ flexShrink: 0 }}
                   >
-                    Due: {new Date(garment.due_date).toLocaleDateString()}
+                    Due: {formatDateSafe(garment.due_date)}
                   </Typography>
                 )}
 
@@ -822,7 +823,7 @@ export default function EnhancedInvoiceLineItems({
                   ✓ This order has been fully paid
                   {paidAt && (
                     <Typography component="span" variant="body2" sx={{ ml: 1 }}>
-                      on {new Date(paidAt).toLocaleDateString()}
+                      on {formatDateSafe(paidAt)}
                     </Typography>
                   )}
                 </Typography>

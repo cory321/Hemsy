@@ -27,13 +27,8 @@ jest.mock('next/navigation', () => ({
   }),
 }));
 
-// Mock toast from sonner
-jest.mock('sonner', () => ({
-  toast: {
-    success: jest.fn(),
-    error: jest.fn(),
-  },
-}));
+// Mock consolidated toast system
+jest.mock('@/lib/utils/toast');
 
 // Mock Clerk auth
 jest.mock('@clerk/nextjs/server', () => ({
@@ -251,7 +246,7 @@ describe('GarmentImageSection - Schedule Appointment', () => {
 
   it('should show success toast functionality is integrated', async () => {
     const { createAppointment } = require('@/lib/actions/appointments');
-    const { toast } = require('sonner');
+    const { showSuccessToast, showErrorToast } = require('@/lib/utils/toast');
     createAppointment.mockResolvedValue({ id: 'new-appointment-id' });
 
     renderWithGarmentProvider(
@@ -273,14 +268,14 @@ describe('GarmentImageSection - Schedule Appointment', () => {
     // Verify the dialog is properly configured with success handling
     expect(screen.getByText('New Appointment')).toBeInTheDocument();
 
-    // Test that toast functions are available (integration test)
-    expect(toast.success).toBeDefined();
-    expect(toast.error).toBeDefined();
+    // Test that consolidated toast functions are available (integration test)
+    expect(showSuccessToast).toBeDefined();
+    expect(showErrorToast).toBeDefined();
   });
 
   it('should have error handling functionality integrated', async () => {
     const { createAppointment } = require('@/lib/actions/appointments');
-    const { toast } = require('sonner');
+    const { showErrorToast } = require('@/lib/utils/toast');
     const consoleSpy = jest
       .spyOn(console, 'error')
       .mockImplementation(() => {});
@@ -306,7 +301,7 @@ describe('GarmentImageSection - Schedule Appointment', () => {
 
     // Test that error handling functions are available (integration test)
     expect(createAppointment).toBeDefined();
-    expect(toast.error).toBeDefined();
+    expect(showErrorToast).toBeDefined();
 
     consoleSpy.mockRestore();
   });

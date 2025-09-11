@@ -62,7 +62,7 @@ jest.mock('@mui/x-date-pickers/DatePicker', () => ({
     );
   },
 }));
-jest.mock('sonner');
+jest.mock('@/lib/utils/toast');
 
 // Mock the GarmentContext
 const mockUpdateGarmentOptimistic = jest.fn();

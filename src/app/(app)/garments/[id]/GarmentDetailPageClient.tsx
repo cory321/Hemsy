@@ -2,7 +2,6 @@
 
 import { GarmentProvider } from '@/contexts/GarmentContext';
 import { Container, Box } from '@mui/material';
-import { Toaster } from 'sonner';
 import GarmentDetailContent from './GarmentDetailContent';
 
 interface GarmentDetailPageClientProps {
@@ -53,7 +52,6 @@ export default function GarmentDetailPageClient({
           />
         </Box>
       </Container>
-      <Toaster position="bottom-center" richColors />
     </GarmentProvider>
   );
 }

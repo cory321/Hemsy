@@ -2,12 +2,11 @@
 
 ## Project Context
 
-You are working on **Hemsy**, a mobile-first PWA for seamstresses and tailoring businesses.
+You are working on **Hemsy**, a web application for seamstresses and tailoring businesses.
 
 ### 📋 **ALWAYS READ THESE FIRST:**
 
 - `PRD.md` - Complete Product Requirements Document with features, user flows, and implementation roadmap
-- `architecture.md` - System architecture, tech stack, and design decisions
 
 ### 🎯 **Core Project Info:**
 
@@ -18,257 +17,54 @@ You are working on **Hemsy**, a mobile-first PWA for seamstresses and tailoring 
 
 ### 🏗️ **Architecture Principles:**
 
-- Mobile-first responsive design
-- Offline-resilient with slow-network awareness
 - Server Actions for backend logic
 - Supabase RLS for data security
 - Optimistic UI patterns
 
 ### 📁 **Key File References:**
 
-- Database schema and tables defined in `architecture.md` Section 6
-- Implementation roadmap in `PRD.md` Section 12 (Phases 0-7)
-- Feature flags: `trial_countdown_enabled`
-- Environment variables listed in `architecture.md` Section 12
+- Environment variables live in .env.local and are not available to you. When you need access to them, please ask for them.
 
 ### 🔧 **Development Guidelines:**
 
-1. **ALWAYS** reference the PRD and architecture docs before making suggestions
-2. Follow the mobile-first design principles
-3. Use Server Actions for data operations
-4. Implement proper error handling and loading states
-5. Ensure accessibility (WCAG 2.1 AA compliance)
-6. Use TypeScript strictly
-7. Follow the implementation phases in order
-8. **MANDATORY**: Write tests alongside all feature implementations
+1. **ALWAYS** reference the PRD docs before making suggestions
+2. Use Server Actions for data operations
+3. Implement proper error handling and loading states
+4. Ensure accessibility (WCAG 2.1 AA compliance)
+5. Use TypeScript strictly
+6. **MANDATORY**: Write tests alongside all feature implementations
 
-### 📝 **Commit Message Guidelines:**
+### 📝 **Commit Messages:**
 
-When generating commit messages, **ALWAYS** follow these rules:
-
-- **Maximum 200 characters** (strictly enforced by pre-commit hook)
-- Use imperative mood (e.g., "Add feature" not "Added feature")
-- Be specific and descriptive about what changed
-- Focus on the WHAT and WHY, not the HOW
-- Examples of good commit messages:
-  - "Add client search functionality with debounced input and real-time filtering"
-  - "Fix appointment scheduling bug where overlapping times were allowed"
-  - "Update order status workflow to include pending payment state"
-- **NEVER** exceed 200 characters - the commit will be rejected by Git hooks
+- **Max 200 chars**
+- Use imperative mood
+- Be specific about WHAT and WHY
+- Examples: "Add client search with debounced input", "Fix overlapping appointment times bug"
 
 ### 🧪 **Testing Requirements (MANDATORY):**
 
-#### **🎯 Test-First Development:**
+- Write tests **ALONGSIDE** features
+- Minimum 80% coverage for business logic
+- Test all Server Actions, components, and critical user flows
+- Ensure WCAG 2.1 AA accessibility compliance
 
-- **NEVER** implement a feature without corresponding tests
-- Write tests **BEFORE** or **ALONGSIDE** implementation, not after
-- Every PR must include test coverage for new functionality
-- All tests must pass before code review
+**Stack**: Jest, React Testing Library, Playwright, axe-core
 
-#### **📊 Coverage Standards:**
+### **Quick Commands:**
 
-- **Unit Tests**: Minimum 80% coverage for all business logic
-- **Integration Tests**: Cover all Server Actions and API routes
-- **E2E Tests**: Cover critical user journeys from PRD.md
-- **Accessibility Tests**: WCAG 2.1 AA compliance using axe-core
-
-#### **🔧 Testing Stack & Patterns:**
-
-```typescript
-// Unit Tests (Jest + React Testing Library)
-- Components: Test rendering, props, user interactions
-- Server Actions: Test business logic, error handling, data validation
-- Utilities: Test pure functions, data transformations
-- Hooks: Test custom React hooks
-
-// Integration Tests (Jest)
-- Database operations with Supabase
-- Authentication flows with Clerk
-- Payment flows with Stripe
-- Email/SMS integrations
-
-// E2E Tests (Playwright)
-- Complete user workflows from PRD.md Section 4
-- Mobile-first testing (responsive breakpoints)
-- Offline functionality testing
-- Performance testing (<2s load times)
-
-// Accessibility Tests (axe-core + Playwright)
-- Automated a11y scanning on all pages
-- Keyboard navigation testing
-- Screen reader compatibility
-```
-
-#### **📁 Test File Organization:**
-
-```
-src/
-├── components/
-│   ├── Button/
-│   │   ├── Button.tsx
-│   │   ├── Button.test.tsx        # Unit tests
-│   │   └── Button.stories.tsx     # Storybook (future)
-├── lib/
-│   ├── actions/
-│   │   ├── orders.ts
-│   │   └── orders.test.ts         # Server Action tests
-├── __tests__/
-│   ├── integration/               # Integration tests
-│   └── e2e/                      # Playwright E2E tests
-```
-
-#### **✅ Testing Checklist (Every Feature):**
-
-- [ ] **Unit tests** for all components and functions
-- [ ] **Integration tests** for Server Actions
-- [ ] **E2E test** for main user flow
-- [ ] **Accessibility test** with axe-core
-- [ ] **Mobile responsive** testing
-- [ ] **Error boundary** testing
-- [ ] **Loading state** testing
-- [ ] **TypeScript** type safety validation
-
-#### **🚫 Definition of Done:**
-
-A feature is **NOT COMPLETE** without:
-
-1. ✅ Implementation code
-2. ✅ Comprehensive test suite
-3. ✅ All tests passing in CI
-4. ✅ Coverage thresholds met
-5. ✅ Accessibility compliance verified
-6. ✅ Mobile testing completed
-
-#### **🔬 Test Commands:**
-
-```bash
-# Run all tests
-npm test
-
-# Run tests in watch mode during development
-npm run test:watch
-
-# Run E2E tests
-npm run test:e2e
-
-# Check test coverage
-npm run test:coverage
-
-# Run accessibility tests
-npm run test:a11y
-```
-
-### 🚀 **Current Phase:**
-
-Check the latest progress against the roadmap in `PRD.md` Section 12.
-
-### 💡 **Quick Commands:**
-
-- Read PRD: `@PRD.md`
-- Read Architecture: `@architecture.md`
 - Check database: Use Supabase MCP server
 - Check GitHub: Use GitHub MCP server
 
-### 🎭 **Playwright MCP Tools (Manual Testing):**
+### **Context7 Documentation:**
 
-> **Note**: This section only applies if Playwright MCP tools are available and enabled in your environment. If these tools are not available, ignore this section and also the automated testing approach described below.
+Use Context7 MCP tool for up-to-date docs on: Next.js 15+, TypeScript, Material UI, Supabase, Clerk, Stripe, Jest, React Testing Library, Playwright.
 
-#### **🔐 Authentication Credentials:**
+**Usage**: First resolve library ID, then get docs with specific topic.
 
-When using Playwright MCP tools for manual testing or debugging (if available):
+### **Important Notes:**
 
-- **Dev Server**: `npm run dev:host` (runs on http://localhost:3001)
-- **Test Email**: `cory@bytelogic.agency`
-- **Test Password**: `testTEST!!!`
-
-#### **🚀 Manual Login Flow:**
-
-```typescript
-// 1. Start dev server (if not running)
-npm run dev:host
-
-// 2. Navigate and login
-mcp_playwright_playwright_navigate(url: "http://localhost:3001/sign-in")
-mcp_playwright_playwright_fill(selector: "input[name='identifier']", value: "cory@bytelogic.agency")
-mcp_playwright_playwright_click(selector: "button[data-localization-key='formButtonPrimary']")
-mcp_playwright_playwright_fill(selector: "input[name='password']", value: "testTEST!!!")
-mcp_playwright_playwright_click(selector: "button[data-localization-key='formButtonPrimary']")
-
-// 3. Should redirect to /dashboard automatically
-```
-
-#### **📋 Automated Testing (Preferred):**
-
-For automated testing, use the Clerk testing tokens setup:
-
-- **Documentation**: `docs/PLAYWRIGHT_CLERK_TESTING.md`
-- **Test Helpers**: `src/__tests__/e2e/helpers/clerk-auth.helper.ts`
-- **Run Tests**: `npm run test:e2e`
-
-#### **🔧 When to Use Each:**
-
-- **Manual Playwright MCP**: Debugging, exploring UI, taking screenshots
-- **Automated Tests**: CI/CD, regression testing, development workflow
-
-### 📚 **Context7 Documentation Tools (ALWAYS USE WHEN APPROPRIATE):**
-
-#### **🎯 When to Use Context7:**
-
-**MANDATORY** - Use Context7 tools whenever you need current, accurate documentation for:
-
-1. **Tech Stack Libraries:**
-   - Next.js 15+ (App Router patterns, Server Actions, middleware)
-   - TypeScript (latest features, strict mode patterns)
-   - Material UI (theming, components, customization)
-   - Supabase (RLS, realtime, auth integration)
-   - Clerk Auth (latest API, hooks, middleware)
-   - Stripe (payment intents, webhooks, TypeScript types)
-
-2. **Testing & Development:**
-   - Jest (latest config, testing patterns)
-   - React Testing Library (queries, assertions)
-   - Playwright (selectors, mobile testing)
-   - ESLint/Prettier (rule configurations)
-
-3. **Before Making Recommendations:**
-   - **ALWAYS** check Context7 first before suggesting implementation patterns
-   - Verify current API signatures and best practices
-   - Get up-to-date examples and code snippets
-
-#### **🔧 Context7 Usage Pattern:**
-
-```typescript
-// 1. ALWAYS resolve library ID first
-mcp_context7_resolve-library-id(libraryName: "next.js")
-
-// 2. THEN get targeted documentation
-mcp_context7_get-library-docs(
-  context7CompatibleLibraryID: "/vercel/next.js",
-  topic: "server actions", // Focus on specific topic
-  tokens: 5000 // Adjust based on need
-)
-```
-
-#### **📋 Context7 Best Practices:**
-
-- **Use specific topics** to get focused documentation (e.g., "hooks", "routing", "authentication")
-- **Verify versions** match our tech stack requirements
-- **Cross-reference** Context7 docs with our architecture decisions
-- **Update patterns** in our codebase when Context7 shows newer best practices
-
-#### **⚡ Example Context7 Queries:**
-
-- "Get latest Next.js 15 App Router Server Actions patterns"
-- "Show current Material UI v6 theming API"
-- "Find Supabase RLS policy examples for multi-tenant apps"
-- "Get Stripe webhook handling with TypeScript"
-- "Show Jest + React Testing Library patterns for Server Actions"
-
-### ⚠️ **Important Notes:**
-
-- Trial countdown feature is behind `trial_countdown_enabled` flag (default OFF)
 - All user data must respect Supabase RLS policies
-- Payment processing uses Stripe (PCI compliant)
+- Payment processing uses Stripe Connect
 - Email via Resend, SMS via Twilio (future)
 
 ---

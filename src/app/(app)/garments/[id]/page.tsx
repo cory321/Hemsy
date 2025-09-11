@@ -1,8 +1,6 @@
 import { getGarmentById } from '@/lib/actions/orders';
-import {
-  getShopHours,
-  getCalendarSettings,
-} from '@/lib/actions/static-data-cache';
+import { getShopHours } from '@/lib/actions/shop-hours';
+import { getCalendarSettings } from '@/lib/actions/static-data-cache';
 import { ensureUserAndShop } from '@/lib/auth/user-shop';
 import { notFound } from 'next/navigation';
 import GarmentDetailPageClient from './GarmentDetailPageClient';
@@ -54,7 +52,7 @@ export default async function GarmentDetailPage({
 
     // Fetch shop hours and calendar settings in parallel using cached functions
     const [rawShopHours, rawCalendarSettings] = await Promise.all([
-      getShopHours(shop.id),
+      getShopHours(),
       getCalendarSettings(shop.id),
     ]);
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { GarmentProvider } from '@/contexts/GarmentContext';
-import GarmentRightColumnOptimistic from '@/app/(app)/garments/[id]/GarmentRightColumnOptimistic';
+import GarmentRightColumn from '@/app/(app)/garments/[id]/GarmentRightColumn';
 
 // Mock Next.js Link component
 jest.mock('next/link', () => {
@@ -55,11 +55,11 @@ const mockGarment = {
   totalPriceCents: 2000,
 };
 
-describe('GarmentRightColumnOptimistic', () => {
+describe('GarmentRightColumn', () => {
   it('renders order number as clickable link to order page', () => {
     render(
       <GarmentProvider initialGarment={mockGarment}>
-        <GarmentRightColumnOptimistic clientName="John Doe" />
+        <GarmentRightColumn clientName="John Doe" />
       </GarmentProvider>
     );
 
@@ -72,7 +72,7 @@ describe('GarmentRightColumnOptimistic', () => {
   it('renders client name as clickable link to client page', () => {
     render(
       <GarmentProvider initialGarment={mockGarment}>
-        <GarmentRightColumnOptimistic clientName="John Doe" />
+        <GarmentRightColumn clientName="John Doe" />
       </GarmentProvider>
     );
 
@@ -91,7 +91,7 @@ describe('GarmentRightColumnOptimistic', () => {
 
     render(
       <GarmentProvider initialGarment={garmentWithoutOrderId}>
-        <GarmentRightColumnOptimistic clientName="John Doe" />
+        <GarmentRightColumn clientName="John Doe" />
       </GarmentProvider>
     );
 
@@ -116,7 +116,7 @@ describe('GarmentRightColumnOptimistic', () => {
 
     render(
       <GarmentProvider initialGarment={garmentWithoutClientId}>
-        <GarmentRightColumnOptimistic clientName="John Doe" />
+        <GarmentRightColumn clientName="John Doe" />
       </GarmentProvider>
     );
 

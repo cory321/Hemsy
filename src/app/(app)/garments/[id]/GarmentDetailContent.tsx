@@ -5,7 +5,7 @@ import Grid from '@mui/material/Grid2';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import Link from 'next/link';
 import GarmentImageSection from './GarmentImageSection';
-import GarmentRightColumnOptimistic from './GarmentRightColumnOptimistic';
+import GarmentRightColumn from './GarmentRightColumn';
 import ReadyForPickupBanner from '@/components/garments/ReadyForPickupBanner';
 import CancelledOrderBanner from '@/components/garments/CancelledOrderBanner';
 import { useGarment } from '@/contexts/GarmentContext';
@@ -88,7 +88,7 @@ export default function GarmentDetailContent({
 
         {/* Right Column - Details */}
         <Grid size={{ xs: 12, md: 8 }}>
-          <GarmentRightColumnOptimistic clientName={clientName} />
+          <GarmentRightColumn clientName={clientName} />
         </Grid>
       </Grid>
 

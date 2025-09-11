@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   Box,
   Button,
@@ -53,6 +53,8 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
   const [price, setPrice] = useState('0.00');
   const [isFrequentlyUsed, setIsFrequentlyUsed] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
+  const [priceError, setPriceError] = useState<string | null>(null);
+  const priceInputRef = useRef<HTMLInputElement>(null);
 
   const handlePriceChange = (newPrice: string) => {
     setPrice(newPrice);
@@ -60,6 +62,10 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
       ...prev,
       unit_price: parseFloatFromCurrency(newPrice),
     }));
+    // Clear error only when price is valid (> $0.00)
+    if (priceError && parseFloatFromCurrency(newPrice) > 0) {
+      setPriceError(null);
+    }
   };
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -88,9 +94,19 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
 
     // Clear any existing errors
     setNameError(null);
+    setPriceError(null);
 
-    if (newService.name === '' || newService.unit_price <= 0) {
-      toast.error('Please provide a service name and price');
+    if (newService.name === '') {
+      setNameError('Service name is required');
+      return;
+    }
+
+    if (newService.unit_price <= 0) {
+      setPriceError('Price must be greater than $0.00');
+      // Focus the price input field
+      setTimeout(() => {
+        priceInputRef.current?.focus();
+      }, 100);
       return;
     }
 
@@ -200,6 +216,7 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
       />
 
       <ServicePriceInput
+        ref={priceInputRef}
         price={price}
         unit={newService.unit as 'flat_rate' | 'hour' | 'day'}
         quantity={newService.qty}
@@ -208,6 +225,7 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
         onQuantityChange={handleQuantityChange}
         disabled={isLoading}
         showTotal={true}
+        {...(priceError && { error: priceError })}
       />
 
       <FormControlLabel
@@ -229,7 +247,7 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
           variant="contained"
           color="primary"
           type="submit"
-          disabled={isLoading}
+          disabled={isLoading || !newService.name}
         >
           {isLoading ? 'Adding...' : 'Add Service'}
         </Button>

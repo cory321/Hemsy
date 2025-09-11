@@ -22,7 +22,7 @@ import {
   Add as AddIcon,
 } from '@mui/icons-material';
 import { addServiceToGarmentWithPaymentCheck } from '@/lib/actions/garments-enhanced';
-import { toast } from 'react-hot-toast';
+import { showSuccessToast, showErrorToast } from '@/lib/utils/toast';
 
 interface PaymentAwareServiceDialogProps {
   open: boolean;
@@ -80,21 +80,21 @@ export default function PaymentAwareServiceDialog({
         // Handle different invoice actions
         switch (result.invoiceAction?.type) {
           case 'created_new':
-            toast.success(
+            showSuccessToast(
               `Service added and invoice ${result.invoiceAction.invoiceNumber} created`,
               { duration: 5000 }
             );
             break;
 
           case 'added_to_existing':
-            toast.success(
+            showSuccessToast(
               `Service added to existing invoice ${result.invoiceAction.invoiceNumber}`,
               { duration: 5000 }
             );
             break;
 
           case 'recommended':
-            toast.success(
+            showSuccessToast(
               result.invoiceAction?.message ||
                 'Service added successfully. Consider creating an invoice for this additional service.',
               {
@@ -104,17 +104,17 @@ export default function PaymentAwareServiceDialog({
             break;
 
           default:
-            toast.success('Service added successfully');
+            showSuccessToast('Service added successfully');
             break;
         }
 
         onServiceAdded();
         onClose();
       } else {
-        toast.error(result.error || 'Failed to add service');
+        showErrorToast(result.error || 'Failed to add service');
       }
     } catch (error) {
-      toast.error('An error occurred while adding the service');
+      showErrorToast('An error occurred while adding the service');
     } finally {
       setProcessing(false);
     }

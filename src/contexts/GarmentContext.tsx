@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { toast } from 'sonner';
+import { showSuccessToast, showErrorToast } from '@/lib/utils/toast';
 import {
   updateGarment,
   addServiceToGarment,
@@ -152,13 +152,13 @@ export function GarmentProvider({
     try {
       // For now, just use the basic getGarmentById function
       // TODO: Implement proper refresh with invoice data once database schema is fixed
-      toast.success('Garment data refreshed');
+      showSuccessToast('Garment data refreshed');
       refreshHistory();
     } catch (error) {
       logger.error('Error refreshing garment:', error, {
         garmentId: garment.id,
       });
-      toast.error('Failed to refresh garment data');
+      showErrorToast('Failed to refresh garment data');
     }
   }, [refreshHistory]);
 
@@ -219,7 +219,7 @@ export function GarmentProvider({
 
         if (!result.success) {
           // Show error toast, don't update UI
-          toast.error(result.error || 'Failed to update garment');
+          showErrorToast(result.error || 'Failed to update garment');
           return false;
         } else {
           // Only update UI after successful server response
@@ -238,12 +238,12 @@ export function GarmentProvider({
           });
 
           refreshHistory();
-          toast.success('Garment updated successfully');
+          showSuccessToast('Garment updated successfully');
           return true;
         }
       } catch (error) {
         // Show error toast
-        toast.error('An unexpected error occurred');
+        showErrorToast('An unexpected error occurred');
         return false;
       }
     },
@@ -272,15 +272,15 @@ export function GarmentProvider({
         if (!result.success) {
           // Rollback on failure
           setGarment(previousGarment);
-          toast.error(result.error || 'Failed to update garment icon');
+          showErrorToast(result.error || 'Failed to update garment icon');
         } else {
           refreshHistory();
-          toast.success('Garment icon updated successfully');
+          showSuccessToast('Garment icon updated successfully');
         }
       } catch (error) {
         // Rollback on error
         setGarment(previousGarment);
-        toast.error('An unexpected error occurred');
+        showErrorToast('An unexpected error occurred');
       }
     },
     [garment, refreshHistory, createOptimisticHistoryEntry]
@@ -308,15 +308,15 @@ export function GarmentProvider({
         if (!result.success) {
           // Rollback on failure
           setGarment(previousGarment);
-          toast.error(result.error || 'Failed to update garment photo');
+          showErrorToast(result.error || 'Failed to update garment photo');
         } else {
           refreshHistory();
-          toast.success('Garment photo updated successfully');
+          showSuccessToast('Garment photo updated successfully');
         }
       } catch (error) {
         // Rollback on error
         setGarment(previousGarment);
-        toast.error('An unexpected error occurred');
+        showErrorToast('An unexpected error occurred');
       }
     },
     [garment, refreshHistory, createOptimisticHistoryEntry]
@@ -362,15 +362,15 @@ export function GarmentProvider({
       if (!result.success) {
         // Rollback on failure
         setGarment(previousGarment);
-        toast.error(result.error || 'Failed to delete garment photo');
+        showErrorToast(result.error || 'Failed to delete garment photo');
       } else {
         refreshHistory();
-        toast.success('Photo deleted successfully');
+        showSuccessToast('Photo deleted successfully');
       }
     } catch (error) {
       // Rollback on error
       setGarment(previousGarment);
-      toast.error('An unexpected error occurred');
+      showErrorToast('An unexpected error occurred');
     }
   }, [garment, refreshHistory]);
 
@@ -430,7 +430,7 @@ export function GarmentProvider({
         if (!result.success) {
           // Rollback on failure
           setGarment(previousGarment);
-          toast.error(result.error || 'Failed to add service');
+          showErrorToast(result.error || 'Failed to add service');
         } else {
           // Update with real service ID
           setGarment((prev) => ({
@@ -440,12 +440,12 @@ export function GarmentProvider({
             ),
           }));
           refreshHistory();
-          toast.success('Service added successfully');
+          showSuccessToast('Service added successfully');
         }
       } catch (error) {
         // Rollback on error
         setGarment(previousGarment);
-        toast.error('An unexpected error occurred');
+        showErrorToast('An unexpected error occurred');
       }
     },
     [garment, refreshHistory, createOptimisticHistoryEntry]
@@ -461,7 +461,7 @@ export function GarmentProvider({
 
       // Check if service is completed - completed services cannot be removed
       if (serviceToRemove.is_done) {
-        toast.error('Cannot remove a completed service');
+        showErrorToast('Cannot remove a completed service');
         return;
       }
 
@@ -529,15 +529,15 @@ export function GarmentProvider({
         if (!result.success) {
           // Rollback on failure
           setGarment(previousGarment);
-          toast.error(result.error || 'Failed to remove service');
+          showErrorToast(result.error || 'Failed to remove service');
         } else {
           refreshHistory();
-          toast.success('Service removed successfully');
+          showSuccessToast('Service removed successfully');
         }
       } catch (error) {
         // Rollback on error
         setGarment(previousGarment);
-        toast.error('An unexpected error occurred');
+        showErrorToast('An unexpected error occurred');
       }
     },
     [garment, refreshHistory, createOptimisticHistoryEntry]
@@ -610,15 +610,15 @@ export function GarmentProvider({
         if (!result.success) {
           // Rollback on failure
           setGarment(previousGarment);
-          toast.error(result.error || 'Failed to restore service');
+          showErrorToast(result.error || 'Failed to restore service');
         } else {
           refreshHistory();
-          toast.success('Service restored successfully');
+          showSuccessToast('Service restored successfully');
         }
       } catch (error) {
         // Rollback on error
         setGarment(previousGarment);
-        toast.error('An unexpected error occurred');
+        showErrorToast('An unexpected error occurred');
       }
     },
     [garment, refreshHistory, createOptimisticHistoryEntry]
@@ -637,7 +637,7 @@ export function GarmentProvider({
 
       // Check if service is completed - completed services cannot be edited
       if (oldService.is_done) {
-        toast.error('Cannot edit a completed service');
+        showErrorToast('Cannot edit a completed service');
         return;
       }
 
@@ -682,15 +682,15 @@ export function GarmentProvider({
         if (!result.success) {
           // Rollback on failure
           setGarment(previousGarment);
-          toast.error(result.error || 'Failed to update service');
+          showErrorToast(result.error || 'Failed to update service');
         } else {
           refreshHistory();
-          toast.success('Service updated successfully');
+          showSuccessToast('Service updated successfully');
         }
       } catch (error) {
         // Rollback on error
         setGarment(previousGarment);
-        toast.error('An unexpected error occurred');
+        showErrorToast('An unexpected error occurred');
       }
     },
     [garment, refreshHistory, createOptimisticHistoryEntry]
@@ -740,10 +740,10 @@ export function GarmentProvider({
         if (!result.success) {
           // Rollback on failure
           setGarment(previousGarment);
-          toast.error(result.error || 'Failed to update service completion');
+          showErrorToast(result.error || 'Failed to update service completion');
         } else {
           refreshHistory();
-          toast.success(
+          showSuccessToast(
             isDone
               ? 'Service marked as complete'
               : 'Service marked as incomplete'
@@ -752,7 +752,7 @@ export function GarmentProvider({
       } catch (error) {
         // Rollback on error
         setGarment(previousGarment);
-        toast.error('An unexpected error occurred');
+        showErrorToast('An unexpected error occurred');
       }
     },
     [garment, refreshHistory, createOptimisticHistoryEntry]
@@ -761,7 +761,7 @@ export function GarmentProvider({
   const markAsPickedUp = useCallback(async () => {
     // Check if the garment is in "Ready For Pickup" stage
     if (garment.stage !== 'Ready For Pickup') {
-      toast.error(
+      showErrorToast(
         'Garment must be in "Ready For Pickup" stage to mark as picked up'
       );
       return;
@@ -777,15 +777,15 @@ export function GarmentProvider({
       if (!result.success) {
         // Rollback on failure
         setGarment(previousGarment);
-        toast.error(result.error || 'Failed to mark garment as picked up');
+        showErrorToast(result.error || 'Failed to mark garment as picked up');
       } else {
         refreshHistory();
-        toast.success(`${garment.name || 'Garment'} marked as picked up`);
+        showSuccessToast(`${garment.name || 'Garment'} marked as picked up`);
       }
     } catch (error) {
       // Rollback on error
       setGarment(previousGarment);
-      toast.error('An unexpected error occurred');
+      showErrorToast('An unexpected error occurred');
     }
   }, [garment, refreshHistory]);
 

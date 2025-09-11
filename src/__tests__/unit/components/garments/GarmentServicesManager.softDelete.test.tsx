@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import GarmentServicesManagerOptimistic from '@/components/garments/GarmentServicesManagerOptimistic';
+import GarmentServicesManager from '@/components/garments/GarmentServicesManager';
 
 // Mock the useGarment hook
 const mockUseGarment = jest.fn();
@@ -14,7 +14,7 @@ jest.mock('@/lib/actions/services', () => ({
   searchServices: jest.fn(),
 }));
 
-describe('GarmentServicesManagerOptimistic - Soft Delete Progress Calculation', () => {
+describe('GarmentServicesManager - Soft Delete Progress Calculation', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -72,7 +72,7 @@ describe('GarmentServicesManagerOptimistic - Soft Delete Progress Calculation', 
       restoreService: jest.fn(),
     });
 
-    render(<GarmentServicesManagerOptimistic />);
+    render(<GarmentServicesManager />);
 
     // Progress should be calculated based on only active services (2 total, 1 completed = 50%)
     const progressBar = screen.getByRole('progressbar');
@@ -140,7 +140,7 @@ describe('GarmentServicesManagerOptimistic - Soft Delete Progress Calculation', 
       restoreService: jest.fn(),
     });
 
-    render(<GarmentServicesManagerOptimistic />);
+    render(<GarmentServicesManager />);
 
     // Progress should be 100% since all active services are completed
     const progressBar = screen.getByRole('progressbar');
@@ -203,7 +203,7 @@ describe('GarmentServicesManagerOptimistic - Soft Delete Progress Calculation', 
       restoreService: jest.fn(),
     });
 
-    render(<GarmentServicesManagerOptimistic />);
+    render(<GarmentServicesManager />);
 
     // Progress should be 0% since no active services are completed
     const progressBar = screen.getByRole('progressbar');
@@ -253,7 +253,7 @@ describe('GarmentServicesManagerOptimistic - Soft Delete Progress Calculation', 
       restoreService: jest.fn(),
     });
 
-    render(<GarmentServicesManagerOptimistic />);
+    render(<GarmentServicesManager />);
 
     // Find the completed service
     const completedServiceItem = screen
@@ -311,7 +311,7 @@ describe('GarmentServicesManagerOptimistic - Soft Delete Progress Calculation', 
       restoreService: jest.fn(),
     });
 
-    render(<GarmentServicesManagerOptimistic />);
+    render(<GarmentServicesManager />);
 
     // Find the incomplete service
     const incompleteServiceItem = screen.getByText('Hem Pants').closest('li');
@@ -365,7 +365,7 @@ describe('GarmentServicesManagerOptimistic - Soft Delete Progress Calculation', 
       restoreService: jest.fn(),
     });
 
-    render(<GarmentServicesManagerOptimistic />);
+    render(<GarmentServicesManager />);
 
     // Find the completed service
     const completedServiceItem = screen
@@ -423,7 +423,7 @@ describe('GarmentServicesManagerOptimistic - Soft Delete Progress Calculation', 
       restoreService: jest.fn(),
     });
 
-    render(<GarmentServicesManagerOptimistic />);
+    render(<GarmentServicesManager />);
 
     // Find the incomplete service
     const incompleteServiceItem = screen.getByText('Hem Pants').closest('li');
@@ -490,7 +490,7 @@ describe('GarmentServicesManagerOptimistic - Soft Delete Progress Calculation', 
       restoreService: jest.fn(),
     });
 
-    render(<GarmentServicesManagerOptimistic />);
+    render(<GarmentServicesManager />);
 
     // Total should only include active services: $50.00 + $15.00 = $65.00
     // Should NOT include the soft-deleted service ($20.00)
@@ -546,7 +546,7 @@ describe('GarmentServicesManagerOptimistic - Soft Delete Progress Calculation', 
       restoreService: jest.fn(),
     });
 
-    render(<GarmentServicesManagerOptimistic />);
+    render(<GarmentServicesManager />);
 
     // Total should be $0.00 since all services are soft-deleted
     expect(screen.getByText('Total: $0.00')).toBeInTheDocument();

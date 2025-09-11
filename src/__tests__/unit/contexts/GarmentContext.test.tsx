@@ -2,11 +2,11 @@ import React from 'react';
 import { render, act, waitFor } from '@testing-library/react';
 import { GarmentProvider, useGarment } from '@/contexts/GarmentContext';
 import * as garmentActions from '@/lib/actions/garments';
-import { toast } from 'sonner';
+import { showErrorToast, showSuccessToast } from '@/lib/utils/toast';
 
 // Mock the garment actions
 jest.mock('@/lib/actions/garments');
-jest.mock('sonner');
+jest.mock('@/lib/utils/toast');
 
 const mockGarment = {
   id: 'test-garment-id',
@@ -112,7 +112,7 @@ describe('GarmentContext', () => {
 
     // Should show error toast
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith('Update failed');
+      expect(showErrorToast).toHaveBeenCalledWith('Update failed');
     });
 
     // Should rollback to original value

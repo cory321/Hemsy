@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   TextField,
   Dialog,
@@ -19,7 +19,7 @@ import {
 } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
 import CloseIcon from '@mui/icons-material/Close';
-import { toast } from 'react-hot-toast';
+import { showSuccessToast, showErrorToast } from '@/lib/utils/toast';
 
 import { calculateTotalPrice, ServiceFormData } from '@/lib/utils/serviceUtils';
 import SERVICE_UNIT_TYPES from '@/lib/utils/serviceUnitTypes';
@@ -57,6 +57,8 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [price, setPrice] = useState('0.00');
   const [nameError, setNameError] = useState<string | null>(null);
+  const [priceError, setPriceError] = useState<string | null>(null);
+  const priceInputRef = useRef<HTMLInputElement>(null);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -82,6 +84,10 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
       ...prev,
       unit_price: parseFloatFromCurrency(newPrice),
     }));
+    // Clear error only when price is valid (> $0.00)
+    if (priceError && parseFloatFromCurrency(newPrice) > 0) {
+      setPriceError(null);
+    }
   };
 
   const handleUnitChange = (newUnit: 'flat_rate' | 'hour' | 'day') => {
@@ -100,8 +106,21 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
   const handleSubmit = async () => {
     // Clear any existing errors
     setNameError(null);
+    setPriceError(null);
 
-    if (newService.name === '' || newService.unit_price <= 0) return;
+    if (newService.name === '') {
+      setNameError('Service name is required');
+      return;
+    }
+
+    if (newService.unit_price <= 0) {
+      setPriceError('Price must be greater than $0.00');
+      // Focus the price input field
+      setTimeout(() => {
+        priceInputRef.current?.focus();
+      }, 100);
+      return;
+    }
 
     setIsLoading(true);
 
@@ -125,7 +144,7 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
         if (result.error.includes('already exists')) {
           setNameError(result.error);
         } else {
-          toast.error(result.error);
+          showErrorToast(result.error);
         }
         return;
       }
@@ -150,14 +169,14 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
       });
       setPrice('0.00');
 
-      toast.success(
+      showSuccessToast(
         `${newServiceItem.name} has been added to your service catalog.`
       );
       onClose();
     } catch (error) {
       // This catch block should rarely be reached now, only for unexpected errors
       console.error('Unexpected error adding service:', error);
-      toast.error('An unexpected error occurred while adding the service');
+      showErrorToast('An unexpected error occurred while adding the service');
     } finally {
       setIsLoading(false);
     }
@@ -166,6 +185,7 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
   const handleClose = () => {
     if (!isLoading) {
       setNameError(null);
+      setPriceError(null);
       onClose();
     }
   };
@@ -237,6 +257,7 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
           />
 
           <ServicePriceInput
+            ref={priceInputRef}
             price={price}
             unit={newService.unit as 'flat_rate' | 'hour' | 'day'}
             quantity={newService.qty}
@@ -245,6 +266,7 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
             onQuantityChange={handleQuantityChange}
             disabled={isLoading}
             showTotal={true}
+            {...(priceError && { error: priceError })}
           />
         </Box>
       </DialogContent>
@@ -257,7 +279,7 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
           onClick={handleSubmit}
           color="primary"
           variant="contained"
-          disabled={isLoading || !newService.name || newService.unit_price <= 0}
+          disabled={isLoading || !newService.name}
         >
           {isLoading ? 'Adding...' : 'Add Service'}
         </Button>

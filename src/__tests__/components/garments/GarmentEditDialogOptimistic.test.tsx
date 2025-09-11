@@ -17,13 +17,8 @@ jest.mock('@/lib/actions/garments', () => ({
   updateGarment: jest.fn(),
 }));
 
-// Mock the toast notifications
-jest.mock('sonner', () => ({
-  toast: {
-    success: jest.fn(),
-    error: jest.fn(),
-  },
-}));
+// Mock the consolidated toast system
+jest.mock('@/lib/utils/toast');
 
 // Mock the DatePicker component to behave like a simple input with helper text
 jest.mock('@mui/x-date-pickers/DatePicker', () => ({

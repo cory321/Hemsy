@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   Card,
   CardContent,
@@ -16,7 +16,8 @@ import RemoveIcon from '@mui/icons-material/Remove';
 import UpdateIcon from '@mui/icons-material/Update';
 import EventIcon from '@mui/icons-material/Event';
 import { getGarmentHistory } from '@/lib/actions/garments';
-import { format, isToday, isYesterday, isSameDay } from 'date-fns';
+import { format, isToday, isYesterday } from 'date-fns';
+import { useGarment } from '@/contexts/GarmentContext';
 
 interface HistoryEntry {
   id: string;
@@ -36,6 +37,9 @@ interface HistoryEntry {
       }
     | null
     | any;
+  // For optimistic updates
+  isOptimistic?: boolean;
+  isPersisting?: boolean;
 }
 
 interface GarmentHistoryProps {
@@ -46,10 +50,37 @@ export default function GarmentHistory({ garmentId }: GarmentHistoryProps) {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { optimisticHistoryEntry, historyRefreshSignal } = useGarment();
 
+  // Initial load of history
   useEffect(() => {
     fetchHistory();
   }, [garmentId]);
+
+  // Handle optimistic updates
+  useEffect(() => {
+    if (optimisticHistoryEntry) {
+      // Add the optimistic entry with persisting state
+      setHistory((prev) => [
+        { ...optimisticHistoryEntry, isPersisting: true },
+        ...prev,
+      ]);
+
+      // After a short delay, mark it as persisted
+      const timer = setTimeout(() => {
+        setHistory((prev) =>
+          prev.map((entry) =>
+            entry.id === optimisticHistoryEntry.id
+              ? { ...entry, isPersisting: false, isOptimistic: false }
+              : entry
+          )
+        );
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }
+    return; // Explicit return for else case
+  }, [optimisticHistoryEntry]);
 
   const fetchHistory = async () => {
     setLoading(true);
@@ -69,6 +100,25 @@ export default function GarmentHistory({ garmentId }: GarmentHistoryProps) {
       setLoading(false);
     }
   };
+
+  // Refresh history after server updates
+  const refreshHistory = useCallback(async () => {
+    try {
+      const result = await getGarmentHistory(garmentId);
+      if (result.success) {
+        setHistory(result.history || []);
+      }
+    } catch (err) {
+      // Silent refresh failure - we still have the optimistic update
+    }
+  }, [garmentId]);
+
+  // Listen for refresh signals
+  useEffect(() => {
+    if (historyRefreshSignal > 0) {
+      refreshHistory();
+    }
+  }, [historyRefreshSignal, refreshHistory]);
 
   const getChangeIcon = (changeType: string, fieldName?: string) => {
     // Service changes
@@ -375,6 +425,8 @@ export default function GarmentHistory({ garmentId }: GarmentHistoryProps) {
                         alignItems: 'flex-start',
                         mb: 2,
                         position: 'relative',
+                        opacity: entry.isOptimistic ? 0.7 : 1,
+                        transition: 'opacity 0.2s ease-in-out',
                       }}
                     >
                       {/* Time */}
@@ -385,9 +437,19 @@ export default function GarmentHistory({ garmentId }: GarmentHistoryProps) {
                           minWidth: '80px',
                           mr: 2,
                           mt: 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1,
                         }}
                       >
                         {entry.formatted.time}
+                        {entry.isPersisting && (
+                          <CircularProgress
+                            size={12}
+                            thickness={5}
+                            sx={{ color: 'text.secondary' }}
+                          />
+                        )}
                       </Typography>
 
                       {/* Icon */}

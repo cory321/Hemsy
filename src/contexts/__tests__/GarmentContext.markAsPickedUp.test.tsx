@@ -3,16 +3,21 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { GarmentProvider, useGarment } from '../GarmentContext';
 import { markGarmentAsPickedUp } from '@/lib/actions/garment-pickup';
-import { toast } from 'sonner';
+import { showSuccessToast, showErrorToast } from '@/lib/utils/toast';
 
 // Mock the dependencies
 jest.mock('@/lib/actions/garment-pickup');
-jest.mock('sonner');
+jest.mock('@/lib/utils/toast');
 
 const mockMarkGarmentAsPickedUp = markGarmentAsPickedUp as jest.MockedFunction<
   typeof markGarmentAsPickedUp
 >;
-const mockToast = toast as jest.Mocked<typeof toast>;
+const mockShowSuccessToast = showSuccessToast as jest.MockedFunction<
+  typeof showSuccessToast
+>;
+const mockShowErrorToast = showErrorToast as jest.MockedFunction<
+  typeof showErrorToast
+>;
 
 // Test component that uses the garment context
 function TestComponent() {
@@ -76,7 +81,7 @@ describe('GarmentContext - markAsPickedUp', () => {
     });
 
     // Success toast should be shown
-    expect(mockToast.success).toHaveBeenCalledWith(
+    expect(mockShowSuccessToast).toHaveBeenCalledWith(
       'Test Garment marked as picked up'
     );
   });
@@ -111,7 +116,7 @@ describe('GarmentContext - markAsPickedUp', () => {
     });
 
     // Error toast should be shown
-    expect(mockToast.error).toHaveBeenCalledWith('Server error');
+    expect(mockShowErrorToast).toHaveBeenCalledWith('Server error');
   });
 
   it('shows error if garment is not in Ready For Pickup stage', async () => {
@@ -133,7 +138,7 @@ describe('GarmentContext - markAsPickedUp', () => {
     expect(mockMarkGarmentAsPickedUp).not.toHaveBeenCalled();
 
     // Error toast should be shown
-    expect(mockToast.error).toHaveBeenCalledWith(
+    expect(mockShowErrorToast).toHaveBeenCalledWith(
       'Garment must be in "Ready For Pickup" stage to mark as picked up'
     );
 
@@ -166,7 +171,7 @@ describe('GarmentContext - markAsPickedUp', () => {
     });
 
     // Error toast should be shown
-    expect(mockToast.error).toHaveBeenCalledWith(
+    expect(mockShowErrorToast).toHaveBeenCalledWith(
       'An unexpected error occurred'
     );
   });

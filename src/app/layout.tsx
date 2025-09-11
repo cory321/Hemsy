@@ -74,7 +74,7 @@ export default function RootLayout({
                     reportToSentry={true}
                   />
                   <Toaster
-                    position="bottom-center"
+                    position="top-center"
                     toastOptions={{
                       duration: 4000,
                       style: {
@@ -110,7 +110,7 @@ export default function RootLayout({
                   reportToSentry={true}
                 />
                 <Toaster
-                  position="bottom-center"
+                  position="top-center"
                   toastOptions={{
                     duration: 4000,
                     style: {

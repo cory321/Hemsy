@@ -533,6 +533,7 @@ export function getDateRange(startDate: string, endDate: string): string[] {
 
 /**
  * Format a date for user display (e.g., "Jan 15, 2024")
+ * This function is timezone-safe and handles both date-only strings and full timestamps
  */
 export function formatDateDisplay(dateStr: string): string {
   return format(parseDateString(dateStr), 'MMM d, yyyy');
@@ -543,6 +544,63 @@ export function formatDateDisplay(dateStr: string): string {
  */
 export function formatDateForDisplay(dateStr: string): string {
   return formatDateDisplay(dateStr);
+}
+
+/**
+ * Timezone-safe date formatting that matches browser's toLocaleDateString()
+ * but avoids timezone shifts by properly handling date-only vs timestamp strings
+ *
+ * This function:
+ * - Returns 'Not set' for null/undefined values
+ * - For date-only strings (YYYY-MM-DD): adds T12:00:00 to avoid timezone shifts
+ * - For full timestamps: uses as-is
+ * - Uses browser's toLocaleDateString() for consistent locale formatting
+ */
+export function formatDateSafe(dateString: string | null | undefined): string {
+  if (!dateString) return 'Not set';
+
+  try {
+    // Check if it's already a full timestamp or just a date
+    if (dateString.includes('T')) {
+      // Full timestamp - use as-is
+      return new Date(dateString).toLocaleDateString();
+    } else {
+      // Date only - add noon time to avoid timezone shifts
+      return new Date(dateString + 'T12:00:00').toLocaleDateString();
+    }
+  } catch (error) {
+    console.error('Invalid date in formatDateSafe:', dateString);
+    return 'Invalid date';
+  }
+}
+
+/**
+ * Timezone-safe date formatting with custom format string
+ * Uses the same timezone-safe logic as formatDateSafe but with custom formatting
+ */
+export function formatDateSafeCustom(
+  dateString: string | null | undefined,
+  formatString: string = 'MMM d, yyyy'
+): string {
+  if (!dateString) return 'Not set';
+
+  try {
+    let date: Date;
+
+    // Check if it's already a full timestamp or just a date
+    if (dateString.includes('T')) {
+      // Full timestamp - use as-is
+      date = new Date(dateString);
+    } else {
+      // Date only - add noon time to avoid timezone shifts
+      date = new Date(dateString + 'T12:00:00');
+    }
+
+    return format(date, formatString);
+  } catch (error) {
+    console.error('Invalid date in formatDateSafeCustom:', dateString);
+    return 'Invalid date';
+  }
 }
 
 /**

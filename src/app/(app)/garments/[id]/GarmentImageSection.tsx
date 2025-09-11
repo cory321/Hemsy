@@ -13,7 +13,7 @@ import {
 import Grid from '@mui/material/Grid2';
 import NextLink from 'next/link';
 import EventIcon from '@mui/icons-material/Event';
-import { toast } from 'sonner';
+import { showSuccessToast, showErrorToast } from '@/lib/utils/toast';
 import SafeCldImage from '@/components/ui/SafeCldImage';
 import { getStageColor } from '@/constants/garmentStages';
 import InlinePresetSvg from '@/components/ui/InlinePresetSvg';
@@ -119,20 +119,16 @@ export default function GarmentImageSection({
           hour12: true,
         });
 
-        toast.success(
-          `Appointment scheduled successfully for ${formattedDate} at ${formattedTime}`,
-          {
-            description: `${data.type.charAt(0).toUpperCase() + data.type.slice(1)} appointment with ${clientName}`,
-            duration: 5000,
-          }
+        showSuccessToast(
+          `Appointment scheduled successfully for ${formattedDate} at ${formattedTime}. ${data.type.charAt(0).toUpperCase() + data.type.slice(1)} appointment with ${clientName}`,
+          { duration: 5000 }
         );
       } catch (error) {
         console.error('Failed to create appointment:', error);
-        toast.error('Failed to schedule appointment', {
-          description:
-            'Please try again or contact support if the problem persists.',
-          duration: 5000,
-        });
+        showErrorToast(
+          'Failed to schedule appointment. Please try again or contact support if the problem persists.',
+          { duration: 5000 }
+        );
       }
     },
     [shopId, clientName]

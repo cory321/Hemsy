@@ -16,6 +16,7 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { cancelOrder, restoreOrder } from '@/lib/actions/orders-cancellation';
 import { getOrderStatusLabel } from '@/lib/utils/orderStatus';
+import { formatDateSafe } from '@/lib/utils/date-time-utils';
 import CancelOrderDialog from './CancelOrderDialog';
 import type { Database } from '@/types/supabase';
 
@@ -267,13 +268,10 @@ export default function OrderStatusWithActions({
           }}
         >
           <Typography variant="caption" color="text.secondary">
-            Created: {new Date(order.created_at).toLocaleDateString()}
+            Created: {formatDateSafe(order.created_at)}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            Due:{' '}
-            {order.order_due_date
-              ? new Date(order.order_due_date).toLocaleDateString()
-              : 'Not set'}
+            Due: {formatDateSafe(order.order_due_date)}
           </Typography>
         </Box>
       </Box>

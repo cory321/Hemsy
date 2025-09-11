@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   TextField,
@@ -79,6 +79,8 @@ export default function ServiceSelectorModal({
   const [quickAddToCatalog, setQuickAddToCatalog] = useState(true);
   const [quickAddFrequentlyUsed, setQuickAddFrequentlyUsed] = useState(false);
   const [quickAddLoading, setQuickAddLoading] = useState(false);
+  const [quickAddPriceError, setQuickAddPriceError] = useState('');
+  const priceInputRef = useRef<HTMLInputElement>(null);
 
   // Load frequently used services on mount
   useEffect(() => {
@@ -197,13 +199,27 @@ export default function ServiceSelectorModal({
   };
 
   const handleQuickAdd = async () => {
+    // Clear any existing price error
+    setQuickAddPriceError('');
+
     if (!quickAddName.trim()) {
       toast.error('Please enter a service name');
       return;
     }
 
-    setQuickAddLoading(true);
     const priceCents = dollarsToCents(parseFloatFromCurrency(quickAddPrice));
+
+    // Validate price is greater than $0.00
+    if (priceCents <= 0) {
+      setQuickAddPriceError('Price must be greater than $0.00');
+      // Focus the price input field
+      setTimeout(() => {
+        priceInputRef.current?.focus();
+      }, 100);
+      return;
+    }
+
+    setQuickAddLoading(true);
 
     try {
       if (quickAddToCatalog) {
@@ -575,8 +591,10 @@ export default function ServiceSelectorModal({
           setQuickAddPrice('0.00');
           setQuickAddUnit('flat_rate');
           setQuickAddQuantity(1);
+          setQuickAddToCatalog(true);
           setQuickAddFrequentlyUsed(false);
           setQuickAddLoading(false);
+          setQuickAddPriceError('');
         }}
         maxWidth="sm"
         fullWidth
@@ -585,7 +603,18 @@ export default function ServiceSelectorModal({
           Quick Add Service
           <IconButton
             aria-label="close"
-            onClick={() => setShowQuickAdd(false)}
+            onClick={() => {
+              setShowQuickAdd(false);
+              // Reset form state
+              setQuickAddName('');
+              setQuickAddPrice('0.00');
+              setQuickAddUnit('flat_rate');
+              setQuickAddQuantity(1);
+              setQuickAddToCatalog(true);
+              setQuickAddFrequentlyUsed(false);
+              setQuickAddLoading(false);
+              setQuickAddPriceError('');
+            }}
             sx={{
               position: 'absolute',
               right: 8,
@@ -606,13 +635,24 @@ export default function ServiceSelectorModal({
               autoFocus
             />
             <ServicePriceInput
+              ref={priceInputRef}
               price={quickAddPrice}
               unit={quickAddUnit}
               quantity={quickAddQuantity}
-              onPriceChange={(price) => setQuickAddPrice(price)}
+              onPriceChange={(price) => {
+                setQuickAddPrice(price);
+                // Clear error only when price is valid (> $0.00)
+                if (
+                  quickAddPriceError &&
+                  dollarsToCents(parseFloatFromCurrency(price)) > 0
+                ) {
+                  setQuickAddPriceError('');
+                }
+              }}
               onUnitChange={(unit) => setQuickAddUnit(unit)}
               onQuantityChange={(quantity) => setQuickAddQuantity(quantity)}
               showTotal={true}
+              error={quickAddPriceError}
             />
             <FormControlLabel
               control={
@@ -654,8 +694,10 @@ export default function ServiceSelectorModal({
               setQuickAddPrice('0.00');
               setQuickAddUnit('flat_rate');
               setQuickAddQuantity(1);
+              setQuickAddToCatalog(true);
               setQuickAddFrequentlyUsed(false);
               setQuickAddLoading(false);
+              setQuickAddPriceError('');
             }}
           >
             Cancel

@@ -544,7 +544,17 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
           Quick Add Service
           <IconButton
             aria-label="close"
-            onClick={() => setShowQuickAdd(false)}
+            onClick={() => {
+              setShowQuickAdd(false);
+              // Reset form state
+              setQuickAddName('');
+              setQuickAddPrice('0.00');
+              setQuickAddPriceFocused(false);
+              setQuickAddUnit('flat_rate');
+              setQuickAddQuantity(1);
+              setQuickAddFrequentlyUsed(false);
+              setQuickAddLoading(false);
+            }}
             sx={{
               position: 'absolute',
               right: 8,

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   TextField,
@@ -34,7 +34,7 @@ import {
   parseFloatFromCurrency,
   formatAsCurrency,
 } from '@/lib/utils/currency';
-import { toast } from 'react-hot-toast';
+import { showSuccessToast, showErrorToast } from '@/lib/utils/toast';
 import { searchServices, addService } from '@/lib/actions/services';
 
 import ServicePriceInput from '@/components/common/ServicePriceInput';
@@ -79,6 +79,8 @@ export default function ServiceSearchAndManager({
   const [quickAddToCatalog, setQuickAddToCatalog] = useState(true);
   const [quickAddFrequentlyUsed, setQuickAddFrequentlyUsed] = useState(false);
   const [quickAddLoading, setQuickAddLoading] = useState(false);
+  const [quickAddPriceError, setQuickAddPriceError] = useState('');
+  const priceInputRef = useRef<HTMLInputElement>(null);
 
   // Handle external showQuickAdd changes
   useEffect(() => {
@@ -152,14 +154,43 @@ export default function ServiceSearchAndManager({
     onChange(updatedServices);
   };
 
+  // Centralized function to reset and close the dialog
+  const handleCloseQuickAdd = () => {
+    setShowQuickAdd(false);
+    onQuickAddClose?.();
+    // Reset form state
+    setQuickAddName('');
+    setQuickAddPrice('0.00');
+    setQuickAddUnit('flat_rate');
+    setQuickAddQuantity(1);
+    setQuickAddToCatalog(true);
+    setQuickAddFrequentlyUsed(false);
+    setQuickAddLoading(false);
+    setQuickAddPriceError('');
+  };
+
   const handleQuickAdd = async () => {
+    // Clear any existing price error
+    setQuickAddPriceError('');
+
     if (!quickAddName.trim()) {
-      toast.error('Please enter a service name');
+      showErrorToast('Please enter a service name');
+      return;
+    }
+
+    const priceCents = dollarsToCents(parseFloatFromCurrency(quickAddPrice));
+
+    // Validate price is greater than $0.00
+    if (priceCents <= 0) {
+      setQuickAddPriceError('Price must be greater than $0.00');
+      // Focus the price input field
+      setTimeout(() => {
+        priceInputRef.current?.focus();
+      }, 100);
       return;
     }
 
     setQuickAddLoading(true);
-    const priceCents = dollarsToCents(parseFloatFromCurrency(quickAddPrice));
 
     try {
       if (quickAddToCatalog) {
@@ -174,10 +205,11 @@ export default function ServiceSearchAndManager({
         if (!result.success) {
           // Check if it's a duplicate name error
           if (result.error.includes('already exists')) {
-            toast.error(result.error);
+            showErrorToast(result.error);
           } else {
-            toast.error(`Failed to add service: ${result.error}`);
+            showErrorToast(`Failed to add service: ${result.error}`);
           }
+          setQuickAddLoading(false);
           return;
         }
 
@@ -190,7 +222,7 @@ export default function ServiceSearchAndManager({
           unitPriceCents: priceCents,
         };
         onChange([...services, newService]);
-        toast.success('Service added to catalog');
+        showSuccessToast('Service added to catalog');
       } else {
         // Add as inline service
         const newService: ServiceDraft = {
@@ -205,15 +237,11 @@ export default function ServiceSearchAndManager({
         onChange([...services, newService]);
       }
 
-      // Reset quick add form
-      setQuickAddName('');
-      setQuickAddPrice('0.00');
-      setQuickAddUnit('flat_rate');
-      setQuickAddQuantity(1);
-      setQuickAddFrequentlyUsed(false);
-      setShowQuickAdd(false);
-      onQuickAddClose?.();
-    } finally {
+      // Close dialog and reset form on success
+      handleCloseQuickAdd();
+    } catch (error) {
+      console.error('Error in handleQuickAdd:', error);
+      showErrorToast('An unexpected error occurred');
       setQuickAddLoading(false);
     }
   };
@@ -406,17 +434,7 @@ export default function ServiceSearchAndManager({
       {/* Quick Add Dialog */}
       <Dialog
         open={showQuickAdd}
-        onClose={() => {
-          setShowQuickAdd(false);
-          onQuickAddClose?.();
-          // Reset form state
-          setQuickAddName('');
-          setQuickAddPrice('0.00');
-          setQuickAddUnit('flat_rate');
-          setQuickAddQuantity(1);
-          setQuickAddFrequentlyUsed(false);
-          setQuickAddLoading(false);
-        }}
+        onClose={handleCloseQuickAdd}
         maxWidth="sm"
         fullWidth
       >
@@ -424,7 +442,7 @@ export default function ServiceSearchAndManager({
           Quick Add Service
           <IconButton
             aria-label="close"
-            onClick={() => setShowQuickAdd(false)}
+            onClick={handleCloseQuickAdd}
             sx={{
               position: 'absolute',
               right: 8,
@@ -445,13 +463,24 @@ export default function ServiceSearchAndManager({
               autoFocus
             />
             <ServicePriceInput
+              ref={priceInputRef}
               price={quickAddPrice}
               unit={quickAddUnit}
               quantity={quickAddQuantity}
-              onPriceChange={(price) => setQuickAddPrice(price)}
+              onPriceChange={(price) => {
+                setQuickAddPrice(price);
+                // Clear error only when price is valid (> $0.00)
+                if (
+                  quickAddPriceError &&
+                  dollarsToCents(parseFloatFromCurrency(price)) > 0
+                ) {
+                  setQuickAddPriceError('');
+                }
+              }}
               onUnitChange={(unit) => setQuickAddUnit(unit)}
               onQuantityChange={(quantity) => setQuickAddQuantity(quantity)}
               showTotal={true}
+              error={quickAddPriceError}
             />
             <FormControlLabel
               control={
@@ -485,21 +514,7 @@ export default function ServiceSearchAndManager({
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button
-            onClick={() => {
-              setShowQuickAdd(false);
-              onQuickAddClose?.();
-              // Reset form state
-              setQuickAddName('');
-              setQuickAddPrice('0.00');
-              setQuickAddUnit('flat_rate');
-              setQuickAddQuantity(1);
-              setQuickAddFrequentlyUsed(false);
-              setQuickAddLoading(false);
-            }}
-          >
-            Cancel
-          </Button>
+          <Button onClick={handleCloseQuickAdd}>Cancel</Button>
           <Button
             onClick={handleQuickAdd}
             variant="contained"

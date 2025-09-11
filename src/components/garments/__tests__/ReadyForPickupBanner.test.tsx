@@ -3,14 +3,10 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import ReadyForPickupBanner from '../ReadyForPickupBanner';
 import { useGarment } from '@/contexts/GarmentContext';
-import { toast } from 'sonner';
-
 // Mock the dependencies
 jest.mock('@/contexts/GarmentContext');
-jest.mock('sonner');
 
 const mockUseGarment = useGarment as jest.MockedFunction<typeof useGarment>;
-const mockToast = toast as jest.Mocked<typeof toast>;
 
 describe('ReadyForPickupBanner', () => {
   const mockMarkAsPickedUp = jest.fn();

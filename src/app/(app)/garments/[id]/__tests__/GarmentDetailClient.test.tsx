@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import GarmentDetailClientOptimistic from '../GarmentDetailClientOptimistic';
+import GarmentDetailClient from '../GarmentDetailClient';
 import { GarmentProvider } from '@/contexts/GarmentContext';
 import '@testing-library/jest-dom';
 
@@ -34,7 +34,7 @@ jest.mock('@/contexts/GarmentContext', () => ({
   ),
 }));
 
-describe('GarmentDetailClientOptimistic', () => {
+describe('GarmentDetailClient', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -47,7 +47,7 @@ describe('GarmentDetailClientOptimistic', () => {
     });
 
     it('should render Edit button enabled', () => {
-      render(<GarmentDetailClientOptimistic />);
+      render(<GarmentDetailClient />);
 
       const editButton = screen.getByRole('button', { name: /edit/i });
       expect(editButton).toBeInTheDocument();
@@ -57,7 +57,7 @@ describe('GarmentDetailClientOptimistic', () => {
     it('should open edit dialog when Edit button is clicked', async () => {
       const user = userEvent.setup();
 
-      render(<GarmentDetailClientOptimistic />);
+      render(<GarmentDetailClient />);
 
       const editButton = screen.getByRole('button', { name: /edit/i });
       await user.click(editButton);
@@ -70,7 +70,7 @@ describe('GarmentDetailClientOptimistic', () => {
     it('should close edit dialog when onClose is called', async () => {
       const user = userEvent.setup();
 
-      render(<GarmentDetailClientOptimistic />);
+      render(<GarmentDetailClient />);
 
       // Open dialog
       const editButton = screen.getByRole('button', { name: /edit/i });
@@ -95,7 +95,7 @@ describe('GarmentDetailClientOptimistic', () => {
     });
 
     it('should render Edit button disabled', () => {
-      render(<GarmentDetailClientOptimistic />);
+      render(<GarmentDetailClient />);
 
       const editButton = screen.getByRole('button', { name: /edit/i });
       expect(editButton).toBeInTheDocument();
@@ -103,7 +103,7 @@ describe('GarmentDetailClientOptimistic', () => {
     });
 
     it('should not open edit dialog when disabled Edit button is clicked', async () => {
-      render(<GarmentDetailClientOptimistic />);
+      render(<GarmentDetailClient />);
 
       const editButton = screen.getByRole('button', { name: /edit/i });
 
@@ -121,7 +121,7 @@ describe('GarmentDetailClientOptimistic', () => {
         garment: { id: 'garment-1', stage: null },
       });
 
-      render(<GarmentDetailClientOptimistic />);
+      render(<GarmentDetailClient />);
 
       const editButton = screen.getByRole('button', { name: /edit/i });
       // Should be enabled when stage is null
@@ -133,7 +133,7 @@ describe('GarmentDetailClientOptimistic', () => {
         garment: null,
       });
 
-      render(<GarmentDetailClientOptimistic />);
+      render(<GarmentDetailClient />);
 
       const editButton = screen.getByRole('button', { name: /edit/i });
       // Should be enabled when garment is null
@@ -148,7 +148,7 @@ describe('GarmentDetailClientOptimistic', () => {
           garment: { id: 'garment-1', stage },
         });
 
-        const { unmount } = render(<GarmentDetailClientOptimistic />);
+        const { unmount } = render(<GarmentDetailClient />);
 
         const editButton = screen.getByRole('button', { name: /edit/i });
         expect(editButton).not.toBeDisabled();

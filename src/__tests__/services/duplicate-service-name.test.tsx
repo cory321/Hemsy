@@ -1,18 +1,13 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { toast } from 'react-hot-toast';
+import { showSuccessToast, showErrorToast } from '@/lib/utils/toast';
 import CreateServiceDialog from '@/components/services/CreateServiceDialog';
 import AddServiceForm from '@/components/services/AddServiceForm';
 import * as servicesActions from '@/lib/actions/services';
 
-// Mock the toast library
-jest.mock('react-hot-toast', () => ({
-  toast: {
-    success: jest.fn(),
-    error: jest.fn(),
-  },
-}));
+// Mock the consolidated toast system
+jest.mock('@/lib/utils/toast');
 
 // Mock the service actions
 jest.mock('@/lib/actions/services', () => ({
@@ -83,7 +78,7 @@ describe('Duplicate Service Name Handling', () => {
       expect(mockOnClose).not.toHaveBeenCalled();
 
       // Toast should not be shown for duplicate name errors
-      expect(toast.error).not.toHaveBeenCalled();
+      expect(showErrorToast).not.toHaveBeenCalled();
     });
 
     it('should clear error when user types in name field', async () => {
@@ -160,7 +155,7 @@ describe('Duplicate Service Name Handling', () => {
 
       // Wait for toast to be called
       await waitFor(() => {
-        expect(toast.error).toHaveBeenCalledWith(
+        expect(showErrorToast).toHaveBeenCalledWith(
           'An unexpected error occurred while adding the service'
         );
       });
@@ -273,7 +268,7 @@ describe('Duplicate Service Name Handling', () => {
       expect(mockOnClose).not.toHaveBeenCalled();
 
       // Toast should not be shown for duplicate name errors
-      expect(toast.error).not.toHaveBeenCalled();
+      expect(showErrorToast).not.toHaveBeenCalled();
     });
 
     it('should clear error when user types in name field', async () => {
