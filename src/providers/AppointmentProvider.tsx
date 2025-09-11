@@ -181,8 +181,17 @@ export function AppointmentProvider({
           payload: { appointment, tempId },
         });
 
-        // Invalidate React Query caches so lists refresh automatically
-        queryClient.invalidateQueries({ queryKey: ['appointments'] });
+        // Invalidate all appointment-related queries to ensure UI updates
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['appointments'] }),
+          queryClient.invalidateQueries({
+            queryKey: ['appointments', 'timeRange'],
+          }),
+          queryClient.invalidateQueries({ queryKey: ['appointments', 'view'] }),
+          queryClient.invalidateQueries({
+            queryKey: ['appointments', 'count'],
+          }),
+        ]);
         if (data.clientId) {
           queryClient.invalidateQueries({
             queryKey: ['appointments', 'client', data.clientId],
@@ -291,8 +300,18 @@ export function AppointmentProvider({
           toast.success('Appointment updated successfully');
         }
 
-        // Invalidate relevant queries to ensure UI updates
-        queryClient.invalidateQueries({ queryKey: ['appointments'] });
+        // Invalidate all appointment-related queries to ensure UI updates
+        // This includes time ranges, views, counts, and lists
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['appointments'] }),
+          queryClient.invalidateQueries({
+            queryKey: ['appointments', 'timeRange'],
+          }),
+          queryClient.invalidateQueries({ queryKey: ['appointments', 'view'] }),
+          queryClient.invalidateQueries({
+            queryKey: ['appointments', 'count'],
+          }),
+        ]);
       } catch (error) {
         if (currentAppointment) {
           dispatch({

@@ -12,7 +12,6 @@ import {
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import { format, differenceInDays } from 'date-fns';
 import {
   getOrderStatusColor,
   getOrderStatusLabel,
@@ -29,6 +28,7 @@ import {
 import {
   safeParseDate,
   calculateDaysUntilDue,
+  formatDateSafeCustom,
 } from '@/lib/utils/date-time-utils';
 
 interface OrderCardMinimalProps {
@@ -74,11 +74,8 @@ function getDueDateInfo(orderDueDate: string | null, garments: any[]) {
 
   if (!effectiveDueDate) return null;
 
-  const due = new Date(effectiveDueDate);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  due.setHours(0, 0, 0, 0);
-  const daysUntilDue = differenceInDays(due, today);
+  // Use timezone-safe date parsing and calculation
+  const daysUntilDue = calculateDaysUntilDue(effectiveDueDate);
 
   // Check if the order is truly overdue (considering service completion)
   const orderIsOverdue = isOrderOverdue({
@@ -90,8 +87,8 @@ function getDueDateInfo(orderDueDate: string | null, garments: any[]) {
   });
 
   return {
-    date: format(due, 'MMM d'),
-    fullDate: format(due, 'MMM d, yyyy'),
+    date: formatDateSafeCustom(effectiveDueDate, 'MMM d'),
+    fullDate: formatDateSafeCustom(effectiveDueDate, 'MMM d, yyyy'),
     daysUntilDue,
     isOverdue: orderIsOverdue,
     isUrgent: daysUntilDue >= 0 && daysUntilDue <= 3,
@@ -115,7 +112,7 @@ function getEarliestEventDate(garments: any[]) {
   const daysUntil = calculateDaysUntilDue(eventDateStr);
 
   return {
-    date: format(eventDate, 'MMM d'),
+    date: formatDateSafeCustom(eventDateStr, 'MMM d'),
     daysUntil,
     isToday: daysUntil === 0,
     isTomorrow: daysUntil === 1,
