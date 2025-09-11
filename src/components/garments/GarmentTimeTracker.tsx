@@ -245,6 +245,7 @@ export default function GarmentTimeTracker({
         onClose={() => setIsAddOpen(false)}
         fullWidth
         maxWidth="xs"
+        disableScrollLock
       >
         <DialogTitle>
           Add Time

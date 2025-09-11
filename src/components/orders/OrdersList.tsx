@@ -222,6 +222,9 @@ export default function OrdersList({
                     | 'active'
                 )
               }
+              MenuProps={{
+                disableScrollLock: true,
+              }}
             >
               <MenuItem value="active">All Active Orders</MenuItem>
               <MenuItem value="new">New</MenuItem>
@@ -237,6 +240,9 @@ export default function OrdersList({
               value={paymentStatusFilter}
               label="Payment Status"
               onChange={(e) => setPaymentStatusFilter(e.target.value)}
+              MenuProps={{
+                disableScrollLock: true,
+              }}
             >
               <MenuItem value="all">All Payment Statuses</MenuItem>
               <MenuItem value="unpaid">Unpaid</MenuItem>

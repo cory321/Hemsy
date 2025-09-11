@@ -412,6 +412,9 @@ export default function GarmentsClient({
                     cursor: undefined,
                   });
                 }}
+                MenuProps={{
+                  disableScrollLock: true,
+                }}
               >
                 <MenuItem value="all">All Garments</MenuItem>
                 <MenuItem value="due-today">Due Today</MenuItem>
@@ -430,6 +433,9 @@ export default function GarmentsClient({
                     cursor: undefined,
                   })
                 }
+                MenuProps={{
+                  disableScrollLock: true,
+                }}
               >
                 <MenuItem value="due_date">Due Date</MenuItem>
                 <MenuItem value="created_at">Created Date</MenuItem>

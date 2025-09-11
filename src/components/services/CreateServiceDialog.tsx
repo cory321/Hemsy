@@ -197,6 +197,7 @@ const CreateServiceDialog: React.FC<CreateServiceDialogProps> = ({
       fullScreen={isMobile}
       maxWidth="sm"
       fullWidth
+      disableScrollLock
     >
       <DialogTitle>
         Create New Service

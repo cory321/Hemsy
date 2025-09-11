@@ -127,6 +127,7 @@ export default function ClientEditDialog({
         onClose={handleClose}
         maxWidth="md"
         fullWidth
+        disableScrollLock
         PaperProps={{
           component: 'form',
           onSubmit: handleSubmit(onSubmit),

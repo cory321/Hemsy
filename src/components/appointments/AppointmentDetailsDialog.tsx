@@ -368,6 +368,7 @@ export function AppointmentDetailsDialog({
         }}
         maxWidth="sm"
         fullWidth
+        disableScrollLock
         PaperProps={{
           sx: {
             borderRadius: '12px', // Consistent with style guide for dialogs

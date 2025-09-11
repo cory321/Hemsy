@@ -598,6 +598,7 @@ export default function ServiceSelectorModal({
         }}
         maxWidth="sm"
         fullWidth
+        disableScrollLock
       >
         <DialogTitle>
           Quick Add Service

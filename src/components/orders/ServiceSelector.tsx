@@ -539,6 +539,7 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
         }}
         maxWidth="sm"
         fullWidth
+        disableScrollLock
       >
         <DialogTitle>
           Quick Add Service

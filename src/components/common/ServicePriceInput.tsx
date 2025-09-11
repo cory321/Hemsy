@@ -159,6 +159,9 @@ const ServicePriceInput = forwardRef<HTMLInputElement, ServicePriceInputProps>(
             }
             disabled={disabled}
             sx={{ minWidth: 120 }}
+            MenuProps={{
+              disableScrollLock: true,
+            }}
           >
             <MenuItem value="flat_rate">flat rate</MenuItem>
             <MenuItem value="hour">per hour</MenuItem>

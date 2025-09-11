@@ -65,6 +65,7 @@ export default function PresetGarmentIconModal({
       }}
       fullWidth
       maxWidth="lg"
+      disableScrollLock
     >
       <DialogTitle>
         Choose Garment Icon

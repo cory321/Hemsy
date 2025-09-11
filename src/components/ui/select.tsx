@@ -51,6 +51,9 @@ export const Select = React.forwardRef<
           onChange={handleChange}
           displayEmpty
           IconComponent={ChevronDown}
+          MenuProps={{
+            disableScrollLock: true,
+          }}
           sx={{
             '& .MuiSelect-icon': {
               transition: 'transform 0.2s',

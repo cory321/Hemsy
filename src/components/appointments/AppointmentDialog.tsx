@@ -347,6 +347,7 @@ export function AppointmentDialog({
       maxWidth="sm"
       fullWidth
       data-testid="appointment-dialog"
+      disableScrollLock
     >
       <DialogTitle>
         {isReschedule
@@ -555,6 +556,9 @@ export function AppointmentDialog({
                   label="Duration"
                   value={duration}
                   onChange={(e) => setDuration(Number(e.target.value))}
+                  MenuProps={{
+                    disableScrollLock: true,
+                  }}
                 >
                   <MenuItem value={15}>15 min</MenuItem>
                   <MenuItem value={30}>30 min</MenuItem>
@@ -587,6 +591,9 @@ export function AppointmentDialog({
                   }))
                 }
                 required
+                MenuProps={{
+                  disableScrollLock: true,
+                }}
               >
                 <MenuItem value="consultation">Consultation</MenuItem>
                 <MenuItem value="fitting">Fitting</MenuItem>

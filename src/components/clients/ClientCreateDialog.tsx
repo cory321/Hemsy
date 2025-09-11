@@ -112,6 +112,7 @@ export default function ClientCreateDialog({
       onClose={internalClose}
       maxWidth={maxWidth}
       fullWidth
+      disableScrollLock
       PaperProps={{ component: 'form', onSubmit: handleSubmit(onSubmit) }}
     >
       <DialogTitle>

@@ -197,6 +197,7 @@ export default function MultiStepGarmentModal({
       maxWidth="md"
       fullWidth
       fullScreen={isMobile}
+      disableScrollLock
       PaperProps={{
         sx: {
           minHeight: isMobile ? '100vh' : '70vh',

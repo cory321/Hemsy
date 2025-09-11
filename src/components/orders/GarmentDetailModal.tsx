@@ -246,6 +246,7 @@ export default function GarmentDetailModal({
         onClose={onClose}
         maxWidth="md"
         fullWidth
+        disableScrollLock
         PaperProps={{
           sx: { minHeight: '60vh' },
         }}
