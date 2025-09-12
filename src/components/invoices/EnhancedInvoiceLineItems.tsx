@@ -81,6 +81,9 @@ interface EnhancedInvoiceLineItemsProps {
   orderStatus?: string | null | undefined; // Optional order status
   paidAt?: string | null | undefined; // Optional paid date
   onRecordPayment?: (() => void) | undefined; // Optional callback to trigger payment recording
+  orderSubtotal?: number; // Optional subtotal for full pricing breakdown
+  discountCents?: number; // Optional discount amount
+  taxCents?: number; // Optional tax amount
 }
 
 export default function EnhancedInvoiceLineItems({
@@ -94,6 +97,9 @@ export default function EnhancedInvoiceLineItems({
   orderStatus,
   paidAt,
   onRecordPayment,
+  orderSubtotal,
+  discountCents,
+  taxCents,
 }: EnhancedInvoiceLineItemsProps) {
   const router = useRouter();
   const [expandedGarments, setExpandedGarments] = useState<Set<string>>(
@@ -646,6 +652,72 @@ export default function EnhancedInvoiceLineItems({
             </TableCell>
           </TableRow>
 
+          {/* Show detailed pricing breakdown if discount or tax are provided */}
+          {(discountCents && discountCents > 0) ||
+          (taxCents && taxCents > 0) ? (
+            <>
+              {/* Subtotal */}
+              <TableRow>
+                <TableCell colSpan={3}>
+                  <Typography variant="body2">Subtotal</Typography>
+                </TableCell>
+                <TableCell align="right">
+                  <Typography variant="body2">
+                    {formatCentsAsCurrency(overallTotals.activeTotal)}
+                  </Typography>
+                </TableCell>
+              </TableRow>
+
+              {/* Discount */}
+              {discountCents && discountCents > 0 && (
+                <TableRow>
+                  <TableCell colSpan={3}>
+                    <Typography variant="body2" color="success.main">
+                      Discount
+                    </Typography>
+                  </TableCell>
+                  <TableCell align="right">
+                    <Typography variant="body2" color="success.main">
+                      -{formatCentsAsCurrency(discountCents)}
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              )}
+
+              {/* Tax */}
+              {taxCents && taxCents > 0 && (
+                <TableRow>
+                  <TableCell colSpan={3}>
+                    <Typography variant="body2">Tax</Typography>
+                  </TableCell>
+                  <TableCell align="right">
+                    <Typography variant="body2">
+                      {formatCentsAsCurrency(taxCents)}
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              )}
+
+              {/* Final Total */}
+              <TableRow sx={{ backgroundColor: 'action.hover' }}>
+                <TableCell colSpan={3}>
+                  <Typography variant="subtitle1" fontWeight="bold">
+                    Total
+                  </Typography>
+                </TableCell>
+                <TableCell align="right">
+                  <Typography variant="subtitle1" fontWeight="bold">
+                    {formatCentsAsCurrency(
+                      overallTotals.activeTotal -
+                        (discountCents || 0) +
+                        (taxCents || 0)
+                    )}
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            </>
+          ) : null}
+
           {overallTotals.removedCount > 0 && showRemoved && (
             <TableRow>
               <TableCell colSpan={3}>
@@ -783,6 +855,7 @@ export default function EnhancedInvoiceLineItems({
                 </Typography>
                 {paymentStatus !== 'paid' &&
                   paymentStatus !== 'overpaid' &&
+                  overallTotals.activeTotal > 0 &&
                   onRecordPayment && (
                     <Button
                       variant="contained"

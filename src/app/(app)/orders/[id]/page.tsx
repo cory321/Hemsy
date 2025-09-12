@@ -234,14 +234,14 @@ export default async function OrderDetailPage({
     }
   };
 
-  // Calculate the actual active total (excluding removed services)
+  // Calculate the actual active total (excluding removed services and applying discount)
   const calculateActiveTotal = () => {
     if (!lines || lines.length === 0) {
       return order?.total_cents || 0;
     }
 
     // Sum up only non-removed services
-    const activeServicesTotal = lines
+    const activeServicesSubtotal = lines
       .filter((service: any) => !service.is_removed)
       .reduce((sum: number, service: any) => {
         const lineTotal =
@@ -250,8 +250,23 @@ export default async function OrderDetailPage({
         return sum + lineTotal;
       }, 0);
 
-    return activeServicesTotal;
+    // Apply discount to get the actual total
+    const discountAmount = order?.discount_cents || 0;
+    const afterDiscount = activeServicesSubtotal - discountAmount;
+
+    // Calculate tax on the discounted amount
+    const taxAmount = order?.tax_cents || 0;
+
+    return afterDiscount + taxAmount;
   };
+
+  const activeSubtotal = lines
+    .filter((service: any) => !service.is_removed)
+    .reduce((sum: number, service: any) => {
+      const lineTotal =
+        service.line_total_cents || service.quantity * service.unit_price_cents;
+      return sum + lineTotal;
+    }, 0);
 
   const activeTotal = calculateActiveTotal();
 
@@ -272,20 +287,11 @@ export default async function OrderDetailPage({
 
   // Create a getPaymentStatus function that returns the expected format for the UI
   const getPaymentStatus = () => {
-    if (activeTotal === 0)
-      return {
-        label: 'No Charges',
-        color: 'default',
-        percentage: 0,
-        amountDue: 0,
-        isRefundRequired: false,
-      };
-
-    // Handle overpayment/refund situation
+    // Handle overpayment/refund situation first (covers zero total with payments)
     if (calcPaymentStatus === 'overpaid') {
       const creditAmount = -amountDue;
       return {
-        label: 'Refund Required',
+        label: 'Credit Balance',
         color: 'warning',
         percentage,
         amountDue: -creditAmount, // negative indicates credit
@@ -293,6 +299,16 @@ export default async function OrderDetailPage({
         creditAmount,
       };
     }
+
+    // Handle no charges case (but only if there are truly no payments)
+    if (activeTotal === 0 && netPaid === 0)
+      return {
+        label: 'No Charges',
+        color: 'default',
+        percentage: 0,
+        amountDue: 0,
+        isRefundRequired: false,
+      };
 
     if (calcPaymentStatus === 'paid')
       return {
@@ -532,9 +548,21 @@ export default async function OrderDetailPage({
                         height: 32,
                       }}
                     />
-                    <Typography variant="h6" fontWeight="600">
-                      {formatUSD(netPaid)} / {formatUSD(activeTotal)}
-                    </Typography>
+                    <Box>
+                      <Typography variant="h6" fontWeight="600">
+                        {formatUSD(netPaid)} / {formatUSD(activeTotal)}
+                      </Typography>
+                      {(order?.discount_cents || 0) > 0 && (
+                        <Typography
+                          variant="caption"
+                          color="success.main"
+                          sx={{ display: 'block' }}
+                        >
+                          Discount applied: -
+                          {formatUSD(order?.discount_cents || 0)}
+                        </Typography>
+                      )}
+                    </Box>
                     {activeTotal !== (order?.total_cents || 0) && (
                       <Typography
                         variant="body2"
@@ -685,6 +713,9 @@ export default async function OrderDetailPage({
           {...(client?.email && { clientEmail: client.email })}
           orderId={order?.id || ''}
           orderTotal={activeTotal}
+          orderSubtotal={activeSubtotal}
+          discountCents={order?.discount_cents || 0}
+          taxCents={order?.tax_cents || 0}
         />
       </Box>
     </Container>

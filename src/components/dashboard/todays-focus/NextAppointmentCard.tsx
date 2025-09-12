@@ -183,7 +183,7 @@ export function NextAppointmentCard({
       >
         {appointment.type}
       </Typography>
-      <Stack direction="row" spacing={1} flexWrap="wrap">
+      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
         {isMobileOrTablet ? (
           // Mobile/Tablet: Show call button
           <>

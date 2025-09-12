@@ -61,11 +61,15 @@ export function calculatePaymentStatus(
   const amountDue = totalAmount - netPaid;
 
   // Calculate percentage for progress indicators
-  const percentage = totalAmount > 0 ? (netPaid / totalAmount) * 100 : 0;
+  const percentage =
+    totalAmount > 0 ? (netPaid / totalAmount) * 100 : netPaid > 0 ? 100 : 0;
 
   // Determine payment status
   let paymentStatus: 'unpaid' | 'partial' | 'paid' | 'overpaid';
-  if (totalAmount === 0 || netPaid === 0) {
+  if (totalAmount === 0 && netPaid > 0) {
+    // Special case: no charges but payments exist = overpaid/credit
+    paymentStatus = 'overpaid';
+  } else if (totalAmount === 0 || netPaid === 0) {
     paymentStatus = 'unpaid';
   } else if (netPaid >= totalAmount) {
     paymentStatus = netPaid > totalAmount ? 'overpaid' : 'paid';

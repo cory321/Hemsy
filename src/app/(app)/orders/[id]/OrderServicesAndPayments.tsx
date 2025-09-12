@@ -92,6 +92,9 @@ interface OrderServicesAndPaymentsProps {
     percentage: number;
   };
   isPending?: boolean;
+  orderSubtotal?: number;
+  discountCents?: number;
+  taxCents?: number;
 }
 
 export default function OrderServicesAndPayments({
@@ -106,6 +109,9 @@ export default function OrderServicesAndPayments({
   onOptimisticRefund,
   optimisticPaymentStatus,
   isPending,
+  orderSubtotal,
+  discountCents,
+  taxCents,
 }: OrderServicesAndPaymentsProps) {
   const router = useRouter();
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
@@ -204,6 +210,9 @@ export default function OrderServicesAndPayments({
               {...(garmentServices[0]?.garments?.order_id && {
                 orderId: garmentServices[0].garments.order_id,
               })}
+              orderSubtotal={orderSubtotal}
+              discountCents={discountCents}
+              taxCents={taxCents}
             />
           </CardContent>
         </Card>

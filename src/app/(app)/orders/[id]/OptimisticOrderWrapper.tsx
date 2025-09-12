@@ -59,6 +59,9 @@ interface OptimisticOrderWrapperProps {
   clientEmail?: string;
   orderId: string;
   orderTotal: number;
+  orderSubtotal: number;
+  discountCents: number;
+  taxCents: number;
 }
 
 type OptimisticAction =
@@ -108,6 +111,9 @@ export default function OptimisticOrderWrapper({
   clientEmail,
   orderId,
   orderTotal,
+  orderSubtotal,
+  discountCents,
+  taxCents,
 }: OptimisticOrderWrapperProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -208,6 +214,10 @@ export default function OptimisticOrderWrapper({
       // Pass payment status for display
       optimisticPaymentStatus={paymentStatus}
       isPending={isPending}
+      // Pass order pricing details
+      orderSubtotal={orderSubtotal}
+      discountCents={discountCents}
+      taxCents={taxCents}
     />
   );
 }
