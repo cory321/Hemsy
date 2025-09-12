@@ -30,33 +30,8 @@ const refinedColors = {
   },
 };
 
-// Fallback activities for when data is loading or empty
-const fallbackActivities: ActivityItem[] = [
-  {
-    id: 'fallback-1',
-    type: 'payment',
-    text: 'Payment received',
-    detail: '$150 from Lisa C.',
-    timestamp: new Date(),
-  },
-  {
-    id: 'fallback-2',
-    type: 'appointment',
-    text: 'Appointment confirmed',
-    detail: 'Sarah J. at 10:30 AM',
-    timestamp: new Date(),
-  },
-  {
-    id: 'fallback-3',
-    type: 'garment',
-    text: 'Garment completed',
-    detail: 'Evening dress for Amy R.',
-    timestamp: new Date(),
-  },
-];
-
 export function RecentActivity({
-  activities = fallbackActivities,
+  activities = [],
   loading = false,
 }: RecentActivityProps) {
   if (loading) {
@@ -79,71 +54,77 @@ export function RecentActivity({
     );
   }
 
-  const displayActivities =
-    activities.length > 0 ? activities : fallbackActivities;
-
   return (
     <Card elevation={0} sx={{ border: '1px solid #e0e0e0' }}>
       <CardContent>
         <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
           Recent Activity
         </Typography>
-        <Stack spacing={2}>
-          {displayActivities.map((activity) => (
-            <Box key={activity.id}>
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'flex-start',
-                  mb: 0.5,
-                }}
-              >
-                <Box sx={{ flex: 1, mr: 1 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    {activity.text}
-                  </Typography>
-                </Box>
-                <Chip
-                  size="small"
-                  label={activity.type}
+        {activities.length === 0 ? (
+          <Typography
+            variant="body2"
+            sx={{ color: 'text.secondary', textAlign: 'center', py: 3 }}
+          >
+            No recent activity yet. Start by creating your first order!
+          </Typography>
+        ) : (
+          <Stack spacing={2}>
+            {activities.map((activity) => (
+              <Box key={activity.id}>
+                <Box
                   sx={{
-                    height: 16,
-                    fontSize: '0.65rem',
-                    bgcolor: refinedColors.type[activity.type],
-                    color: 'white',
-                    flexShrink: 0,
-                    '& .MuiChip-label': {
-                      px: 0.75,
-                    },
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    mb: 0.5,
                   }}
-                />
+                >
+                  <Box sx={{ flex: 1, mr: 1 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                      {activity.text}
+                    </Typography>
+                  </Box>
+                  <Chip
+                    size="small"
+                    label={activity.type}
+                    sx={{
+                      height: 16,
+                      fontSize: '0.65rem',
+                      bgcolor: refinedColors.type[activity.type],
+                      color: 'white',
+                      flexShrink: 0,
+                      '& .MuiChip-label': {
+                        px: 0.75,
+                      },
+                    }}
+                  />
+                </Box>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: refinedColors.text.tertiary,
+                    display: 'block',
+                    mb: 0.5,
+                  }}
+                >
+                  {activity.detail}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: refinedColors.text.tertiary,
+                    fontSize: '0.7rem',
+                    fontStyle: 'italic',
+                  }}
+                >
+                  {formatDistanceToNow(activity.timestamp, {
+                    addSuffix: true,
+                  })}
+                </Typography>
               </Box>
-              <Typography
-                variant="caption"
-                sx={{
-                  color: refinedColors.text.tertiary,
-                  display: 'block',
-                  mb: 0.5,
-                }}
-              >
-                {activity.detail}
-              </Typography>
-              <Typography
-                variant="caption"
-                sx={{
-                  color: refinedColors.text.tertiary,
-                  fontSize: '0.7rem',
-                  fontStyle: 'italic',
-                }}
-              >
-                {formatDistanceToNow(activity.timestamp, {
-                  addSuffix: true,
-                })}
-              </Typography>
-            </Box>
-          ))}
-        </Stack>
+            ))}
+          </Stack>
+        )}
       </CardContent>
     </Card>
   );

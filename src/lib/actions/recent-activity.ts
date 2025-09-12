@@ -40,9 +40,10 @@ export async function getRecentActivity(
         amount_cents,
         payment_method,
         processed_at,
-        invoice:invoices (
-          order:orders (
+        invoice:invoices!inner (
+          order:orders!inner (
             order_number,
+            shop_id,
             client:clients (
               first_name,
               last_name
@@ -92,8 +93,9 @@ export async function getRecentActivity(
         name,
         stage,
         updated_at,
-        order:orders (
+        order:orders!inner (
           order_number,
+          shop_id,
           client:clients (
             first_name,
             last_name
@@ -337,7 +339,8 @@ export async function getRecentActivity(
         id,
         first_name,
         last_name,
-        created_at
+        created_at,
+        shop_id
       `
       )
       .eq('shop_id', shopId)
@@ -370,29 +373,8 @@ export async function getRecentActivity(
     return sortedActivities;
   } catch (error) {
     console.error('Error fetching recent activity:', error);
-    // Return fallback dummy data if there's an error
-    return [
-      {
-        id: 'fallback-1',
-        type: 'payment',
-        text: 'Payment received',
-        detail: '$150 from Lisa C.',
-        timestamp: new Date(),
-      },
-      {
-        id: 'fallback-2',
-        type: 'appointment',
-        text: 'Appointment confirmed',
-        detail: 'Sarah J. at 10:30 AM',
-        timestamp: new Date(),
-      },
-      {
-        id: 'fallback-3',
-        type: 'garment',
-        text: 'Garment completed',
-        detail: 'Evening dress for Amy R.',
-        timestamp: new Date(),
-      },
-    ];
+    // Return empty array on error instead of dummy data
+    // This prevents confusion for new users who should see no activity
+    return [];
   }
 }
