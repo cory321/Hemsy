@@ -98,6 +98,9 @@ export default function GarmentServicesManager() {
   const [restoringServiceId, setRestoringServiceId] = useState<string | null>(
     null
   );
+  const [deletingServiceId, setDeletingServiceId] = useState<string | null>(
+    null
+  );
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [editPrice, setEditPrice] = useState('0.00');
@@ -248,15 +251,17 @@ export default function GarmentServicesManager() {
   const handleRemoveService = async () => {
     if (!deleteConfirmation.serviceId) return;
 
-    setLoading(true);
+    setDeletingServiceId(deleteConfirmation.serviceId);
 
     // Close dialog immediately
     setDeleteConfirmation({ open: false, serviceId: null, serviceName: null });
 
-    // Optimistic update happens inside removeService
-    await removeService(deleteConfirmation.serviceId);
-
-    setLoading(false);
+    try {
+      // Optimistic update happens inside removeService
+      await removeService(deleteConfirmation.serviceId);
+    } finally {
+      setDeletingServiceId(null);
+    }
   };
 
   const openDeleteConfirmation = (service: Service) => {
@@ -360,7 +365,8 @@ export default function GarmentServicesManager() {
                   isGarmentDone ||
                   isOrderCancelled ||
                   togglingServiceId !== null ||
-                  restoringServiceId !== null
+                  restoringServiceId !== null ||
+                  deletingServiceId !== null
                 }
               >
                 Add Service
@@ -395,12 +401,14 @@ export default function GarmentServicesManager() {
             <List>
               {garmentServices.map((service: Service, index: number) => {
                 const isRemoved = !!service.is_removed;
+                const isBeingDeleted = deletingServiceId === service.id;
+                const isBeingRestored = restoringServiceId === service.id;
                 return (
                   <ListItem
                     key={service.id}
                     divider={index < garmentServices.length - 1}
                     sx={{
-                      opacity: isRemoved ? 0.6 : 1,
+                      opacity: isRemoved && !isBeingRestored ? 0.6 : 1,
                       backgroundColor:
                         service.payment_status === 'refunded'
                           ? 'error.50'
@@ -418,111 +426,121 @@ export default function GarmentServicesManager() {
                       <Box
                         sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
                       >
-                        {isRemoved ? (
+                        {(isRemoved || isBeingRestored) && !isBeingDeleted ? (
                           <>
-                            {service.removal_reason && (
+                            {service.removal_reason && !isBeingRestored && (
                               <Tooltip
                                 title={`Removed: ${service.removal_reason}`}
                               >
                                 <InfoIcon fontSize="small" color="action" />
                               </Tooltip>
                             )}
-                            <Tooltip
-                              title={
-                                isGarmentDone
-                                  ? 'Cannot restore services for completed garments'
-                                  : isOrderCancelled
-                                    ? 'Cannot restore services for cancelled orders'
-                                    : 'Restore service'
-                              }
-                            >
-                              <span>
-                                <IconButton
-                                  size="small"
-                                  onClick={async () => {
-                                    setRestoringServiceId(service.id);
-                                    try {
-                                      await restoreService(service.id);
-                                    } finally {
-                                      setRestoringServiceId(null);
+                            {isBeingRestored ? (
+                              <IconButton
+                                size="small"
+                                disabled={true}
+                                aria-label="Restoring service"
+                              >
+                                <CircularProgress size={20} />
+                              </IconButton>
+                            ) : (
+                              <Tooltip
+                                title={
+                                  isGarmentDone
+                                    ? 'Cannot restore services for completed garments'
+                                    : isOrderCancelled
+                                      ? 'Cannot restore services for cancelled orders'
+                                      : 'Restore service'
+                                }
+                              >
+                                <span>
+                                  <IconButton
+                                    size="small"
+                                    onClick={async () => {
+                                      setRestoringServiceId(service.id);
+                                      try {
+                                        await restoreService(service.id);
+                                      } finally {
+                                        setRestoringServiceId(null);
+                                      }
+                                    }}
+                                    disabled={
+                                      loading ||
+                                      isGarmentDone ||
+                                      isOrderCancelled ||
+                                      togglingServiceId !== null ||
+                                      restoringServiceId === service.id ||
+                                      deletingServiceId !== null
                                     }
-                                  }}
-                                  disabled={
-                                    loading ||
-                                    isGarmentDone ||
-                                    isOrderCancelled ||
-                                    togglingServiceId !== null ||
-                                    restoringServiceId === service.id
-                                  }
-                                  aria-label="Restore service"
-                                >
-                                  {restoringServiceId === service.id ? (
-                                    <CircularProgress size={20} />
-                                  ) : (
+                                    aria-label="Restore service"
+                                  >
                                     <RestoreFromTrashIcon fontSize="small" />
-                                  )}
-                                </IconButton>
-                              </span>
-                            </Tooltip>
+                                  </IconButton>
+                                </span>
+                              </Tooltip>
+                            )}
                           </>
                         ) : (
                           <>
                             {/* Complete/Incomplete button - disabled if refunded */}
-                            {!service.payment_status?.includes('refund') && (
-                              <>
-                                {service.is_done && (
-                                  <Chip
-                                    label="Completed"
+                            {!service.payment_status?.includes('refund') &&
+                              !isBeingRestored && (
+                                <>
+                                  {service.is_done && (
+                                    <Chip
+                                      label="Completed"
+                                      size="small"
+                                      color="success"
+                                      sx={{ mr: 1 }}
+                                    />
+                                  )}
+                                  <Button
                                     size="small"
-                                    color="success"
-                                    sx={{ mr: 1 }}
-                                  />
-                                )}
-                                <Button
-                                  size="small"
-                                  variant={
-                                    service.is_done ? 'outlined' : 'contained'
-                                  }
-                                  onClick={async () => {
-                                    setTogglingServiceId(service.id);
-                                    try {
-                                      await toggleServiceComplete(
-                                        service.id,
-                                        !service.is_done
-                                      );
-                                    } finally {
-                                      setTogglingServiceId(null);
+                                    variant={
+                                      service.is_done ? 'outlined' : 'contained'
                                     }
-                                  }}
-                                  disabled={
-                                    loading ||
-                                    isGarmentDone ||
-                                    isOrderCancelled ||
-                                    togglingServiceId === service.id ||
-                                    restoringServiceId !== null
-                                  }
-                                  startIcon={
-                                    togglingServiceId === service.id ? (
-                                      <CircularProgress size={16} />
-                                    ) : service.is_done ? (
-                                      <CheckCircleIcon />
-                                    ) : (
-                                      <RadioButtonUncheckedIcon />
-                                    )
-                                  }
-                                  sx={{ minWidth: '140px' }}
-                                >
-                                  {togglingServiceId === service.id
-                                    ? 'Updating...'
-                                    : service.is_done
-                                      ? 'Mark Incomplete'
-                                      : 'Mark Complete'}
-                                </Button>
-                              </>
-                            )}
+                                    onClick={async () => {
+                                      setTogglingServiceId(service.id);
+                                      try {
+                                        await toggleServiceComplete(
+                                          service.id,
+                                          !service.is_done
+                                        );
+                                      } finally {
+                                        setTogglingServiceId(null);
+                                      }
+                                    }}
+                                    disabled={
+                                      loading ||
+                                      isGarmentDone ||
+                                      isOrderCancelled ||
+                                      togglingServiceId === service.id ||
+                                      restoringServiceId !== null ||
+                                      deletingServiceId !== null
+                                    }
+                                    startIcon={
+                                      togglingServiceId === service.id ? (
+                                        <CircularProgress size={16} />
+                                      ) : service.is_done ? (
+                                        <CheckCircleIcon />
+                                      ) : (
+                                        <RadioButtonUncheckedIcon />
+                                      )
+                                    }
+                                    sx={{ minWidth: '140px' }}
+                                  >
+                                    {togglingServiceId === service.id
+                                      ? 'Updating...'
+                                      : service.is_done
+                                        ? 'Mark Incomplete'
+                                        : 'Mark Complete'}
+                                  </Button>
+                                </>
+                              )}
 
                             {/* Edit button - show warning if locked or completed */}
-                            {!isRemoved &&
+                            {(!isRemoved || isBeingDeleted) &&
+                            !isBeingRestored &&
                             !service.is_locked &&
                             !service.is_done ? (
                               <IconButton
@@ -537,14 +555,16 @@ export default function GarmentServicesManager() {
                                   isGarmentDone ||
                                   isOrderCancelled ||
                                   togglingServiceId !== null ||
-                                  restoringServiceId !== null
+                                  restoringServiceId !== null ||
+                                  deletingServiceId !== null
                                 }
                                 size="small"
                               >
                                 <EditIcon fontSize="small" />
                               </IconButton>
                             ) : (
-                              !isRemoved &&
+                              (!isRemoved || isBeingDeleted) &&
+                              !isBeingRestored &&
                               (service.is_locked || service.is_done) && (
                                 <Tooltip
                                   title={
@@ -567,7 +587,8 @@ export default function GarmentServicesManager() {
                                         isOrderCancelled ||
                                         !!service.is_done ||
                                         togglingServiceId !== null ||
-                                        restoringServiceId !== null
+                                        restoringServiceId !== null ||
+                                        deletingServiceId !== null
                                       }
                                       size="small"
                                       color={
@@ -586,7 +607,8 @@ export default function GarmentServicesManager() {
                             )}
 
                             {/* Delete button - show warning if locked or completed */}
-                            {!isRemoved &&
+                            {(!isRemoved || isBeingDeleted) &&
+                            !isBeingRestored &&
                             !service.is_locked &&
                             !service.is_done ? (
                               <IconButton
@@ -596,14 +618,20 @@ export default function GarmentServicesManager() {
                                   isGarmentDone ||
                                   isOrderCancelled ||
                                   togglingServiceId !== null ||
-                                  restoringServiceId !== null
+                                  restoringServiceId !== null ||
+                                  deletingServiceId === service.id
                                 }
                                 size="small"
                               >
-                                <DeleteIcon fontSize="small" />
+                                {deletingServiceId === service.id ? (
+                                  <CircularProgress size={20} />
+                                ) : (
+                                  <DeleteIcon fontSize="small" />
+                                )}
                               </IconButton>
                             ) : (
-                              !isRemoved &&
+                              (!isRemoved || isBeingDeleted) &&
+                              !isBeingRestored &&
                               (service.is_locked || service.is_done) && (
                                 <Tooltip
                                   title={
@@ -638,6 +666,7 @@ export default function GarmentServicesManager() {
                     >
                       {service.is_done &&
                         !isRemoved &&
+                        !isBeingRestored &&
                         !service.payment_status?.includes('refund') && (
                           <CheckCircleIcon
                             color="success"
@@ -652,18 +681,26 @@ export default function GarmentServicesManager() {
                               display: 'flex',
                               alignItems: 'center',
                               gap: 1,
-                              opacity: service.is_done && !isRemoved ? 0.6 : 1,
+                              opacity:
+                                service.is_done &&
+                                !isRemoved &&
+                                !isBeingRestored
+                                  ? 0.6
+                                  : 1,
                             }}
                           >
                             <Typography
                               component="span"
                               sx={{
-                                textDecoration: isRemoved
-                                  ? 'line-through'
-                                  : 'none',
-                                color: isRemoved
-                                  ? 'text.secondary'
-                                  : 'text.primary',
+                                textDecoration:
+                                  isRemoved && !isBeingRestored
+                                    ? 'line-through'
+                                    : 'none',
+                                color:
+                                  isRemoved && !isBeingRestored
+                                    ? 'text.secondary'
+                                    : 'text.primary',
+                                opacity: 1,
                               }}
                             >
                               {service.name}
@@ -678,14 +715,20 @@ export default function GarmentServicesManager() {
                               color="text.secondary"
                               component="span"
                               sx={{
-                                textDecoration: isRemoved
-                                  ? 'line-through'
-                                  : 'none',
-                                color: isRemoved
-                                  ? 'text.secondary'
-                                  : 'text.secondary',
+                                textDecoration:
+                                  isRemoved && !isBeingRestored
+                                    ? 'line-through'
+                                    : 'none',
+                                color:
+                                  isRemoved && !isBeingRestored
+                                    ? 'text.secondary'
+                                    : 'text.secondary',
                                 opacity:
-                                  service.is_done && !isRemoved ? 0.6 : 1,
+                                  service.is_done &&
+                                  !isRemoved &&
+                                  !isBeingRestored
+                                    ? 0.6
+                                    : 1,
                               }}
                             >
                               {service.unit === 'flat_rate'
@@ -739,6 +782,7 @@ export default function GarmentServicesManager() {
         onClose={() => setShowAddDialog(false)}
         maxWidth="sm"
         fullWidth
+        disableScrollLock
       >
         <DialogTitle>Add Service</DialogTitle>
         <DialogContent>
@@ -875,6 +919,26 @@ export default function GarmentServicesManager() {
                     });
                   }
                 }}
+                componentsProps={{
+                  popper: {
+                    disablePortal: false,
+                    modifiers: [
+                      {
+                        name: 'preventOverflow',
+                        enabled: true,
+                      },
+                    ],
+                    sx: {
+                      zIndex: 1300,
+                    },
+                  },
+                  paper: {
+                    sx: {
+                      // Ensure the dropdown doesn't cause layout shift
+                      overflow: 'auto',
+                    },
+                  },
+                }}
                 renderInput={(params) => {
                   const { InputProps, inputProps, id, ...rest } = params as any;
                   return (
@@ -918,6 +982,7 @@ export default function GarmentServicesManager() {
               loading ||
               togglingServiceId !== null ||
               restoringServiceId !== null ||
+              deletingServiceId !== null ||
               (newService.isCustom ? !newService.name : !newService.serviceId)
             }
           >
@@ -932,6 +997,7 @@ export default function GarmentServicesManager() {
         onClose={() => setEditingService(null)}
         maxWidth="sm"
         fullWidth
+        disableScrollLock
       >
         <DialogTitle>Edit Service</DialogTitle>
         {editingService && (
@@ -1003,7 +1069,8 @@ export default function GarmentServicesManager() {
             disabled={
               loading ||
               togglingServiceId !== null ||
-              restoringServiceId !== null
+              restoringServiceId !== null ||
+              deletingServiceId !== null
             }
           >
             Save Changes
@@ -1050,7 +1117,8 @@ export default function GarmentServicesManager() {
             disabled={
               loading ||
               togglingServiceId !== null ||
-              restoringServiceId !== null
+              restoringServiceId !== null ||
+              deletingServiceId !== null
             }
           >
             Remove

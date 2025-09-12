@@ -313,7 +313,7 @@ export function ClientAppointmentsSectionV2({
                 },
               }}
             >
-              New Appointment
+              Schedule New Appointment
             </Button>
           </Box>
 

@@ -21,6 +21,7 @@ import {
   canCreateAppointment,
   isPastDateTime,
   canCreateAppointmentAt,
+  getDurationMinutes,
 } from '@/lib/utils/calendar';
 import AddIcon from '@mui/icons-material/Add';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -52,7 +53,7 @@ export function WeekView({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const weekDays = generateWeekDays(currentDate);
-  const SLOT_HEIGHT_PX = 80; // 30-minute slot height (ensures 15-min blocks are readable)
+  const SLOT_HEIGHT_PX = 200; // 30-minute slot height (further increased to fully show all data for 15-min appointments)
 
   // Convert appointments to display format with timezone support
   const { appointments: displayAppointments } =
@@ -235,11 +236,47 @@ export function WeekView({
                   const isPast = isPastDate(day);
                   const canCreate = canCreateAppointment(day, shopHours);
                   const isPastSlot = isPastDateTime(day, time);
-                  const canClickTimeSlot =
-                    onTimeSlotClick &&
-                    slotAppointments.length === 0 &&
+
+                  // Check if we have a 15-minute appointment in this slot
+                  const has15MinAppointment = slotAppointments.some((apt) => {
+                    const duration = getDurationMinutes(
+                      apt.start_time,
+                      apt.end_time
+                    );
+                    return duration === 15;
+                  });
+
+                  // Determine if we can add an appointment
+                  const canAddInSlot =
                     canCreate &&
-                    !isPastSlot;
+                    !isPastSlot &&
+                    (slotAppointments.length === 0 || has15MinAppointment);
+
+                  // Determine where to position the add button if we have a 15-min appointment
+                  let addButtonPosition = null;
+                  if (has15MinAppointment && slotAppointments.length === 1) {
+                    const apt = slotAppointments[0];
+                    if (apt) {
+                      const [aptH, aptM] = apt.displayStartTime.split(':');
+                      const aptStartMinutes =
+                        parseInt(aptH || '0', 10) * 60 +
+                        parseInt(aptM || '0', 10);
+                      const slotParts = time.split(':');
+                      const slotHour = parseInt(slotParts[0] || '0', 10);
+                      const slotMinute = parseInt(slotParts[1] || '0', 10);
+                      const slotStartMinutes = slotHour * 60 + slotMinute;
+
+                      // If appointment starts at the beginning of the slot, add button goes to bottom half
+                      if (aptStartMinutes === slotStartMinutes) {
+                        addButtonPosition = 'bottom';
+                      } else {
+                        // Otherwise, add button goes to top half
+                        addButtonPosition = 'top';
+                      }
+                    }
+                  }
+
+                  const canClickTimeSlot = onTimeSlotClick && canAddInSlot;
 
                   return (
                     <Box
@@ -265,13 +302,44 @@ export function WeekView({
                               }
                             : undefined,
                       }}
-                      onClick={() => {
+                      onClick={(e) => {
                         if (canClickTimeSlot) {
-                          onTimeSlotClick(day, time);
+                          // For 15-min appointments, determine the time based on click position
+                          if (
+                            has15MinAppointment &&
+                            slotAppointments.length === 1
+                          ) {
+                            const rect =
+                              e.currentTarget.getBoundingClientRect();
+                            const clickY = e.clientY - rect.top;
+                            const clickInBottomHalf = clickY > rect.height / 2;
+
+                            const slotParts = time.split(':');
+                            const slotHour = parseInt(slotParts[0] || '0', 10);
+
+                            // Determine the start time based on where they clicked
+                            let adjustedTime = time;
+                            if (
+                              addButtonPosition === 'bottom' &&
+                              clickInBottomHalf
+                            ) {
+                              // Existing appointment is in top half, clicked bottom half
+                              adjustedTime = `${slotHour.toString().padStart(2, '0')}:15`;
+                            } else if (
+                              addButtonPosition === 'top' &&
+                              !clickInBottomHalf
+                            ) {
+                              // Existing appointment is in bottom half, clicked top half
+                              adjustedTime = time;
+                            }
+                            onTimeSlotClick(day, adjustedTime);
+                          } else {
+                            onTimeSlotClick(day, time);
+                          }
                         }
                       }}
                     >
-                      {/* Add appointment hint for empty slots */}
+                      {/* Add appointment hint for empty slots or slots with 15-min appointments */}
                       {canClickTimeSlot && !isMobile && (
                         <Box
                           className="add-appointment-hint"
@@ -279,16 +347,21 @@ export function WeekView({
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            height: '100%',
+                            height: has15MinAppointment ? '50%' : '100%',
                             gap: 0.5,
                             opacity: 0,
                             transition: 'opacity 0.2s',
                             pointerEvents: 'none',
                             position: 'absolute',
-                            top: 0,
+                            top: addButtonPosition === 'bottom' ? '50%' : 0,
                             left: 0,
                             right: 0,
+                            bottom: addButtonPosition === 'top' ? '50%' : 0,
                             zIndex: 0,
+                            backgroundColor: alpha(
+                              theme.palette.background.paper,
+                              0.7
+                            ),
                           }}
                         >
                           <AddIcon fontSize="small" color="action" />
@@ -318,9 +391,12 @@ export function WeekView({
                     ((endHour - startHour) * 60 + (endMinute - startMinute)) *
                     (SLOT_HEIGHT_PX / 30);
                   const pxPerMinute = SLOT_HEIGHT_PX / 30;
-                  const density =
-                    height < 48 ? 'compact' : height < 96 ? 'cozy' : 'regular';
+                  // Always use regular layout for consistent typography
+                  const density = 'regular';
                   const color = getAppointmentColor(appointment.type);
+                  const is15MinAppointment =
+                    (endHour - startHour) * 60 + (endMinute - startMinute) ===
+                    15;
 
                   return (
                     <Paper
@@ -354,6 +430,7 @@ export function WeekView({
                           flex: 1,
                           px: 0.75,
                           py: 0.5,
+                          overflow: 'hidden',
                         }}
                       >
                         {/* Status badge */}
@@ -379,8 +456,7 @@ export function WeekView({
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
-                            fontSize:
-                              density === 'regular' ? '0.8rem' : '0.7rem',
+                            fontSize: '0.8rem',
                             lineHeight: 1.2,
                             pr: 2.5,
                           }}
@@ -403,8 +479,8 @@ export function WeekView({
                           {formatTime(appointment.end_time)}
                         </Typography>
 
-                        {/* Type only for larger heights */}
-                        {density === 'regular' && (
+                        {/* Type - show for all except 15-minute appointments */}
+                        {!is15MinAppointment && (
                           <Typography
                             variant="caption"
                             sx={{

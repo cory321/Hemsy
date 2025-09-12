@@ -2,6 +2,7 @@ import { getGarmentById } from '@/lib/actions/orders';
 import { getShopHours } from '@/lib/actions/shop-hours';
 import { getCalendarSettings } from '@/lib/actions/static-data-cache';
 import { ensureUserAndShop } from '@/lib/auth/user-shop';
+import { prefetchGarmentBalanceStatus } from '@/lib/actions/garment-balance-check';
 import { notFound } from 'next/navigation';
 import GarmentDetailPageClient from './GarmentDetailPageClient';
 
@@ -44,17 +45,22 @@ export default async function GarmentDetailPage({
     buffer_time_minutes: 0,
     default_appointment_duration: 30,
   };
+  let balanceStatus = null;
 
   try {
     // Use optimized ensureUserAndShop instead of manual queries (single call)
     const { user, shop } = await ensureUserAndShop();
     shopData = shop;
 
-    // Fetch shop hours and calendar settings in parallel using cached functions
-    const [rawShopHours, rawCalendarSettings] = await Promise.all([
-      getShopHours(),
-      getCalendarSettings(shop.id),
-    ]);
+    // Fetch shop hours, calendar settings, and balance status in parallel using cached functions
+    const [rawShopHours, rawCalendarSettings, rawBalanceStatus] =
+      await Promise.all([
+        getShopHours(),
+        getCalendarSettings(shop.id),
+        garment.stage === 'Ready For Pickup'
+          ? prefetchGarmentBalanceStatus(id, shop.id)
+          : Promise.resolve(null),
+      ]);
 
     shopHours = rawShopHours || [];
     calendarSettings = {
@@ -62,6 +68,25 @@ export default async function GarmentDetailPage({
       default_appointment_duration:
         rawCalendarSettings?.default_appointment_duration ?? 30,
     };
+
+    // Process balance status if available
+    if (rawBalanceStatus && rawBalanceStatus.success) {
+      balanceStatus = {
+        isLastGarment: rawBalanceStatus.isLastGarment || false,
+        hasOutstandingBalance: rawBalanceStatus.hasOutstandingBalance || false,
+        balanceDue: rawBalanceStatus.balanceDue || 0,
+        orderNumber: rawBalanceStatus.orderNumber || '',
+        orderTotal: rawBalanceStatus.orderTotal || 0,
+        paidAmount: rawBalanceStatus.paidAmount || 0,
+        clientName: rawBalanceStatus.clientName || '',
+        ...(rawBalanceStatus.invoiceId && {
+          invoiceId: rawBalanceStatus.invoiceId,
+        }),
+        ...(rawBalanceStatus.clientEmail && {
+          clientEmail: rawBalanceStatus.clientEmail,
+        }),
+      };
+    }
   } catch (error) {
     console.error('Error fetching shop data:', error);
     // Continue without shop data - appointment functionality will be disabled
@@ -70,6 +95,7 @@ export default async function GarmentDetailPage({
   return (
     <GarmentDetailPageClient
       garment={garment}
+      initialBalanceStatus={balanceStatus}
       shopId={shopData?.id}
       shopHours={shopHours.map((hour: any) => ({
         day_of_week: hour.day_of_week,

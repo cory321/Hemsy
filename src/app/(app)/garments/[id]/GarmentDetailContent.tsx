@@ -8,6 +8,7 @@ import GarmentImageSection from './GarmentImageSection';
 import GarmentRightColumn from './GarmentRightColumn';
 import ReadyForPickupBanner from '@/components/garments/ReadyForPickupBanner';
 import CancelledOrderBanner from '@/components/garments/CancelledOrderBanner';
+import BalanceConfirmationDialog from '@/components/garments/BalanceConfirmationDialog';
 import { useGarment } from '@/contexts/GarmentContext';
 import GarmentCompletionCelebration from '@/components/garments/GarmentCompletionCelebration';
 
@@ -40,7 +41,14 @@ export default function GarmentDetailContent({
   from,
   orderId,
 }: GarmentDetailContentProps) {
-  const { garment } = useGarment();
+  const {
+    garment,
+    balanceDialogOpen,
+    balanceCheckData,
+    closeBalanceDialog,
+    handlePickupWithoutPayment,
+    handlePaymentAndPickup,
+  } = useGarment();
 
   return (
     <>
@@ -94,6 +102,24 @@ export default function GarmentDetailContent({
 
       {/* TODO: Services and Payment History sections will be added once database schema is updated */}
       {/* For now, these sections are commented out due to database schema issues */}
+
+      {/* Balance Confirmation Dialog */}
+      {balanceCheckData && (
+        <BalanceConfirmationDialog
+          open={balanceDialogOpen}
+          onClose={closeBalanceDialog}
+          onConfirmWithoutPayment={handlePickupWithoutPayment}
+          onPaymentSuccess={handlePaymentAndPickup}
+          balanceDue={balanceCheckData.balanceDue}
+          orderTotal={balanceCheckData.orderTotal}
+          paidAmount={balanceCheckData.paidAmount}
+          orderNumber={balanceCheckData.orderNumber}
+          clientName={balanceCheckData.clientName}
+          orderId={garment.order_id || ''}
+          invoiceId={balanceCheckData.invoiceId}
+          clientEmail={balanceCheckData.clientEmail}
+        />
+      )}
     </>
   );
 }

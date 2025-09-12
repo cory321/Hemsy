@@ -354,7 +354,7 @@ export function AppointmentDialog({
           ? 'Reschedule Appointment'
           : appointment
             ? 'Edit Appointment'
-            : 'New Appointment'}
+            : 'Schedule New Appointment'}
         <IconButton
           aria-label="close"
           onClick={onClose}

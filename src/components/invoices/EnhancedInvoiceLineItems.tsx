@@ -154,7 +154,10 @@ export default function EnhancedInvoiceLineItems({
   // Calculate payment totals and amount due using shared utility
   const paymentCalc = calculatePaymentStatus(
     overallTotals.activeTotal,
-    (payments as PaymentInfo[]) || []
+    (payments?.map((p) => ({
+      ...p,
+      refunded_amount_cents: (p as any).refunded_amount_cents || 0,
+    })) as PaymentInfo[]) || []
   );
 
   const {

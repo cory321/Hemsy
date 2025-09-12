@@ -125,8 +125,8 @@ describe('DayView - Appointment spanning across 30-minute rows', () => {
     const first = await screen.findByTestId('dayview-appointment-apt-60');
     const second = await screen.findByTestId('dayview-appointment-apt-90');
 
-    // 30-minute row height is 80px, pixels per minute = 80/30
-    const pxPerMinute = 80 / 30;
+    // 30-minute row height is 120px, pixels per minute = 120/30
+    const pxPerMinute = 120 / 30;
 
     const firstHeight = parseFloat(first.getAttribute('data-height') || '0');
     const firstTop = parseFloat(first.getAttribute('data-top') || '0');

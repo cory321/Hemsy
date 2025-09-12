@@ -126,7 +126,7 @@ describe('Dashboard Appointment Dialog', () => {
     });
 
     // Check that the dialog title is present
-    expect(screen.getByText('New Appointment')).toBeInTheDocument();
+    expect(screen.getByText('Schedule New Appointment')).toBeInTheDocument();
 
     // Check that the start time select is present
     await waitFor(() => {

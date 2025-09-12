@@ -151,6 +151,7 @@ describe('calculatePaymentStatus', () => {
       {
         id: '16f4e8fd-00c9-4604-afbe-8c77d89531c4',
         amount_cents: -5000,
+        refunded_amount_cents: 0,
         status: 'succeeded',
         type: 'refund',
       },

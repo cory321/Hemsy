@@ -6,7 +6,7 @@
 export interface PaymentInfo {
   id: string;
   amount_cents: number;
-  refunded_amount_cents?: number;
+  refunded_amount_cents: number;
   status: string;
   type?: 'payment' | 'refund'; // Optional to maintain backward compatibility
 }

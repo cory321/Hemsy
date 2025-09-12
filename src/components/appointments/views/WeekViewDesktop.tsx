@@ -164,7 +164,7 @@ export function WeekViewDesktop({
   const currentTimeMinutes =
     currentTime.getHours() * 60 + currentTime.getMinutes();
   const currentTimePosition =
-    (currentTimeMinutes - gridStartHour * 60) * (40 / 30); // 40px per 30 minutes
+    (currentTimeMinutes - gridStartHour * 60) * (100 / 30); // 100px per 30 minutes (further increased to fully show all data)
 
   return (
     <Box
@@ -260,7 +260,7 @@ export function WeekViewDesktop({
           sx={{
             display: 'flex',
             position: 'relative',
-            minHeight: timeSlots.length * 40,
+            minHeight: timeSlots.length * 100,
           }}
         >
           {/* Time labels */}
@@ -269,7 +269,7 @@ export function WeekViewDesktop({
               <Box
                 key={time}
                 sx={{
-                  height: 40,
+                  height: 100,
                   px: 2,
                   display: 'flex',
                   alignItems: 'center',
@@ -349,21 +349,54 @@ export function WeekViewDesktop({
 
                   const canCreate = canCreateAppointment(day, shopHours);
                   const isPastSlot = isPastDateTime(day, time);
-                  const canClickTimeSlot =
-                    onTimeSlotClick &&
-                    slotAppointments.length === 0 &&
+
+                  // Check if we have a 15-minute appointment in this slot
+                  const has15MinAppointment = slotAppointments.some((apt) => {
+                    const duration = getDurationMinutes(
+                      apt.start_time,
+                      apt.end_time
+                    );
+                    return duration === 15;
+                  });
+
+                  // Determine if we can add an appointment
+                  const canAddInSlot =
                     canCreate &&
-                    !isPastSlot;
+                    !isPastSlot &&
+                    (slotAppointments.length === 0 || has15MinAppointment);
+
+                  // Determine where to position the add button if we have a 15-min appointment
+                  let addButtonPosition = null;
+                  if (has15MinAppointment && slotAppointments.length === 1) {
+                    const apt = slotAppointments[0];
+                    if (apt) {
+                      const [aptH, aptM] = apt.start_time.split(':');
+                      const aptStartMinutes =
+                        parseInt(aptH || '0', 10) * 60 +
+                        parseInt(aptM || '0', 10);
+                      const slotStartMinutes = timeHour * 60 + timeMinute;
+
+                      // If appointment starts at the beginning of the slot, add button goes to bottom half
+                      if (aptStartMinutes === slotStartMinutes) {
+                        addButtonPosition = 'bottom';
+                      } else {
+                        // Otherwise, add button goes to top half
+                        addButtonPosition = 'top';
+                      }
+                    }
+                  }
+
+                  const canClickTimeSlot = onTimeSlotClick && canAddInSlot;
 
                   return (
                     <Box
                       key={time}
                       sx={{
                         position: 'absolute',
-                        top: index * 40,
+                        top: index * 100,
                         left: 0,
                         right: 0,
-                        height: 40,
+                        height: 100,
                         borderBottom:
                           index % 2 === 1
                             ? `1px solid ${theme.palette.divider}`
@@ -392,9 +425,37 @@ export function WeekViewDesktop({
                           ? `week-slot-${time}`
                           : undefined
                       }
-                      onClick={() => {
+                      onClick={(e) => {
                         if (canClickTimeSlot) {
-                          onTimeSlotClick(day, time);
+                          // For 15-min appointments, determine the time based on click position
+                          if (
+                            has15MinAppointment &&
+                            slotAppointments.length === 1
+                          ) {
+                            const rect =
+                              e.currentTarget.getBoundingClientRect();
+                            const clickY = e.clientY - rect.top;
+                            const clickInBottomHalf = clickY > rect.height / 2;
+
+                            // Determine the start time based on where they clicked
+                            let adjustedTime = time;
+                            if (
+                              addButtonPosition === 'bottom' &&
+                              clickInBottomHalf
+                            ) {
+                              // Existing appointment is in top half, clicked bottom half
+                              adjustedTime = `${timeHour.toString().padStart(2, '0')}:15`;
+                            } else if (
+                              addButtonPosition === 'top' &&
+                              !clickInBottomHalf
+                            ) {
+                              // Existing appointment is in bottom half, clicked top half
+                              adjustedTime = time;
+                            }
+                            onTimeSlotClick(day, adjustedTime);
+                          } else {
+                            onTimeSlotClick(day, time);
+                          }
                         }
                       }}
                     >
@@ -445,12 +506,16 @@ export function WeekViewDesktop({
 
                   const top =
                     ((startHour - gridStartHour) * 60 + startMinute) *
-                    (40 / 30); // 40px per 30 minutes
+                    (100 / 30); // 100px per 30 minutes
                   const height =
                     ((endHour - startHour) * 60 + (endMinute - startMinute)) *
-                    (40 / 30);
+                    (100 / 30);
                   const width = 100 / appointment.totalColumns;
                   const left = appointment.column * width;
+                  const isCompact = false; // Always use regular layout for consistent typography
+                  const is15MinAppointment =
+                    (endHour - startHour) * 60 + (endMinute - startMinute) ===
+                    15;
 
                   return (
                     <Paper
@@ -461,13 +526,13 @@ export function WeekViewDesktop({
                         top: `${top}px`,
                         left: `${left}%`,
                         width: `calc(${width}% - 4px)`,
-                        height: `${Math.max(height, 30)}px`,
+                        height: `${Math.max(height, 50)}px`,
                         cursor: 'pointer',
                         overflow: 'hidden',
                         zIndex: 2,
                         transition: 'all 0.2s',
                         display: 'flex',
-                        flexDirection: 'column',
+                        flexDirection: isCompact ? 'row' : 'column',
                         '&:hover': {
                           zIndex: 3,
                           transform: 'scale(1.02)',
@@ -476,66 +541,141 @@ export function WeekViewDesktop({
                       }}
                       onClick={() => onAppointmentClick?.(appointment)}
                     >
-                      {/* Colored header strip */}
-                      <Box
-                        sx={{
-                          bgcolor: getAppointmentColor(appointment.type),
-                          color: 'white',
-                          px: 1,
-                          py: 0.5,
-                          minHeight: 24,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          flexShrink: 0,
-                        }}
-                      >
-                        <Typography
-                          variant="caption"
-                          fontWeight="bold"
+                      {isCompact ? (
+                        // Compact single-row layout for 15-minute appointments
+                        <Box
                           sx={{
-                            fontSize: '0.7rem',
-                            lineHeight: 1.2,
+                            display: 'flex',
+                            alignItems: 'center',
+                            width: '100%',
+                            bgcolor: 'background.paper',
+                            borderTop: `3px solid ${getAppointmentColor(appointment.type)}`,
+                            px: 1,
+                            gap: 0.5,
                           }}
                         >
-                          {formatTime(appointment.start_time)}
-                        </Typography>
-                        {appointment.status === 'confirmed' && (
-                          <CheckCircleIcon sx={{ fontSize: 12, ml: 0.5 }} />
-                        )}
-                      </Box>
-                      {/* White content area */}
-                      <Box
-                        sx={{
-                          flex: 1,
-                          bgcolor: 'background.paper',
-                          p: 1,
-                          overflow: 'hidden',
-                        }}
-                      >
-                        <Typography
-                          variant="body2"
-                          fontWeight="medium"
-                          sx={{
-                            color: 'text.primary',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}
-                        >
-                          {appointment.client
-                            ? `${appointment.client.first_name} ${appointment.client.last_name}`
-                            : 'No Client'}
-                        </Typography>
-                        {appointment.notes && (
                           <Typography
                             variant="caption"
-                            display="block"
-                            sx={{ mt: 0.5 }}
+                            fontWeight="medium"
+                            sx={{
+                              color: 'text.primary',
+                              fontSize: '0.7rem',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              flex: 1,
+                              minWidth: 0,
+                            }}
                           >
-                            {appointment.notes}
+                            {appointment.client
+                              ? `${appointment.client.first_name} ${appointment.client.last_name}`
+                              : 'No Client'}
                           </Typography>
-                        )}
-                      </Box>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: 'text.secondary',
+                              fontSize: '0.65rem',
+                              whiteSpace: 'nowrap',
+                              flexShrink: 0,
+                            }}
+                          >
+                            {formatTime(appointment.start_time)}
+                          </Typography>
+                          {appointment.status === 'confirmed' && (
+                            <CheckCircleIcon
+                              sx={{
+                                fontSize: 10,
+                                color: getAppointmentColor(appointment.type),
+                                flexShrink: 0,
+                              }}
+                            />
+                          )}
+                        </Box>
+                      ) : (
+                        <>
+                          {/* Regular layout for longer appointments */}
+                          {/* Colored header strip */}
+                          <Box
+                            sx={{
+                              bgcolor: getAppointmentColor(appointment.type),
+                              color: 'white',
+                              px: 1,
+                              py: 0.5,
+                              minHeight: 24,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              flexShrink: 0,
+                            }}
+                          >
+                            <Typography
+                              variant="caption"
+                              fontWeight="bold"
+                              sx={{
+                                fontSize: '0.7rem',
+                                lineHeight: 1.2,
+                              }}
+                            >
+                              {formatTime(appointment.start_time)}
+                            </Typography>
+                            {appointment.status === 'confirmed' && (
+                              <CheckCircleIcon sx={{ fontSize: 12, ml: 0.5 }} />
+                            )}
+                          </Box>
+                          {/* White content area */}
+                          <Box
+                            sx={{
+                              flex: 1,
+                              bgcolor: 'background.paper',
+                              p: is15MinAppointment ? 0 : 1,
+                              pt: is15MinAppointment ? 0 : 1,
+                              px: 1,
+                              pb: 1,
+                              overflow: 'hidden',
+                            }}
+                          >
+                            <Typography
+                              variant="body2"
+                              fontWeight="medium"
+                              sx={{
+                                color: 'text.primary',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                              }}
+                            >
+                              {appointment.client
+                                ? `${appointment.client.first_name} ${appointment.client.last_name}`
+                                : 'No Client'}
+                            </Typography>
+
+                            {/* Appointment type - show for all except 15-minute appointments */}
+                            {!is15MinAppointment && (
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: 'text.secondary',
+                                  textTransform: 'capitalize',
+                                  display: 'block',
+                                  mt: 0.25,
+                                }}
+                              >
+                                {appointment.type.replace('_', ' ')}
+                              </Typography>
+                            )}
+
+                            {appointment.notes && (
+                              <Typography
+                                variant="caption"
+                                display="block"
+                                sx={{ mt: 0.5 }}
+                              >
+                                {appointment.notes}
+                              </Typography>
+                            )}
+                          </Box>
+                        </>
+                      )}
                     </Paper>
                   );
                 })}

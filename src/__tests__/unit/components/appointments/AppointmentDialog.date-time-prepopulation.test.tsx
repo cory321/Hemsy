@@ -94,7 +94,7 @@ describe('AppointmentDialog - Date and Time Pre-population', () => {
 
     // Wait for the dialog to render
     await waitFor(() => {
-      expect(screen.getByText('New Appointment')).toBeInTheDocument();
+      expect(screen.getByText('Schedule New Appointment')).toBeInTheDocument();
     });
 
     // Check if the date field shows the selected date (string-formatted label)
@@ -125,7 +125,7 @@ describe('AppointmentDialog - Date and Time Pre-population', () => {
 
     // Wait for the dialog to render
     await waitFor(() => {
-      expect(screen.getByText('New Appointment')).toBeInTheDocument();
+      expect(screen.getByText('Schedule New Appointment')).toBeInTheDocument();
     });
 
     // Check if the date field is present (exact text depends on localization)
@@ -144,7 +144,7 @@ describe('AppointmentDialog - Date and Time Pre-population', () => {
 
     // Wait for initial render
     await waitFor(() => {
-      expect(screen.getByText('New Appointment')).toBeInTheDocument();
+      expect(screen.getByText('Schedule New Appointment')).toBeInTheDocument();
     });
 
     // Check initial state (date input present)
@@ -193,7 +193,7 @@ describe('AppointmentDialog - Date and Time Pre-population', () => {
 
     // Wait for the dialog to render
     await waitFor(() => {
-      expect(screen.getByText('New Appointment')).toBeInTheDocument();
+      expect(screen.getByText('Schedule New Appointment')).toBeInTheDocument();
     });
 
     // Check date input exists

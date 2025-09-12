@@ -19,12 +19,14 @@ export type Database = {
           client_id: string;
           created_at: string | null;
           date: string;
+          end_at: string | null;
           end_time: string;
           id: string;
           notes: string | null;
           order_id: string | null;
           reminder_sent: boolean | null;
           shop_id: string;
+          start_at: string | null;
           start_time: string;
           status: Database['public']['Enums']['appointment_status'];
           type: string;
@@ -34,12 +36,14 @@ export type Database = {
           client_id: string;
           created_at?: string | null;
           date: string;
+          end_at?: string | null;
           end_time: string;
           id?: string;
           notes?: string | null;
           order_id?: string | null;
           reminder_sent?: boolean | null;
           shop_id: string;
+          start_at?: string | null;
           start_time: string;
           status?: Database['public']['Enums']['appointment_status'];
           type: string;
@@ -49,12 +53,14 @@ export type Database = {
           client_id?: string;
           created_at?: string | null;
           date?: string;
+          end_at?: string | null;
           end_time?: string;
           id?: string;
           notes?: string | null;
           order_id?: string | null;
           reminder_sent?: boolean | null;
           shop_id?: string;
+          start_at?: string | null;
           start_time?: string;
           status?: Database['public']['Enums']['appointment_status'];
           type?: string;
@@ -136,10 +142,13 @@ export type Database = {
         Row: {
           accept_email: boolean;
           accept_sms: boolean;
+          archived_at: string | null;
+          archived_by: string | null;
           created_at: string | null;
           email: string;
           first_name: string;
           id: string;
+          is_archived: boolean | null;
           last_name: string;
           mailing_address: string | null;
           notes: string | null;
@@ -150,10 +159,13 @@ export type Database = {
         Insert: {
           accept_email?: boolean;
           accept_sms?: boolean;
+          archived_at?: string | null;
+          archived_by?: string | null;
           created_at?: string | null;
           email: string;
           first_name: string;
           id?: string;
+          is_archived?: boolean | null;
           last_name: string;
           mailing_address?: string | null;
           notes?: string | null;
@@ -164,10 +176,13 @@ export type Database = {
         Update: {
           accept_email?: boolean;
           accept_sms?: boolean;
+          archived_at?: string | null;
+          archived_by?: string | null;
           created_at?: string | null;
           email?: string;
           first_name?: string;
           id?: string;
+          is_archived?: boolean | null;
           last_name?: string;
           mailing_address?: string | null;
           notes?: string | null;
@@ -176,6 +191,13 @@ export type Database = {
           updated_at?: string | null;
         };
         Relationships: [
+          {
+            foreignKeyName: 'clients_archived_by_fkey';
+            columns: ['archived_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
           {
             foreignKeyName: 'clients_shop_id_fkey';
             columns: ['shop_id'];
@@ -571,7 +593,9 @@ export type Database = {
       garments: {
         Row: {
           created_at: string | null;
+          due_at: string | null;
           due_date: string | null;
+          event_at: string | null;
           event_date: string | null;
           id: string;
           image_cloud_id: string | null;
@@ -588,7 +612,9 @@ export type Database = {
         };
         Insert: {
           created_at?: string | null;
+          due_at?: string | null;
           due_date?: string | null;
+          event_at?: string | null;
           event_date?: string | null;
           id?: string;
           image_cloud_id?: string | null;
@@ -605,7 +631,9 @@ export type Database = {
         };
         Update: {
           created_at?: string | null;
+          due_at?: string | null;
           due_date?: string | null;
+          event_at?: string | null;
           event_date?: string | null;
           id?: string;
           image_cloud_id?: string | null;
@@ -821,6 +849,7 @@ export type Database = {
           created_at: string | null;
           deposit_amount_cents: number | null;
           discount_cents: number;
+          due_at: string | null;
           id: string;
           is_paid: boolean;
           notes: string | null;
@@ -841,6 +870,7 @@ export type Database = {
           created_at?: string | null;
           deposit_amount_cents?: number | null;
           discount_cents?: number;
+          due_at?: string | null;
           id?: string;
           is_paid?: boolean;
           notes?: string | null;
@@ -861,6 +891,7 @@ export type Database = {
           created_at?: string | null;
           deposit_amount_cents?: number | null;
           discount_cents?: number;
+          due_at?: string | null;
           id?: string;
           is_paid?: boolean;
           notes?: string | null;
@@ -1532,6 +1563,8 @@ export type Database = {
           owner_user_id: string;
           phone_number: string | null;
           tax_percent: number;
+          timezone: string | null;
+          timezone_offset: number | null;
           trial_countdown_enabled: boolean | null;
           trial_end_date: string | null;
           updated_at: string | null;
@@ -1550,6 +1583,8 @@ export type Database = {
           owner_user_id: string;
           phone_number?: string | null;
           tax_percent?: number;
+          timezone?: string | null;
+          timezone_offset?: number | null;
           trial_countdown_enabled?: boolean | null;
           trial_end_date?: string | null;
           updated_at?: string | null;
@@ -1568,6 +1603,8 @@ export type Database = {
           owner_user_id?: string;
           phone_number?: string | null;
           tax_percent?: number;
+          timezone?: string | null;
+          timezone_offset?: number | null;
           trial_countdown_enabled?: boolean | null;
           trial_end_date?: string | null;
           updated_at?: string | null;
@@ -1645,6 +1682,8 @@ export type Database = {
           id: string;
           last_name: string | null;
           role: string | null;
+          timezone: string | null;
+          timezone_offset: number | null;
           updated_at: string | null;
         };
         Insert: {
@@ -1655,6 +1694,8 @@ export type Database = {
           id?: string;
           last_name?: string | null;
           role?: string | null;
+          timezone?: string | null;
+          timezone_offset?: number | null;
           updated_at?: string | null;
         };
         Update: {
@@ -1665,6 +1706,8 @@ export type Database = {
           id?: string;
           last_name?: string | null;
           role?: string | null;
+          timezone?: string | null;
+          timezone_offset?: number | null;
           updated_at?: string | null;
         };
         Relationships: [];
@@ -1686,6 +1729,7 @@ export type Database = {
           name: string | null;
           notes: string | null;
           order_id: string | null;
+          order_status: Database['public']['Enums']['order_status'] | null;
           photo_url: string | null;
           preset_fill_color: string | null;
           preset_icon_key: string | null;
@@ -1768,6 +1812,10 @@ export type Database = {
       };
     };
     Functions: {
+      archive_client: {
+        Args: { p_client_id: string; p_user_id: string };
+        Returns: undefined;
+      };
       calculate_order_status: {
         Args: { p_order_id: string };
         Returns: Database['public']['Enums']['order_status'];
@@ -1785,6 +1833,10 @@ export type Database = {
           p_start_time: string;
         };
         Returns: boolean;
+      };
+      check_garment_balance_optimized: {
+        Args: { p_garment_id: string; p_order_id: string };
+        Returns: Json;
       };
       check_payment_discrepancies: {
         Args: { p_shop_id?: string };
@@ -1814,6 +1866,22 @@ export type Database = {
         Args: { p_order_id: string };
         Returns: undefined;
       };
+      convert_date_time_to_utc: {
+        Args: { p_date: string; p_time: string; p_timezone: string };
+        Returns: string;
+      };
+      convert_date_to_utc: {
+        Args: { p_date: string; p_timezone: string };
+        Returns: string;
+      };
+      convert_local_to_utc: {
+        Args: { local_date: string; local_time: string; tz: string };
+        Returns: string;
+      };
+      convert_utc_to_local: {
+        Args: { tz: string; utc_timestamp: string };
+        Returns: string;
+      };
       create_appointment_atomic: {
         Args: {
           p_client_id: string;
@@ -1828,12 +1896,14 @@ export type Database = {
           client_id: string;
           created_at: string | null;
           date: string;
+          end_at: string | null;
           end_time: string;
           id: string;
           notes: string | null;
           order_id: string | null;
           reminder_sent: boolean | null;
           shop_id: string;
+          start_at: string | null;
           start_time: string;
           status: Database['public']['Enums']['appointment_status'];
           type: string;
@@ -1919,6 +1989,14 @@ export type Database = {
           updated_at: string;
         }[];
       };
+      get_business_dashboard_metrics_consolidated: {
+        Args: { p_shop_id: string };
+        Returns: Json;
+      };
+      get_dashboard_alerts_consolidated: {
+        Args: { p_shop_id: string };
+        Returns: Json;
+      };
       get_default_email_templates: {
         Args: Record<PropertyKey, never>;
         Returns: {
@@ -1926,6 +2004,29 @@ export type Database = {
           email_type: string;
           subject: string;
         }[];
+      };
+      get_garment_pipeline_data_consolidated: {
+        Args: { p_shop_id: string };
+        Returns: Json;
+      };
+      get_garment_stage_counts: {
+        Args: { p_shop_id: string };
+        Returns: {
+          count: number;
+          stage: string;
+        }[];
+      };
+      get_garments_paginated: {
+        Args: {
+          p_cursor?: Json;
+          p_limit?: number;
+          p_search?: string;
+          p_shop_id: string;
+          p_sort_field?: string;
+          p_sort_order?: string;
+          p_stage?: Database['public']['Enums']['garment_stage_enum'];
+        };
+        Returns: Json;
       };
       gtrgm_compress: {
         Args: { '': unknown };
@@ -1951,6 +2052,14 @@ export type Database = {
         Args: { user_id: string };
         Returns: undefined;
       };
+      is_garment_truly_overdue: {
+        Args: {
+          p_due_date: string;
+          p_garment_id: string;
+          p_stage: Database['public']['Enums']['garment_stage_enum'];
+        };
+        Returns: boolean;
+      };
       mark_garment_picked_up: {
         Args: { p_garment_id: string };
         Returns: undefined;
@@ -1971,6 +2080,10 @@ export type Database = {
         Args: { p_refund_id: string; p_stripe_refund_data: Json };
         Returns: undefined;
       };
+      restore_client: {
+        Args: { p_client_id: string };
+        Returns: undefined;
+      };
       set_current_user_id: {
         Args: { user_id: string };
         Returns: undefined;
@@ -1989,14 +2102,6 @@ export type Database = {
       };
       update_order_payment_status: {
         Args: { p_order_id: string };
-        Returns: undefined;
-      };
-      archive_client: {
-        Args: { p_client_id: string; p_user_id: string };
-        Returns: undefined;
-      };
-      restore_client: {
-        Args: { p_client_id: string };
         Returns: undefined;
       };
     };

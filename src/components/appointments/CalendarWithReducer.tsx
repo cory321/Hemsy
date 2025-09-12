@@ -172,12 +172,15 @@ export function CalendarWithReducer({
         });
         setAppointmentDialogOpen(false);
         setDialogState({});
+
+        // Force a refresh of the calendar appointments to ensure UI updates
+        await refetch();
       } catch (error) {
         // Error is handled in the provider
         console.error('Failed to update appointment:', error);
       }
     },
-    [updateAppointment, dialogState.appointment]
+    [updateAppointment, dialogState.appointment, refetch]
   );
 
   // Handle view change

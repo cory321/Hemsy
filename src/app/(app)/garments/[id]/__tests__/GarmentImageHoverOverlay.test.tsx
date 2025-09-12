@@ -63,6 +63,13 @@ const mockGarmentContext = {
   historyKey: 0,
   optimisticHistoryEntry: null,
   historyRefreshSignal: 0,
+  // Balance check state
+  balanceDialogOpen: false,
+  balanceCheckData: null,
+  closeBalanceDialog: jest.fn(),
+  handlePickupWithoutPayment: jest.fn(),
+  handlePaymentAndPickup: jest.fn(),
+  balanceStatus: null,
 };
 
 describe('GarmentImageHoverOverlay', () => {

@@ -3,10 +3,12 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { GarmentProvider, useGarment } from '../GarmentContext';
 import { markGarmentAsPickedUp } from '@/lib/actions/garment-pickup';
+import { checkGarmentBalanceStatus } from '@/lib/actions/garment-balance-check';
 import { showSuccessToast, showErrorToast } from '@/lib/utils/toast';
 
 // Mock the dependencies
 jest.mock('@/lib/actions/garment-pickup');
+jest.mock('@/lib/actions/garment-balance-check');
 jest.mock('@/lib/utils/toast');
 
 const mockMarkGarmentAsPickedUp = markGarmentAsPickedUp as jest.MockedFunction<
@@ -18,6 +20,10 @@ const mockShowSuccessToast = showSuccessToast as jest.MockedFunction<
 const mockShowErrorToast = showErrorToast as jest.MockedFunction<
   typeof showErrorToast
 >;
+const mockCheckGarmentBalanceStatus =
+  checkGarmentBalanceStatus as jest.MockedFunction<
+    typeof checkGarmentBalanceStatus
+  >;
 
 // Test component that uses the garment context
 function TestComponent() {
@@ -33,7 +39,7 @@ function TestComponent() {
 
 describe('GarmentContext - markAsPickedUp', () => {
   const initialGarment = {
-    id: 'test-garment-id',
+    id: '550e8400-e29b-41d4-a716-446655440001',
     name: 'Test Garment',
     stage: 'Ready For Pickup',
     due_date: null,
@@ -45,14 +51,24 @@ describe('GarmentContext - markAsPickedUp', () => {
     photo_url: null,
     image_cloud_id: null,
     created_at: '2024-01-01',
-    order_id: 'test-order-id',
+    order_id: '550e8400-e29b-41d4-a716-446655440002',
     garment_services: [],
     totalPriceCents: 0,
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Default mock for balance check - no outstanding balance
+    mockCheckGarmentBalanceStatus.mockResolvedValue({
+      success: true,
+      isLastGarment: false,
+      hasOutstandingBalance: false,
+    });
   });
+
+  // Helper to create a delay for testing async flows
+  const delay = (ms: number) =>
+    new Promise((resolve) => setTimeout(resolve, ms));
 
   it('optimistically updates garment stage to Done', async () => {
     mockMarkGarmentAsPickedUp.mockResolvedValue({ success: true });
@@ -70,13 +86,15 @@ describe('GarmentContext - markAsPickedUp', () => {
     const button = screen.getByText('Mark as Picked Up');
     fireEvent.click(button);
 
-    // Stage should update immediately (optimistic update)
-    expect(screen.getByTestId('garment-stage')).toHaveTextContent('Done');
+    // Wait for balance check to complete and stage to update optimistically
+    await waitFor(() => {
+      expect(screen.getByTestId('garment-stage')).toHaveTextContent('Done');
+    });
 
     // Wait for the server action to complete
     await waitFor(() => {
       expect(mockMarkGarmentAsPickedUp).toHaveBeenCalledWith({
-        garmentId: 'test-garment-id',
+        garmentId: '550e8400-e29b-41d4-a716-446655440001',
       });
     });
 
@@ -87,9 +105,13 @@ describe('GarmentContext - markAsPickedUp', () => {
   });
 
   it('rolls back stage on server error', async () => {
-    mockMarkGarmentAsPickedUp.mockResolvedValue({
-      success: false,
-      error: 'Server error',
+    // Add delay to mock so we can catch the optimistic update
+    mockMarkGarmentAsPickedUp.mockImplementation(async () => {
+      await delay(50); // Small delay to allow optimistic update
+      return {
+        success: false,
+        error: 'Server error',
+      };
     });
 
     render(
@@ -105,8 +127,17 @@ describe('GarmentContext - markAsPickedUp', () => {
     const button = screen.getByText('Mark as Picked Up');
     fireEvent.click(button);
 
-    // Stage should update immediately
-    expect(screen.getByTestId('garment-stage')).toHaveTextContent('Done');
+    // Wait for balance check to be called first
+    await waitFor(() => {
+      expect(mockCheckGarmentBalanceStatus).toHaveBeenCalledWith({
+        garmentId: '550e8400-e29b-41d4-a716-446655440001',
+      });
+    });
+
+    // Wait for stage to update optimistically to Done
+    await waitFor(() => {
+      expect(screen.getByTestId('garment-stage')).toHaveTextContent('Done');
+    });
 
     // Wait for the server action to complete and rollback
     await waitFor(() => {
@@ -149,7 +180,11 @@ describe('GarmentContext - markAsPickedUp', () => {
   });
 
   it('handles unexpected errors gracefully', async () => {
-    mockMarkGarmentAsPickedUp.mockRejectedValue(new Error('Network error'));
+    // Add delay to mock so we can catch the optimistic update
+    mockMarkGarmentAsPickedUp.mockImplementation(async () => {
+      await delay(50); // Small delay to allow optimistic update
+      throw new Error('Network error');
+    });
 
     render(
       <GarmentProvider initialGarment={initialGarment}>
@@ -160,8 +195,17 @@ describe('GarmentContext - markAsPickedUp', () => {
     const button = screen.getByText('Mark as Picked Up');
     fireEvent.click(button);
 
-    // Stage should update immediately
-    expect(screen.getByTestId('garment-stage')).toHaveTextContent('Done');
+    // Wait for balance check to be called first
+    await waitFor(() => {
+      expect(mockCheckGarmentBalanceStatus).toHaveBeenCalledWith({
+        garmentId: '550e8400-e29b-41d4-a716-446655440001',
+      });
+    });
+
+    // Wait for stage to update optimistically to Done
+    await waitFor(() => {
+      expect(screen.getByTestId('garment-stage')).toHaveTextContent('Done');
+    });
 
     // Wait for the error and rollback
     await waitFor(() => {
@@ -173,6 +217,91 @@ describe('GarmentContext - markAsPickedUp', () => {
     // Error toast should be shown
     expect(mockShowErrorToast).toHaveBeenCalledWith(
       'An unexpected error occurred'
+    );
+  });
+
+  it('shows balance dialog when there is outstanding balance', async () => {
+    // Mock balance check to indicate outstanding balance
+    mockCheckGarmentBalanceStatus.mockResolvedValue({
+      success: true,
+      isLastGarment: true,
+      hasOutstandingBalance: true,
+      balanceDue: 5000, // $50.00
+      orderTotal: 10000, // $100.00
+      paidAmount: 5000, // $50.00
+      orderNumber: 'ORD-123',
+      clientName: 'John Doe',
+      invoiceId: 'inv-123',
+      clientEmail: 'john@example.com',
+    });
+
+    render(
+      <GarmentProvider initialGarment={initialGarment}>
+        <TestComponent />
+      </GarmentProvider>
+    );
+
+    const button = screen.getByText('Mark as Picked Up');
+    fireEvent.click(button);
+
+    // Should not update stage immediately (waiting for balance dialog)
+    expect(screen.getByTestId('garment-stage')).toHaveTextContent(
+      'Ready For Pickup'
+    );
+
+    // Should not call the pickup action yet
+    expect(mockMarkGarmentAsPickedUp).not.toHaveBeenCalled();
+
+    // Check that balance check was called
+    await waitFor(() => {
+      expect(mockCheckGarmentBalanceStatus).toHaveBeenCalledWith({
+        garmentId: '550e8400-e29b-41d4-a716-446655440001',
+      });
+    });
+  });
+
+  it('proceeds with pickup when balance status is preloaded and no balance due', async () => {
+    mockMarkGarmentAsPickedUp.mockResolvedValue({ success: true });
+
+    // Provide initial balance status with no outstanding balance
+    const balanceStatus = {
+      isLastGarment: true,
+      hasOutstandingBalance: false,
+      balanceDue: 0,
+      orderNumber: 'ORD-123',
+      orderTotal: 10000,
+      paidAmount: 10000,
+      clientName: 'John Doe',
+    };
+
+    render(
+      <GarmentProvider
+        initialGarment={initialGarment}
+        initialBalanceStatus={balanceStatus}
+      >
+        <TestComponent />
+      </GarmentProvider>
+    );
+
+    const button = screen.getByText('Mark as Picked Up');
+    fireEvent.click(button);
+
+    // Should proceed directly to pickup without checking balance again
+    await waitFor(() => {
+      expect(screen.getByTestId('garment-stage')).toHaveTextContent('Done');
+    });
+
+    await waitFor(() => {
+      expect(mockMarkGarmentAsPickedUp).toHaveBeenCalledWith({
+        garmentId: '550e8400-e29b-41d4-a716-446655440001',
+      });
+    });
+
+    // Should not call balance check since it was preloaded
+    expect(mockCheckGarmentBalanceStatus).not.toHaveBeenCalled();
+
+    expect(mockShowSuccessToast).toHaveBeenCalledWith(
+      'Test Garment marked as picked up'
     );
   });
 });

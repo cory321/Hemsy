@@ -457,11 +457,16 @@ export async function updateAppointment(
         ? convertUTCToLocal(currentApt.end_at as string, timezone).time
         : currentApt.end_time);
 
-    // Update UTC fields only
+    // Update both UTC and local fields
     const startAt = convertLocalToUTC(date, startTime, timezone);
     const endAt = convertLocalToUTC(date, endTime, timezone);
     updateData.start_at = startAt.toISOString();
     updateData.end_at = endAt.toISOString();
+
+    // Also update the local fields for backward compatibility
+    updateData.date = date;
+    updateData.start_time = startTime;
+    updateData.end_time = endTime;
   }
 
   // Update other fields

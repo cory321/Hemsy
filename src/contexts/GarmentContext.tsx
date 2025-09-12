@@ -1,6 +1,12 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+} from 'react';
 import { showSuccessToast, showErrorToast } from '@/lib/utils/toast';
 import {
   updateGarment,
@@ -11,6 +17,10 @@ import {
 } from '@/lib/actions/garments';
 import { toggleServiceCompletion } from '@/lib/actions/garment-services';
 import { markGarmentAsPickedUp } from '@/lib/actions/garment-pickup';
+import {
+  checkGarmentBalanceStatus,
+  logDeferredPaymentPickup,
+} from '@/lib/actions/garment-balance-check';
 import { getGarmentWithInvoiceData } from '@/lib/actions/orders';
 import {
   calculateGarmentStageClient,
@@ -116,6 +126,31 @@ interface GarmentContextType {
   historyKey: number;
   optimisticHistoryEntry: any;
   historyRefreshSignal: number;
+  // Balance check state
+  balanceDialogOpen: boolean;
+  balanceCheckData: {
+    balanceDue: number;
+    orderTotal: number;
+    paidAmount: number;
+    orderNumber: string;
+    clientName: string;
+    invoiceId?: string;
+    clientEmail?: string;
+  } | null;
+  closeBalanceDialog: () => void;
+  handlePickupWithoutPayment: () => Promise<void>;
+  handlePaymentAndPickup: () => Promise<void>;
+  balanceStatus: {
+    isLastGarment: boolean;
+    hasOutstandingBalance: boolean;
+    balanceDue: number;
+    orderNumber: string;
+    orderTotal: number;
+    paidAmount: number;
+    clientName: string;
+    invoiceId?: string;
+    clientEmail?: string;
+  } | null;
 }
 
 const GarmentContext = createContext<GarmentContextType | null>(null);
@@ -130,11 +165,23 @@ export function useGarment() {
 
 interface GarmentProviderProps {
   initialGarment: Garment;
+  initialBalanceStatus?: {
+    isLastGarment: boolean;
+    hasOutstandingBalance: boolean;
+    balanceDue: number;
+    orderNumber: string;
+    orderTotal: number;
+    paidAmount: number;
+    clientName: string;
+    invoiceId?: string;
+    clientEmail?: string;
+  } | null;
   children: React.ReactNode;
 }
 
 export function GarmentProvider({
   initialGarment,
+  initialBalanceStatus,
   children,
 }: GarmentProviderProps) {
   const [garment, setGarment] = useState<Garment>(initialGarment);
@@ -142,6 +189,27 @@ export function GarmentProvider({
   const [optimisticHistoryEntry, setOptimisticHistoryEntry] =
     useState<any>(null);
   const [historyRefreshSignal, setHistoryRefreshSignal] = useState(0);
+  const [balanceDialogOpen, setBalanceDialogOpen] = useState(false);
+  const [balanceCheckData, setBalanceCheckData] = useState<{
+    balanceDue: number;
+    orderTotal: number;
+    paidAmount: number;
+    orderNumber: string;
+    clientName: string;
+    invoiceId?: string;
+    clientEmail?: string;
+  } | null>(null);
+  const [balanceStatus, setBalanceStatus] = useState<{
+    isLastGarment: boolean;
+    hasOutstandingBalance: boolean;
+    balanceDue: number;
+    orderNumber: string;
+    orderTotal: number;
+    paidAmount: number;
+    clientName: string;
+    invoiceId?: string;
+    clientEmail?: string;
+  } | null>(initialBalanceStatus || null);
 
   const refreshHistory = useCallback(() => {
     setHistoryKey((prev) => prev + 1);
@@ -767,6 +835,61 @@ export function GarmentProvider({
       return;
     }
 
+    // Use preloaded balance status - instant response!
+    if (balanceStatus) {
+      if (balanceStatus.isLastGarment && balanceStatus.hasOutstandingBalance) {
+        // All data is already preloaded, just show the dialog
+        setBalanceCheckData({
+          balanceDue: balanceStatus.balanceDue,
+          orderTotal: balanceStatus.orderTotal,
+          paidAmount: balanceStatus.paidAmount,
+          orderNumber: balanceStatus.orderNumber,
+          clientName: balanceStatus.clientName,
+          ...(balanceStatus.invoiceId && {
+            invoiceId: balanceStatus.invoiceId,
+          }),
+          ...(balanceStatus.clientEmail && {
+            clientEmail: balanceStatus.clientEmail,
+          }),
+        });
+        setBalanceDialogOpen(true);
+        return; // Don't proceed with pickup yet
+      }
+      // If no balance issue, proceed immediately
+      await proceedWithPickup();
+    } else {
+      // Fallback: If balance status wasn't preloaded (edge case), fetch it now
+      const balanceCheck = await checkGarmentBalanceStatus({
+        garmentId: garment.id,
+      });
+
+      if (!balanceCheck.success) {
+        showErrorToast(balanceCheck.error || 'Failed to check balance status');
+        return;
+      }
+
+      if (balanceCheck.isLastGarment && balanceCheck.hasOutstandingBalance) {
+        setBalanceCheckData({
+          balanceDue: balanceCheck.balanceDue || 0,
+          orderTotal: balanceCheck.orderTotal || 0,
+          paidAmount: balanceCheck.paidAmount || 0,
+          orderNumber: balanceCheck.orderNumber || '',
+          clientName: balanceCheck.clientName || '',
+          ...(balanceCheck.invoiceId && { invoiceId: balanceCheck.invoiceId }),
+          ...(balanceCheck.clientEmail && {
+            clientEmail: balanceCheck.clientEmail,
+          }),
+        });
+        setBalanceDialogOpen(true);
+        return;
+      }
+
+      // If no balance issue, proceed with normal pickup
+      await proceedWithPickup();
+    }
+  }, [garment, balanceStatus]);
+
+  const proceedWithPickup = useCallback(async () => {
     // Optimistically update the UI
     const previousGarment = garment;
     setGarment((prev) => ({ ...prev, stage: 'Done' }));
@@ -781,6 +904,9 @@ export function GarmentProvider({
       } else {
         refreshHistory();
         showSuccessToast(`${garment.name || 'Garment'} marked as picked up`);
+        // Close the balance dialog if it was open
+        setBalanceDialogOpen(false);
+        setBalanceCheckData(null);
       }
     } catch (error) {
       // Rollback on error
@@ -788,6 +914,66 @@ export function GarmentProvider({
       showErrorToast('An unexpected error occurred');
     }
   }, [garment, refreshHistory]);
+
+  const handlePickupWithoutPayment = useCallback(async () => {
+    // Log the deferred payment
+    if (balanceCheckData && garment.order_id) {
+      await logDeferredPaymentPickup({
+        garmentId: garment.id,
+        orderId: garment.order_id,
+        balanceDue: balanceCheckData.balanceDue,
+        reason: 'Payment deferred at pickup',
+      });
+    }
+
+    // Proceed with pickup
+    await proceedWithPickup();
+
+    // Note: No reminder toast needed - user already acknowledged the balance in the dialog
+  }, [garment, balanceCheckData, proceedWithPickup]);
+
+  const closeBalanceDialog = useCallback(() => {
+    setBalanceDialogOpen(false);
+    setBalanceCheckData(null);
+  }, []);
+
+  const handlePaymentAndPickup = useCallback(async () => {
+    // When payment is successful, proceed with pickup
+    await proceedWithPickup();
+  }, [proceedWithPickup]);
+
+  // Check balance status when component mounts or stage changes
+  useEffect(() => {
+    const checkBalanceStatus = async () => {
+      // Skip if we have initial balance status from server
+      if (initialBalanceStatus && garment.stage === 'Ready For Pickup') {
+        return;
+      }
+
+      if (garment.stage === 'Ready For Pickup') {
+        const result = await checkGarmentBalanceStatus({
+          garmentId: garment.id,
+        });
+        if (result.success) {
+          setBalanceStatus({
+            isLastGarment: result.isLastGarment || false,
+            hasOutstandingBalance: result.hasOutstandingBalance || false,
+            balanceDue: result.balanceDue || 0,
+            orderNumber: result.orderNumber || '',
+            orderTotal: result.orderTotal || 0,
+            paidAmount: result.paidAmount || 0,
+            clientName: result.clientName || '',
+            ...(result.invoiceId && { invoiceId: result.invoiceId }),
+            ...(result.clientEmail && { clientEmail: result.clientEmail }),
+          });
+        }
+      } else {
+        setBalanceStatus(null);
+      }
+    };
+
+    checkBalanceStatus();
+  }, [garment.id, garment.stage, initialBalanceStatus]);
 
   return (
     <GarmentContext.Provider
@@ -808,6 +994,12 @@ export function GarmentProvider({
         historyKey,
         optimisticHistoryEntry,
         historyRefreshSignal,
+        balanceDialogOpen,
+        balanceCheckData,
+        closeBalanceDialog,
+        handlePickupWithoutPayment,
+        handlePaymentAndPickup,
+        balanceStatus,
       }}
     >
       {children}

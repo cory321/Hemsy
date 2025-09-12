@@ -155,6 +155,7 @@ export default function GarmentEditDialogOptimistic({
         onClose={onClose}
         maxWidth="sm"
         fullWidth
+        disableScrollLock
         sx={{
           '& .MuiDialog-paper': {
             backgroundColor: 'background.paper',

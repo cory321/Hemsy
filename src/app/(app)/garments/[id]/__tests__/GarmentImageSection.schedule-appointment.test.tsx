@@ -241,7 +241,7 @@ describe('GarmentImageSection - Schedule Appointment', () => {
 
     // The dialog should have opened and we can test that it's properly configured
     // For now, let's just verify the dialog appeared, which means the integration is working
-    expect(screen.getByText('New Appointment')).toBeInTheDocument();
+    expect(screen.getByText('Schedule New Appointment')).toBeInTheDocument();
   });
 
   it('should show success toast functionality is integrated', async () => {
@@ -266,7 +266,7 @@ describe('GarmentImageSection - Schedule Appointment', () => {
     });
 
     // Verify the dialog is properly configured with success handling
-    expect(screen.getByText('New Appointment')).toBeInTheDocument();
+    expect(screen.getByText('Schedule New Appointment')).toBeInTheDocument();
 
     // Test that consolidated toast functions are available (integration test)
     expect(showSuccessToast).toBeDefined();
@@ -297,7 +297,7 @@ describe('GarmentImageSection - Schedule Appointment', () => {
     });
 
     // Verify the dialog is properly configured with error handling
-    expect(screen.getByText('New Appointment')).toBeInTheDocument();
+    expect(screen.getByText('Schedule New Appointment')).toBeInTheDocument();
 
     // Test that error handling functions are available (integration test)
     expect(createAppointment).toBeDefined();

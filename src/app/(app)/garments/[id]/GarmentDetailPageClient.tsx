@@ -6,6 +6,17 @@ import GarmentDetailContent from './GarmentDetailContent';
 
 interface GarmentDetailPageClientProps {
   garment: any;
+  initialBalanceStatus?: {
+    isLastGarment: boolean;
+    hasOutstandingBalance: boolean;
+    balanceDue: number;
+    orderNumber: string;
+    orderTotal: number;
+    paidAmount: number;
+    clientName: string;
+    invoiceId?: string;
+    clientEmail?: string;
+  } | null;
   shopId?: string | undefined;
   shopHours?:
     | ReadonlyArray<{
@@ -27,6 +38,7 @@ interface GarmentDetailPageClientProps {
 
 export default function GarmentDetailPageClient({
   garment,
+  initialBalanceStatus,
   shopId,
   shopHours,
   calendarSettings,
@@ -39,7 +51,10 @@ export default function GarmentDetailPageClient({
     : 'Unknown Client';
 
   return (
-    <GarmentProvider initialGarment={garment}>
+    <GarmentProvider
+      initialGarment={garment}
+      initialBalanceStatus={initialBalanceStatus || null}
+    >
       <Container maxWidth="lg">
         <Box sx={{ mt: 4, mb: 4 }}>
           <GarmentDetailContent
