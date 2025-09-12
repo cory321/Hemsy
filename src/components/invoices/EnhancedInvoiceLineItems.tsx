@@ -35,6 +35,7 @@ import {
 import { getStageColor } from '@/constants/garmentStages';
 import { formatDateSafe } from '@/lib/utils/date-time-utils';
 import type { GarmentStage } from '@/types';
+import { RemixIcon } from '@/components/dashboard/common';
 
 interface GarmentInfo {
   id: string;
@@ -74,6 +75,8 @@ interface EnhancedInvoiceLineItemsProps {
   items: InvoiceLineItem[];
   garments: GarmentInfo[];
   showRemoved?: boolean;
+  // When false, hides UI indicators/sections for removed services on screen
+  showRemovedIndicators?: boolean;
   onRestoreItem?: (itemId: string, garmentId: string) => void;
   readonly?: boolean;
   orderId?: string | undefined; // Optional order ID for navigation context
@@ -90,6 +93,7 @@ export default function EnhancedInvoiceLineItems({
   items,
   garments,
   showRemoved = true,
+  showRemovedIndicators = true,
   onRestoreItem,
   readonly = false,
   orderId,
@@ -248,7 +252,7 @@ export default function EnhancedInvoiceLineItems({
       key={item.id}
       sx={{
         opacity: isRemoved ? 0.6 : 1,
-        backgroundColor: isRemoved ? 'action.hover' : 'inherit',
+        backgroundColor: 'inherit',
       }}
     >
       <TableCell sx={{ pl: 6 }}>
@@ -262,7 +266,7 @@ export default function EnhancedInvoiceLineItems({
           >
             {item.name}
           </Typography>
-          {isRemoved && (
+          {isRemoved && showRemovedIndicators && (
             <Chip
               label="Removed"
               size="small"
@@ -379,7 +383,7 @@ export default function EnhancedInvoiceLineItems({
         {/* Garment Header Row */}
         <TableRow
           sx={{
-            backgroundColor: 'action.hover',
+            backgroundColor: 'inherit',
             '&:hover': {
               backgroundColor: 'action.selected',
             },
@@ -584,18 +588,28 @@ export default function EnhancedInvoiceLineItems({
             {activeServices.map((item) => renderServiceRow(item, false))}
 
             {/* Removed Services */}
-            {showRemoved && removedServices.length > 0 && (
-              <>
-                <TableRow>
-                  <TableCell colSpan={4} sx={{ py: 0.5, pl: 6 }}>
-                    <Typography variant="caption" color="text.secondary">
-                      Removed services (not charged):
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-                {removedServices.map((item) => renderServiceRow(item, true))}
-              </>
-            )}
+            {showRemoved &&
+              removedServices.length > 0 &&
+              showRemovedIndicators && (
+                <>
+                  <TableRow>
+                    <TableCell colSpan={4} sx={{ py: 0.5, pl: 6 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        Removed services (not charged):
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                  {removedServices.map((item) => renderServiceRow(item, true))}
+                </>
+              )}
+            {/* When indicators are hidden, still render removed items without header */}
+            {showRemoved &&
+              removedServices.length > 0 &&
+              !showRemovedIndicators && (
+                <>
+                  {removedServices.map((item) => renderServiceRow(item, true))}
+                </>
+              )}
 
             {/* Garment subtotal */}
             <TableRow>
@@ -636,7 +650,7 @@ export default function EnhancedInvoiceLineItems({
           )}
 
           {/* Overall Totals Section */}
-          <TableRow sx={{ backgroundColor: 'action.hover' }}>
+          <TableRow sx={{ backgroundColor: 'inherit' }}>
             <TableCell colSpan={3}>
               <Typography variant="subtitle1" fontWeight="medium">
                 Order Summary
@@ -699,7 +713,7 @@ export default function EnhancedInvoiceLineItems({
               )}
 
               {/* Final Total */}
-              <TableRow sx={{ backgroundColor: 'action.hover' }}>
+              <TableRow>
                 <TableCell colSpan={3}>
                   <Typography variant="subtitle1" fontWeight="bold">
                     Total
@@ -718,28 +732,30 @@ export default function EnhancedInvoiceLineItems({
             </>
           ) : null}
 
-          {overallTotals.removedCount > 0 && showRemoved && (
-            <TableRow>
-              <TableCell colSpan={3}>
-                <Typography variant="caption" color="text.secondary">
-                  Removed services (not charged):
-                </Typography>
-              </TableCell>
-              <TableCell align="right">
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ textDecoration: 'line-through' }}
-                >
-                  {formatCentsAsCurrency(overallTotals.removedTotal)}
-                </Typography>
-              </TableCell>
-            </TableRow>
-          )}
+          {overallTotals.removedCount > 0 &&
+            showRemoved &&
+            showRemovedIndicators && (
+              <TableRow>
+                <TableCell colSpan={3}>
+                  <Typography variant="caption" color="text.secondary">
+                    Removed services (not charged):
+                  </Typography>
+                </TableCell>
+                <TableCell align="right">
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ textDecoration: 'line-through' }}
+                  >
+                    {formatCentsAsCurrency(overallTotals.removedTotal)}
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            )}
 
           {/* Payment Information Section - Only show if payments are provided */}
           {payments && payments.length > 0 && totalPaid > 0 && (
-            <TableRow sx={{ backgroundColor: 'grey.50' }}>
+            <TableRow>
               <TableCell colSpan={3}>
                 <Typography
                   variant="subtitle1"
@@ -775,107 +791,115 @@ export default function EnhancedInvoiceLineItems({
           )}
 
           {/* Total Amount Due with Payment Status */}
-          <TableRow
-            sx={{
-              backgroundColor:
-                paymentStatus === 'paid'
-                  ? 'success.main'
-                  : paymentStatus === 'overpaid'
-                    ? 'warning.main'
-                    : 'primary.main',
-            }}
-          >
-            <TableCell colSpan={3} sx={{ borderBottom: 'none' }}>
-              <Typography
-                variant="h6"
-                sx={{
-                  color:
-                    paymentStatus === 'paid' || paymentStatus === 'overpaid'
-                      ? 'white'
-                      : 'primary.contrastText',
-                }}
-              >
-                {paymentStatus === 'overpaid'
-                  ? 'Credit Balance'
-                  : 'Total Amount Due'}
-              </Typography>
-              {paymentStatus === 'paid' && (
-                <Typography
-                  variant="body2"
-                  sx={{ color: 'white', opacity: 0.9 }}
-                >
-                  Order fully paid
-                </Typography>
-              )}
-              {paymentStatus === 'overpaid' && (
-                <Typography
-                  variant="body2"
-                  sx={{ color: 'white', opacity: 0.9 }}
-                >
-                  Customer has a credit of{' '}
-                  {formatCentsAsCurrency(Math.abs(amountDue))}
-                </Typography>
-              )}
-              {paymentStatus === 'partial' &&
-                payments &&
-                payments.length > 0 && (
-                  <Typography
-                    variant="body2"
-                    sx={{ color: 'white', opacity: 0.9 }}
-                  >
-                    {formatCentsAsCurrency(netPaid)} paid of{' '}
-                    {formatCentsAsCurrency(overallTotals.activeTotal)}
-                    {totalRefunded > 0 &&
-                      ` (${formatCentsAsCurrency(totalRefunded)} refunded)`}
-                  </Typography>
-                )}
-            </TableCell>
-            <TableCell align="right" sx={{ borderBottom: 'none' }}>
+          <TableRow>
+            <TableCell colSpan={4} sx={{ borderBottom: 'none', p: 0 }}>
               <Box
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'flex-end',
+                  justifyContent: 'space-between',
                   gap: 2,
+                  px: 2,
+                  py: 1.5,
+                  mt: 0.5,
+                  borderRadius: '8px',
+                  backgroundColor:
+                    paymentStatus === 'paid'
+                      ? 'success.main'
+                      : paymentStatus === 'overpaid'
+                        ? '#FFF7E9'
+                        : 'primary.main',
                 }}
               >
-                <Typography
-                  variant="h6"
-                  fontWeight="bold"
-                  sx={{
-                    color:
-                      paymentStatus === 'paid' || paymentStatus === 'overpaid'
-                        ? 'white'
-                        : 'primary.contrastText',
-                  }}
-                >
-                  {paymentStatus === 'overpaid'
-                    ? formatCentsAsCurrency(Math.abs(amountDue))
-                    : formatCentsAsCurrency(Math.max(0, amountDue))}
-                </Typography>
-                {paymentStatus !== 'paid' &&
-                  paymentStatus !== 'overpaid' &&
-                  overallTotals.activeTotal > 0 &&
-                  onRecordPayment && (
-                    <Button
-                      variant="contained"
-                      size="medium"
-                      startIcon={<PaymentIcon />}
-                      onClick={onRecordPayment}
-                      sx={{
-                        backgroundColor: 'white',
-                        color: 'primary.main',
-                        fontWeight: 'medium',
-                        whiteSpace: 'nowrap',
-                        minWidth: 'auto',
-                        '&:hover': {
-                          backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                        },
-                      }}
+                <Box>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      color:
+                        paymentStatus === 'paid'
+                          ? 'white'
+                          : paymentStatus === 'overpaid'
+                            ? 'text.primary'
+                            : 'primary.contrastText',
+                    }}
+                  >
+                    {paymentStatus === 'overpaid'
+                      ? 'Credit Balance'
+                      : 'Total Amount Due'}
+                  </Typography>
+                  {paymentStatus === 'paid' && (
+                    <Typography
+                      variant="body2"
+                      sx={{ color: 'white', opacity: 0.9 }}
                     >
-                      Collect Payment
-                    </Button>
+                      Order fully paid
+                    </Typography>
                   )}
+                  {paymentStatus === 'overpaid' && (
+                    <Typography
+                      variant="body2"
+                      sx={{ color: 'text.primary', opacity: 1 }}
+                    >
+                      Customer has a credit of{' '}
+                      {formatCentsAsCurrency(Math.abs(amountDue))}
+                    </Typography>
+                  )}
+                  {paymentStatus === 'partial' &&
+                    payments &&
+                    payments.length > 0 && (
+                      <Typography
+                        variant="body2"
+                        sx={{ color: 'white', opacity: 0.9 }}
+                      >
+                        {formatCentsAsCurrency(netPaid)} paid of{' '}
+                        {formatCentsAsCurrency(overallTotals.activeTotal)}
+                        {totalRefunded > 0 &&
+                          ` (${formatCentsAsCurrency(totalRefunded)} refunded)`}
+                      </Typography>
+                    )}
+                </Box>
+
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Typography
+                    variant="h6"
+                    fontWeight="bold"
+                    sx={{
+                      color:
+                        paymentStatus === 'paid'
+                          ? 'white'
+                          : paymentStatus === 'overpaid'
+                            ? 'text.primary'
+                            : 'primary.contrastText',
+                    }}
+                  >
+                    {paymentStatus === 'overpaid'
+                      ? formatCentsAsCurrency(Math.abs(amountDue))
+                      : formatCentsAsCurrency(Math.max(0, amountDue))}
+                  </Typography>
+                  {paymentStatus !== 'paid' &&
+                    paymentStatus !== 'overpaid' &&
+                    overallTotals.activeTotal > 0 &&
+                    onRecordPayment && (
+                      <Button
+                        variant="contained"
+                        size="medium"
+                        startIcon={<PaymentIcon />}
+                        onClick={onRecordPayment}
+                        sx={{
+                          backgroundColor: 'white',
+                          color: 'primary.main',
+                          fontWeight: 'medium',
+                          whiteSpace: 'nowrap',
+                          minWidth: 'auto',
+                          '&:hover': {
+                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                          },
+                        }}
+                      >
+                        Collect Payment
+                      </Button>
+                    )}
+                </Box>
               </Box>
             </TableCell>
           </TableRow>
@@ -888,7 +912,6 @@ export default function EnhancedInvoiceLineItems({
                 sx={{
                   textAlign: 'center',
                   py: 2,
-                  backgroundColor: 'success.light',
                 }}
               >
                 <Typography
@@ -906,40 +929,8 @@ export default function EnhancedInvoiceLineItems({
               </TableCell>
             </TableRow>
           )}
-
-          {paymentStatus === 'overpaid' && (
-            <TableRow>
-              <TableCell
-                colSpan={4}
-                sx={{
-                  textAlign: 'center',
-                  py: 2,
-                  backgroundColor: 'warning.light',
-                }}
-              >
-                <Typography
-                  variant="body2"
-                  color="warning.dark"
-                  fontWeight="medium"
-                >
-                  ⚠️ Refund Required: Customer has overpaid by{' '}
-                  {formatCentsAsCurrency(Math.abs(amountDue))}
-                </Typography>
-              </TableCell>
-            </TableRow>
-          )}
         </TableBody>
       </Table>
-
-      {overallTotals.removedCount > 0 && (
-        <Box mt={2}>
-          <Typography variant="caption" color="text.secondary">
-            * Crossed out items were removed and are not included in the total
-            amount due.
-            {!readonly && ' Click the restore icon to add them back.'}
-          </Typography>
-        </Box>
-      )}
     </TableContainer>
   );
 }

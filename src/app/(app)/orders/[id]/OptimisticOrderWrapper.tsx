@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import OrderServicesAndPayments from './OrderServicesAndPayments';
 import {
   calculatePaymentStatus,
+  calculateActiveTotal,
   type PaymentInfo,
 } from '@/lib/utils/payment-calculations';
 
@@ -123,9 +124,21 @@ export default function OptimisticOrderWrapper({
     optimisticPaymentReducer
   );
 
-  // Calculate optimistic payment status using shared utility
+  // Calculate active total from garment services (excluding soft-deleted)
+  const activeServicesSubtotal = garmentServices
+    .filter((service) => !service.is_removed)
+    .reduce((sum, service) => {
+      const lineTotal =
+        service.line_total_cents || service.quantity * service.unit_price_cents;
+      return sum + lineTotal;
+    }, 0);
+
+  // Apply discount and tax to get active total
+  const activeTotal = activeServicesSubtotal - discountCents + taxCents;
+
+  // Calculate optimistic payment status using shared utility with active total
   const paymentStatus = calculatePaymentStatus(
-    orderTotal,
+    activeTotal,
     (optimisticPayments as PaymentInfo[]) || []
   );
 

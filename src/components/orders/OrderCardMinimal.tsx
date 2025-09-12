@@ -10,14 +10,13 @@ import {
   IconButton,
 } from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import {
   getOrderStatusColor,
   getOrderStatusLabel,
 } from '@/lib/utils/orderStatus';
 import {
   calculatePaymentStatus,
+  calculateActiveTotal,
   type PaymentInfo,
 } from '@/lib/utils/payment-calculations';
 import {
@@ -52,10 +51,10 @@ function getPaymentStatusChip(paymentStatus: string): {
   switch (paymentStatus) {
     case 'paid':
       return { label: '✓ PAID', color: 'success' };
-    case 'partially_paid':
+    case 'partial':
       return { label: '◉ PARTIAL', color: 'warning' };
     case 'overpaid':
-      return { label: '⚠ REFUND', color: 'warning' };
+      return { label: '⚠ OVERPAID', color: 'warning' };
     case 'unpaid':
     default:
       return { label: '○ UNPAID', color: 'error' };
@@ -129,7 +128,8 @@ export default function OrderCardMinimal({
     : 'No Client';
 
   // Calculate payment progress using centralized utility
-  const totalAmount = order.total_cents || 0;
+  // Use active total that accounts for soft-deleted services
+  const totalAmount = order.active_total_cents || calculateActiveTotal(order);
   const paidAmount = order.paid_amount_cents || 0;
 
   // Create a simplified payment info for the card (server already calculated net amount)
@@ -394,7 +394,6 @@ export default function OrderCardMinimal({
               >
                 <Chip
                   label={getOrderStatusLabel(order.status || 'new')}
-                  color={getOrderStatusColor(order.status || 'new')}
                   size="small"
                   sx={{
                     height: 22,
@@ -402,6 +401,36 @@ export default function OrderCardMinimal({
                     justifyContent: 'center',
                     fontSize: '0.7rem',
                     fontWeight: 'bold',
+                    backgroundColor: (() => {
+                      const status = order.status || 'new';
+                      switch (status) {
+                        case 'new':
+                          return '#A3B5AA';
+                        case 'in_progress':
+                          return '#F3C165';
+                        case 'ready_for_pickup':
+                          return '#BD8699';
+                        case 'completed':
+                          return '#aa90c0';
+                        default:
+                          return '#F8F8F5';
+                      }
+                    })(),
+                    color: (() => {
+                      const status = order.status || 'new';
+                      switch (status) {
+                        case 'new':
+                          return '#000000';
+                        case 'in_progress':
+                          return '#000000';
+                        case 'ready_for_pickup':
+                          return '#ffffff';
+                        case 'completed':
+                          return '#ffffff';
+                        default:
+                          return '#000000';
+                      }
+                    })(),
                     '& .MuiChip-label': {
                       px: 1,
                       width: '100%',
@@ -420,26 +449,6 @@ export default function OrderCardMinimal({
                   justifySelf: 'end',
                 }}
               >
-                {(dueDateInfo?.isUrgent || dueDateInfo?.isOverdue) && (
-                  <WarningAmberIcon
-                    sx={{
-                      mr: 0.5,
-                      fontSize: 18,
-                      color: dueDateInfo.isOverdue
-                        ? 'error.main'
-                        : 'warning.main',
-                    }}
-                  />
-                )}
-                {readyCount > 0 && (
-                  <CheckCircleIcon
-                    sx={{
-                      mr: 0.5,
-                      fontSize: 18,
-                      color: 'success.main',
-                    }}
-                  />
-                )}
                 <IconButton size="small">
                   <ChevronRightIcon />
                 </IconButton>

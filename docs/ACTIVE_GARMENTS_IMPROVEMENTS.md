@@ -20,7 +20,7 @@ The Active Garments section on the dashboard has been enhanced with improved int
 Each garment card now uses its stage-specific color:
 
 - **New**: `#a3b5aa` (Green)
-- **In Progress**: `#EEBA8C` (Orange)
+- **In Progress**: `#F3C165` (Orange)
 - **Ready For Pickup**: `#BD8699` (Rose)
 
 The colors are applied to:

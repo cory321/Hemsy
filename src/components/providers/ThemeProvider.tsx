@@ -30,9 +30,9 @@ const theme = createTheme({
       dark: '#5C252A',
     },
     warning: {
-      main: '#CC8B70', // Terracotta for warnings
-      light: '#FFDCC4',
-      dark: '#B8765A',
+      main: '#F3C165', // Terracotta for warnings
+      light: '#FFFBF4',
+      dark: '#F3C165',
     },
     info: {
       main: '#D08585', // Salmon pink for info

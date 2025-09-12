@@ -246,7 +246,7 @@ export default function OrdersList({
             >
               <MenuItem value="all">All Payment Statuses</MenuItem>
               <MenuItem value="unpaid">Unpaid</MenuItem>
-              <MenuItem value="partially_paid">Partially Paid</MenuItem>
+              <MenuItem value="partial">Partially Paid</MenuItem>
               <MenuItem value="paid">Paid</MenuItem>
               <MenuItem value="overpaid">Overpaid</MenuItem>
             </Select>

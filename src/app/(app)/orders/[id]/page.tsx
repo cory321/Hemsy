@@ -17,7 +17,7 @@ import ReceiptIcon from '@mui/icons-material/Receipt';
 import PersonIcon from '@mui/icons-material/Person';
 import EmailIcon from '@mui/icons-material/Email';
 import PhoneIcon from '@mui/icons-material/Phone';
-import WarningIcon from '@mui/icons-material/Warning';
+import { RemixIcon } from '@/components/dashboard/common';
 import Link from 'next/link';
 import { createClient as createSupabaseClient } from '@/lib/supabase/server';
 import { ensureUserAndShop } from '@/lib/actions/users';
@@ -26,11 +26,16 @@ import { getOrderStatusLabel } from '@/lib/utils/orderStatus';
 import OrderDetailClient from './OrderDetailClient';
 import OptimisticOrderWrapper from './OptimisticOrderWrapper';
 import OrderHeaderActions from '@/components/orders/OrderHeaderActions';
+import CreditBalanceCheck from './CreditBalanceCheck';
+import PaymentStatusChip from './PaymentStatusChip';
+import PaymentAmountDisplay from './PaymentAmountDisplay';
+import PaymentProgressBar from './PaymentProgressBar';
 import type { Database } from '@/types/supabase';
 import { formatPhoneNumber } from '@/lib/utils/phone';
 import { formatDateSafe } from '@/lib/utils/date-time-utils';
 import {
   calculatePaymentStatus,
+  calculateActiveTotal,
   type PaymentInfo,
 } from '@/lib/utils/payment-calculations';
 
@@ -234,32 +239,6 @@ export default async function OrderDetailPage({
     }
   };
 
-  // Calculate the actual active total (excluding removed services and applying discount)
-  const calculateActiveTotal = () => {
-    if (!lines || lines.length === 0) {
-      return order?.total_cents || 0;
-    }
-
-    // Sum up only non-removed services
-    const activeServicesSubtotal = lines
-      .filter((service: any) => !service.is_removed)
-      .reduce((sum: number, service: any) => {
-        const lineTotal =
-          service.line_total_cents ||
-          service.quantity * service.unit_price_cents;
-        return sum + lineTotal;
-      }, 0);
-
-    // Apply discount to get the actual total
-    const discountAmount = order?.discount_cents || 0;
-    const afterDiscount = activeServicesSubtotal - discountAmount;
-
-    // Calculate tax on the discounted amount
-    const taxAmount = order?.tax_cents || 0;
-
-    return afterDiscount + taxAmount;
-  };
-
   const activeSubtotal = lines
     .filter((service: any) => !service.is_removed)
     .reduce((sum: number, service: any) => {
@@ -268,7 +247,24 @@ export default async function OrderDetailPage({
       return sum + lineTotal;
     }, 0);
 
-  const activeTotal = calculateActiveTotal();
+  // Prepare order data for the centralized calculation
+  const orderWithServices = {
+    total_cents: order?.total_cents || 0,
+    discount_cents: order?.discount_cents || 0,
+    tax_cents: order?.tax_cents || 0,
+    garments:
+      garments?.map((g: any) => ({
+        garment_services: g.garment_services?.map((gs: any) => ({
+          id: gs.id,
+          quantity: gs.quantity,
+          unit_price_cents: gs.unit_price_cents,
+          line_total_cents: gs.line_total_cents,
+          is_removed: gs.is_removed,
+        })),
+      })) || [],
+  };
+
+  const activeTotal = calculateActiveTotal(orderWithServices);
 
   // Calculate payment status using the shared utility with actual payment history
   const paymentCalc = calculatePaymentStatus(
@@ -292,7 +288,7 @@ export default async function OrderDetailPage({
       const creditAmount = -amountDue;
       return {
         label: 'Credit Balance',
-        color: 'warning',
+        color: 'info',
         percentage,
         amountDue: -creditAmount, // negative indicates credit
         isRefundRequired: true,
@@ -332,7 +328,7 @@ export default async function OrderDetailPage({
       if (percentage >= 50)
         return {
           label: `${Math.round(percentage)}% Paid`,
-          color: 'warning',
+          color: 'info',
           percentage,
           amountDue,
           isRefundRequired: false,
@@ -340,7 +336,7 @@ export default async function OrderDetailPage({
       if (percentage > 0)
         return {
           label: `${Math.round(percentage)}% Paid`,
-          color: 'warning',
+          color: 'info',
           percentage,
           amountDue,
           isRefundRequired: false,
@@ -401,6 +397,14 @@ export default async function OrderDetailPage({
           )}
         </Box>
 
+        {/* Credit Balance Warning Banner */}
+        <CreditBalanceCheck
+          garmentServices={lines || []}
+          payments={(paymentHistory as PaymentInfo[]) || []}
+          discountCents={order?.discount_cents || 0}
+          taxCents={order?.tax_cents || 0}
+        />
+
         {/* Condensed Order Overview */}
         <Card
           sx={{
@@ -433,18 +437,6 @@ export default async function OrderDetailPage({
                     )}
                   </Avatar>
                   <Box sx={{ minWidth: 0, flex: 1 }}>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{
-                        textTransform: 'uppercase',
-                        letterSpacing: 0.5,
-                        fontWeight: 500,
-                        fontSize: '0.7rem',
-                      }}
-                    >
-                      Client
-                    </Typography>
                     <Typography
                       variant="h6"
                       sx={{
@@ -513,56 +505,29 @@ export default async function OrderDetailPage({
               {/* Payment Status */}
               <Grid size={{ xs: 12, md: 5 }}>
                 <Box>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{
-                      textTransform: 'uppercase',
-                      letterSpacing: 0.5,
-                      fontWeight: 500,
-                      fontSize: '0.7rem',
-                      display: 'block',
-                      mb: 0.5,
-                    }}
-                  >
-                    Payment Status
-                  </Typography>
                   <Box
                     sx={{
                       display: 'flex',
                       alignItems: 'center',
                       gap: 2,
                       mb: 1,
+                      width: '100%',
+                      maxWidth: 420,
+                      mx: 'auto',
                     }}
                   >
-                    <Chip
-                      label={paymentStatus.label}
-                      color={paymentStatus.color as any}
-                      size="medium"
-                      {...(paymentStatus.isRefundRequired && {
-                        icon: <WarningIcon />,
-                      })}
-                      sx={{
-                        fontWeight: 600,
-                        fontSize: '0.8rem',
-                        height: 32,
-                      }}
+                    <PaymentStatusChip
+                      garmentServices={lines || []}
+                      payments={(paymentHistory as PaymentInfo[]) || []}
+                      discountCents={order?.discount_cents || 0}
+                      taxCents={order?.tax_cents || 0}
                     />
-                    <Box>
-                      <Typography variant="h6" fontWeight="600">
-                        {formatUSD(netPaid)} / {formatUSD(activeTotal)}
-                      </Typography>
-                      {(order?.discount_cents || 0) > 0 && (
-                        <Typography
-                          variant="caption"
-                          color="success.main"
-                          sx={{ display: 'block' }}
-                        >
-                          Discount applied: -
-                          {formatUSD(order?.discount_cents || 0)}
-                        </Typography>
-                      )}
-                    </Box>
+                    <PaymentAmountDisplay
+                      garmentServices={lines || []}
+                      payments={(paymentHistory as PaymentInfo[]) || []}
+                      discountCents={order?.discount_cents || 0}
+                      taxCents={order?.tax_cents || 0}
+                    />
                     {activeTotal !== (order?.total_cents || 0) && (
                       <Typography
                         variant="body2"
@@ -575,37 +540,12 @@ export default async function OrderDetailPage({
                   </Box>
 
                   {/* Progress Bar */}
-                  {activeTotal > 0 && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <LinearProgress
-                        variant="determinate"
-                        value={Math.min(paymentStatus.percentage || 0, 100)}
-                        sx={{
-                          flex: 1,
-                          height: 8,
-                          borderRadius: 4,
-                          bgcolor: 'grey.200',
-                          '& .MuiLinearProgress-bar': {
-                            bgcolor: paymentStatus.isRefundRequired
-                              ? 'warning.main'
-                              : paymentStatus.percentage >= 100
-                                ? 'success.main'
-                                : paymentStatus.percentage >= 50
-                                  ? 'info.main'
-                                  : 'error.main',
-                            borderRadius: 4,
-                          },
-                        }}
-                      />
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ minWidth: 40, fontWeight: 500 }}
-                      >
-                        {Math.round(paymentStatus.percentage || 0)}%
-                      </Typography>
-                    </Box>
-                  )}
+                  <PaymentProgressBar
+                    garmentServices={lines || []}
+                    payments={(paymentHistory as PaymentInfo[]) || []}
+                    discountCents={order?.discount_cents || 0}
+                    taxCents={order?.tax_cents || 0}
+                  />
                 </Box>
               </Grid>
 
@@ -635,20 +575,6 @@ export default async function OrderDetailPage({
               <Grid size={{ xs: 12, md: 3 }}>
                 <Box sx={{ textAlign: 'right' }}>
                   <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{
-                      textTransform: 'uppercase',
-                      letterSpacing: 0.5,
-                      fontWeight: 500,
-                      fontSize: '0.7rem',
-                      display: 'block',
-                      mb: 0.5,
-                    }}
-                  >
-                    Order Status
-                  </Typography>
-                  <Typography
                     variant="h5"
                     sx={{
                       fontWeight: 700,
@@ -670,21 +596,6 @@ export default async function OrderDetailPage({
                   >
                     {getOrderStatusLabel(order?.status || 'new')}
                   </Typography>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 0.25,
-                      alignItems: 'flex-end',
-                    }}
-                  >
-                    <Typography variant="caption" color="text.secondary">
-                      Created: {formatDateSafe(order?.created_at)}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Due: {formatDateSafe(order?.order_due_date)}
-                    </Typography>
-                  </Box>
                 </Box>
               </Grid>
             </Grid>

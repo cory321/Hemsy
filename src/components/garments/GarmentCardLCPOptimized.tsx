@@ -254,7 +254,7 @@ const GarmentCardLCPOptimized: React.FC<GarmentCardLCPOptimizedProps> = ({
                     fontWeight: 600,
                   }),
                 ...(dueDateInfo?.isToday && {
-                  backgroundColor: '#EEBA8C',
+                  backgroundColor: '#F3C165',
                   color: 'black',
                   fontWeight: 600,
                 }),

@@ -14,7 +14,7 @@ export const GARMENT_STAGES: StageConfig[] = [
   },
   {
     name: 'In Progress',
-    color: '#EEBA8C',
+    color: '#F3C165',
     displayName: 'In Progress',
   },
   {
@@ -31,7 +31,7 @@ export const GARMENT_STAGES: StageConfig[] = [
 
 export const STAGE_COLORS: Record<GarmentStage, string> = {
   New: '#a3b5aa',
-  'In Progress': '#EEBA8C',
+  'In Progress': '#F3C165',
   'Ready For Pickup': '#BD8699',
   Done: '#c3b3d1',
 };

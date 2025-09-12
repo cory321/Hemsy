@@ -240,7 +240,7 @@ const GarmentCard: React.FC<GarmentCardProps> = ({
                     fontWeight: 600,
                   }),
                 ...(dueDateInfo?.isToday && {
-                  backgroundColor: '#EEBA8C',
+                  backgroundColor: '#F3C165',
                   color: 'black',
                   fontWeight: 600,
                 }),

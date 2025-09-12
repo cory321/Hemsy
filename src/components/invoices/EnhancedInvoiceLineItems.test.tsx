@@ -362,6 +362,37 @@ describe('EnhancedInvoiceLineItems', () => {
 
       expect(onRestoreItem).toHaveBeenCalledWith('item-3', 'garment-1');
     });
+
+    it('hides removed indicators when showRemovedIndicators is false', () => {
+      const itemsWithRemoved = [
+        ...defaultItems,
+        {
+          id: 'item-3',
+          garment_id: 'garment-1',
+          name: 'Removed Service',
+          quantity: 1,
+          unit_price_cents: 1000,
+          line_total_cents: 1000,
+          is_removed: true,
+        },
+      ];
+
+      render(
+        <EnhancedInvoiceLineItems
+          {...defaultProps}
+          items={itemsWithRemoved}
+          showRemoved={true}
+          showRemovedIndicators={false}
+        />
+      );
+
+      // Removed row renders but without chip or separator caption
+      expect(screen.getByText('Removed Service')).toBeInTheDocument();
+      expect(
+        screen.queryByText(/Removed services \(not charged\):/i)
+      ).toBeNull();
+      expect(screen.queryByText(/^Removed$/)).toBeNull();
+    });
   });
 
   describe('Garment Navigation', () => {

@@ -18,7 +18,7 @@ jest.mock('@/constants/garmentStages', () => ({
   STAGE_COLORS: {
     'Ready For Pickup': '#BD8699',
     New: '#a3b5aa',
-    'In Progress': '#EEBA8C',
+    'In Progress': '#F3C165',
     Done: '#c3b3d1',
   },
 }));

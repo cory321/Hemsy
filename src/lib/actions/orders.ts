@@ -84,7 +84,24 @@ export async function getOrdersPaginated(
       `
       *,
       client:clients(id, first_name, last_name, phone_number),
-      garments(id, name, stage, due_date, event_date, image_cloud_id, photo_url, preset_icon_key, preset_fill_color),
+      garments(
+        id, 
+        name, 
+        stage, 
+        due_date, 
+        event_date, 
+        image_cloud_id, 
+        photo_url, 
+        preset_icon_key, 
+        preset_fill_color,
+        garment_services(
+          id,
+          quantity,
+          unit_price_cents,
+          line_total_cents,
+          is_removed
+        )
+      ),
       invoices(
         id,
         status,
@@ -181,17 +198,42 @@ export async function getOrdersPaginated(
       });
     }
 
-    // Use the order's total_cents for comparison, not invoice amounts
-    const orderTotal = order.total_cents || 0;
+    // Calculate active total from non-removed garment services
+    let activeTotal = order.total_cents || 0;
 
-    // Determine payment status
-    let paymentStatus: 'unpaid' | 'partially_paid' | 'paid' | 'overpaid';
+    // If we have garment services data, calculate the actual active total
+    if (order.garments && order.garments.length > 0) {
+      let activeServicesSubtotal = 0;
+
+      order.garments.forEach((garment: any) => {
+        if (garment.garment_services) {
+          garment.garment_services.forEach((service: any) => {
+            // Only include non-removed services
+            if (!service.is_removed) {
+              const lineTotal =
+                service.line_total_cents ||
+                service.quantity * service.unit_price_cents;
+              activeServicesSubtotal += lineTotal;
+            }
+          });
+        }
+      });
+
+      // Apply discount and tax to match order detail page calculation
+      const discountAmount = order.discount_cents || 0;
+      const afterDiscount = activeServicesSubtotal - discountAmount;
+      const taxAmount = order.tax_cents || 0;
+      activeTotal = afterDiscount + taxAmount;
+    }
+
+    // Determine payment status using the active total
+    let paymentStatus: 'unpaid' | 'partial' | 'paid' | 'overpaid';
     if (paidAmount === 0) {
       paymentStatus = 'unpaid';
-    } else if (paidAmount >= orderTotal) {
-      paymentStatus = paidAmount > orderTotal ? 'overpaid' : 'paid';
+    } else if (paidAmount >= activeTotal) {
+      paymentStatus = paidAmount > activeTotal ? 'overpaid' : 'paid';
     } else {
-      paymentStatus = 'partially_paid';
+      paymentStatus = 'partial';
     }
 
     // Add the calculated paid_amount_cents and payment_status
@@ -199,6 +241,7 @@ export async function getOrdersPaginated(
       ...order,
       paid_amount_cents: paidAmount,
       payment_status: paymentStatus,
+      active_total_cents: activeTotal, // Include this for transparency
     };
   });
 

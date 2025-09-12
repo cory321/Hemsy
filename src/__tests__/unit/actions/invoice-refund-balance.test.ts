@@ -32,7 +32,7 @@ describe('Invoice Balance with Refunds', () => {
           id: 'invoice-1',
           amount_cents: 10000, // $100
           deposit_amount_cents: 3000, // $30
-          status: 'partially_paid',
+          status: 'partial',
           payments: [
             {
               amount_cents: 5000, // $50 paid
@@ -59,7 +59,7 @@ describe('Invoice Balance with Refunds', () => {
       depositRequired: 3000,
       depositPaid: 3000, // Min of $50 paid and $30 required
       depositRemaining: 0,
-      status: 'partially_paid',
+      status: 'partial',
       canStartWork: true,
       hasRefunds: false,
       hasCredit: false,
@@ -74,7 +74,7 @@ describe('Invoice Balance with Refunds', () => {
           id: 'invoice-1',
           amount_cents: 10000, // $100
           deposit_amount_cents: 3000, // $30
-          status: 'partially_paid',
+          status: 'partial',
           payments: [
             {
               amount_cents: 8000, // $80 paid
@@ -101,7 +101,7 @@ describe('Invoice Balance with Refunds', () => {
       depositRequired: 3000,
       depositPaid: 3000,
       depositRemaining: 0,
-      status: 'partially_paid',
+      status: 'partial',
       canStartWork: true,
       hasRefunds: true,
       hasCredit: false,
@@ -200,7 +200,7 @@ describe('Invoice Balance with Refunds', () => {
           id: 'invoice-1',
           amount_cents: 15000, // $150
           deposit_amount_cents: 5000, // $50
-          status: 'partially_paid',
+          status: 'partial',
           payments: [
             {
               amount_cents: 5000, // $50 paid (deposit)
@@ -237,7 +237,7 @@ describe('Invoice Balance with Refunds', () => {
       depositRequired: 5000,
       depositPaid: 5000, // Min of $130 paid and $50 required
       depositRemaining: 0,
-      status: 'partially_paid',
+      status: 'partial',
       canStartWork: true,
       hasRefunds: true,
       hasCredit: false,

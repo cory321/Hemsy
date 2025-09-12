@@ -7,7 +7,6 @@ import toast from 'react-hot-toast';
 import EnhancedInvoiceLineItems from '@/components/invoices/EnhancedInvoiceLineItems';
 import PaymentManagement from '@/components/invoices/PaymentManagement';
 import RecordPaymentDialog from '@/components/orders/RecordPaymentDialog';
-import { restoreRemovedService } from '@/lib/actions/garments';
 import {
   calculatePaymentStatus,
   type PaymentInfo,
@@ -116,22 +115,7 @@ export default function OrderServicesAndPayments({
   const router = useRouter();
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
 
-  const handleRestoreService = async (serviceId: string, garmentId: string) => {
-    try {
-      const result = await restoreRemovedService({
-        garmentServiceId: serviceId,
-        garmentId: garmentId,
-      });
-      if (result.success) {
-        toast.success('Service restored successfully');
-        router.refresh(); // Refresh the page to show updated data
-      } else {
-        toast.error(result.error || 'Failed to restore service');
-      }
-    } catch (error) {
-      toast.error('Failed to restore service');
-    }
-  };
+  // Restoring services is disabled on the orders page; use the garment page instead.
 
   const handlePaymentUpdate = () => {
     // Refresh the page to show updated payment information
@@ -160,16 +144,18 @@ export default function OrderServicesAndPayments({
     quantity: service.quantity || 1,
     unit_price_cents: service.unit_price_cents || 0,
     line_total_cents: service.line_total_cents || service.unit_price_cents || 0,
-    ...(service.description && { description: service.description }),
     is_removed: service.is_removed || false,
     ...(service.removed_at && { removed_at: service.removed_at }),
     ...(service.removal_reason && { removal_reason: service.removal_reason }),
   }));
 
-  // Calculate total amount due
-  const totalAmount = lineItems
+  // Calculate total amount due (including discount and tax)
+  const subtotal = lineItems
     .filter((item) => !item.is_removed)
     .reduce((sum, item) => sum + (item.line_total_cents || 0), 0);
+
+  // Apply discount and tax to get the actual total amount due
+  const totalAmount = subtotal - (discountCents || 0) + (taxCents || 0);
 
   // Use optimistic payment status if available, otherwise calculate from payments
   const paymentCalculation =
@@ -200,8 +186,8 @@ export default function OrderServicesAndPayments({
               items={lineItems}
               garments={garments}
               showRemoved={true}
-              onRestoreItem={handleRestoreService}
-              readonly={false}
+              showRemovedIndicators={false}
+              readonly={true}
               payments={payments}
               orderStatus={orderStatus}
               paidAt={paidAt}

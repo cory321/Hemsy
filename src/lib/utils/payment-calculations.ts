@@ -11,6 +11,23 @@ export interface PaymentInfo {
   type?: 'payment' | 'refund'; // Optional to maintain backward compatibility
 }
 
+export interface GarmentService {
+  id: string;
+  quantity: number;
+  unit_price_cents: number;
+  line_total_cents?: number;
+  is_removed: boolean;
+}
+
+export interface OrderWithServices {
+  total_cents: number;
+  discount_cents?: number;
+  tax_cents?: number;
+  garments?: Array<{
+    garment_services?: GarmentService[];
+  }>;
+}
+
 export interface PaymentCalculationResult {
   totalPaid: number;
   totalRefunded: number;
@@ -132,4 +149,39 @@ export function formatCentsAsCurrency(cents: number): string {
     style: 'currency',
     currency: 'USD',
   }).format((cents || 0) / 100);
+}
+
+/**
+ * Calculate the active total for an order, accounting for soft-deleted services
+ * This matches the logic used on the order detail page
+ */
+export function calculateActiveTotal(order: OrderWithServices): number {
+  // If no garments/services data, fallback to order total
+  if (!order.garments || order.garments.length === 0) {
+    return order.total_cents || 0;
+  }
+
+  // Calculate subtotal from non-removed services
+  let activeServicesSubtotal = 0;
+
+  order.garments.forEach((garment) => {
+    if (garment.garment_services) {
+      garment.garment_services.forEach((service) => {
+        // Only include non-removed services
+        if (!service.is_removed) {
+          const lineTotal =
+            service.line_total_cents ||
+            service.quantity * service.unit_price_cents;
+          activeServicesSubtotal += lineTotal;
+        }
+      });
+    }
+  });
+
+  // Apply discount and tax to match order detail page calculation
+  const discountAmount = order.discount_cents || 0;
+  const afterDiscount = activeServicesSubtotal - discountAmount;
+  const taxAmount = order.tax_cents || 0;
+
+  return afterDiscount + taxAmount;
 }

@@ -254,16 +254,6 @@ export default function InvoiceLineItems({
           </TableRow>
         </TableBody>
       </Table>
-
-      {removedItems.length > 0 && (
-        <Box mt={2}>
-          <Typography variant="caption" color="text.secondary">
-            * Crossed out items were removed and are not included in the total
-            amount due.
-            {!readonly && ' Click the restore icon to add them back.'}
-          </Typography>
-        </Box>
-      )}
     </TableContainer>
   );
 }

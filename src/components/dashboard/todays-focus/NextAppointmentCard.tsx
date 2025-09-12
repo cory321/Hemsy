@@ -45,7 +45,7 @@ const refinedColors = {
     tertiary: '#999999',
   },
   happeningNow: {
-    main: '#EEBA8C', // In Progress color from garment stages
+    main: '#F3C165', // In Progress color from garment stages
     hover: '#E5A870', // Darker shade for hover
   },
 };

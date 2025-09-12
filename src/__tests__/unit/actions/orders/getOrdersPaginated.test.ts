@@ -263,7 +263,7 @@ describe('getOrdersPaginated', () => {
 
       // Verify that payment information is calculated correctly
       expect(result.data[0]?.paid_amount_cents).toBe(5000);
-      expect(result.data[0]?.payment_status).toBe('partially_paid');
+      expect(result.data[0]?.payment_status).toBe('partial');
     });
   });
 
