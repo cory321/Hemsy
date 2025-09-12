@@ -122,7 +122,9 @@ describe('BalanceConfirmationDialog', () => {
   });
 
   it('should show warning when no invoice exists', () => {
-    render(<BalanceConfirmationDialog {...defaultProps} />);
+    render(
+      <BalanceConfirmationDialog {...defaultProps} invoiceId={undefined} />
+    );
 
     expect(
       screen.getByText(/No invoice found for this order/)
