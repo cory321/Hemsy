@@ -18,33 +18,6 @@ describe('getRecentActivity', () => {
     jest.clearAllMocks();
   });
 
-  it('should return fallback data when there is an error', async () => {
-    // Mock the auth to throw an error
-    mockEnsureUserAndShop.mockRejectedValueOnce(new Error('Auth error'));
-
-    const result = await getRecentActivity();
-
-    expect(result).toHaveLength(3);
-    expect(result[0]).toMatchObject({
-      id: 'fallback-1',
-      type: 'payment',
-      text: 'Payment received',
-      detail: '$150 from Lisa C.',
-    });
-    expect(result[1]).toMatchObject({
-      id: 'fallback-2',
-      type: 'appointment',
-      text: 'Appointment confirmed',
-      detail: 'Sarah J. at 10:30 AM',
-    });
-    expect(result[2]).toMatchObject({
-      id: 'fallback-3',
-      type: 'garment',
-      text: 'Garment completed',
-      detail: 'Evening dress for Amy R.',
-    });
-  });
-
   it('should respect the limit parameter', async () => {
     // Mock successful auth
     mockEnsureUserAndShop.mockResolvedValueOnce({

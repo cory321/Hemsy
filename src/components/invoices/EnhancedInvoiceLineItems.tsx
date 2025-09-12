@@ -81,9 +81,9 @@ interface EnhancedInvoiceLineItemsProps {
   orderStatus?: string | null | undefined; // Optional order status
   paidAt?: string | null | undefined; // Optional paid date
   onRecordPayment?: (() => void) | undefined; // Optional callback to trigger payment recording
-  orderSubtotal?: number; // Optional subtotal for full pricing breakdown
-  discountCents?: number; // Optional discount amount
-  taxCents?: number; // Optional tax amount
+  orderSubtotal?: number | undefined; // Optional subtotal for full pricing breakdown
+  discountCents?: number | undefined; // Optional discount amount
+  taxCents?: number | undefined; // Optional tax amount
 }
 
 export default function EnhancedInvoiceLineItems({
