@@ -271,6 +271,9 @@ export function SettingsClient() {
                                 location_type: e.target.value as any,
                               })
                             }
+                            MenuProps={{
+                              disableScrollLock: true,
+                            }}
                           >
                             <MenuItem value="shop_location">
                               Shop Location

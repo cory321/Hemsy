@@ -268,6 +268,18 @@ export class EmailRepository {
     if (error) throw error;
   }
 
+  async invalidateUnusedTokensForAppointment(
+    appointmentId: string
+  ): Promise<void> {
+    const { error } = await this.supabase
+      .from('confirmation_tokens')
+      .update({ used_at: new Date().toISOString() })
+      .eq('appointment_id', appointmentId)
+      .is('used_at', null);
+
+    if (error) throw error;
+  }
+
   // User settings
   async getUserEmailSettings(): Promise<UserEmailSettings | null> {
     const { data, error } = await this.supabase

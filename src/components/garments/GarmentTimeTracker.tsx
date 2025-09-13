@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import {
   Box,
   Button,
@@ -62,6 +62,43 @@ export default function GarmentTimeTracker({
   const [isSavingAdd, setIsSavingAdd] = useState(false);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
 
+  // Validation error states
+  const [serviceError, setServiceError] = useState<string>('');
+  const [timeError, setTimeError] = useState<string>('');
+  const serviceSelectRef = useRef<HTMLSelectElement>(null);
+
+  // Delete loading state
+  const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null);
+
+  // Clear errors when dialog opens
+  const handleOpenAddDialog = () => {
+    setIsAddOpen(true);
+    setServiceError('');
+    setTimeError('');
+  };
+
+  // Clear errors when fields change
+  const handleServiceChange = (value: string) => {
+    setSelectedServiceId(value);
+    if (serviceError) {
+      setServiceError('');
+    }
+  };
+
+  const handleHoursChange = (value: string) => {
+    setHoursInput(value);
+    if (timeError) {
+      setTimeError('');
+    }
+  };
+
+  const handleMinutesChange = (value: string) => {
+    setMinutesInput(value);
+    if (timeError) {
+      setTimeError('');
+    }
+  };
+
   async function refresh() {
     try {
       const [list, total] = await Promise.all([
@@ -85,19 +122,40 @@ export default function GarmentTimeTracker({
   // Total time will be displayed in hours and minutes via formatMinutesHM
 
   const handleAdd = async () => {
-    const minsCombined =
-      (parseInt(hoursInput || '0', 10) || 0) * 60 +
-      (parseInt(minutesInput || '0', 10) || 0);
-    const mins = isNaN(minsCombined) ? 0 : minsCombined;
-    if (!selectedServiceId || !mins || mins <= 0) return;
+    // Clear previous errors
+    setServiceError('');
+    setTimeError('');
+
+    // Validate service selection
+    if (!selectedServiceId) {
+      setServiceError('Please select a service');
+      // Focus on the service field
+      setTimeout(() => {
+        serviceSelectRef.current?.focus();
+      }, 100);
+      return;
+    }
+
+    // Validate time input
+    const hours = parseInt(hoursInput || '0', 10) || 0;
+    const minutes = parseInt(minutesInput || '0', 10) || 0;
+    const minsCombined = hours * 60 + minutes;
+    const totalMins = isNaN(minsCombined) ? 0 : minsCombined;
+
+    if (totalMins <= 0) {
+      setTimeError('Please enter some amount of time (hours or minutes)');
+      return;
+    }
 
     try {
       setIsSavingAdd(true);
-      await addTimeEntry(selectedServiceId, mins);
+      await addTimeEntry(selectedServiceId, totalMins);
       setIsAddOpen(false);
       setSelectedServiceId('');
       setHoursInput('');
       setMinutesInput('');
+      setServiceError('');
+      setTimeError('');
       await refresh();
     } catch (error) {
       console.error('Failed to add time entry:', error);
@@ -130,10 +188,13 @@ export default function GarmentTimeTracker({
 
   const handleDelete = async (entryId: string) => {
     try {
+      setDeletingEntryId(entryId);
       await deleteTimeEntry(entryId);
       await refresh();
     } catch (error) {
       console.error('Failed to delete time entry:', error);
+    } finally {
+      setDeletingEntryId(null);
     }
   };
 
@@ -163,7 +224,7 @@ export default function GarmentTimeTracker({
             <Button
               startIcon={<AddIcon />}
               variant="outlined"
-              onClick={() => setIsAddOpen(true)}
+              onClick={handleOpenAddDialog}
               disabled={isGarmentDone || isOrderCancelled}
               title={
                 isOrderCancelled
@@ -214,17 +275,27 @@ export default function GarmentTimeTracker({
                     </IconButton>
                     <IconButton
                       aria-label="delete"
-                      disabled={isGarmentDone || isOrderCancelled}
+                      disabled={
+                        isGarmentDone ||
+                        isOrderCancelled ||
+                        deletingEntryId === e.id
+                      }
                       title={
                         isOrderCancelled
                           ? 'Cannot delete time entries for cancelled orders'
                           : isGarmentDone
                             ? 'Cannot delete time entries for completed garments'
-                            : undefined
+                            : deletingEntryId === e.id
+                              ? 'Deleting...'
+                              : undefined
                       }
                       onClick={() => handleDelete(e.id)}
                     >
-                      <DeleteIcon />
+                      {deletingEntryId === e.id ? (
+                        <CircularProgress size={20} />
+                      ) : (
+                        <DeleteIcon />
+                      )}
                     </IconButton>
                   </Stack>
                 }
@@ -266,10 +337,15 @@ export default function GarmentTimeTracker({
           <TextField
             fullWidth
             select
-            SelectProps={{ native: true }}
+            SelectProps={{
+              native: true,
+              inputRef: serviceSelectRef,
+            }}
             label="Service"
             value={selectedServiceId}
-            onChange={(e) => setSelectedServiceId(e.target.value)}
+            onChange={(e) => handleServiceChange(e.target.value)}
+            error={!!serviceError}
+            helperText={serviceError}
             sx={{ mt: 1 }}
           >
             <option value="" />
@@ -284,17 +360,20 @@ export default function GarmentTimeTracker({
               type="number"
               label="Hours"
               value={hoursInput}
-              onChange={(e) => setHoursInput(e.target.value)}
+              onChange={(e) => handleHoursChange(e.target.value)}
               inputProps={{ min: 0 }}
               fullWidth
+              error={!!timeError}
             />
             <TextField
               type="number"
               label="Minutes"
               value={minutesInput}
-              onChange={(e) => setMinutesInput(e.target.value)}
+              onChange={(e) => handleMinutesChange(e.target.value)}
               inputProps={{ min: 0, max: 59 }}
               fullWidth
+              error={!!timeError}
+              helperText={timeError}
             />
           </Stack>
         </DialogContent>

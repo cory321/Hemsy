@@ -145,16 +145,27 @@ export class EmailService {
         additionalData
       );
 
-      // If sending scheduled email for a pending appointment, include confirmation link
-      // We generate a token and link similar to sendConfirmationRequest, but inline here
+      // If sending scheduled email for a pending appointment, include confirmation and cancel links
+      // We generate tokens and links similar to sendConfirmationRequest, but inline here
       if (
         emailType === 'appointment_scheduled' &&
         appointmentData.status === 'pending'
       ) {
-        const token =
+        // Generate confirmation link
+        const confirmToken =
           await this.repository.createConfirmationToken(appointmentId);
-        const confirmationUrl = `${emailConfig.urls.confirmation}/${token.token}`;
-        emailData = { ...emailData, confirmation_link: confirmationUrl };
+        const confirmationUrl = `${emailConfig.urls.confirmation}/${confirmToken.token}`;
+
+        // Generate cancel link (using the same token system)
+        const cancelToken =
+          await this.repository.createConfirmationToken(appointmentId);
+        const cancelUrl = `${emailConfig.urls.decline}/${cancelToken.token}`;
+
+        emailData = {
+          ...emailData,
+          confirmation_link: confirmationUrl,
+          cancel_link: cancelUrl,
+        };
       }
 
       // 5. Render template
@@ -355,14 +366,19 @@ export class EmailService {
       appointment_time: this.formatAppointmentTime(
         `${appointment.date} ${appointment.start_time}`
       ),
-      shop_name: getShopDisplayName(appointment.shop),
-      seamstress_name: appointment.shop.seamstress_name,
+      shop_name:
+        getShopDisplayName(appointment.shop) || emailConfig.sender.name,
+      seamstress_name:
+        appointment.shop.seamstress_name ||
+        getShopDisplayName(appointment.shop) ||
+        emailConfig.sender.name,
       ...additionalData,
     };
 
     // Add type-specific data
     if (
-      emailType === 'appointment_rescheduled' &&
+      (emailType === 'appointment_rescheduled' ||
+        emailType === 'appointment_rescheduled_seamstress') &&
       additionalData?.previous_time
     ) {
       (baseData as any).previous_time = this.formatAppointmentTime(
@@ -370,7 +386,11 @@ export class EmailService {
       );
     }
 
-    if (emailType === 'appointment_canceled' && additionalData?.previous_time) {
+    if (
+      (emailType === 'appointment_canceled' ||
+        emailType === 'appointment_canceled_seamstress') &&
+      additionalData?.previous_time
+    ) {
       (baseData as any).previous_time = this.formatAppointmentTime(
         additionalData.previous_time
       );
@@ -402,6 +422,7 @@ export class EmailService {
         to: appointmentData.client.email,
         subject: rendered.subject,
         text: rendered.body,
+        from: `${getShopDisplayName(appointmentData.shop) || emailConfig.sender.name} <${emailConfig.sender.address}>`,
       });
       console.log('⬅️ Client send result:', clientResult);
       results.push(clientResult);
@@ -453,6 +474,8 @@ export class EmailService {
             to: seamstressTo,
             subject: seamstressRendered.subject,
             text: seamstressRendered.body,
+            // Keep Hemsy as sender for seamstress notifications
+            from: `${emailConfig.sender.name} <${emailConfig.sender.address}>`,
           });
           console.log('⬅️ Seamstress send result:', seamstressResult);
           results.push(seamstressResult);

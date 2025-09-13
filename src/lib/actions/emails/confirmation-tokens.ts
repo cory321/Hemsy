@@ -13,6 +13,7 @@ export async function confirmAppointment(token: string): Promise<{
   success: boolean;
   error?: string;
   appointmentId?: string;
+  alreadyUsed?: boolean;
 }> {
   try {
     // Validate token format
@@ -29,6 +30,7 @@ export async function confirmAppointment(token: string): Promise<{
       if (validation.reason === 'used') {
         return {
           success: true,
+          alreadyUsed: true,
           ...(validation.appointmentId
             ? { appointmentId: validation.appointmentId }
             : {}),
@@ -55,6 +57,11 @@ export async function confirmAppointment(token: string): Promise<{
 
     // Mark token as used
     await repository.useToken(validatedData.token);
+
+    // Invalidate all other unused tokens for this appointment
+    await repository.invalidateUnusedTokensForAppointment(
+      validation.appointmentId!
+    );
 
     // Send confirmation email to seamstress
     // Fetch the shop owner's user_id via the appointment's shop
@@ -105,6 +112,123 @@ export async function confirmAppointment(token: string): Promise<{
     return {
       success: false,
       error: 'Failed to confirm appointment',
+    };
+  }
+}
+
+/**
+ * Decline an appointment via token
+ */
+export async function declineAppointment(token: string): Promise<{
+  success: boolean;
+  error?: string;
+  appointmentId?: string;
+  alreadyUsed?: boolean;
+}> {
+  try {
+    // Validate token format
+    const validatedData = ConfirmationTokenSchema.parse({ token });
+
+    const supabase = await createClient();
+
+    // Validate token (public action - no auth required)
+    const repository = new EmailRepository(supabase, 'system');
+    const validation = await repository.validateToken(validatedData.token);
+
+    if (!validation.valid) {
+      // If already used, treat as success (idempotent UX) and perform no further actions
+      if (validation.reason === 'used') {
+        return {
+          success: true,
+          alreadyUsed: true,
+          ...(validation.appointmentId
+            ? { appointmentId: validation.appointmentId }
+            : {}),
+        };
+      }
+      return {
+        success: false,
+        error:
+          validation.reason === 'expired'
+            ? 'This cancellation link has expired'
+            : 'Invalid cancellation link',
+      };
+    }
+
+    // Get appointment details for the cancellation email
+    const { data: appointment, error: fetchError } = await supabase
+      .from('appointments')
+      .select('date, start_time, shop_id, shops(owner_user_id)')
+      .eq('id', validation.appointmentId!)
+      .single();
+
+    if (fetchError || !appointment) {
+      throw new Error('Appointment not found');
+    }
+
+    // Update appointment status to declined
+    const { error: updateError } = await supabase
+      .from('appointments')
+      .update({ status: 'declined' })
+      .eq('id', validation.appointmentId!);
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    // Mark token as used
+    await repository.useToken(validatedData.token);
+
+    // Invalidate all other unused tokens for this appointment
+    await repository.invalidateUnusedTokensForAppointment(
+      validation.appointmentId!
+    );
+
+    // Send cancellation email to seamstress
+    if (appointment?.shops?.owner_user_id) {
+      const ownerUserId = (appointment as any).shops.owner_user_id as string;
+      const emailService = new EmailService(supabase, ownerUserId);
+
+      // Format the previous time for the cancellation email
+      const previousTime = `${appointment.date} ${appointment.start_time}`;
+
+      const sendResult = await emailService.sendAppointmentEmail(
+        validation.appointmentId!,
+        'appointment_canceled',
+        { previous_time: previousTime }
+      );
+
+      if (!sendResult.success) {
+        console.warn(
+          'Appointment declined but failed to send seamstress email:',
+          sendResult.error
+        );
+      }
+    } else {
+      console.warn(
+        'Appointment declined but could not resolve shop owner for email notification'
+      );
+    }
+
+    return {
+      success: true,
+      ...(validation.appointmentId
+        ? { appointmentId: validation.appointmentId }
+        : {}),
+    };
+  } catch (error) {
+    console.error('Failed to decline appointment:', error);
+
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: 'Invalid cancellation link format',
+      };
+    }
+
+    return {
+      success: false,
+      error: 'Failed to cancel appointment',
     };
   }
 }

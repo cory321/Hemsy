@@ -21,13 +21,13 @@ export async function toggleServiceCompletion(
   input: ToggleServiceCompletionInput
 ): Promise<ToggleServiceCompletionResult> {
   try {
-    await ensureUserAndShop();
+    const { user } = await ensureUserAndShop();
     const supabase = await createClient();
 
-    // Get the garment ID from the service first to check permissions
+    // Get the service details including name for history tracking
     const { data: service, error: serviceError } = await supabase
       .from('garment_services')
-      .select('garment_id')
+      .select('id, garment_id, name, is_done')
       .eq('id', input.garmentServiceId)
       .single();
 
@@ -55,6 +55,23 @@ export async function toggleServiceCompletion(
       console.error('Error updating service:', updateError);
       return { success: false, error: 'Failed to update service' };
     }
+
+    // Log the completion status change to history
+    await supabase.from('garment_history').insert({
+      garment_id: service.garment_id,
+      changed_by: user.id,
+      field_name: 'services',
+      old_value: {
+        service_name: service.name,
+        completion_status: service.is_done ? 'completed' : 'incomplete',
+      },
+      new_value: {
+        service_name: service.name,
+        completion_status: input.isDone ? 'completed' : 'incomplete',
+      },
+      change_type: 'service_updated',
+      related_service_id: input.garmentServiceId,
+    });
 
     // Recalculate and update garment stage
     const stageResult = await recalculateAndUpdateGarmentStage(

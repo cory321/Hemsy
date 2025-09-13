@@ -26,6 +26,12 @@ export async function updateGarmentStage(
     stage,
   });
 
+  // Get the current user ID
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData?.user?.id) {
+    throw new Error('User not authenticated');
+  }
+
   // Ensure garment belongs to shop and update
   const { data: current, error: fetchError } = await supabase
     .from('garments')
@@ -46,4 +52,21 @@ export async function updateGarmentStage(
 
   if (error)
     throw new Error(`Failed to update garment stage: ${error.message}`);
+
+  // Track the stage change in history
+  const { error: historyError } = await supabase
+    .from('garment_history')
+    .insert({
+      garment_id: gId,
+      changed_by: userData.user.id,
+      field_name: 'stage',
+      old_value: current.stage,
+      new_value: s,
+      change_type: 'field_update',
+    });
+
+  if (historyError) {
+    console.error('Error tracking stage change in history:', historyError);
+    // Don't fail the update if history tracking fails
+  }
 }

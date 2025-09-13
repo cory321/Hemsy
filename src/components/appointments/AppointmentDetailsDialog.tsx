@@ -69,6 +69,7 @@ import { AppointmentActionType } from '@/lib/reducers/appointments-reducer';
 import { toast } from 'react-hot-toast';
 import { useAppointmentDetailsState } from '@/components/appointments/hooks/useAppointmentDetailsState';
 import CancelConfirmationDialog from '@/components/appointments/dialogs/CancelConfirmationDialog';
+import { sendConfirmationRequestEmail } from '@/lib/actions/emails/email-send';
 
 interface AppointmentDetailsDialogProps {
   open: boolean;
@@ -121,9 +122,26 @@ export function AppointmentDetailsDialog({
     onEdit(appointment, true, true);
   };
 
+  const handleResendConfirmation = async () => {
+    setIsResendingConfirmation(true);
+    try {
+      const result = await sendConfirmationRequestEmail(appointment.id);
+      if (result.success) {
+        toast.success('Confirmation email sent successfully');
+      } else {
+        toast.error(result.error || 'Failed to send confirmation email');
+      }
+    } catch (error) {
+      toast.error('Failed to send confirmation email');
+    } finally {
+      setIsResendingConfirmation(false);
+    }
+  };
+
   // Use the updateAppointment from context which handles toasts and state management
   const { updateAppointment: updateAppointmentFromContext } = useAppointments();
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isResendingConfirmation, setIsResendingConfirmation] = useState(false);
 
   // Mutation for canceling appointment
   const cancelMutation = useMutation({
@@ -999,6 +1017,47 @@ export function AppointmentDetailsDialog({
             {(appointment.status === 'pending' ||
               appointment.status === 'confirmed') && (
               <>
+                {/* Resend confirmation for pending appointments */}
+                {appointment.status === 'pending' && (
+                  <Button
+                    variant="outlined"
+                    startIcon={
+                      isResendingConfirmation ? (
+                        <CircularProgress size={18} color="inherit" />
+                      ) : (
+                        <RemixIcon name="ri-mail-send-line" size={18} />
+                      )
+                    }
+                    onClick={handleResendConfirmation}
+                    disabled={
+                      isResendingConfirmation ||
+                      isUpdating ||
+                      cancelMutation.isPending
+                    }
+                    sx={{
+                      borderRadius: 2,
+                      py: 1.5,
+                      px: 3,
+                      fontWeight: 600,
+                      textTransform: 'none',
+                      borderColor: 'primary.main',
+                      color: 'primary.main',
+                      '&:hover': {
+                        borderColor: 'primary.dark',
+                        backgroundColor: 'rgba(184, 85, 99, 0.04)',
+                      },
+                      '&:disabled': {
+                        borderColor: 'action.disabled',
+                        color: 'action.disabled',
+                      },
+                    }}
+                  >
+                    {isResendingConfirmation
+                      ? 'Sending...'
+                      : 'Resend Confirmation'}
+                  </Button>
+                )}
+
                 {/* Show Reschedule and Cancel only for future appointments */}
                 {!isPast && (
                   <>

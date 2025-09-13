@@ -161,9 +161,13 @@ export default function EnhancedInvoiceLineItems({
     { activeTotal: 0, removedTotal: 0, activeCount: 0, removedCount: 0 }
   );
 
+  // Calculate final total after discount and tax
+  const finalTotal =
+    overallTotals.activeTotal - (discountCents || 0) + (taxCents || 0);
+
   // Calculate payment totals and amount due using shared utility
   const paymentCalc = calculatePaymentStatus(
-    overallTotals.activeTotal,
+    finalTotal,
     (payments?.map((p) => ({
       ...p,
       refunded_amount_cents: (p as any).refunded_amount_cents || 0,
@@ -692,7 +696,7 @@ export default function EnhancedInvoiceLineItems({
                   </TableCell>
                   <TableCell align="right">
                     <Typography variant="body2" color="success.main">
-                      -{formatCentsAsCurrency(discountCents)}
+                      -{formatCentsAsCurrency(discountCents!)}
                     </Typography>
                   </TableCell>
                 </TableRow>
@@ -706,7 +710,7 @@ export default function EnhancedInvoiceLineItems({
                   </TableCell>
                   <TableCell align="right">
                     <Typography variant="body2">
-                      {formatCentsAsCurrency(taxCents)}
+                      {formatCentsAsCurrency(taxCents!)}
                     </Typography>
                   </TableCell>
                 </TableRow>
@@ -852,7 +856,7 @@ export default function EnhancedInvoiceLineItems({
                         sx={{ color: 'white', opacity: 0.9 }}
                       >
                         {formatCentsAsCurrency(netPaid)} paid of{' '}
-                        {formatCentsAsCurrency(overallTotals.activeTotal)}
+                        {formatCentsAsCurrency(finalTotal)}
                         {totalRefunded > 0 &&
                           ` (${formatCentsAsCurrency(totalRefunded)} refunded)`}
                       </Typography>

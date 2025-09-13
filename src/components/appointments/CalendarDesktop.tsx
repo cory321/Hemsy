@@ -517,6 +517,7 @@ export function CalendarDesktop({
         onClose={() => setSettingsDialogOpen(false)}
         maxWidth="sm"
         fullWidth
+        disableScrollLock
       >
         <DialogTitle>
           Calendar Settings

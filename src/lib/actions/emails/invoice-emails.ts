@@ -5,6 +5,7 @@ import { Resend } from 'resend';
 import { createClient as createSupabaseClient } from '@/lib/supabase/server';
 import { ensureUserAndShop } from '../users';
 import { getShopDisplayName } from '@/lib/utils/shop';
+import { emailConfig } from '@/lib/config/email.config';
 import type { Tables } from '@/types/supabase';
 
 // Initialize Resend
@@ -193,7 +194,7 @@ function buildEmailVariables(
     client_phone: invoice.client.phone_number as any,
 
     // Shop info
-    shop_name: getShopDisplayName(invoice.shop),
+    shop_name: getShopDisplayName(invoice.shop) || emailConfig.sender.name,
     shop_email: invoice.shop.email as any,
     shop_phone: invoice.shop.phone_number as any,
     shop_address: invoice.shop.mailing_address as any,
@@ -290,7 +291,7 @@ export async function sendInvoiceEmail(
 
     // Send email via Resend
     const emailOptions: any = {
-      from: `${getShopDisplayName(shop)} <${process.env.RESEND_FROM_EMAIL || 'noreply@hemsy.app'}>`,
+      from: `${getShopDisplayName(shop) || emailConfig.sender.name} <${emailConfig.sender.address}>`,
       to: invoice.client.email,
       subject,
       html: htmlBody,

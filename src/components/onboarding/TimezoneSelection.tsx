@@ -109,6 +109,9 @@ export function TimezoneSelection({ value, onChange }: TimezoneSelectionProps) {
             value={value || ''}
             onChange={(e) => handleManualChange(e.target.value)}
             label="Select your timezone"
+            MenuProps={{
+              disableScrollLock: true,
+            }}
           >
             {commonTimezones.map((tz) => (
               <MenuItem key={tz.value} value={tz.value}>

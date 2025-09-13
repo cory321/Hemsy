@@ -391,6 +391,7 @@ export function Calendar({
         onClose={() => setSettingsDialogOpen(false)}
         maxWidth="sm"
         fullWidth
+        disableScrollLock
       >
         <DialogTitle>
           Calendar Settings

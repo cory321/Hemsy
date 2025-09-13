@@ -15,6 +15,12 @@ import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import UpdateIcon from '@mui/icons-material/Update';
 import EventIcon from '@mui/icons-material/Event';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
+import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import { getGarmentHistory } from '@/lib/actions/garments';
 import { format, isToday, isYesterday } from 'date-fns';
 import { useGarment } from '@/contexts/GarmentContext';
@@ -120,22 +126,49 @@ export default function GarmentHistory({ garmentId }: GarmentHistoryProps) {
     }
   }, [historyRefreshSignal, refreshHistory]);
 
-  const getChangeIcon = (changeType: string, fieldName?: string) => {
+  const getChangeIcon = (
+    changeType: string,
+    fieldName?: string,
+    entry?: HistoryEntry
+  ) => {
     // Service changes
     if (changeType === 'service_added')
       return { icon: <AddIcon />, color: '#4CAF50' };
     if (changeType === 'service_removed')
       return { icon: <RemoveIcon />, color: '#F44336' };
-    if (changeType === 'service_updated')
+    if (changeType === 'service_restored')
+      return { icon: <RestartAltIcon />, color: '#4CAF50' };
+    if (changeType === 'service_updated') {
+      // Check if this is a completion status change
+      if (entry?.new_value?.completion_status === 'completed') {
+        return { icon: <CheckCircleIcon />, color: '#4CAF50' };
+      } else if (entry?.new_value?.completion_status === 'incomplete') {
+        return { icon: <RadioButtonUncheckedIcon />, color: '#757575' };
+      }
       return { icon: <EditIcon />, color: '#FF9800' };
+    }
 
     // Field-specific changes
     if (fieldName === 'due_date')
       return { icon: <UpdateIcon />, color: '#2196F3' };
     if (fieldName === 'event_date')
       return { icon: <EventIcon />, color: '#2196F3' };
-    if (fieldName === 'stage')
+    if (fieldName === 'stage') {
+      // Use different icons based on the new stage
+      const newStage = entry?.new_value;
+      const oldStage = entry?.old_value;
+
+      if (newStage === 'In Progress' && oldStage === 'New') {
+        return { icon: <PlayCircleOutlineIcon />, color: '#2196F3' };
+      } else if (newStage === 'Ready For Pickup') {
+        return { icon: <CheckCircleOutlineIcon />, color: '#4CAF50' };
+      } else if (newStage === 'Done') {
+        return { icon: <LocalShippingIcon />, color: '#9C27B0' };
+      } else if (newStage === 'New') {
+        return { icon: <RestartAltIcon />, color: '#FF9800' };
+      }
       return { icon: <UpdateIcon />, color: '#2196F3' };
+    }
 
     // Default for other field updates
     return { icon: <EditIcon />, color: '#FF9800' };
@@ -163,7 +196,11 @@ export default function GarmentHistory({ garmentId }: GarmentHistoryProps) {
       }
     }
 
-    const { icon, color } = getChangeIcon(entry.change_type, entry.field_name);
+    const { icon, color } = getChangeIcon(
+      entry.change_type,
+      entry.field_name,
+      entry
+    );
 
     let title = '';
     let detail = '';
@@ -226,10 +263,30 @@ export default function GarmentHistory({ garmentId }: GarmentHistoryProps) {
 
           detail = `${oldDate} → ${newDate}`;
         } else if (entry.field_name === 'stage') {
-          title = 'Stage updated';
-          const oldVal = entry.old_value || 'not set';
-          const newVal = entry.new_value || 'not set';
-          detail = `${oldVal} → ${newVal}`;
+          const oldStage = entry.old_value || 'not set';
+          const newStage = entry.new_value || 'not set';
+
+          // Create more descriptive titles based on the stage transition
+          if (newStage === 'In Progress' && oldStage === 'New') {
+            title = 'Garment started';
+            detail = 'Moved to In Progress';
+          } else if (
+            newStage === 'Ready For Pickup' &&
+            oldStage === 'In Progress'
+          ) {
+            title = 'Garment completed';
+            detail = 'Ready for pickup';
+          } else if (newStage === 'Done' && oldStage === 'Ready For Pickup') {
+            title = 'Garment picked up';
+            detail = 'Marked as done';
+          } else if (newStage === 'New') {
+            title = 'Garment reset';
+            detail = 'Moved back to New';
+          } else {
+            // Generic message for other transitions
+            title = `Moved to ${newStage}`;
+            detail = `From ${oldStage}`;
+          }
         } else {
           title = `${fieldLabel} updated`;
           if (entry.old_value !== null || entry.new_value !== null) {
@@ -254,27 +311,49 @@ export default function GarmentHistory({ garmentId }: GarmentHistoryProps) {
         detail = entry.old_value?.name || '';
         break;
 
+      case 'service_restored':
+        title = 'Service restored';
+        detail = entry.new_value?.name || '';
+        break;
+
       case 'service_updated':
         title = 'Service updated';
         const serviceName =
           entry.old_value?.service_name || entry.new_value?.service_name;
         detail = serviceName || '';
 
-        const changes = entry.new_value?.changes || [];
-        if (changes.length > 0) {
-          const changeDescriptions = changes
-            .map((change: any) => {
-              if (change.field === 'quantity') {
-                return `quantity → ${change.new}`;
-              } else if (change.field === 'unit_price') {
-                return `unit price → $${(change.new / 100).toFixed(2)}`;
-              }
-              return '';
-            })
-            .filter(Boolean);
+        // Check if this is a completion status change
+        if (
+          entry.old_value?.completion_status &&
+          entry.new_value?.completion_status
+        ) {
+          const oldStatus = entry.old_value.completion_status;
+          const newStatus = entry.new_value.completion_status;
+          if (newStatus === 'completed') {
+            title = 'Service completed';
+            detail = serviceName;
+          } else {
+            title = 'Service marked incomplete';
+            detail = serviceName;
+          }
+        } else {
+          // Handle other service updates (quantity, price, etc.)
+          const changes = entry.new_value?.changes || [];
+          if (changes.length > 0) {
+            const changeDescriptions = changes
+              .map((change: any) => {
+                if (change.field === 'quantity') {
+                  return `quantity → ${change.new}`;
+                } else if (change.field === 'unit_price') {
+                  return `unit price → $${(change.new / 100).toFixed(2)}`;
+                }
+                return '';
+              })
+              .filter(Boolean);
 
-          if (changeDescriptions.length > 0) {
-            detail += ` (${changeDescriptions.join(', ')})`;
+            if (changeDescriptions.length > 0) {
+              detail += ` (${changeDescriptions.join(', ')})`;
+            }
           }
         }
         break;

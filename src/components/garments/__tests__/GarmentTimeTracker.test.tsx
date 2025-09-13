@@ -188,6 +188,45 @@ describe('GarmentTimeTracker', () => {
         expect(deleteTimeEntry).toHaveBeenCalledWith('entry-1');
       });
     });
+
+    it('should show loading spinner when deleting time entries', async () => {
+      const user = userEvent.setup();
+      // Create a promise we can control to simulate async delete
+      let resolveDelete: () => void;
+      const deletePromise = new Promise<void>((resolve) => {
+        resolveDelete = resolve;
+      });
+      (deleteTimeEntry as jest.Mock).mockReturnValue(deletePromise);
+
+      render(
+        <GarmentTimeTracker garmentId="garment-1" services={mockServices} />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Hemming')).toBeInTheDocument();
+      });
+
+      // Click delete button on first entry
+      const deleteIcons = screen.getAllByTestId('DeleteIcon');
+      const deleteButton = deleteIcons[0]?.closest('button');
+      if (deleteButton) await user.click(deleteButton);
+
+      // Should show loading spinner
+      await waitFor(() => {
+        expect(screen.getByRole('progressbar')).toBeInTheDocument();
+      });
+
+      // Button should be disabled during loading
+      expect(deleteButton).toBeDisabled();
+
+      // Resolve the delete operation
+      resolveDelete!();
+
+      // Loading spinner should disappear
+      await waitFor(() => {
+        expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+      });
+    });
   });
 
   describe('When garment is Done', () => {
@@ -273,6 +312,276 @@ describe('GarmentTimeTracker', () => {
 
       // Clicking it should work (though we're not testing the dialog content here)
       await user.click(viewLogsButton);
+    });
+  });
+
+  describe('Validation', () => {
+    beforeEach(() => {
+      mockUseGarment.mockReturnValue({
+        garment: { id: 'garment-1', stage: 'In Progress' },
+      });
+    });
+
+    it('should show service validation error when no service is selected', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <GarmentTimeTracker garmentId="garment-1" services={mockServices} />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Time Tracking')).toBeInTheDocument();
+      });
+
+      // Click Add Time button
+      const addButton = screen.getByRole('button', { name: /add time/i });
+      await user.click(addButton);
+
+      // Add time without selecting service
+      const hoursInput = screen.getByLabelText('Hours');
+      await user.type(hoursInput, '1');
+
+      // Try to save
+      const saveButton = screen.getByRole('button', { name: /save/i });
+      await user.click(saveButton);
+
+      // Should show service error
+      await waitFor(() => {
+        expect(screen.getByText('Please select a service')).toBeInTheDocument();
+      });
+
+      // Service field should be focused
+      await waitFor(() => {
+        const serviceSelect = screen.getByLabelText('Service');
+        expect(serviceSelect).toHaveFocus();
+      });
+
+      // Should not call addTimeEntry
+      expect(addTimeEntry).not.toHaveBeenCalled();
+    });
+
+    it('should show time validation error when no time is entered', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <GarmentTimeTracker garmentId="garment-1" services={mockServices} />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Time Tracking')).toBeInTheDocument();
+      });
+
+      // Click Add Time button
+      const addButton = screen.getByRole('button', { name: /add time/i });
+      await user.click(addButton);
+
+      // Select service but don't add time
+      const serviceSelect = screen.getByLabelText('Service');
+      await user.selectOptions(serviceSelect, 'service-1');
+
+      // Try to save
+      const saveButton = screen.getByRole('button', { name: /save/i });
+      await user.click(saveButton);
+
+      // Should show time error
+      await waitFor(() => {
+        expect(
+          screen.getByText(
+            'Please enter some amount of time (hours or minutes)'
+          )
+        ).toBeInTheDocument();
+      });
+
+      // Should not call addTimeEntry
+      expect(addTimeEntry).not.toHaveBeenCalled();
+    });
+
+    it('should show time validation error when both hours and minutes are 0', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <GarmentTimeTracker garmentId="garment-1" services={mockServices} />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Time Tracking')).toBeInTheDocument();
+      });
+
+      // Click Add Time button
+      const addButton = screen.getByRole('button', { name: /add time/i });
+      await user.click(addButton);
+
+      // Select service and enter 0 for both fields
+      const serviceSelect = screen.getByLabelText('Service');
+      await user.selectOptions(serviceSelect, 'service-1');
+
+      const hoursInput = screen.getByLabelText('Hours');
+      await user.type(hoursInput, '0');
+
+      const minutesInput = screen.getByLabelText('Minutes');
+      await user.type(minutesInput, '0');
+
+      // Try to save
+      const saveButton = screen.getByRole('button', { name: /save/i });
+      await user.click(saveButton);
+
+      // Should show time error
+      await waitFor(() => {
+        expect(
+          screen.getByText(
+            'Please enter some amount of time (hours or minutes)'
+          )
+        ).toBeInTheDocument();
+      });
+
+      // Should not call addTimeEntry
+      expect(addTimeEntry).not.toHaveBeenCalled();
+    });
+
+    it('should clear service error when service is selected', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <GarmentTimeTracker garmentId="garment-1" services={mockServices} />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Time Tracking')).toBeInTheDocument();
+      });
+
+      // Click Add Time button
+      const addButton = screen.getByRole('button', { name: /add time/i });
+      await user.click(addButton);
+
+      // Try to save without service to trigger error
+      const saveButton = screen.getByRole('button', { name: /save/i });
+      await user.click(saveButton);
+
+      // Error should appear
+      await waitFor(() => {
+        expect(screen.getByText('Please select a service')).toBeInTheDocument();
+      });
+
+      // Select service - error should clear
+      const serviceSelect = screen.getByLabelText('Service');
+      await user.selectOptions(serviceSelect, 'service-1');
+
+      // Error should be gone
+      await waitFor(() => {
+        expect(
+          screen.queryByText('Please select a service')
+        ).not.toBeInTheDocument();
+      });
+    });
+
+    it('should clear time error when time is entered', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <GarmentTimeTracker garmentId="garment-1" services={mockServices} />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Time Tracking')).toBeInTheDocument();
+      });
+
+      // Click Add Time button
+      const addButton = screen.getByRole('button', { name: /add time/i });
+      await user.click(addButton);
+
+      // Select service
+      const serviceSelect = screen.getByLabelText('Service');
+      await user.selectOptions(serviceSelect, 'service-1');
+
+      // Try to save without time to trigger error
+      const saveButton = screen.getByRole('button', { name: /save/i });
+      await user.click(saveButton);
+
+      // Error should appear
+      await waitFor(() => {
+        expect(
+          screen.getByText(
+            'Please enter some amount of time (hours or minutes)'
+          )
+        ).toBeInTheDocument();
+      });
+
+      // Enter time - error should clear
+      const minutesInput = screen.getByLabelText('Minutes');
+      await user.type(minutesInput, '30');
+
+      // Error should be gone
+      await waitFor(() => {
+        expect(
+          screen.queryByText(
+            'Please enter some amount of time (hours or minutes)'
+          )
+        ).not.toBeInTheDocument();
+      });
+    });
+
+    it('should allow saving with only minutes entered', async () => {
+      const user = userEvent.setup();
+      (addTimeEntry as jest.Mock).mockResolvedValue({ success: true });
+
+      render(
+        <GarmentTimeTracker garmentId="garment-1" services={mockServices} />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Time Tracking')).toBeInTheDocument();
+      });
+
+      // Click Add Time button
+      const addButton = screen.getByRole('button', { name: /add time/i });
+      await user.click(addButton);
+
+      // Select service and enter only minutes
+      const serviceSelect = screen.getByLabelText('Service');
+      await user.selectOptions(serviceSelect, 'service-1');
+
+      const minutesInput = screen.getByLabelText('Minutes');
+      await user.type(minutesInput, '45');
+
+      // Save
+      const saveButton = screen.getByRole('button', { name: /save/i });
+      await user.click(saveButton);
+
+      await waitFor(() => {
+        expect(addTimeEntry).toHaveBeenCalledWith('service-1', 45);
+      });
+    });
+
+    it('should allow saving with only hours entered', async () => {
+      const user = userEvent.setup();
+      (addTimeEntry as jest.Mock).mockResolvedValue({ success: true });
+
+      render(
+        <GarmentTimeTracker garmentId="garment-1" services={mockServices} />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Time Tracking')).toBeInTheDocument();
+      });
+
+      // Click Add Time button
+      const addButton = screen.getByRole('button', { name: /add time/i });
+      await user.click(addButton);
+
+      // Select service and enter only hours
+      const serviceSelect = screen.getByLabelText('Service');
+      await user.selectOptions(serviceSelect, 'service-1');
+
+      const hoursInput = screen.getByLabelText('Hours');
+      await user.type(hoursInput, '2');
+
+      // Save
+      const saveButton = screen.getByRole('button', { name: /save/i });
+      await user.click(saveButton);
+
+      await waitFor(() => {
+        expect(addTimeEntry).toHaveBeenCalledWith('service-1', 120); // 2 hours = 120 minutes
+      });
     });
   });
 

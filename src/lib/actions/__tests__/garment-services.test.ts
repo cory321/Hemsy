@@ -18,6 +18,7 @@ const mockSupabase = {
   select: jest.fn().mockReturnThis(),
   eq: jest.fn().mockReturnThis(),
   single: jest.fn().mockReturnThis(),
+  insert: jest.fn().mockReturnThis(),
 };
 
 describe('toggleServiceCompletion', () => {
@@ -35,20 +36,36 @@ describe('toggleServiceCompletion', () => {
     const mockGarmentServiceId = 'service-123';
     const mockGarmentId = 'garment-456';
 
-    // Mock successful update
-    mockSupabase.update.mockReturnValueOnce({
-      eq: jest.fn().mockResolvedValueOnce({
-        error: null,
+    // Mock fetching service details (first call)
+    mockSupabase.from.mockReturnValueOnce({
+      select: jest.fn().mockReturnValueOnce({
+        eq: jest.fn().mockReturnValueOnce({
+          single: jest.fn().mockResolvedValueOnce({
+            data: {
+              id: mockGarmentServiceId,
+              garment_id: mockGarmentId,
+              name: 'Test Service',
+              is_done: false,
+            },
+            error: null,
+          }),
+        }),
       }),
     });
 
-    // Mock fetching service details
-    mockSupabase.select.mockReturnValueOnce({
-      eq: jest.fn().mockReturnValueOnce({
-        single: jest.fn().mockResolvedValueOnce({
-          data: { garment_id: mockGarmentId },
+    // Mock successful update (second call)
+    mockSupabase.from.mockReturnValueOnce({
+      update: jest.fn().mockReturnValueOnce({
+        eq: jest.fn().mockResolvedValueOnce({
           error: null,
         }),
+      }),
+    });
+
+    // Mock history insertion (third call)
+    mockSupabase.from.mockReturnValueOnce({
+      insert: jest.fn().mockResolvedValueOnce({
+        error: null,
       }),
     });
 
@@ -71,7 +88,7 @@ describe('toggleServiceCompletion', () => {
     });
 
     expect(mockSupabase.from).toHaveBeenCalledWith('garment_services');
-    expect(mockSupabase.update).toHaveBeenCalledWith({ is_done: true });
+    expect(mockSupabase.from).toHaveBeenCalledWith('garment_history');
     expect(
       garmentStageHelpers.recalculateAndUpdateGarmentStage
     ).toHaveBeenCalledWith(mockGarmentId);
@@ -82,20 +99,36 @@ describe('toggleServiceCompletion', () => {
     const mockGarmentServiceId = 'service-123';
     const mockGarmentId = 'garment-456';
 
-    // Mock successful update
-    mockSupabase.update.mockReturnValueOnce({
-      eq: jest.fn().mockResolvedValueOnce({
-        error: null,
+    // Mock fetching service details (first call)
+    mockSupabase.from.mockReturnValueOnce({
+      select: jest.fn().mockReturnValueOnce({
+        eq: jest.fn().mockReturnValueOnce({
+          single: jest.fn().mockResolvedValueOnce({
+            data: {
+              id: mockGarmentServiceId,
+              garment_id: mockGarmentId,
+              name: 'Test Service',
+              is_done: false,
+            },
+            error: null,
+          }),
+        }),
       }),
     });
 
-    // Mock fetching service details
-    mockSupabase.select.mockReturnValueOnce({
-      eq: jest.fn().mockReturnValueOnce({
-        single: jest.fn().mockResolvedValueOnce({
-          data: { garment_id: mockGarmentId },
+    // Mock successful update (second call)
+    mockSupabase.from.mockReturnValueOnce({
+      update: jest.fn().mockReturnValueOnce({
+        eq: jest.fn().mockResolvedValueOnce({
           error: null,
         }),
+      }),
+    });
+
+    // Mock history insertion (third call)
+    mockSupabase.from.mockReturnValueOnce({
+      insert: jest.fn().mockResolvedValueOnce({
+        error: null,
       }),
     });
 
@@ -122,20 +155,36 @@ describe('toggleServiceCompletion', () => {
     const mockGarmentServiceId = 'service-123';
     const mockGarmentId = 'garment-456';
 
-    // Mock successful update
-    mockSupabase.update.mockReturnValueOnce({
-      eq: jest.fn().mockResolvedValueOnce({
-        error: null,
+    // Mock fetching service details (first call)
+    mockSupabase.from.mockReturnValueOnce({
+      select: jest.fn().mockReturnValueOnce({
+        eq: jest.fn().mockReturnValueOnce({
+          single: jest.fn().mockResolvedValueOnce({
+            data: {
+              id: mockGarmentServiceId,
+              garment_id: mockGarmentId,
+              name: 'Test Service',
+              is_done: true,
+            },
+            error: null,
+          }),
+        }),
       }),
     });
 
-    // Mock fetching service details
-    mockSupabase.select.mockReturnValueOnce({
-      eq: jest.fn().mockReturnValueOnce({
-        single: jest.fn().mockResolvedValueOnce({
-          data: { garment_id: mockGarmentId },
+    // Mock successful update (second call)
+    mockSupabase.from.mockReturnValueOnce({
+      update: jest.fn().mockReturnValueOnce({
+        eq: jest.fn().mockResolvedValueOnce({
           error: null,
         }),
+      }),
+    });
+
+    // Mock history insertion (third call)
+    mockSupabase.from.mockReturnValueOnce({
+      insert: jest.fn().mockResolvedValueOnce({
+        error: null,
       }),
     });
 
@@ -162,20 +211,29 @@ describe('toggleServiceCompletion', () => {
     const mockGarmentServiceId = 'service-123';
     const mockGarmentId = 'garment-456';
 
-    // Mock successful service fetch first
-    mockSupabase.select.mockReturnValueOnce({
-      eq: jest.fn().mockReturnValueOnce({
-        single: jest.fn().mockResolvedValueOnce({
-          data: { garment_id: mockGarmentId },
-          error: null,
+    // Mock fetching service details (first call)
+    mockSupabase.from.mockReturnValueOnce({
+      select: jest.fn().mockReturnValueOnce({
+        eq: jest.fn().mockReturnValueOnce({
+          single: jest.fn().mockResolvedValueOnce({
+            data: {
+              id: mockGarmentServiceId,
+              garment_id: mockGarmentId,
+              name: 'Test Service',
+              is_done: false,
+            },
+            error: null,
+          }),
         }),
       }),
     });
 
-    // Mock update failure
-    mockSupabase.update.mockReturnValueOnce({
-      eq: jest.fn().mockResolvedValueOnce({
-        error: { message: 'Update failed' },
+    // Mock update failure (second call)
+    mockSupabase.from.mockReturnValueOnce({
+      update: jest.fn().mockReturnValueOnce({
+        eq: jest.fn().mockResolvedValueOnce({
+          error: { message: 'Update failed' },
+        }),
       }),
     });
 
@@ -194,19 +252,35 @@ describe('toggleServiceCompletion', () => {
     const mockGarmentServiceId = 'service-123';
     const mockGarmentId = 'garment-456';
 
-    // Mock fetching service details (must come first)
-    mockSupabase.select.mockReturnValueOnce({
-      eq: jest.fn().mockReturnValueOnce({
-        single: jest.fn().mockResolvedValueOnce({
-          data: { garment_id: mockGarmentId },
+    // Mock fetching service details (first call)
+    mockSupabase.from.mockReturnValueOnce({
+      select: jest.fn().mockReturnValueOnce({
+        eq: jest.fn().mockReturnValueOnce({
+          single: jest.fn().mockResolvedValueOnce({
+            data: {
+              id: mockGarmentServiceId,
+              garment_id: mockGarmentId,
+              name: 'Test Service',
+              is_done: false,
+            },
+            error: null,
+          }),
+        }),
+      }),
+    });
+
+    // Mock successful update (second call)
+    mockSupabase.from.mockReturnValueOnce({
+      update: jest.fn().mockReturnValueOnce({
+        eq: jest.fn().mockResolvedValueOnce({
           error: null,
         }),
       }),
     });
 
-    // Mock successful service update
-    mockSupabase.update.mockReturnValueOnce({
-      eq: jest.fn().mockResolvedValueOnce({
+    // Mock history insertion (third call)
+    mockSupabase.from.mockReturnValueOnce({
+      insert: jest.fn().mockResolvedValueOnce({
         error: null,
       }),
     });

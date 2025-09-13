@@ -10,7 +10,6 @@ import {
 import Grid from '@mui/material/Grid2';
 import GarmentDetailClient from './GarmentDetailClient';
 import GarmentServicesManager from '@/components/garments/GarmentServicesManager';
-import GarmentHistory from '@/components/garments/GarmentHistory';
 import GarmentTimeTracker from '@/components/garments/GarmentTimeTracker';
 import { useGarment } from '@/contexts/GarmentContext';
 import Link from 'next/link';
@@ -145,9 +144,6 @@ export default function GarmentRightColumn({
           </CardContent>
         </Card>
       )}
-
-      {/* Change History with optimistic updates */}
-      <GarmentHistory garmentId={garment.id} />
     </>
   );
 }

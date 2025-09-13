@@ -143,6 +143,9 @@ export function CalendarSettings({ onSave }: CalendarSettingsProps) {
                 })
               }
               label="Buffer Time Between Appointments"
+              MenuProps={{
+                disableScrollLock: true,
+              }}
             >
               <MenuItem value={0}>No buffer</MenuItem>
               <MenuItem value={5}>5 minutes</MenuItem>
@@ -170,6 +173,9 @@ export function CalendarSettings({ onSave }: CalendarSettingsProps) {
                 })
               }
               label="Default Appointment Duration"
+              MenuProps={{
+                disableScrollLock: true,
+              }}
             >
               <MenuItem value={15}>15 minutes</MenuItem>
               <MenuItem value={30}>30 minutes</MenuItem>
@@ -212,6 +218,9 @@ export function CalendarSettings({ onSave }: CalendarSettingsProps) {
                     })
                   }
                   label="Send Reminders"
+                  MenuProps={{
+                    disableScrollLock: true,
+                  }}
                 >
                   <MenuItem value={1}>1 hour before</MenuItem>
                   <MenuItem value={2}>2 hours before</MenuItem>

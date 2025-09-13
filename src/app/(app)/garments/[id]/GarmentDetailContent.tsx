@@ -6,6 +6,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import Link from 'next/link';
 import GarmentImageSection from './GarmentImageSection';
 import GarmentRightColumn from './GarmentRightColumn';
+import GarmentHistorySection from './GarmentHistorySection';
 import ReadyForPickupBanner from '@/components/garments/ReadyForPickupBanner';
 import CancelledOrderBanner from '@/components/garments/CancelledOrderBanner';
 import BalanceConfirmationDialog from '@/components/garments/BalanceConfirmationDialog';
@@ -100,8 +101,8 @@ export default function GarmentDetailContent({
         </Grid>
       </Grid>
 
-      {/* TODO: Services and Payment History sections will be added once database schema is updated */}
-      {/* For now, these sections are commented out due to database schema issues */}
+      {/* Change History - Full Width Table */}
+      <GarmentHistorySection garmentId={garment.id} />
 
       {/* Balance Confirmation Dialog */}
       {balanceCheckData && (

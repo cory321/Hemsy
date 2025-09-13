@@ -25,6 +25,9 @@ export const emailConfig = {
   urls: {
     app: process.env.NEXT_PUBLIC_APP_URL!,
     confirmation: process.env.NEXT_PUBLIC_CONFIRMATION_URL!,
+    decline:
+      process.env.NEXT_PUBLIC_DECLINE_URL ||
+      `${process.env.NEXT_PUBLIC_APP_URL}/decline`,
   },
   dev: {
     overrideRecipient: process.env.EMAIL_DEV_OVERRIDE || null,

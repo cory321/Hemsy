@@ -277,13 +277,50 @@ describe('GarmentHistory', () => {
     rerender(<GarmentHistory garmentId="test-garment-id" />);
 
     await waitFor(() => {
-      expect(screen.getByText('Stage updated')).toBeInTheDocument();
-      expect(
-        screen.getByText('In Progress → Ready For Pickup')
-      ).toBeInTheDocument();
+      expect(screen.getByText('Garment completed')).toBeInTheDocument();
+      expect(screen.getByText('Ready for pickup')).toBeInTheDocument();
     });
 
     expect(mockGetGarmentHistory).toHaveBeenCalledTimes(2);
+  });
+
+  it('displays service restored entry correctly', async () => {
+    const mockHistory = [
+      {
+        id: '1',
+        garment_id: 'test-garment-id',
+        changed_by: 'user-1',
+        changed_at: new Date().toISOString(),
+        field_name: 'services',
+        old_value: {
+          name: 'Hemming',
+          status: 'removed',
+        },
+        new_value: {
+          name: 'Hemming',
+          status: 'active',
+        },
+        change_type: 'service_restored',
+        related_service_id: 'service-1',
+        changed_by_user: {
+          first_name: 'John',
+          last_name: 'Doe',
+          email: 'john@example.com',
+        },
+      },
+    ];
+
+    mockGetGarmentHistory.mockResolvedValue({
+      success: true,
+      history: mockHistory,
+    } as any);
+
+    render(<GarmentHistory garmentId="test-garment-id" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Service restored')).toBeInTheDocument();
+      expect(screen.getByText('Hemming')).toBeInTheDocument();
+    });
   });
 
   it('handles error state gracefully', async () => {
