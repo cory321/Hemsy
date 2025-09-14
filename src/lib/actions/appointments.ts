@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import type { Appointment, AppointmentStatus } from '@/types';
 import { EmailService } from '@/lib/services/email/email-service';
+import { EmailRepository } from '@/lib/services/email/email-repository';
 import {
   getTodayString,
   getCurrentTimeString,
@@ -588,6 +589,16 @@ export async function updateAppointment(
               previousDateTime,
             }
           );
+
+          // Invalidate all unused confirmation tokens for this appointment
+          // since the previous confirm/decline links are no longer valid
+          const repository = new EmailRepository(supabase, ownerUserId);
+          await repository.invalidateUnusedTokensForAppointment(validated.id);
+          console.log(
+            '[appointments-refactored] invalidated unused tokens for rescheduled appointment',
+            { appointmentId: validated.id }
+          );
+
           await emailService.sendAppointmentEmail(
             validated.id,
             'appointment_rescheduled',
