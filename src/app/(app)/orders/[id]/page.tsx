@@ -450,6 +450,15 @@ export default async function OrderDetailPage({
                         style={{
                           textDecoration: 'none',
                           color: 'inherit',
+                          transition: 'all 0.2s ease-in-out',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = '#1976d2'; // primary.main
+                          e.currentTarget.style.textDecoration = 'underline';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = 'inherit';
+                          e.currentTarget.style.textDecoration = 'none';
                         }}
                       >
                         {client
