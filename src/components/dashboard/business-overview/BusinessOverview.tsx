@@ -20,6 +20,7 @@ interface BusinessOverviewProps {
   calendarSettings: {
     buffer_time_minutes: number;
     default_appointment_duration: number;
+    allow_overlapping_appointments?: boolean;
   };
   businessHealthData?: BusinessHealthData | undefined;
   recentActivity?: ActivityItem[] | undefined;

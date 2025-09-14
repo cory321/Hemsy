@@ -62,16 +62,19 @@ export async function getAppointmentsByTimeRange(
   startDate: string,
   endDate: string
 ): Promise<Appointment[]> {
-  console.log('🚀 getAppointmentsByTimeRange called:', {
-    shopId,
-    startDate,
-    endDate,
-  });
-
   const { userId } = await auth();
   if (!userId) throw new Error('Unauthorized');
 
   const supabase = await createClient();
+
+  // Test query to see if canceled appointments exist in the date range
+  const testQuery = await supabase
+    .from('appointments')
+    .select('id, date, status')
+    .eq('shop_id', shopId)
+    .gte('date', startDate)
+    .lte('date', endDate)
+    .in('status', ['canceled', 'no_show']);
 
   // Verify shop ownership
   const { data: userData, error: userError } = await supabase
@@ -114,7 +117,6 @@ export async function getAppointmentsByTimeRange(
     .eq('shop_id', shopId)
     .gte('date', startDate)
     .lte('date', endDate)
-    .not('status', 'in', '(canceled,no_show)')
     .order('date', { ascending: true })
     .order('start_time', { ascending: true });
 
@@ -237,6 +239,27 @@ export async function createAppointment(
     .single();
 
   if (shopError || !shopData) throw new Error('Unauthorized access to shop');
+
+  // Check for conflicts before creating appointment
+  const { data: hasConflict, error: conflictError } = await supabase.rpc(
+    'check_appointment_conflict',
+    {
+      p_shop_id: validated.shopId,
+      p_date: validated.date,
+      p_start_time: validated.startTime,
+      p_end_time: validated.endTime,
+    }
+  );
+
+  if (conflictError) {
+    throw new Error('Failed to check for conflicts');
+  }
+
+  if (hasConflict) {
+    throw new Error(
+      'This time slot is already booked. Please choose another time.'
+    );
+  }
 
   // Convert local times to UTC
   const startAt = convertLocalToUTC(

@@ -132,8 +132,25 @@ export function MonthView({
                       }}
                       sx={{
                         width: '100%',
-                        bgcolor: getAppointmentColor(apt.type),
-                        color: 'white',
+                        bgcolor:
+                          apt.status === 'canceled' ||
+                          apt.status === 'no_show' ||
+                          apt.status === 'declined'
+                            ? 'transparent'
+                            : getAppointmentColor(apt.type),
+                        color:
+                          apt.status === 'canceled' ||
+                          apt.status === 'no_show' ||
+                          apt.status === 'declined'
+                            ? 'text.disabled'
+                            : 'white',
+                        border:
+                          apt.status === 'canceled' ||
+                          apt.status === 'no_show' ||
+                          apt.status === 'declined'
+                            ? '1px dashed'
+                            : 'none',
+                        borderColor: 'text.disabled',
                         px: 0.5,
                         py: 0.25,
                         borderRadius: 0.5,
@@ -143,6 +160,18 @@ export function MonthView({
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
+                        textDecoration:
+                          apt.status === 'canceled' ||
+                          apt.status === 'no_show' ||
+                          apt.status === 'declined'
+                            ? 'line-through'
+                            : 'none',
+                        opacity:
+                          apt.status === 'canceled' ||
+                          apt.status === 'no_show' ||
+                          apt.status === 'declined'
+                            ? 0.6
+                            : 1,
                         '&:hover': {
                           opacity: 0.8,
                         },

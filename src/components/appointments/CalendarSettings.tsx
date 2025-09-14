@@ -38,6 +38,7 @@ export function CalendarSettings({ onSave }: CalendarSettingsProps) {
     default_appointment_duration: 30,
     send_reminders: true,
     reminder_hours_before: 24,
+    allow_overlapping_appointments: false,
   });
 
   useEffect(() => {
@@ -49,6 +50,8 @@ export function CalendarSettings({ onSave }: CalendarSettingsProps) {
           default_appointment_duration: data.default_appointment_duration ?? 30,
           send_reminders: data.send_reminders ?? true,
           reminder_hours_before: data.reminder_hours_before ?? 24,
+          allow_overlapping_appointments:
+            (data as any).allow_overlapping_appointments ?? false,
         });
       } catch (err) {
         setError('Failed to load calendar settings');
@@ -236,6 +239,28 @@ export function CalendarSettings({ onSave }: CalendarSettingsProps) {
                 </FormHelperText>
               </FormControl>
             )}
+          </Box>
+
+          {/* Allow Overlapping Appointments */}
+          <Box>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={settings.allow_overlapping_appointments}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      allow_overlapping_appointments: e.target.checked,
+                    })
+                  }
+                />
+              }
+              label="Allow Overlapping Appointments"
+            />
+            <FormHelperText>
+              When enabled, multiple appointments can be scheduled at the same
+              time.
+            </FormHelperText>
           </Box>
         </Box>
 

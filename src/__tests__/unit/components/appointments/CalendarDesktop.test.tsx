@@ -320,7 +320,7 @@ describe('CalendarDesktop', () => {
       'false'
     );
 
-    // The parent onDateClick should NOT have been called since we handle it internally
-    expect(mockHandlers.onDateClick).not.toHaveBeenCalled();
+    // The parent onDateClick should have been called for date navigation
+    expect(mockHandlers.onDateClick).toHaveBeenCalledWith(expect.any(Date));
   });
 });

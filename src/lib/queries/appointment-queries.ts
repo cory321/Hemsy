@@ -132,16 +132,11 @@ export function useAppointmentsTimeRange(
 ) {
   const config = VIEW_CONFIG[view];
 
-  console.log('🔄 useAppointmentsTimeRange called:', {
-    shopId,
-    startDate,
-    endDate,
-    view,
-  });
-
   return useQuery<Appointment[]>({
     queryKey: appointmentKeys.timeRange({ shopId, startDate, endDate }),
-    queryFn: () => getAppointmentsByTimeRange(shopId, startDate, endDate),
+    queryFn: async () => {
+      return getAppointmentsByTimeRange(shopId, startDate, endDate);
+    },
     staleTime: config.staleTime,
     gcTime: config.gcTime,
     ...options,

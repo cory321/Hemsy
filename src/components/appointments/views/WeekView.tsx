@@ -413,10 +413,23 @@ export function WeekView({
                         zIndex: 1,
                         display: 'flex',
                         flexDirection: 'column',
-                        borderLeft: `4px solid ${color}`,
-                        bgcolor: alpha(color, 0.06),
+                        borderLeft: `4px ${appointment.status === 'canceled' || appointment.status === 'no_show' || appointment.status === 'declined' ? 'dashed' : 'solid'} ${appointment.status === 'canceled' || appointment.status === 'no_show' || appointment.status === 'declined' ? theme.palette.text.disabled : color}`,
+                        bgcolor:
+                          appointment.status === 'canceled' ||
+                          appointment.status === 'no_show'
+                            ? alpha(theme.palette.action.disabled, 0.05)
+                            : alpha(color, 0.06),
+                        opacity:
+                          appointment.status === 'canceled' ||
+                          appointment.status === 'no_show'
+                            ? 0.6
+                            : 1,
                         '&:hover': {
-                          bgcolor: alpha(color, 0.1),
+                          bgcolor:
+                            appointment.status === 'canceled' ||
+                            appointment.status === 'no_show'
+                              ? alpha(theme.palette.action.disabled, 0.1)
+                              : alpha(color, 0.1),
                           zIndex: 2,
                           boxShadow: theme.shadows[4],
                         },
@@ -450,7 +463,11 @@ export function WeekView({
                         <Typography
                           variant="caption"
                           sx={{
-                            color: 'text.primary',
+                            color:
+                              appointment.status === 'canceled' ||
+                              appointment.status === 'no_show'
+                                ? 'text.disabled'
+                                : 'text.primary',
                             fontWeight: 'medium',
                             display: 'block',
                             overflow: 'hidden',
@@ -459,6 +476,11 @@ export function WeekView({
                             fontSize: '0.8rem',
                             lineHeight: 1.2,
                             pr: 2.5,
+                            textDecoration:
+                              appointment.status === 'canceled' ||
+                              appointment.status === 'no_show'
+                                ? 'line-through'
+                                : 'none',
                           }}
                         >
                           {appointment.client

@@ -244,15 +244,23 @@ export function AppointmentDetailsDialog({
     setIsUpdating(true);
 
     try {
-      await updateAppointmentFromContext(appointment.id, {
+      const result = await updateAppointmentFromContext(appointment.id, {
         id: appointment.id,
         notes: ui.editedNotes || undefined,
       });
-      uiDispatch({
-        type: 'SET_CURRENT_NOTES',
-        payload: ui.editedNotes || null,
-      });
-      uiDispatch({ type: 'SET_EDITING_NOTES', payload: false });
+
+      if (result.success) {
+        uiDispatch({
+          type: 'SET_CURRENT_NOTES',
+          payload: ui.editedNotes || null,
+        });
+        uiDispatch({ type: 'SET_EDITING_NOTES', payload: false });
+      } else {
+        uiDispatch({
+          type: 'SET_ERROR',
+          payload: result.error || 'Failed to update',
+        });
+      }
     } catch (err) {
       uiDispatch({
         type: 'SET_ERROR',
@@ -269,7 +277,7 @@ export function AppointmentDetailsDialog({
     setIsUpdating(true);
 
     try {
-      await updateAppointmentFromContext(appointment.id, {
+      const result = await updateAppointmentFromContext(appointment.id, {
         id: appointment.id,
         type: ui.editedType as
           | 'consultation'
@@ -278,8 +286,16 @@ export function AppointmentDetailsDialog({
           | 'delivery'
           | 'other',
       });
-      uiDispatch({ type: 'SET_CURRENT_TYPE', payload: ui.editedType });
-      uiDispatch({ type: 'SET_EDITING_TYPE', payload: false });
+
+      if (result.success) {
+        uiDispatch({ type: 'SET_CURRENT_TYPE', payload: ui.editedType });
+        uiDispatch({ type: 'SET_EDITING_TYPE', payload: false });
+      } else {
+        uiDispatch({
+          type: 'SET_ERROR',
+          payload: result.error || 'Failed to update',
+        });
+      }
     } catch (err) {
       uiDispatch({
         type: 'SET_ERROR',
@@ -822,6 +838,59 @@ export function AppointmentDetailsDialog({
               </Card>
             )}
 
+            {/* Resend Confirmation Section */}
+            {appointment.status === 'pending' && (
+              <Card
+                elevation={0}
+                sx={{
+                  mb: 3,
+                  border: '1px solid #f0f0f0',
+                  borderRadius: 2,
+                  overflow: 'hidden',
+                }}
+              >
+                <CardContent sx={{ p: 2.5, textAlign: 'center' }}>
+                  <Button
+                    variant="outlined"
+                    startIcon={
+                      isResendingConfirmation ? (
+                        <CircularProgress size={18} color="inherit" />
+                      ) : (
+                        <RemixIcon name="ri-mail-send-line" size={18} />
+                      )
+                    }
+                    onClick={handleResendConfirmation}
+                    disabled={
+                      isResendingConfirmation ||
+                      isUpdating ||
+                      cancelMutation.isPending
+                    }
+                    sx={{
+                      borderRadius: 2,
+                      py: 1.5,
+                      px: 3,
+                      fontWeight: 600,
+                      textTransform: 'none',
+                      borderColor: 'primary.main',
+                      color: 'primary.main',
+                      '&:hover': {
+                        borderColor: 'primary.dark',
+                        backgroundColor: 'rgba(184, 85, 99, 0.04)',
+                      },
+                      '&:disabled': {
+                        borderColor: 'action.disabled',
+                        color: 'action.disabled',
+                      },
+                    }}
+                  >
+                    {isResendingConfirmation
+                      ? 'Sending...'
+                      : 'Resend Confirmation Link'}
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Notes Card */}
             <Card
               elevation={0}
@@ -1017,47 +1086,6 @@ export function AppointmentDetailsDialog({
             {(appointment.status === 'pending' ||
               appointment.status === 'confirmed') && (
               <>
-                {/* Resend confirmation for pending appointments */}
-                {appointment.status === 'pending' && (
-                  <Button
-                    variant="outlined"
-                    startIcon={
-                      isResendingConfirmation ? (
-                        <CircularProgress size={18} color="inherit" />
-                      ) : (
-                        <RemixIcon name="ri-mail-send-line" size={18} />
-                      )
-                    }
-                    onClick={handleResendConfirmation}
-                    disabled={
-                      isResendingConfirmation ||
-                      isUpdating ||
-                      cancelMutation.isPending
-                    }
-                    sx={{
-                      borderRadius: 2,
-                      py: 1.5,
-                      px: 3,
-                      fontWeight: 600,
-                      textTransform: 'none',
-                      borderColor: 'primary.main',
-                      color: 'primary.main',
-                      '&:hover': {
-                        borderColor: 'primary.dark',
-                        backgroundColor: 'rgba(184, 85, 99, 0.04)',
-                      },
-                      '&:disabled': {
-                        borderColor: 'action.disabled',
-                        color: 'action.disabled',
-                      },
-                    }}
-                  >
-                    {isResendingConfirmation
-                      ? 'Sending...'
-                      : 'Resend Confirmation'}
-                  </Button>
-                )}
-
                 {/* Show Reschedule and Cancel only for future appointments */}
                 {!isPast && (
                   <>

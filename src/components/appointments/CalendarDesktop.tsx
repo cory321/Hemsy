@@ -62,8 +62,13 @@ interface CalendarDesktopProps {
     close_time: string | null;
     is_closed: boolean;
   }>;
+  calendarSettings?: {
+    buffer_time_minutes: number;
+    default_appointment_duration: number;
+  };
   onAppointmentClick?: (appointment: Appointment) => void;
-  onDateClick?: (date: Date, time?: string) => void;
+  onDateClick?: (date: Date) => void;
+  onTimeSlotClick?: (date: Date, time?: string) => void;
   onRefresh?: (date?: Date) => void;
   isLoading?: boolean;
   currentDate?: Date;
@@ -75,8 +80,10 @@ interface CalendarDesktopProps {
 export function CalendarDesktop({
   appointments,
   shopHours = [],
+  calendarSettings,
   onAppointmentClick,
   onDateClick,
+  onTimeSlotClick,
   onRefresh,
   isLoading = false,
   currentDate: controlledDate,
@@ -197,11 +204,8 @@ export function CalendarDesktop({
       // Notify parent if controlled
       onViewChange?.('day');
     }
-    // If controlled, notify parent about the date click
-    // This allows the parent to handle navigation and other logic
-    if (controlledDate || controlledView) {
-      onDateClick?.(date);
-    }
+    // Always call onDateClick for date navigation (CalendarWithQuery needs this)
+    onDateClick?.(date);
   };
 
   // Get formatted header based on view
@@ -488,7 +492,7 @@ export function CalendarDesktop({
                 shopHours={shopHours}
                 onAppointmentClick={handleAppointmentSelect}
                 onDateClick={handleDateSelect}
-                {...(onDateClick && { onTimeSlotClick: onDateClick })}
+                {...(onTimeSlotClick && { onTimeSlotClick })}
               />
             )}
             {view === 'day' && (
@@ -497,7 +501,7 @@ export function CalendarDesktop({
                 appointments={filteredAppointments}
                 shopHours={shopHours}
                 onAppointmentClick={handleAppointmentSelect}
-                {...(onDateClick && { onTimeSlotClick: onDateClick })}
+                {...(onTimeSlotClick && { onTimeSlotClick })}
                 {...(focusAppointmentId && { focusAppointmentId })}
               />
             )}

@@ -45,9 +45,12 @@ interface AppointmentContextValue {
   createAppointment: (
     shopId: string,
     data: CreateAppointmentData
-  ) => Promise<void>;
+  ) => Promise<{ success: boolean; error?: string }>;
 
-  updateAppointment: (id: string, data: UpdateAppointmentData) => Promise<void>;
+  updateAppointment: (
+    id: string,
+    data: UpdateAppointmentData
+  ) => Promise<{ success: boolean; error?: string }>;
 
   cancelAppointment: (id: string) => Promise<void>;
 
@@ -146,7 +149,10 @@ export function AppointmentProvider({
 
   // Create appointment with optimistic update
   const createAppointment = useCallback(
-    async (shopId: string, data: CreateAppointmentData) => {
+    async (
+      shopId: string,
+      data: CreateAppointmentData
+    ): Promise<{ success: boolean; error?: string }> => {
       const tempId = `temp-${uuidv4()}`;
       if (!data.clientId) {
         throw new Error('Client ID is required to create an appointment');
@@ -235,6 +241,8 @@ export function AppointmentProvider({
           </div>,
           { duration: 5000 }
         );
+
+        return { success: true };
       } catch (error) {
         dispatch({
           type: AppointmentActionType.CREATE_APPOINTMENT_ERROR,
@@ -246,16 +254,29 @@ export function AppointmentProvider({
                 : 'Failed to create appointment',
           },
         });
-        toast.error(
-          <div>
-            <div>Failed to schedule appointment</div>
-            <div style={{ fontSize: '0.875rem', opacity: 0.9 }}>
-              Please try again or contact support if the problem persists.
-            </div>
-          </div>,
-          { duration: 5000 }
-        );
-        throw error;
+
+        // Return error instead of throwing for inline display
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : 'Failed to create appointment';
+
+        // Enhanced error message for overlapping appointments
+        if (
+          error instanceof Error &&
+          error.message.includes('already booked')
+        ) {
+          return {
+            success: false,
+            error:
+              'This time conflicts with an existing appointment. To schedule overlapping appointments, click the gear icon (⚙️) in the calendar header and enable "Allow Overlapping Appointments".',
+          };
+        }
+
+        return {
+          success: false,
+          error: errorMessage,
+        };
       }
     },
     []
@@ -263,7 +284,10 @@ export function AppointmentProvider({
 
   // Update appointment with optimistic update
   const updateAppointment = useCallback(
-    async (id: string, data: UpdateAppointmentData) => {
+    async (
+      id: string,
+      data: UpdateAppointmentData
+    ): Promise<{ success: boolean; error?: string }> => {
       const currentAppointment = state.appointments.get(id);
 
       // If appointment is not in state, we can still proceed with the update
@@ -312,6 +336,8 @@ export function AppointmentProvider({
             queryKey: ['appointments', 'count'],
           }),
         ]);
+
+        return { success: true };
       } catch (error) {
         if (currentAppointment) {
           dispatch({
@@ -326,12 +352,28 @@ export function AppointmentProvider({
             },
           });
         }
-        toast.error(
+        // Return error instead of throwing for inline display
+        const errorMessage =
           error instanceof Error
             ? error.message
-            : 'Failed to update appointment'
-        );
-        throw error;
+            : 'Failed to update appointment';
+
+        // Enhanced error message for overlapping appointments
+        if (
+          error instanceof Error &&
+          error.message.includes('already booked')
+        ) {
+          return {
+            success: false,
+            error:
+              'This time conflicts with an existing appointment. To schedule overlapping appointments, click the gear icon (⚙️) in the calendar header and enable "Allow Overlapping Appointments".',
+          };
+        }
+
+        return {
+          success: false,
+          error: errorMessage,
+        };
       }
     },
     [state.appointments]
@@ -397,12 +439,7 @@ export function AppointmentProvider({
       const appointments: Appointment[] = [];
 
       for (const appointment of state.appointments.values()) {
-        if (
-          appointment.date >= startDate &&
-          appointment.date <= endDate &&
-          appointment.status !== 'canceled' &&
-          appointment.status !== 'no_show'
-        ) {
+        if (appointment.date >= startDate && appointment.date <= endDate) {
           appointments.push(appointment);
         }
       }

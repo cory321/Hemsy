@@ -57,8 +57,13 @@ interface CalendarProps {
     close_time: string | null;
     is_closed: boolean;
   }>;
+  calendarSettings?: {
+    buffer_time_minutes: number;
+    default_appointment_duration: number;
+  };
   onAppointmentClick?: (appointment: Appointment) => void;
-  onDateClick?: (date: Date, time?: string) => void;
+  onDateClick?: (date: Date) => void;
+  onTimeSlotClick?: (date: Date, time?: string) => void;
   onRefresh?: (date?: Date) => void;
   isLoading?: boolean;
   currentDate?: Date;
@@ -70,8 +75,10 @@ interface CalendarProps {
 export function Calendar({
   appointments,
   shopHours = [],
+  calendarSettings,
   onAppointmentClick,
   onDateClick,
+  onTimeSlotClick,
   onRefresh,
   isLoading = false,
   currentDate: controlledDate,
@@ -364,7 +371,7 @@ export function Calendar({
             shopHours={shopHours}
             onAppointmentClick={onAppointmentClick}
             onDateClick={onDateClick}
-            onTimeSlotClick={(date, time) => onDateClick(date, time)}
+            {...(onTimeSlotClick && { onTimeSlotClick })}
           />
         )}
         {view === 'day' && onAppointmentClick && (
@@ -373,7 +380,7 @@ export function Calendar({
             appointments={filteredAppointments}
             shopHours={shopHours}
             onAppointmentClick={onAppointmentClick}
-            onTimeSlotClick={(date, time) => onDateClick?.(date, time)}
+            {...(onTimeSlotClick && { onTimeSlotClick })}
             {...(focusAppointmentId && { focusAppointmentId })}
           />
         )}

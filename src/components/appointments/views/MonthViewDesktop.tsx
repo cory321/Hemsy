@@ -265,6 +265,22 @@ export function MonthViewDesktop({
                             {formatTime(apt.start_time)} -{' '}
                             {formatTime(apt.end_time)}
                           </Typography>
+                          {(apt.status === 'canceled' ||
+                            apt.status === 'no_show' ||
+                            apt.status === 'declined') && (
+                            <Typography
+                              variant="caption"
+                              display="block"
+                              color="error"
+                            >
+                              Status:{' '}
+                              {apt.status === 'canceled'
+                                ? '❌ Canceled'
+                                : apt.status === 'declined'
+                                  ? '❌ Declined'
+                                  : '❌ No Show'}
+                            </Typography>
+                          )}
                           {apt.client && (
                             <Typography variant="caption" display="block">
                               {apt.client.first_name} {apt.client.last_name}
@@ -296,10 +312,39 @@ export function MonthViewDesktop({
                           px: 0.5,
                           py: 0.25,
                           borderRadius: 0.5,
-                          bgcolor: getAppointmentColor(apt.type),
-                          color: 'white',
+                          bgcolor:
+                            apt.status === 'canceled' ||
+                            apt.status === 'no_show' ||
+                            apt.status === 'declined'
+                              ? 'transparent'
+                              : getAppointmentColor(apt.type),
+                          color:
+                            apt.status === 'canceled' ||
+                            apt.status === 'no_show' ||
+                            apt.status === 'declined'
+                              ? 'text.disabled'
+                              : 'white',
+                          border:
+                            apt.status === 'canceled' ||
+                            apt.status === 'no_show' ||
+                            apt.status === 'declined'
+                              ? '1px dashed'
+                              : 'none',
+                          borderColor: 'text.disabled',
                           cursor: 'pointer',
                           transition: 'all 0.2s',
+                          textDecoration:
+                            apt.status === 'canceled' ||
+                            apt.status === 'no_show' ||
+                            apt.status === 'declined'
+                              ? 'line-through'
+                              : 'none',
+                          opacity:
+                            apt.status === 'canceled' ||
+                            apt.status === 'no_show' ||
+                            apt.status === 'declined'
+                              ? 0.6
+                              : 1,
                           '&:hover': {
                             transform: 'scale(1.05)',
                             boxShadow: theme.shadows[2],

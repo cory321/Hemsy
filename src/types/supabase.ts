@@ -99,6 +99,7 @@ export type Database = {
       };
       calendar_settings: {
         Row: {
+          allow_overlapping_appointments: boolean | null;
           buffer_time_minutes: number | null;
           created_at: string | null;
           default_appointment_duration: number | null;
@@ -109,6 +110,7 @@ export type Database = {
           updated_at: string | null;
         };
         Insert: {
+          allow_overlapping_appointments?: boolean | null;
           buffer_time_minutes?: number | null;
           created_at?: string | null;
           default_appointment_duration?: number | null;
@@ -119,6 +121,7 @@ export type Database = {
           updated_at?: string | null;
         };
         Update: {
+          allow_overlapping_appointments?: boolean | null;
           buffer_time_minutes?: number | null;
           created_at?: string | null;
           default_appointment_duration?: number | null;

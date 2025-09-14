@@ -164,6 +164,8 @@ async function DashboardContent() {
       buffer_time_minutes: data.calendarSettings.buffer_time_minutes ?? 0,
       default_appointment_duration:
         data.calendarSettings.default_appointment_duration ?? 30,
+      allow_overlapping_appointments:
+        data.calendarSettings.allow_overlapping_appointments ?? false,
     };
 
     return (

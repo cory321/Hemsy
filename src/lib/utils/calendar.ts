@@ -261,9 +261,11 @@ export function getAvailableTimeSlots(
   existingAppointments: Array<{
     start_time: string;
     end_time: string;
+    status?: string;
   }>,
   duration: number = 30,
-  bufferMinutes: number = 0
+  bufferMinutes: number = 0,
+  allowOverlapping: boolean = false
 ): string[] {
   const dayOfWeek = date.getDay();
   const hours = shopHours.find((h) => h.day_of_week === dayOfWeek);
@@ -302,8 +304,22 @@ export function getAvailableTimeSlots(
       return false;
     }
 
+    // Skip conflict checking entirely if overlapping is allowed
+    if (allowOverlapping) {
+      return true;
+    }
+
     // Check conflicts with existing appointments (including buffer)
     for (const apt of existingAppointments) {
+      // Skip canceled, declined, and no-show appointments - they don't block slots
+      if (
+        apt.status === 'canceled' ||
+        apt.status === 'no_show' ||
+        apt.status === 'declined'
+      ) {
+        continue;
+      }
+
       const aptStartWithBuffer = addMinutesToTime(
         apt.start_time,
         -bufferMinutes

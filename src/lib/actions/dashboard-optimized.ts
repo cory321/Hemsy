@@ -300,6 +300,7 @@ async function getBusinessMetricsConsolidatedInternal(shopId: string) {
     default_appointment_duration: 30,
     send_reminders: true,
     reminder_hours_before: 24,
+    allow_overlapping_appointments: false,
   };
 
   return {

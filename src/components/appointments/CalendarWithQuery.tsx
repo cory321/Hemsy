@@ -32,8 +32,14 @@ interface CalendarWithQueryProps {
     close_time: string | null;
     is_closed: boolean;
   }>;
+  calendarSettings?: {
+    buffer_time_minutes: number;
+    default_appointment_duration: number;
+  };
+  focusAppointmentId?: string;
   onAppointmentClick?: (appointment: Appointment) => void;
   onDateClick?: (date: Date, time?: string) => void;
+  onTimeSlotClick?: (date: Date, time?: string) => void;
 }
 
 function CalendarSkeleton({ view }: { view: CalendarView }) {
@@ -64,6 +70,8 @@ export function CalendarWithQuery({
   initialDate = new Date(),
   initialView = 'month',
   shopHours,
+  calendarSettings,
+  focusAppointmentId,
   onAppointmentClick,
   onDateClick,
 }: CalendarWithQueryProps) {
@@ -83,14 +91,6 @@ export function CalendarWithQuery({
   // Calculate date range based on current view
   const { startDate, endDate } = useMemo(() => {
     const range = calculateDateRange(currentDate, view);
-    console.log('📆 Date Range Calculation:', {
-      currentDate: currentDate.toISOString(),
-      currentMonth: currentDate.getMonth(),
-      currentYear: currentDate.getFullYear(),
-      startDate: range.startDate,
-      endDate: range.endDate,
-      view,
-    });
     return range;
   }, [currentDate, view]);
 
@@ -154,17 +154,6 @@ export function CalendarWithQuery({
           break;
       }
 
-      console.log('📅 Navigation:', {
-        direction,
-        oldDate: currentDate.toISOString(),
-        newDate: newDate.toISOString(),
-        view,
-        oldMonth: currentDate.getMonth(),
-        newMonth: newDate.getMonth(),
-        oldYear: currentDate.getFullYear(),
-        newYear: newDate.getFullYear(),
-      });
-
       // Update the last requested date to prevent race conditions
       lastRequestedDate.current = newDate;
       setCurrentDate(newDate);
@@ -176,10 +165,24 @@ export function CalendarWithQuery({
     setView(newView);
   }, []);
 
+  const handleDateClick = useCallback((date: Date) => {
+    // This is a date click - navigate to day view
+    lastRequestedDate.current = date;
+    setCurrentDate(date);
+    setView('day');
+  }, []);
+
+  const handleTimeSlotClick = useCallback(
+    (date: Date, time?: string) => {
+      // This is a time slot click - call parent's onDateClick for appointment creation
+      onDateClick?.(date, time);
+    },
+    [onDateClick]
+  );
+
   const handleRefresh = useCallback(
     (date?: Date) => {
       if (date) {
-        console.log('🔄 Refresh with new date:', date.toISOString());
         // Update the last requested date to prevent race conditions
         lastRequestedDate.current = date;
         setCurrentDate(date);
@@ -224,6 +227,8 @@ export function CalendarWithQuery({
       ? cachedAppointments
       : appointments;
 
+  // Debug logging
+
   const showSkeleton = isLoading && cachedAppointments.length === 0;
 
   // Show skeleton only on initial load
@@ -251,8 +256,11 @@ export function CalendarWithQuery({
       <CalendarComponent
         appointments={appointmentsToShow}
         shopHours={shopHours}
+        {...(calendarSettings && { calendarSettings })}
+        {...(focusAppointmentId && { focusAppointmentId })}
         {...(onAppointmentClick && { onAppointmentClick })}
-        {...(onDateClick && { onDateClick })}
+        onDateClick={handleDateClick}
+        onTimeSlotClick={handleTimeSlotClick}
         onRefresh={handleRefresh}
         // Disable navigation and view controls while fetching to prevent rapid clicks
         isLoading={isFetching || isNavigating}

@@ -27,6 +27,7 @@ export async function getCalendarSettings() {
       default_appointment_duration: 30,
       send_reminders: true,
       reminder_hours_before: 24,
+      allow_overlapping_appointments: false,
     }
   );
 }
@@ -37,6 +38,7 @@ export async function updateCalendarSettings(settings: {
   default_appointment_duration: number;
   send_reminders: boolean;
   reminder_hours_before: number;
+  allow_overlapping_appointments: boolean;
 }) {
   const { userId } = await auth();
   if (!userId) throw new Error('Unauthorized');

@@ -62,6 +62,8 @@ export default async function AppointmentsPage() {
     buffer_time_minutes: calendarSettings.buffer_time_minutes ?? 0,
     default_appointment_duration:
       calendarSettings.default_appointment_duration ?? 30,
+    allow_overlapping_appointments:
+      (calendarSettings as any).allow_overlapping_appointments ?? false,
   } as const;
 
   return (

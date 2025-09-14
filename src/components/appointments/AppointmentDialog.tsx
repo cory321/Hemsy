@@ -90,6 +90,7 @@ interface AppointmentDialogProps {
   calendarSettings?: {
     buffer_time_minutes: number;
     default_appointment_duration: number;
+    allow_overlapping_appointments?: boolean;
   };
   onCreate?: (data: {
     clientId: string;
@@ -336,7 +337,8 @@ export function AppointmentDialog({
               apt.id !== appointment?.id
           ),
           duration,
-          calendarSettings.buffer_time_minutes
+          calendarSettings.buffer_time_minutes,
+          calendarSettings.allow_overlapping_appointments || false
         )
       : [];
 

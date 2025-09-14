@@ -56,13 +56,15 @@ function checkOverlap(apt1: Appointment, apt2: Appointment): boolean {
   );
 }
 
-// Helper function to arrange overlapping appointments
-function arrangeAppointments(
-  appointments: Appointment[]
-): Array<Appointment & { column: number; totalColumns: number }> {
+// Helper function to arrange overlapping appointments with overflow handling
+function arrangeAppointments(appointments: Appointment[]): {
+  visible: Array<Appointment & { column: number; totalColumns: number }>;
+  overflow: Map<string, Appointment[]>; // Map of time slots to overflow appointments
+} {
   const arranged: Array<
     Appointment & { column: number; totalColumns: number }
   > = [];
+  const overflow = new Map<string, Appointment[]>();
   const columns: Appointment[][] = [];
 
   appointments.forEach((apt) => {
@@ -86,18 +88,35 @@ function arrangeAppointments(
     }
   });
 
-  // Assign column numbers
-  columns.forEach((col, colIndex) => {
+  // Separate visible appointments (max 2 columns) from overflow
+  const MAX_VISIBLE_COLUMNS = 2;
+  const visibleColumns = columns.slice(0, MAX_VISIBLE_COLUMNS);
+  const overflowColumns = columns.slice(MAX_VISIBLE_COLUMNS);
+
+  // Process visible appointments
+  visibleColumns.forEach((col, colIndex) => {
     col.forEach((apt) => {
       arranged.push({
         ...apt,
         column: colIndex,
-        totalColumns: columns.length,
+        totalColumns: Math.min(columns.length, MAX_VISIBLE_COLUMNS),
       });
     });
   });
 
-  return arranged;
+  // Process overflow appointments - group by time slot
+  overflowColumns.forEach((col) => {
+    col.forEach((apt) => {
+      // Create a time slot key for grouping
+      const timeSlotKey = `${apt.date}-${apt.start_time}`;
+      if (!overflow.has(timeSlotKey)) {
+        overflow.set(timeSlotKey, []);
+      }
+      overflow.get(timeSlotKey)!.push(apt);
+    });
+  });
+
+  return { visible: arranged, overflow };
 }
 
 export function WeekViewDesktop({
@@ -297,7 +316,10 @@ export function WeekViewDesktop({
             const dayAppointments = (appointmentsByDate[dateStr] || []).sort(
               (a, b) => a.start_time.localeCompare(b.start_time)
             );
-            const arrangedAppointments = arrangeAppointments(dayAppointments);
+            const {
+              visible: arrangedAppointments,
+              overflow: overflowAppointments,
+            } = arrangeAppointments(dayAppointments);
             const isOpen = isShopOpen(day, shopHours);
             const isPast = isPastDate(day);
 
@@ -533,6 +555,17 @@ export function WeekViewDesktop({
                         transition: 'all 0.2s',
                         display: 'flex',
                         flexDirection: isCompact ? 'row' : 'column',
+                        opacity:
+                          appointment.status === 'canceled' ||
+                          appointment.status === 'no_show'
+                            ? 0.6
+                            : 1,
+                        border:
+                          appointment.status === 'canceled' ||
+                          appointment.status === 'no_show'
+                            ? '1px dashed'
+                            : 'none',
+                        borderColor: 'text.disabled',
                         '&:hover': {
                           zIndex: 3,
                           transform: 'scale(1.02)',
@@ -549,7 +582,7 @@ export function WeekViewDesktop({
                             alignItems: 'center',
                             width: '100%',
                             bgcolor: 'background.paper',
-                            borderTop: `3px solid ${getAppointmentColor(appointment.type)}`,
+                            borderTop: `3px ${appointment.status === 'canceled' || appointment.status === 'no_show' || appointment.status === 'declined' ? 'dashed' : 'solid'} ${appointment.status === 'canceled' || appointment.status === 'no_show' || appointment.status === 'declined' ? theme.palette.text.disabled : getAppointmentColor(appointment.type)}`,
                             px: 1,
                             gap: 0.5,
                           }}
@@ -558,13 +591,22 @@ export function WeekViewDesktop({
                             variant="caption"
                             fontWeight="medium"
                             sx={{
-                              color: 'text.primary',
+                              color:
+                                appointment.status === 'canceled' ||
+                                appointment.status === 'no_show'
+                                  ? 'text.disabled'
+                                  : 'text.primary',
                               fontSize: '0.7rem',
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
                               whiteSpace: 'nowrap',
                               flex: 1,
                               minWidth: 0,
+                              textDecoration:
+                                appointment.status === 'canceled' ||
+                                appointment.status === 'no_show'
+                                  ? 'line-through'
+                                  : 'none',
                             }}
                           >
                             {appointment.client
@@ -598,7 +640,11 @@ export function WeekViewDesktop({
                           {/* Colored header strip */}
                           <Box
                             sx={{
-                              bgcolor: getAppointmentColor(appointment.type),
+                              bgcolor:
+                                appointment.status === 'canceled' ||
+                                appointment.status === 'no_show'
+                                  ? theme.palette.action.disabled
+                                  : getAppointmentColor(appointment.type),
                               color: 'white',
                               px: 1,
                               py: 0.5,
@@ -639,9 +685,18 @@ export function WeekViewDesktop({
                               variant="body2"
                               fontWeight="medium"
                               sx={{
-                                color: 'text.primary',
+                                color:
+                                  appointment.status === 'canceled' ||
+                                  appointment.status === 'no_show'
+                                    ? 'text.disabled'
+                                    : 'text.primary',
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
+                                textDecoration:
+                                  appointment.status === 'canceled' ||
+                                  appointment.status === 'no_show'
+                                    ? 'line-through'
+                                    : 'none',
                               }}
                             >
                               {appointment.client
@@ -679,6 +734,58 @@ export function WeekViewDesktop({
                     </Paper>
                   );
                 })}
+
+                {/* Overflow badges for appointments beyond 2 columns */}
+                {Array.from(overflowAppointments.entries()).map(
+                  ([timeSlotKey, overflowApts]) => {
+                    // Parse the time slot to get positioning
+                    const [dateStr, timeStr] = timeSlotKey.split('-');
+                    if (dateStr !== format(day, 'yyyy-MM-dd') || !timeStr)
+                      return null;
+
+                    const [timeHour, timeMinute] = timeStr
+                      .split(':')
+                      .map(Number);
+                    if (timeHour === undefined || timeMinute === undefined)
+                      return null;
+
+                    const top =
+                      ((timeHour - gridStartHour) * 60 + timeMinute) *
+                      (100 / 30);
+                    const overflowCount = overflowApts.length;
+
+                    return (
+                      <Box
+                        key={timeSlotKey}
+                        sx={{
+                          position: 'absolute',
+                          top: `${top + 5}px`, // Slight offset from top
+                          right: '4px',
+                          zIndex: 3,
+                          cursor: 'pointer',
+                          '&:hover': {
+                            transform: 'scale(1.1)',
+                          },
+                        }}
+                        onClick={() => onDateClick?.(day)} // Navigate to day view
+                      >
+                        <Chip
+                          label={`+${overflowCount} more`}
+                          size="small"
+                          sx={{
+                            height: '20px',
+                            fontSize: '0.65rem',
+                            bgcolor: 'primary.main',
+                            color: 'white',
+                            '&:hover': {
+                              bgcolor: 'primary.dark',
+                            },
+                          }}
+                        />
+                      </Box>
+                    );
+                  }
+                )}
 
                 {/* Current time indicator */}
                 {(() => {
