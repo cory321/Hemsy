@@ -182,40 +182,23 @@ export async function testEmailTemplate(
       return { success: false, error: 'No email address provided' };
     }
 
-    // Get the template - first try user's custom template
-    // Order by updated_at desc to ensure we get the latest version
-    // eslint-disable-next-line prefer-const
-    let { data: template, error: templateError } = await supabase
-      .from('email_templates')
-      .select('*')
-      .eq('created_by', user.id)
-      .eq('email_type', emailType)
-      .order('updated_at', { ascending: false })
-      .limit(1)
-      .single();
+    // Use EmailRepository to get template (includes fallback to defaults)
+    const repository = new EmailRepository(supabase, user.id);
+    const template = await repository.getTemplate(emailType);
 
-    console.log('Test email - fetched user template:', {
+    console.log('Test email - fetched template:', {
       emailType,
       userId: user.id,
       template: template
-        ? { id: template.id, subject: template.subject.substring(0, 50) }
+        ? {
+            id: template.id,
+            subject: template.subject.substring(0, 50),
+            isDefault: template.is_default,
+          }
         : null,
-      error: templateError,
     });
 
-    // If no user template exists, try to get the default template
-    if (!template) {
-      const { data: defaultTemplate } = await supabase
-        .from('email_templates')
-        .select('*')
-        .eq('email_type', emailType)
-        .eq('is_default', true)
-        .single();
-
-      template = defaultTemplate;
-    }
-
-    // If still no template, return an error (do not fallback to hardcoded defaults for tests)
+    // If still no template, return an error
     if (!template) {
       return { success: false, error: 'Template not found' };
     }
@@ -223,9 +206,57 @@ export async function testEmailTemplate(
     // Create sample data for the template
     const sampleData = getSampleDataForEmailType(emailType, shop as Shop);
 
-    // Render the template
-    const renderer = new TemplateRenderer();
-    const rendered = renderer.render(template, sampleData);
+    // Use the same rendering system as real emails (React Email + fallback)
+    let rendered: { subject: string; body: string; html?: string };
+
+    try {
+      // Check if React Email supports this email type
+      const reactEmailTypes: EmailType[] = [
+        'appointment_scheduled',
+        'appointment_rescheduled',
+        'appointment_canceled',
+        'appointment_reminder',
+        'appointment_no_show',
+        'appointment_confirmation_request',
+        'appointment_confirmed',
+        'appointment_rescheduled_seamstress',
+        'appointment_canceled_seamstress',
+        'payment_link',
+        'payment_received',
+        'invoice_sent',
+      ];
+
+      if (reactEmailTypes.includes(emailType)) {
+        console.log('🚀 Using React Email renderer for test email:', emailType);
+        const { ReactEmailRenderer } = await import(
+          '@/lib/services/email/react-email-renderer'
+        );
+        const reactEmailRenderer = new ReactEmailRenderer();
+        const reactRendered = await reactEmailRenderer.render(
+          emailType,
+          sampleData
+        );
+        rendered = {
+          subject: reactRendered.subject,
+          body: reactRendered.text, // Use text version for legacy compatibility
+          html: reactRendered.html, // Add HTML version
+        };
+      } else {
+        console.log(
+          '📝 Using traditional template renderer for test email:',
+          emailType
+        );
+        const renderer = new TemplateRenderer();
+        rendered = renderer.render(template, sampleData);
+      }
+    } catch (error) {
+      console.warn(
+        '⚠️ React Email rendering failed for test, falling back to traditional templates:',
+        error
+      );
+      const renderer = new TemplateRenderer();
+      rendered = renderer.render(template, sampleData);
+    }
 
     // Send the test email
     const { getResendClient } = await import(
@@ -233,11 +264,18 @@ export async function testEmailTemplate(
     );
     const resendClient = getResendClient();
 
-    const result = await resendClient.send({
+    const emailPayload: any = {
       to: recipientEmail,
       subject: `[TEST] ${rendered.subject}`,
-      text: rendered.body.replace(/<[^>]*>/g, ''), // Strip HTML for text version
-    });
+      text: rendered.body,
+    };
+
+    // Add HTML if available
+    if (rendered.html) {
+      emailPayload.html = rendered.html;
+    }
+
+    const result = await resendClient.send(emailPayload);
 
     if (!result.success) {
       return {
@@ -277,6 +315,7 @@ export async function testEmailTemplate(
  */
 function getSampleDataForEmailType(emailType: EmailType, shop: Shop): any {
   const baseData = {
+    // React Email format
     shop_name: shop.business_name || 'Your Shop',
     shop_email: shop.business_email || 'shop@example.com',
     shop_phone: shop.business_phone || '(555) 123-4567',
@@ -293,66 +332,94 @@ function getSampleDataForEmailType(emailType: EmailType, shop: Shop): any {
     case 'appointment_scheduled':
       return {
         ...baseData,
-        appointment_date: format(appointmentDate, 'EEEE, MMMM d, yyyy'),
-        appointment_time: format(appointmentDate, 'h:mm a'),
-        service_type: 'Dress Alteration',
-        notes: 'Please bring the dress and shoes you plan to wear.',
+        appointment_time: format(appointmentDate, "EEEE, MMMM d 'at' h:mm a"),
+        confirmation_link: 'https://hemsy.app/confirm/test-token',
+        cancel_link: 'https://hemsy.app/decline/test-token',
       };
 
     case 'appointment_rescheduled':
       return {
         ...baseData,
-        appointment_date: format(appointmentDate, 'EEEE, MMMM d, yyyy'),
-        appointment_time: format(appointmentDate, 'h:mm a'),
-        previous_time: 'Monday, January 15, 2024 at 2:00 PM',
-        service_type: 'Dress Alteration',
-        notes: 'Please bring the dress and shoes you plan to wear.',
+        appointment_time: format(appointmentDate, "EEEE, MMMM d 'at' h:mm a"),
+        previous_time: 'Monday, January 15 at 2:00 PM',
       };
 
     case 'appointment_canceled':
       return {
         ...baseData,
-        previous_time:
-          format(appointmentDate, 'EEEE, MMMM d, yyyy') +
-          ' at ' +
-          format(appointmentDate, 'h:mm a'),
-        service_type: 'Dress Alteration',
+        previous_time: format(appointmentDate, "EEEE, MMMM d 'at' h:mm a"),
       };
 
     case 'appointment_reminder':
       return {
         ...baseData,
-        appointment_date: format(appointmentDate, 'EEEE, MMMM d, yyyy'),
-        appointment_time: format(appointmentDate, 'h:mm a'),
-        service_type: 'Dress Alteration',
-        notes: 'Please bring the dress and shoes you plan to wear.',
+        appointment_time: format(appointmentDate, "EEEE, MMMM d 'at' h:mm a"),
       };
 
     case 'appointment_confirmed':
       return {
         ...baseData,
-        appointment_date: format(appointmentDate, 'EEEE, MMMM d, yyyy'),
-        appointment_time: format(appointmentDate, 'h:mm a'),
-        service_type: 'Dress Alteration',
-        notes: 'Please bring the dress and shoes you plan to wear.',
+        appointment_time: format(appointmentDate, "EEEE, MMMM d 'at' h:mm a"),
+      };
+
+    case 'payment_link':
+      return {
+        ...baseData,
+        payment_link: 'https://payments.hemsy.app/pay/test-payment-link',
+        amount: '$150.00',
       };
 
     case 'payment_received':
       return {
         ...baseData,
         amount: '$150.00',
-        payment_method: 'Credit Card',
-        invoice_number: 'INV-2024-001',
-        payment_date: format(new Date(), 'MMMM d, yyyy'),
+        order_details:
+          'Wedding dress alterations\n- Hem adjustment\n- Waist taking in\n- Sleeve shortening',
       };
 
     case 'invoice_sent':
       return {
         ...baseData,
-        invoice_number: 'INV-2024-001',
-        amount_due: '$150.00',
+        invoice_details:
+          'Wedding dress alterations\n- Hem adjustment: $50.00\n- Waist taking in: $65.00\n- Sleeve shortening: $35.00',
+        amount: '$150.00',
         due_date: format(appointmentDate, 'MMMM d, yyyy'),
-        invoice_link: 'https://example.com/invoice/123',
+        payment_link: 'https://payments.hemsy.app/pay/test-invoice-payment',
+      };
+
+    case 'appointment_no_show':
+      return {
+        ...baseData,
+        appointment_time: format(appointmentDate, "EEEE, MMMM d 'at' h:mm a"),
+      };
+
+    case 'appointment_confirmation_request':
+      return {
+        ...baseData,
+        appointment_time: format(appointmentDate, "EEEE, MMMM d 'at' h:mm a"),
+        confirmation_link: 'https://hemsy.app/confirm/test-token',
+      };
+
+    case 'appointment_confirmed':
+      return {
+        ...baseData,
+        seamstress_name: 'Sarah Wilson',
+        appointment_time: format(appointmentDate, "EEEE, MMMM d 'at' h:mm a"),
+      };
+
+    case 'appointment_rescheduled_seamstress':
+      return {
+        ...baseData,
+        seamstress_name: 'Sarah Wilson',
+        appointment_time: format(appointmentDate, "EEEE, MMMM d 'at' h:mm a"),
+        previous_time: 'Monday, January 15 at 2:00 PM',
+      };
+
+    case 'appointment_canceled_seamstress':
+      return {
+        ...baseData,
+        seamstress_name: 'Sarah Wilson',
+        previous_time: format(appointmentDate, "EEEE, MMMM d 'at' h:mm a"),
       };
 
     default:

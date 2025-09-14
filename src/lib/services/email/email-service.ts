@@ -2,6 +2,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { EmailType, EmailSendResult } from '../../../types/email';
 import { EmailRepository } from './email-repository';
 import { TemplateRenderer } from './template-renderer';
+import { ReactEmailRenderer } from './react-email-renderer';
 import { ResendClient, getResendClient } from './resend-client';
 import { emailConfig } from '../../config/email.config';
 import { EMAIL_CONSTRAINTS } from '../../utils/email/constants';
@@ -12,6 +13,7 @@ import { safeParseDateTime } from '@/lib/utils/date-time-utils';
 export class EmailService {
   private repository: EmailRepository;
   private renderer: TemplateRenderer;
+  private reactEmailRenderer: ReactEmailRenderer;
   private resendClient: ResendClient;
 
   constructor(
@@ -20,6 +22,7 @@ export class EmailService {
   ) {
     this.repository = new EmailRepository(supabase, userId);
     this.renderer = new TemplateRenderer();
+    this.reactEmailRenderer = new ReactEmailRenderer();
     this.resendClient = getResendClient();
   }
 
@@ -168,12 +171,54 @@ export class EmailService {
         };
       }
 
-      // 5. Render template
-      const rendered = this.renderer.render(template, emailData);
+      // 5. Render template - try React Email first, fallback to traditional templates
+      let rendered: { subject: string; body: string; html?: string };
+
+      try {
+        // Check if React Email supports this email type
+        const reactEmailTypes: EmailType[] = [
+          'appointment_scheduled',
+          'appointment_rescheduled',
+          'appointment_canceled',
+          'appointment_reminder',
+          'appointment_no_show',
+          'appointment_confirmation_request',
+          'appointment_confirmed',
+          'appointment_rescheduled_seamstress',
+          'appointment_canceled_seamstress',
+          'payment_link',
+          'payment_received',
+          'invoice_sent',
+        ];
+
+        if (reactEmailTypes.includes(emailType)) {
+          console.log('🚀 Using React Email renderer for:', emailType);
+          const reactRendered = await this.reactEmailRenderer.render(
+            emailType,
+            emailData
+          );
+          rendered = {
+            subject: reactRendered.subject,
+            body: reactRendered.text, // Use text version for legacy compatibility
+            html: reactRendered.html, // Add HTML version
+          };
+        } else {
+          console.log('📝 Using traditional template renderer for:', emailType);
+          rendered = this.renderer.render(template, emailData);
+        }
+      } catch (error) {
+        console.warn(
+          '⚠️ React Email rendering failed, falling back to traditional templates:',
+          error
+        );
+        rendered = this.renderer.render(template, emailData);
+      }
+
       console.log('🖨️ Rendered email:', {
         emailType,
         subject: rendered.subject,
         bodyPreview: rendered.body.substring(0, 160) + '...',
+        hasHtml: !!rendered.html,
       });
 
       // 6. Create log entry
@@ -407,7 +452,7 @@ export class EmailService {
   private async sendEmails(
     emailType: EmailType,
     appointmentData: any,
-    rendered: { subject: string; body: string },
+    rendered: { subject: string; body: string; html?: string },
     additionalData?: Record<string, any>
   ): Promise<Array<{ success: boolean; error?: string; messageId?: string }>> {
     const results = [];
@@ -418,12 +463,19 @@ export class EmailService {
         to: appointmentData.client.email,
         emailType,
       });
-      const clientResult = await this.resendClient.send({
+      const emailPayload: any = {
         to: appointmentData.client.email,
         subject: rendered.subject,
         text: rendered.body,
         from: `${getShopDisplayName(appointmentData.shop) || emailConfig.sender.name} <${emailConfig.sender.address}>`,
-      });
+      };
+
+      // Add HTML if available
+      if (rendered.html) {
+        emailPayload.html = rendered.html;
+      }
+
+      const clientResult = await this.resendClient.send(emailPayload);
       console.log('⬅️ Client send result:', clientResult);
       results.push(clientResult);
     }

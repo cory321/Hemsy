@@ -57,7 +57,10 @@ export class EmailRepository {
       'appointment_no_show',
       'appointment_rescheduled_seamstress',
       'appointment_canceled_seamstress',
+      'appointment_reminder',
       'payment_link',
+      'payment_received',
+      'invoice_sent',
       'appointment_confirmation_request',
       'appointment_confirmed',
     ];
@@ -351,7 +354,10 @@ export class EmailRepository {
       'appointment_no_show',
       'appointment_rescheduled_seamstress',
       'appointment_canceled_seamstress',
+      'appointment_reminder',
       'payment_link',
+      'payment_received',
+      'invoice_sent',
       'appointment_confirmation_request',
       'appointment_confirmed',
     ];

@@ -65,6 +65,12 @@ export const EMAIL_VARIABLES: EmailVariableConfig[] = [
           'Confirmation URL the client can click to confirm the appointment',
         example: 'http://localhost:3000/confirm/abcd1234',
       },
+      {
+        key: 'cancel_link',
+        description:
+          'Cancellation URL the client can click to cancel the appointment',
+        example: 'http://localhost:3000/decline/abcd1234',
+      },
     ],
     sample_data: {
       client_name: 'Jane Smith',
@@ -72,6 +78,7 @@ export const EMAIL_VARIABLES: EmailVariableConfig[] = [
       shop_name: "Sarah's Alterations",
       seamstress_name: 'Sarah',
       confirmation_link: 'https://example.com/confirm/sample-token',
+      cancel_link: 'https://example.com/decline/sample-token',
     },
   },
   {
@@ -323,6 +330,184 @@ export const EMAIL_VARIABLES: EmailVariableConfig[] = [
       client_name: 'Jane Smith',
       appointment_time: 'Monday, Jan 15 at 2:00 PM',
       seamstress_name: 'Sarah',
+    },
+  },
+  {
+    email_type: 'appointment_canceled',
+    variables: [
+      {
+        key: 'client_name',
+        description: 'Client full name',
+        example: 'Jane Smith',
+      },
+      {
+        key: 'previous_time',
+        description: 'Canceled appointment time',
+        example: 'Monday, Jan 15 at 2:00 PM',
+      },
+      {
+        key: 'shop_name',
+        description: 'Business name',
+        example: "Sarah's Alterations",
+      },
+    ],
+    sample_data: {
+      client_name: 'Jane Smith',
+      previous_time: 'Monday, Jan 15 at 2:00 PM',
+      shop_name: "Sarah's Alterations",
+    },
+  },
+  {
+    email_type: 'appointment_no_show',
+    variables: [
+      {
+        key: 'client_name',
+        description: 'Client full name',
+        example: 'Jane Smith',
+      },
+      {
+        key: 'appointment_time',
+        description: 'Missed appointment time',
+        example: 'Monday, Jan 15 at 2:00 PM',
+      },
+      {
+        key: 'shop_name',
+        description: 'Business name',
+        example: "Sarah's Alterations",
+      },
+    ],
+    sample_data: {
+      client_name: 'Jane Smith',
+      appointment_time: 'Monday, Jan 15 at 2:00 PM',
+      shop_name: "Sarah's Alterations",
+    },
+  },
+  {
+    email_type: 'appointment_canceled_seamstress',
+    variables: [
+      {
+        key: 'client_name',
+        description: 'Client full name',
+        example: 'Jane Smith',
+      },
+      {
+        key: 'previous_time',
+        description: 'Canceled appointment time',
+        example: 'Monday, Jan 15 at 2:00 PM',
+      },
+      {
+        key: 'seamstress_name',
+        description: 'Seamstress name',
+        example: 'Sarah',
+      },
+    ],
+    sample_data: {
+      client_name: 'Jane Smith',
+      previous_time: 'Monday, Jan 15 at 2:00 PM',
+      seamstress_name: 'Sarah',
+    },
+  },
+  {
+    email_type: 'appointment_reminder',
+    variables: [
+      {
+        key: 'client_name',
+        description: 'Client full name',
+        example: 'Jane Smith',
+      },
+      {
+        key: 'appointment_time',
+        description: 'Upcoming appointment time',
+        example: 'Tomorrow, Jan 16 at 2:00 PM',
+      },
+      {
+        key: 'shop_name',
+        description: 'Business name',
+        example: "Sarah's Alterations",
+      },
+    ],
+    sample_data: {
+      client_name: 'Jane Smith',
+      appointment_time: 'Tomorrow, Jan 16 at 2:00 PM',
+      shop_name: "Sarah's Alterations",
+    },
+  },
+  {
+    email_type: 'payment_received',
+    variables: [
+      {
+        key: 'client_name',
+        description: 'Client full name',
+        example: 'Jane Smith',
+      },
+      {
+        key: 'amount',
+        description: 'Payment amount received',
+        example: '$150.00',
+      },
+      {
+        key: 'order_details',
+        description: 'Details of the order/services',
+        example:
+          'Wedding dress alterations\n- Hem adjustment\n- Waist taking in',
+      },
+      {
+        key: 'shop_name',
+        description: 'Business name',
+        example: "Sarah's Alterations",
+      },
+    ],
+    sample_data: {
+      client_name: 'Jane Smith',
+      amount: '$150.00',
+      order_details:
+        'Wedding dress alterations\n- Hem adjustment\n- Waist taking in',
+      shop_name: "Sarah's Alterations",
+    },
+  },
+  {
+    email_type: 'invoice_sent',
+    variables: [
+      {
+        key: 'client_name',
+        description: 'Client full name',
+        example: 'Jane Smith',
+      },
+      {
+        key: 'invoice_details',
+        description: 'Itemized invoice details',
+        example:
+          'Wedding dress alterations\n- Hem adjustment: $50.00\n- Waist taking in: $65.00',
+      },
+      {
+        key: 'amount',
+        description: 'Total amount due',
+        example: '$150.00',
+      },
+      {
+        key: 'due_date',
+        description: 'Payment due date',
+        example: 'March 30, 2024',
+      },
+      {
+        key: 'payment_link',
+        description: 'Secure payment URL',
+        example: 'https://pay.stripe.com/...',
+      },
+      {
+        key: 'shop_name',
+        description: 'Business name',
+        example: "Sarah's Alterations",
+      },
+    ],
+    sample_data: {
+      client_name: 'Jane Smith',
+      invoice_details:
+        'Wedding dress alterations\n- Hem adjustment: $50.00\n- Waist taking in: $65.00',
+      amount: '$150.00',
+      due_date: 'March 30, 2024',
+      payment_link: 'https://example.com/pay/sample-link',
+      shop_name: "Sarah's Alterations",
     },
   },
 ];

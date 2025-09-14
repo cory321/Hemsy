@@ -13,6 +13,7 @@ const customJestConfig = {
     '<rootDir>/.next/',
     '<rootDir>/node_modules/',
     '<rootDir>/src/__tests__/e2e/',
+    '<rootDir>/playwright/',
   ],
   // Add timeout settings to prevent hanging tests
   testTimeout: 10000, // 10 seconds instead of default 5
@@ -29,7 +30,9 @@ const customJestConfig = {
       '<rootDir>/src/lib/testing/__mocks__/crypto.js',
     isows: '<rootDir>/src/lib/testing/__mocks__/isows.js',
   },
-  transformIgnorePatterns: ['node_modules/(?!(@supabase|@clerk|isows)/)'],
+  transformIgnorePatterns: [
+    'node_modules/(?!(@supabase|@clerk|isows|@react-email|react-email)/)',
+  ],
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',
     '!src/**/*.d.ts',

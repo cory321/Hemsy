@@ -6,6 +6,7 @@ export interface SendEmailPayload {
   to: string | string[];
   subject: string;
   text: string;
+  html?: string;
   from?: string;
   replyTo?: string;
 }
@@ -65,6 +66,11 @@ export class ResendClient {
         subject: payload.subject,
         text: payload.text + EMAIL_FOOTER,
       };
+
+      // Add HTML if provided
+      if (payload.html) {
+        emailOptions.html = payload.html;
+      }
 
       const replyToAddress = payload.replyTo || emailConfig.sender.replyTo;
       if (replyToAddress) {

@@ -173,9 +173,10 @@ describe('testEmailTemplate', () => {
 
     const result = await testEmailTemplate('appointment_scheduled');
 
+    // With our new fallback system, this should actually succeed because
+    // EmailRepository.getTemplate() includes default template fallbacks
     expect(result).toEqual({
-      success: false,
-      error: 'Template not found',
+      success: true,
     });
   });
 

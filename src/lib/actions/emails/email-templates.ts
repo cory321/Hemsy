@@ -188,7 +188,7 @@ export async function resetEmailTemplate(emailType: string): Promise<{
 }
 
 /**
- * Preview an email template
+ * Preview an email template with React Email support
  */
 export async function previewEmailTemplate(
   emailType: string,
@@ -198,7 +198,9 @@ export async function previewEmailTemplate(
   data?: {
     subject: string;
     body: string;
+    html?: string;
     variables: string[];
+    isReactEmail?: boolean;
   };
   error?: string;
 }> {
@@ -207,7 +209,7 @@ export async function previewEmailTemplate(
       return { success: false, error: 'Invalid email type' };
     }
 
-    const { user } = await ensureUserAndShop();
+    const { user, shop } = await ensureUserAndShop();
 
     // If no template provided, get from database
     let templateToPreview = template;
@@ -226,20 +228,195 @@ export async function previewEmailTemplate(
       };
     }
 
-    // Generate preview
+    // Check if React Email supports this email type
+    const reactEmailTypes: EmailType[] = [
+      'appointment_scheduled',
+      'appointment_rescheduled',
+      'appointment_canceled',
+      'appointment_reminder',
+      'appointment_no_show',
+      'appointment_confirmation_request',
+      'appointment_confirmed',
+      'appointment_rescheduled_seamstress',
+      'appointment_canceled_seamstress',
+      'payment_link',
+      'payment_received',
+      'invoice_sent',
+    ];
+
+    if (reactEmailTypes.includes(emailType as EmailType)) {
+      try {
+        // Generate sample data for React Email preview
+        const sampleData = generateSampleDataForPreview(
+          emailType as EmailType,
+          shop
+        );
+
+        // Use React Email renderer
+        const { ReactEmailRenderer } = await import(
+          '@/lib/services/email/react-email-renderer'
+        );
+        const reactEmailRenderer = new ReactEmailRenderer();
+        const reactRendered = await reactEmailRenderer.render(
+          emailType as EmailType,
+          sampleData
+        );
+
+        // Extract variables from template for help display
+        const variables = [
+          ...templateRenderer.extractVariables(templateToPreview.subject),
+          ...templateRenderer.extractVariables(templateToPreview.body),
+        ];
+
+        return {
+          success: true,
+          data: {
+            subject: reactRendered.subject,
+            body: reactRendered.text,
+            html: reactRendered.html,
+            variables: Array.from(new Set(variables)),
+            isReactEmail: true,
+          },
+        };
+      } catch (reactError) {
+        console.warn(
+          'React Email preview failed, falling back to traditional:',
+          reactError
+        );
+        // Fall through to traditional preview
+      }
+    }
+
+    // Generate traditional preview
     const preview = PreviewHelper.generatePreview(
       templateToPreview,
-      emailType,
+      emailType as EmailType,
       { includeFooter: true }
     );
 
-    return { success: true, data: preview };
+    return {
+      success: true,
+      data: {
+        ...preview,
+        isReactEmail: false,
+      },
+    };
   } catch (error) {
     console.error('Failed to preview email template:', error);
     return {
       success: false,
       error: 'Failed to generate preview',
     };
+  }
+}
+
+/**
+ * Generate sample data for React Email preview
+ */
+function generateSampleDataForPreview(emailType: EmailType, shop: any): any {
+  const baseData = {
+    shop_name: shop?.business_name || 'Your Shop',
+    shop_email: shop?.business_email || 'shop@example.com',
+    shop_phone: shop?.business_phone || '(555) 123-4567',
+    shop_address: shop?.business_address || '123 Main St, City, State 12345',
+    client_name: 'Jane Smith',
+    client_email: 'jane.smith@example.com',
+    client_phone: '(555) 987-6543',
+  };
+
+  const appointmentDate = new Date();
+  appointmentDate.setDate(appointmentDate.getDate() + 3); // 3 days from now
+
+  switch (emailType) {
+    case 'appointment_scheduled':
+      return {
+        ...baseData,
+        appointment_time: 'Thursday, March 15 at 2:00 PM',
+        confirmation_link: 'https://hemsy.app/confirm/preview-token',
+        cancel_link: 'https://hemsy.app/decline/preview-token',
+      };
+
+    case 'appointment_rescheduled':
+      return {
+        ...baseData,
+        appointment_time: 'Friday, March 16 at 3:00 PM',
+        previous_time: 'Thursday, March 15 at 2:00 PM',
+      };
+
+    case 'appointment_canceled':
+      return {
+        ...baseData,
+        previous_time: 'Thursday, March 15 at 2:00 PM',
+      };
+
+    case 'appointment_reminder':
+      return {
+        ...baseData,
+        appointment_time: 'Tomorrow, March 15 at 2:00 PM',
+      };
+
+    case 'payment_link':
+      return {
+        ...baseData,
+        payment_link: 'https://payments.hemsy.app/pay/preview-payment-link',
+        amount: '$150.00',
+      };
+
+    case 'payment_received':
+      return {
+        ...baseData,
+        amount: '$150.00',
+        order_details:
+          'Wedding dress alterations\n- Hem adjustment\n- Waist taking in\n- Sleeve shortening',
+      };
+
+    case 'invoice_sent':
+      return {
+        ...baseData,
+        invoice_details:
+          'Wedding dress alterations\n- Hem adjustment: $50.00\n- Waist taking in: $65.00\n- Sleeve shortening: $35.00',
+        amount: '$150.00',
+        due_date: 'March 30, 2024',
+        payment_link: 'https://payments.hemsy.app/pay/preview-invoice-payment',
+      };
+
+    case 'appointment_no_show':
+      return {
+        ...baseData,
+        appointment_time: 'Thursday, March 15 at 2:00 PM',
+      };
+
+    case 'appointment_confirmation_request':
+      return {
+        ...baseData,
+        appointment_time: 'Thursday, March 15 at 2:00 PM',
+        confirmation_link: 'https://hemsy.app/confirm/preview-token',
+      };
+
+    case 'appointment_confirmed':
+      return {
+        ...baseData,
+        seamstress_name: 'Sarah Wilson',
+        appointment_time: 'Thursday, March 15 at 2:00 PM',
+      };
+
+    case 'appointment_rescheduled_seamstress':
+      return {
+        ...baseData,
+        seamstress_name: 'Sarah Wilson',
+        appointment_time: 'Friday, March 16 at 3:00 PM',
+        previous_time: 'Thursday, March 15 at 2:00 PM',
+      };
+
+    case 'appointment_canceled_seamstress':
+      return {
+        ...baseData,
+        seamstress_name: 'Sarah Wilson',
+        previous_time: 'Thursday, March 15 at 2:00 PM',
+      };
+
+    default:
+      return baseData;
   }
 }
 

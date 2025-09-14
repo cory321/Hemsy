@@ -14,6 +14,8 @@ import {
   Divider,
   Chip,
   Paper,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import {
   ArrowBack as BackIcon,
@@ -53,7 +55,9 @@ export function EmailTemplateEditor({
   const [preview, setPreview] = useState<{
     subject: string;
     body: string;
+    html?: string;
     variables: string[];
+    isReactEmail?: boolean;
   } | null>(null);
   const [variables, setVariables] = useState<
     Array<{ key: string; description: string; example: string }>
@@ -279,10 +283,26 @@ export function EmailTemplateEditor({
         {preview && (
           <Card>
             <CardContent>
-              <Typography variant="subtitle1" gutterBottom>
-                Preview with Sample Data
-              </Typography>
+              <Box
+                display="flex"
+                alignItems="center"
+                justifyContent="space-between"
+                mb={2}
+              >
+                <Typography variant="subtitle1">
+                  Preview with Sample Data
+                </Typography>
+                {preview.isReactEmail && (
+                  <Chip
+                    label="React Email"
+                    color="primary"
+                    size="small"
+                    sx={{ fontWeight: 'bold' }}
+                  />
+                )}
+              </Box>
               <Divider sx={{ my: 2 }} />
+
               <Typography variant="subtitle2" gutterBottom>
                 Subject:
               </Typography>
@@ -292,18 +312,104 @@ export function EmailTemplateEditor({
               >
                 <Typography variant="body2">{preview.subject}</Typography>
               </Paper>
+
               <Typography variant="subtitle2" gutterBottom>
-                Body:
+                Email Content:
               </Typography>
-              <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
-                <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-                  {preview.body}
-                </Typography>
-              </Paper>
+
+              {preview.html ? (
+                <EmailPreviewTabs html={preview.html} text={preview.body} />
+              ) : (
+                <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
+                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                    {preview.body}
+                  </Typography>
+                </Paper>
+              )}
             </CardContent>
           </Card>
         )}
       </form>
+    </Box>
+  );
+}
+
+// Email Preview Tabs Component
+interface EmailPreviewTabsProps {
+  html: string;
+  text: string;
+}
+
+function EmailPreviewTabs({ html, text }: EmailPreviewTabsProps) {
+  const [activeTab, setActiveTab] = useState(0);
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
+  };
+
+  return (
+    <Box>
+      <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 2 }}>
+        <Tab label="HTML Preview" />
+        <Tab label="Text Version" />
+      </Tabs>
+
+      {activeTab === 0 && (
+        <Paper
+          variant="outlined"
+          sx={{
+            bgcolor: 'grey.50',
+            overflow: 'hidden',
+            borderRadius: 1,
+          }}
+        >
+          <Box
+            sx={{
+              p: 1,
+              bgcolor: 'grey.100',
+              borderBottom: 1,
+              borderColor: 'grey.200',
+            }}
+          >
+            <Typography variant="caption" color="text.secondary">
+              HTML Email Preview (as it will appear in email clients)
+            </Typography>
+          </Box>
+          <Box sx={{ height: 400, overflow: 'auto' }}>
+            <iframe
+              srcDoc={html}
+              style={{
+                width: '100%',
+                height: '100%',
+                border: 'none',
+                backgroundColor: 'white',
+              }}
+              title="Email HTML Preview"
+            />
+          </Box>
+        </Paper>
+      )}
+
+      {activeTab === 1 && (
+        <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
+          <Box sx={{ mb: 1 }}>
+            <Typography variant="caption" color="text.secondary">
+              Text Version (fallback for email clients that don&apos;t support
+              HTML)
+            </Typography>
+          </Box>
+          <Typography
+            variant="body2"
+            sx={{
+              whiteSpace: 'pre-wrap',
+              fontFamily: 'monospace',
+              fontSize: '0.875rem',
+            }}
+          >
+            {text}
+          </Typography>
+        </Paper>
+      )}
     </Box>
   );
 }
