@@ -330,6 +330,8 @@ export function AppointmentDetailsDialog({
 				return 'warning';
 			case 'pending':
 				return 'warning';
+			case 'no_confirmation_required':
+				return 'default';
 			default:
 				return 'default';
 		}
@@ -377,6 +379,14 @@ export function AppointmentDetailsDialog({
 					label: 'No Show',
 					bgColor: '#ffebee',
 					textColor: '#d32f2f',
+				};
+			case 'no_confirmation_required':
+				return {
+					color: 'default',
+					icon: <RemixIcon name="ri-information-line" size={16} />,
+					label: 'No confirmation',
+					bgColor: '#f5f5f5',
+					textColor: '#666',
 				};
 			default:
 				return {

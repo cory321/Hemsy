@@ -12,6 +12,7 @@ import { EmailService } from '@/lib/services/email/email-service';
 import { TemplateRenderer } from '@/lib/services/email/template-renderer';
 import { Shop } from '@/types';
 import { format } from 'date-fns';
+import { emailConfig } from '@/lib/config/email.config';
 
 /**
  * Get user email settings
@@ -367,8 +368,8 @@ async function getSampleDataForEmailType(
 			return {
 				...baseData,
 				appointment_time: format(appointmentDate, "EEEE, MMMM d 'at' h:mm a"),
-				confirmation_link: 'https://hemsy.app/confirm/test-token',
-				cancel_link: 'https://hemsy.app/decline/test-token',
+				confirmation_link: `${emailConfig.urls.confirmation}/test-token`,
+				cancel_link: `${emailConfig.urls.decline}/test-token`,
 				preview: true,
 			};
 
@@ -377,8 +378,8 @@ async function getSampleDataForEmailType(
 				...baseData,
 				appointment_time: format(appointmentDate, "EEEE, MMMM d 'at' h:mm a"),
 				previous_time: 'Monday, January 15 at 2:00 PM',
-				confirmation_link: 'https://hemsy.app/confirm/test-token',
-				cancel_link: 'https://hemsy.app/decline/test-token',
+				confirmation_link: `${emailConfig.urls.confirmation}/test-token`,
+				cancel_link: `${emailConfig.urls.decline}/test-token`,
 				preview: true,
 			};
 

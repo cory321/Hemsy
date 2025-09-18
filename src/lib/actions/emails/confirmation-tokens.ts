@@ -17,10 +17,15 @@ export async function confirmAppointment(token: string): Promise<{
 	alreadyUsed?: boolean;
 }> {
 	try {
+		// Extract just the token part, removing any query parameters or extra characters
+		// This handles cases where email clients (like Gmail) add tracking parameters
+		const cleanToken =
+			token.split('?')[0]?.split('&')[0]?.trim() || token.trim();
+
 		// Validate token format - throw 404 for invalid tokens
 		let validatedData;
 		try {
-			validatedData = ConfirmationTokenSchema.parse({ token });
+			validatedData = ConfirmationTokenSchema.parse({ token: cleanToken });
 		} catch (error) {
 			if (error instanceof z.ZodError) {
 				notFound();
@@ -32,7 +37,7 @@ export async function confirmAppointment(token: string): Promise<{
 
 		// Validate token (public action - no auth required)
 		const repository = new EmailRepository(supabase, 'system');
-		const validation = await repository.validateToken(validatedData.token);
+		const validation = await repository.validateToken(cleanToken);
 
 		if (!validation.valid) {
 			// If already used, treat as success (idempotent UX) and perform no further actions
@@ -69,7 +74,7 @@ export async function confirmAppointment(token: string): Promise<{
 		}
 
 		// Mark token as used
-		await repository.useToken(validatedData.token);
+		await repository.useToken(cleanToken);
 
 		// Invalidate all other unused tokens for this appointment
 		await repository.invalidateUnusedTokensForAppointment(
@@ -149,10 +154,15 @@ export async function declineAppointment(token: string): Promise<{
 	alreadyUsed?: boolean;
 }> {
 	try {
+		// Extract just the token part, removing any query parameters or extra characters
+		// This handles cases where email clients (like Gmail) add tracking parameters
+		const cleanToken =
+			token.split('?')[0]?.split('&')[0]?.trim() || token.trim();
+
 		// Validate token format - throw 404 for invalid tokens
 		let validatedData;
 		try {
-			validatedData = ConfirmationTokenSchema.parse({ token });
+			validatedData = ConfirmationTokenSchema.parse({ token: cleanToken });
 		} catch (error) {
 			if (error instanceof z.ZodError) {
 				notFound();
@@ -164,7 +174,7 @@ export async function declineAppointment(token: string): Promise<{
 
 		// Validate token (public action - no auth required)
 		const repository = new EmailRepository(supabase, 'system');
-		const validation = await repository.validateToken(validatedData.token);
+		const validation = await repository.validateToken(cleanToken);
 
 		if (!validation.valid) {
 			// If already used, treat as success (idempotent UX) and perform no further actions
@@ -212,7 +222,7 @@ export async function declineAppointment(token: string): Promise<{
 		}
 
 		// Mark token as used
-		await repository.useToken(validatedData.token);
+		await repository.useToken(cleanToken);
 
 		// Invalidate all other unused tokens for this appointment
 		await repository.invalidateUnusedTokensForAppointment(
@@ -286,13 +296,17 @@ export async function checkConfirmationToken(token: string): Promise<{
 	reason?: 'expired' | 'used' | 'invalid';
 }> {
 	try {
+		// Extract just the token part, removing any query parameters or extra characters
+		const cleanToken =
+			token.split('?')[0]?.split('&')[0]?.trim() || token.trim();
+
 		// Validate token format - this function returns invalid rather than throwing
-		const validatedData = ConfirmationTokenSchema.parse({ token });
+		const validatedData = ConfirmationTokenSchema.parse({ token: cleanToken });
 
 		const supabase = await createClient();
 		const repository = new EmailRepository(supabase, 'system');
 
-		const validation = await repository.validateToken(validatedData.token);
+		const validation = await repository.validateToken(cleanToken);
 
 		return {
 			valid: validation.valid,

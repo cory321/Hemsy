@@ -42,7 +42,14 @@ const updateAppointmentSchema = createAppointmentSchema
 	.extend({
 		id: z.string().uuid(),
 		status: z
-			.enum(['pending', 'declined', 'confirmed', 'canceled', 'no_show'])
+			.enum([
+				'pending',
+				'declined',
+				'confirmed',
+				'canceled',
+				'no_show',
+				'no_confirmation_required',
+			])
 			.optional(),
 		originalDate: z.string().optional(), // For tracking date changes
 		// Per-operation flag to control whether to send notification emails
@@ -270,6 +277,27 @@ export async function createAppointment(
 	);
 	const endAt = convertLocalToUTC(validated.date, validated.endTime, timezone);
 
+	// First, fetch client details to check opt-in preferences
+	let appointmentStatus: AppointmentStatus = 'pending'; // default status
+
+	if (validated.clientId) {
+		const { data: clientData, error: clientError } = await supabase
+			.from('clients')
+			.select('accept_email, accept_sms')
+			.eq('id', validated.clientId)
+			.single();
+
+		if (!clientError && clientData) {
+			// If client has opted out of both email and SMS, use no_confirmation_required status
+			if (
+				clientData.accept_email === false &&
+				clientData.accept_sms === false
+			) {
+				appointmentStatus = 'no_confirmation_required';
+			}
+		}
+	}
+
 	// Insert appointment with both legacy and UTC fields
 	const insertData: any = {
 		shop_id: validated.shopId,
@@ -283,6 +311,7 @@ export async function createAppointment(
 		// Other fields
 		type: validated.type,
 		notes: validated.notes || null,
+		status: appointmentStatus,
 	};
 
 	// Only add client_id if provided (it's required in the database)
@@ -337,34 +366,41 @@ export async function createAppointment(
 	}
 
 	// Conditionally send initial scheduled email to the client only
-	try {
-		const clientAcceptsEmail =
-			completeAppointment.client?.accept_email !== false;
-		const shouldSend = validated.sendEmail !== false; // default to true when undefined
+	// Skip if appointment status is 'no_confirmation_required'
+	if (appointmentStatus !== 'no_confirmation_required') {
+		try {
+			const clientAcceptsEmail =
+				completeAppointment.client?.accept_email !== false;
+			const shouldSend = validated.sendEmail !== false; // default to true when undefined
 
-		if (clientAcceptsEmail && shouldSend) {
-			console.log(
-				'🚀 [appointments-refactored] Attempting to send scheduled email for appointment:',
-				appointment.id
-			);
-			const emailService = new EmailService(supabase, userData.id);
-			const result = await emailService.sendAppointmentEmail(
-				appointment.id,
-				'appointment_scheduled'
-			);
-			console.log('✅ [appointments-refactored] Email send result:', result);
-		} else {
-			console.log(
-				'ℹ️ [appointments-refactored] Skipping email send. clientAcceptsEmail:',
-				clientAcceptsEmail,
-				'shouldSend:',
-				shouldSend
+			if (clientAcceptsEmail && shouldSend) {
+				console.log(
+					'🚀 [appointments-refactored] Attempting to send scheduled email for appointment:',
+					appointment.id
+				);
+				const emailService = new EmailService(supabase, userData.id);
+				const result = await emailService.sendAppointmentEmail(
+					appointment.id,
+					'appointment_scheduled'
+				);
+				console.log('✅ [appointments-refactored] Email send result:', result);
+			} else {
+				console.log(
+					'ℹ️ [appointments-refactored] Skipping email send. clientAcceptsEmail:',
+					clientAcceptsEmail,
+					'shouldSend:',
+					shouldSend
+				);
+			}
+		} catch (e) {
+			console.error(
+				'❌ [appointments-refactored] Failed to send scheduled email:',
+				e
 			);
 		}
-	} catch (e) {
-		console.error(
-			'❌ [appointments-refactored] Failed to send scheduled email:',
-			e
+	} else {
+		console.log(
+			'ℹ️ [appointments-refactored] Skipping email send. Appointment status is no_confirmation_required'
 		);
 	}
 

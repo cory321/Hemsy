@@ -18,9 +18,19 @@ jest.mock('@/lib/auth/user-shop', () => ({
 jest.mock('@/lib/config/email.config', () => ({
 	resend: {},
 	emailConfig: {
-		from: {
-			email: 'test@example.com',
+		sender: {
+			address: 'test@example.com',
 			name: 'Test',
+			formatted: 'Test <test@example.com>',
+		},
+		features: {
+			enabled: true,
+			previewMode: false,
+		},
+		urls: {
+			app: 'http://localhost:3000',
+			confirmation: 'http://localhost:3000/confirm',
+			decline: 'http://localhost:3000/decline',
 		},
 		retryDelay: 60000,
 		maxRetries: 3,

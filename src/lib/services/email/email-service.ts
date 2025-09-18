@@ -492,32 +492,81 @@ export class EmailService {
 					return 'appointment_confirmed';
 				})();
 
-				const seamstressTemplate = await this.repository.getTemplate(
-					seamstressTemplateType
+				// Use React email renderer for seamstress notifications
+				const seamstressEmailData = this.prepareEmailData(
+					appointmentData,
+					seamstressTemplateType,
+					additionalData
 				);
-				if (seamstressTemplate) {
-					const seamstressRendered = this.renderer.render(
-						seamstressTemplate,
-						this.prepareEmailData(
-							appointmentData,
-							seamstressTemplateType,
-							additionalData
-						)
-					);
 
+				let seamstressRendered: {
+					subject: string;
+					body: string;
+					html?: string;
+				} | null = null;
+
+				try {
+					console.log(
+						'🚀 Using React Email renderer for seamstress:',
+						seamstressTemplateType
+					);
+					const reactRendered = await this.reactEmailRenderer.render(
+						seamstressTemplateType,
+						seamstressEmailData
+					);
+					seamstressRendered = {
+						subject: reactRendered.subject,
+						body: reactRendered.text,
+						html: reactRendered.html,
+					};
+				} catch (error) {
+					console.warn(
+						'⚠️ React Email rendering failed for seamstress, falling back to traditional templates:',
+						error
+					);
+					const seamstressTemplate = await this.repository.getTemplate(
+						seamstressTemplateType
+					);
+					if (seamstressTemplate) {
+						seamstressRendered = this.renderer.render(
+							seamstressTemplate,
+							seamstressEmailData
+						);
+					} else {
+						console.error(
+							'No template found for seamstress email type:',
+							seamstressTemplateType
+						);
+						// Skip this seamstress email if no template is found
+						seamstressRendered = null;
+					}
+				}
+
+				// Only send if we have a rendered template
+				if (seamstressRendered) {
 					const seamstressTo =
 						appointmentData.shop?.email || emailConfig.sender.address;
 					console.log('➡️ Sending email to seamstress...', {
 						to: seamstressTo,
 						emailType,
 					});
-					const seamstressResult = await this.resendClient.send({
+
+					const seamstressEmailPayload: any = {
 						to: seamstressTo,
 						subject: seamstressRendered.subject,
 						text: seamstressRendered.body,
 						// Keep Hemsy as sender for seamstress notifications
 						from: `${emailConfig.sender.name} <${emailConfig.sender.address}>`,
-					});
+					};
+
+					// Add HTML if available (React email templates)
+					if (seamstressRendered.html) {
+						seamstressEmailPayload.html = seamstressRendered.html;
+					}
+
+					const seamstressResult = await this.resendClient.send(
+						seamstressEmailPayload
+					);
 					console.log('⬅️ Seamstress send result:', seamstressResult);
 					results.push(seamstressResult);
 				}

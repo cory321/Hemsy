@@ -2090,7 +2090,8 @@ export type Database = {
 				| 'declined'
 				| 'confirmed'
 				| 'canceled'
-				| 'no_show';
+				| 'no_show'
+				| 'no_confirmation_required';
 			garment_stage_enum: 'New' | 'In Progress' | 'Ready For Pickup' | 'Done';
 			order_status:
 				| 'new'
@@ -2234,6 +2235,7 @@ export const Constants = {
 				'confirmed',
 				'canceled',
 				'no_show',
+				'no_confirmation_required',
 			],
 			garment_stage_enum: ['New', 'In Progress', 'Ready For Pickup', 'Done'],
 			order_status: [
