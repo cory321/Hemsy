@@ -451,7 +451,10 @@ export function Calendar({
 					</IconButton>
 				</DialogTitle>
 				<DialogContent>
-					<CalendarSettings onSave={() => setSettingsDialogOpen(false)} />
+					<CalendarSettings
+						onSave={() => setSettingsDialogOpen(false)}
+						hideHeading={true}
+					/>
 				</DialogContent>
 			</Dialog>
 		</Box>

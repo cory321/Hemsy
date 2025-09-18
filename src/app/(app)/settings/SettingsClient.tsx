@@ -324,9 +324,11 @@ export function SettingsClient({
 
 					<TabPanel value={tabValue} index={1}>
 						{/* Working Hours */}
-						<WorkingHoursSettings />
+						<Box sx={{ p: 3 }}>
+							<WorkingHoursSettings />
+						</Box>
 
-						<Box sx={{ mt: 3 }}>
+						<Box sx={{ p: 3, mt: 1 }}>
 							{/* Calendar Settings */}
 							<CalendarSettings />
 						</Box>
