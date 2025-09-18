@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Box, Typography, Button } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import { CalendarWithQuery } from '@/components/appointments/CalendarWithQuery';
 import { AppointmentDetailsDialog } from '@/components/appointments/AppointmentDetailsDialog';
 import { AppointmentDialog } from '@/components/appointments/AppointmentDialog';
@@ -176,101 +176,103 @@ export function AppointmentsClient({
 	};
 
 	return (
-		<>
-			{/* Page Header */}
-			<Box
-				sx={{
-					display: 'flex',
-					justifyContent: 'space-between',
-					alignItems: 'center',
-					mb: 3,
-					px: { xs: 2, sm: 0 },
-				}}
-			>
-				<Typography
-					variant="h4"
-					component="h1"
+		<Box sx={{ p: 3 }}>
+			<Box sx={{ mt: 2, mb: 4 }}>
+				{/* Page Header */}
+				<Box
 					sx={{
-						fontWeight: 600,
-						color: 'text.primary',
+						display: 'flex',
+						justifyContent: 'space-between',
+						alignItems: 'center',
+						mb: 3,
+						px: { xs: 2, sm: 0 },
 					}}
 				>
-					Appointments
-				</Typography>
-				<Button
-					variant="contained"
-					startIcon={<AddIcon />}
-					onClick={handleScheduleAppointment}
-					sx={{
-						borderRadius: 1,
-						textTransform: 'none',
-						fontWeight: 600,
-						px: 3,
-					}}
-				>
-					Schedule Appointment
-				</Button>
+					<Typography
+						variant="h4"
+						component="h1"
+						sx={{
+							fontWeight: 600,
+							color: 'text.primary',
+						}}
+					>
+						Appointments
+					</Typography>
+					<Button
+						variant="contained"
+						startIcon={<CalendarMonthIcon />}
+						onClick={handleScheduleAppointment}
+						sx={{
+							borderRadius: 1,
+							textTransform: 'none',
+							fontWeight: 600,
+							px: 3,
+						}}
+					>
+						Schedule Appointment
+					</Button>
+				</Box>
+
+				<CalendarWithQuery
+					shopId={shopId}
+					shopHours={shopHours}
+					calendarSettings={calendarSettings}
+					initialView={initialView}
+					initialDate={initialDate}
+					onAppointmentClick={handleAppointmentClick}
+					onDateClick={handleTimeSlotClick}
+					{...(focusParam && { focusAppointmentId: focusParam })}
+				/>
+
+				{/* Appointment Details Dialog */}
+				{selectedAppointment && (
+					<AppointmentDetailsDialog
+						open={detailsDialogOpen}
+						onClose={() => {
+							setDetailsDialogOpen(false);
+							setSelectedAppointment(null);
+						}}
+						appointment={selectedAppointment}
+						onEdit={handleEditFromDetails}
+					/>
+				)}
+
+				{/* Appointment Edit/Reschedule Dialog */}
+				{selectedAppointment && (
+					<AppointmentDialog
+						open={editDialogOpen}
+						onClose={() => {
+							setEditDialogOpen(false);
+							setSelectedAppointment(null);
+							setIsReschedule(false);
+						}}
+						appointment={selectedAppointment}
+						isReschedule={isReschedule}
+						shopHours={shopHours}
+						existingAppointments={existingAppointments}
+						calendarSettings={calendarSettings}
+						onUpdate={handleUpdateAppointment}
+					/>
+				)}
+
+				{/* Create New Appointment Dialog */}
+				{createDialogDate && (
+					<AppointmentDialog
+						open={createDialogOpen}
+						onClose={() => {
+							setCreateDialogOpen(false);
+							setCreateDialogDate(null);
+							setCreateDialogTime(null);
+						}}
+						shopHours={shopHours}
+						existingAppointments={existingAppointments}
+						calendarSettings={calendarSettings}
+						selectedDate={createDialogDate}
+						selectedTime={createDialogTime}
+						onCreate={handleCreateAppointment}
+					/>
+				)}
 			</Box>
-
-			<CalendarWithQuery
-				shopId={shopId}
-				shopHours={shopHours}
-				calendarSettings={calendarSettings}
-				initialView={initialView}
-				initialDate={initialDate}
-				onAppointmentClick={handleAppointmentClick}
-				onDateClick={handleTimeSlotClick}
-				{...(focusParam && { focusAppointmentId: focusParam })}
-			/>
-
-			{/* Appointment Details Dialog */}
-			{selectedAppointment && (
-				<AppointmentDetailsDialog
-					open={detailsDialogOpen}
-					onClose={() => {
-						setDetailsDialogOpen(false);
-						setSelectedAppointment(null);
-					}}
-					appointment={selectedAppointment}
-					onEdit={handleEditFromDetails}
-				/>
-			)}
-
-			{/* Appointment Edit/Reschedule Dialog */}
-			{selectedAppointment && (
-				<AppointmentDialog
-					open={editDialogOpen}
-					onClose={() => {
-						setEditDialogOpen(false);
-						setSelectedAppointment(null);
-						setIsReschedule(false);
-					}}
-					appointment={selectedAppointment}
-					isReschedule={isReschedule}
-					shopHours={shopHours}
-					existingAppointments={existingAppointments}
-					calendarSettings={calendarSettings}
-					onUpdate={handleUpdateAppointment}
-				/>
-			)}
-
-			{/* Create New Appointment Dialog */}
-			{createDialogDate && (
-				<AppointmentDialog
-					open={createDialogOpen}
-					onClose={() => {
-						setCreateDialogOpen(false);
-						setCreateDialogDate(null);
-						setCreateDialogTime(null);
-					}}
-					shopHours={shopHours}
-					existingAppointments={existingAppointments}
-					calendarSettings={calendarSettings}
-					selectedDate={createDialogDate}
-					selectedTime={createDialogTime}
-					onCreate={handleCreateAppointment}
-				/>
-			)}
-		</>
+		</Box>
 	);
 }
