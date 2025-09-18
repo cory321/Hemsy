@@ -10,6 +10,7 @@ interface PaymentLinkPreviewProps {
 	shopPhone?: string;
 	shopAddress?: string;
 	signature?: string;
+	orderId?: string;
 }
 
 export const PaymentLinkPreview: React.FC<PaymentLinkPreviewProps> = ({
@@ -20,7 +21,11 @@ export const PaymentLinkPreview: React.FC<PaymentLinkPreviewProps> = ({
 	shopPhone,
 	shopAddress,
 	signature,
+	orderId,
 }) => {
+	// Generate unique content to prevent Gmail from trimming repetitive emails
+	const uniqueId = orderId ? orderId.slice(-8) : 'PREVIEW123';
+	const referenceContent = `Reference: ${uniqueId} | Sent: ${new Date().toLocaleDateString()}`;
 	return (
 		<EmailLayout
 			preview={`Your payment link from ${shopName}`}
@@ -29,6 +34,7 @@ export const PaymentLinkPreview: React.FC<PaymentLinkPreviewProps> = ({
 			shopPhone={shopPhone}
 			shopAddress={shopAddress}
 			signature={signature}
+			referenceContent={referenceContent}
 		>
 			{/* Custom Header */}
 			<Section style={headerSection}>
@@ -54,11 +60,7 @@ export const PaymentLinkPreview: React.FC<PaymentLinkPreviewProps> = ({
 				If you have any questions, please contact us.
 			</Text>
 
-			<Text style={closing}>
-				Thank you,
-				<br />
-				{shopName}
-			</Text>
+			<Text style={closing}>Thank you</Text>
 		</EmailLayout>
 	);
 };

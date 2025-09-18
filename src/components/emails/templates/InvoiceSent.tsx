@@ -13,6 +13,7 @@ interface InvoiceSentProps {
 	shopPhone?: string | undefined;
 	shopAddress?: string | undefined;
 	signature?: string | undefined;
+	invoiceId?: string;
 }
 
 export const InvoiceSent: React.FC<InvoiceSentProps> = ({
@@ -26,7 +27,13 @@ export const InvoiceSent: React.FC<InvoiceSentProps> = ({
 	shopPhone,
 	shopAddress,
 	signature,
+	invoiceId,
 }) => {
+	// Generate unique content to prevent Gmail from trimming repetitive emails
+	const uniqueId = invoiceId
+		? invoiceId.slice(-8)
+		: Date.now().toString().slice(-8);
+	const referenceContent = `Reference: ${uniqueId} | Sent: ${new Date().toLocaleDateString()}`;
 	return (
 		<EmailLayout
 			preview={`Invoice from ${shopName}`}
@@ -35,6 +42,7 @@ export const InvoiceSent: React.FC<InvoiceSentProps> = ({
 			shopPhone={shopPhone}
 			shopAddress={shopAddress}
 			signature={signature}
+			referenceContent={referenceContent}
 		>
 			{/* Custom Header */}
 			<Section style={headerSection}>
@@ -78,11 +86,7 @@ export const InvoiceSent: React.FC<InvoiceSentProps> = ({
 				If you have any questions about this invoice, please contact us.
 			</Text>
 
-			<Text style={closing}>
-				Thank you,
-				<br />
-				{shopName}
-			</Text>
+			<Text style={closing}>Thank you</Text>
 		</EmailLayout>
 	);
 };

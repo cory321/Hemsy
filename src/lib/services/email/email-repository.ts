@@ -260,4 +260,19 @@ export class EmailRepository {
 
 		return settings;
 	}
+
+	// Email signature operations
+	async getEmailSignature(shopId: string): Promise<string | null> {
+		const { data, error } = await this.supabase
+			.from('email_signatures')
+			.select('content')
+			.eq('shop_id', shopId)
+			.single();
+
+		if (error || !data) {
+			return null;
+		}
+
+		return data.content;
+	}
 }

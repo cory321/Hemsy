@@ -94,23 +94,23 @@ Ensure these types are available:
 ```typescript
 // types/env.d.ts
 declare global {
-  namespace NodeJS {
-    interface ProcessEnv {
-      // Email
-      RESEND_API_KEY: string;
-      EMAIL_FROM_ADDRESS: string;
-      EMAIL_FROM_NAME: string;
-      EMAIL_REPLY_TO?: string;
-      EMAIL_PREVIEW_MODE?: string;
-      EMAIL_LOG_LEVEL?: string;
-      ENABLE_EMAIL_SENDING?: string;
-      EMAIL_RATE_LIMIT_PER_HOUR?: string;
+	namespace NodeJS {
+		interface ProcessEnv {
+			// Email
+			RESEND_API_KEY: string;
+			EMAIL_FROM_ADDRESS: string;
+			EMAIL_FROM_NAME: string;
+			EMAIL_REPLY_TO?: string;
+			EMAIL_PREVIEW_MODE?: string;
+			EMAIL_LOG_LEVEL?: string;
+			ENABLE_EMAIL_SENDING?: string;
+			EMAIL_RATE_LIMIT_PER_HOUR?: string;
 
-      // URLs
-      NEXT_PUBLIC_APP_URL: string;
-      NEXT_PUBLIC_CONFIRMATION_URL: string;
-    }
-  }
+			// URLs
+			NEXT_PUBLIC_APP_URL: string;
+			NEXT_PUBLIC_CONFIRMATION_URL: string;
+		}
+	}
 }
 
 export {};
@@ -125,7 +125,7 @@ export const emailConfig = {
 		apiKey: process.env.RESEND_API_KEY!,
 	},
 	sender: {
-		address: process.env.EMAIL_FROM_ADDRESS || 'noreply@hemsy.app',
+		address: process.env.EMAIL_FROM_ADDRESS || 'mailman@hemsy.app',
 		name: process.env.EMAIL_FROM_NAME || 'Hemsy'
 		replyTo: process.env.EMAIL_REPLY_TO,
 	},

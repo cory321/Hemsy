@@ -14,6 +14,11 @@ import { EmailPreferences } from './preferences/EmailPreferences';
 import { EmailActivityLog } from './monitoring/EmailActivityLog';
 import { SignatureManager } from './SignatureManager';
 
+interface EmailSettingsSectionProps {
+	shopData?: any;
+	initialSignature?: any;
+}
+
 interface TabPanelProps {
 	children?: React.ReactNode;
 	index: number;
@@ -37,7 +42,10 @@ function TabPanel(props: TabPanelProps) {
 	);
 }
 
-export function EmailSettingsSection() {
+export function EmailSettingsSection({
+	shopData,
+	initialSignature,
+}: EmailSettingsSectionProps) {
 	const [activeTab, setActiveTab] = useState(0);
 
 	const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -81,7 +89,10 @@ export function EmailSettingsSection() {
 					</TabPanel>
 
 					<TabPanel value={activeTab} index={2}>
-						<SignatureManager />
+						<SignatureManager
+							shopData={shopData}
+							initialSignature={initialSignature}
+						/>
 					</TabPanel>
 
 					<TabPanel value={activeTab} index={3}>

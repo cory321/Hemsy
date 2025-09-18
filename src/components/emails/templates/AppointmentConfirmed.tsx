@@ -8,6 +8,7 @@ interface AppointmentConfirmedProps {
 	appointmentTime: string;
 	shopName?: string;
 	signature?: string;
+	appointmentId?: string;
 }
 
 export const AppointmentConfirmed: React.FC<AppointmentConfirmedProps> = ({
@@ -16,12 +17,19 @@ export const AppointmentConfirmed: React.FC<AppointmentConfirmedProps> = ({
 	appointmentTime,
 	shopName = 'Hemsy',
 	signature,
+	appointmentId,
 }) => {
+	// Generate unique content to prevent Gmail from trimming repetitive emails
+	const uniqueId = appointmentId
+		? appointmentId.slice(-8)
+		: Date.now().toString().slice(-8);
+	const referenceContent = `Reference: ${uniqueId} | Sent: ${new Date().toLocaleDateString()}`;
 	return (
 		<EmailLayout
 			preview={`${clientName} confirmed their appointment`}
 			shopName={shopName}
 			signature={signature}
+			referenceContent={referenceContent}
 		>
 			{/* Custom Header */}
 			<Section style={headerSection}>
@@ -43,11 +51,7 @@ export const AppointmentConfirmed: React.FC<AppointmentConfirmedProps> = ({
 
 			<Text style={mainText}>You can view all your appointments in Hemsy.</Text>
 
-			<Text style={closing}>
-				Thank you,
-				<br />
-				Hemsy
-			</Text>
+			<Text style={closing}>Thank you</Text>
 		</EmailLayout>
 	);
 };

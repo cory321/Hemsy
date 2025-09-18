@@ -11,6 +11,7 @@ interface AppointmentRescheduledPreviewProps {
 	shopPhone?: string;
 	shopAddress?: string;
 	signature?: string;
+	appointmentId?: string;
 }
 
 export const AppointmentRescheduledPreview: React.FC<
@@ -24,7 +25,15 @@ export const AppointmentRescheduledPreview: React.FC<
 	shopPhone,
 	shopAddress,
 	signature,
+	appointmentId,
 }) => {
+	// Generate unique content to prevent Gmail from trimming repetitive emails
+	const uniqueId = appointmentId ? appointmentId.slice(-8) : 'PREVIEW123';
+
+	// Content with unique elements
+	const content = {
+		referenceContent: `Reference: ${uniqueId} | Sent: ${new Date().toLocaleDateString()}`,
+	};
 	return (
 		<EmailLayout
 			preview="Your appointment has been rescheduled"
@@ -33,6 +42,7 @@ export const AppointmentRescheduledPreview: React.FC<
 			shopPhone={shopPhone}
 			shopAddress={shopAddress}
 			signature={signature}
+			referenceContent={content.referenceContent}
 		>
 			{/* Custom Header */}
 			<Section style={headerSection}>
@@ -42,8 +52,8 @@ export const AppointmentRescheduledPreview: React.FC<
 			<Text style={greeting}>Hi {clientName},</Text>
 
 			<Text style={mainText}>
-				Your appointment with {shopName} has been rescheduled. Please confirm
-				the date and time below.
+				Your appointment with <strong>{shopName}</strong> has been rescheduled.
+				Please confirm the date and time below.
 			</Text>
 
 			<Section style={appointmentSection}>
@@ -80,11 +90,7 @@ export const AppointmentRescheduledPreview: React.FC<
 				If you have any questions, please contact us.
 			</Text>
 
-			<Text style={closing}>
-				Thank you,
-				<br />
-				{shopName}
-			</Text>
+			<Text style={closing}>Thank you</Text>
 		</EmailLayout>
 	);
 };

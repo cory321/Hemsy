@@ -125,10 +125,20 @@ describe('Seamstress Email HTML Rendering', () => {
 			})
 		);
 
-		// Verify that the resend client was called with HTML content
+		// Verify that the resend client was called with HTML content for both client and seamstress
 		expect(mockResendClient.send).toHaveBeenCalledWith(
 			expect.objectContaining({
-				to: 'test@hemsy.app',
+				to: 'john@example.com', // Client email
+				subject: 'Appointment rescheduled: John Doe',
+				text: 'Appointment Rescheduled\n\nJohn Doe has rescheduled their appointment.',
+				html: '<html><body><h1>Appointment Rescheduled</h1><p>John Doe has rescheduled their appointment.</p></body></html>',
+			})
+		);
+
+		// Verify seamstress email was also sent
+		expect(mockResendClient.send).toHaveBeenCalledWith(
+			expect.objectContaining({
+				to: 'seamstress@testshop.com', // Seamstress email
 				subject: 'Appointment rescheduled: John Doe',
 				text: 'Appointment Rescheduled\n\nJohn Doe has rescheduled their appointment.',
 				html: '<html><body><h1>Appointment Rescheduled</h1><p>John Doe has rescheduled their appointment.</p></body></html>',
@@ -157,18 +167,30 @@ describe('Seamstress Email HTML Rendering', () => {
 			'appointment_rescheduled_seamstress'
 		);
 
-		// Verify that the resend client was called with only text (no HTML)
+		// Verify that the resend client was called with only text (no HTML) for both client and seamstress
 		expect(mockResendClient.send).toHaveBeenCalledWith(
 			expect.objectContaining({
-				to: 'test@hemsy.app',
+				to: 'john@example.com', // Client email
 				subject: 'Appointment rescheduled: John Doe',
 				text: expect.stringContaining('Hi Your Seamstress'),
 				// Should not have HTML property
 			})
 		);
 
-		// Verify HTML property is not present in the fallback
-		const sendCall = mockResendClient.send.mock.calls[0][0];
-		expect(sendCall).not.toHaveProperty('html');
+		// Verify seamstress email was also sent with fallback template
+		expect(mockResendClient.send).toHaveBeenCalledWith(
+			expect.objectContaining({
+				to: 'seamstress@testshop.com', // Seamstress email
+				subject: 'Appointment rescheduled: John Doe',
+				text: expect.stringContaining('Hi Your Seamstress'),
+				// Should not have HTML property
+			})
+		);
+
+		// Verify HTML property is not present in the fallback for both emails
+		const clientSendCall = mockResendClient.send.mock.calls[0][0];
+		const seamstressSendCall = mockResendClient.send.mock.calls[1][0];
+		expect(clientSendCall).not.toHaveProperty('html');
+		expect(seamstressSendCall).not.toHaveProperty('html');
 	});
 });

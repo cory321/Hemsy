@@ -338,11 +338,22 @@ export class EmailService {
 				appointment.shop?.name ||
 				'Your Seamstress',
 			seamstress_name: appointment.shop?.business_name || 'Your Seamstress',
+			id: appointment.shop?.id,
+			email: appointment.shop?.email,
+			business_phone: appointment.shop?.business_phone,
+			business_address: appointment.shop?.business_address,
 		};
+
+		// Fetch email signature for the shop
+		let signature: string | null = null;
+		if (appointment.shop?.id) {
+			signature = await this.repository.getEmailSignature(appointment.shop.id);
+		}
 
 		return {
 			...appointment,
 			shop: shopInfo,
+			email_signature: signature,
 		};
 	}
 
@@ -400,12 +411,17 @@ export class EmailService {
 			appointment_time: this.formatAppointmentTime(
 				`${appointment.date} ${appointment.start_time}`
 			),
+			appointment_id: appointment.id, // Add appointment ID for unique content
 			shop_name:
 				getShopDisplayName(appointment.shop) || emailConfig.sender.name,
 			seamstress_name:
 				appointment.shop.seamstress_name ||
 				getShopDisplayName(appointment.shop) ||
 				emailConfig.sender.name,
+			shop_email: appointment.shop?.email || undefined,
+			shop_phone: appointment.shop?.business_phone || undefined,
+			shop_address: appointment.shop?.business_address || undefined,
+			shop_signature: appointment.email_signature || undefined,
 			...additionalData,
 		};
 

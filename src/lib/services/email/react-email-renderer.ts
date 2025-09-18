@@ -33,6 +33,7 @@ interface EmailData {
 	// Appointment info
 	appointment_time?: string;
 	previous_time?: string;
+	appointment_id?: string;
 
 	// Payment info
 	amount?: string;
@@ -84,6 +85,7 @@ export class ReactEmailRenderer {
 			shopPhone: data.shop_phone,
 			shopAddress: data.shop_address,
 			signature: data.shop_signature,
+			appointmentId: data.appointment_id,
 		};
 
 		switch (emailType) {

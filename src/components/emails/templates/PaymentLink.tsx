@@ -11,6 +11,7 @@ interface PaymentLinkProps {
 	shopPhone?: string;
 	shopAddress?: string;
 	signature?: string;
+	orderId?: string;
 }
 
 export const PaymentLink: React.FC<PaymentLinkProps> = ({
@@ -22,7 +23,13 @@ export const PaymentLink: React.FC<PaymentLinkProps> = ({
 	shopPhone,
 	shopAddress,
 	signature,
+	orderId,
 }) => {
+	// Generate unique content to prevent Gmail from trimming repetitive emails
+	const uniqueId = orderId
+		? orderId.slice(-8)
+		: Date.now().toString().slice(-8);
+	const referenceContent = `Reference: ${uniqueId} | Sent: ${new Date().toLocaleDateString()}`;
 	return (
 		<EmailLayout
 			preview={`Your payment link from ${shopName}`}
@@ -31,6 +38,7 @@ export const PaymentLink: React.FC<PaymentLinkProps> = ({
 			shopPhone={shopPhone}
 			shopAddress={shopAddress}
 			signature={signature}
+			referenceContent={referenceContent}
 		>
 			{/* Custom Header */}
 			<Section style={headerSection}>
@@ -58,11 +66,7 @@ export const PaymentLink: React.FC<PaymentLinkProps> = ({
 				If you have any questions, please contact us.
 			</Text>
 
-			<Text style={closing}>
-				Thank you,
-				<br />
-				{shopName}
-			</Text>
+			<Text style={closing}>Thank you</Text>
 		</EmailLayout>
 	);
 };

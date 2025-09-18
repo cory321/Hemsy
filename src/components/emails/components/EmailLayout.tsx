@@ -19,6 +19,7 @@ interface EmailLayoutProps {
 	shopPhone?: string | undefined;
 	shopAddress?: string | undefined;
 	signature?: string | undefined;
+	referenceContent?: string | undefined;
 }
 
 export const EmailLayout: React.FC<EmailLayoutProps> = ({
@@ -29,6 +30,7 @@ export const EmailLayout: React.FC<EmailLayoutProps> = ({
 	shopPhone,
 	shopAddress,
 	signature,
+	referenceContent,
 }) => {
 	// Debug logging for email layout props
 	console.log('📧 EmailLayout props:', {
@@ -87,6 +89,11 @@ export const EmailLayout: React.FC<EmailLayoutProps> = ({
 							This email was sent from Hemsy on behalf of {shopName}
 						</Text>
 					</Section>
+
+					{/* Minimal reference content to prevent Gmail trimming */}
+					{referenceContent && (
+						<Text style={referenceText}>{referenceContent}</Text>
+					)}
 				</Container>
 			</Body>
 		</Html>
@@ -153,4 +160,12 @@ const signatureText = {
 const signatureHr = {
 	borderColor: '#e6e6e6',
 	margin: '16px 0',
+};
+
+const referenceText = {
+	fontSize: '10px',
+	color: '#cccccc',
+	margin: '8px 0 0 0',
+	textAlign: 'left' as const,
+	fontFamily: 'monospace',
 };

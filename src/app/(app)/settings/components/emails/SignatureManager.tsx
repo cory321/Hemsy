@@ -15,19 +15,26 @@ import { Edit as EditIcon } from '@mui/icons-material';
 
 import { EmailSignature } from '@/types/email';
 import { useToast } from '@/hooks/useToast';
-import { getShopBusinessInfo } from '@/lib/actions/shops';
-import {
-	getEmailSignature,
-	updateEmailSignature,
-} from '@/lib/actions/emails/email-signatures';
+import { updateEmailSignature } from '@/lib/actions/emails/email-signatures';
 
-export function SignatureManager() {
-	const [signature, setSignature] = useState<EmailSignature | null>(null);
-	const [loading, setLoading] = useState(true);
+interface SignatureManagerProps {
+	shopData?: any;
+	initialSignature?: any;
+}
+
+export function SignatureManager({
+	shopData,
+	initialSignature,
+}: SignatureManagerProps) {
+	const [signature, setSignature] = useState<EmailSignature | null>(
+		initialSignature || null
+	);
+	const [loading, setLoading] = useState(false); // No loading needed since data is pre-fetched
 	const [editing, setEditing] = useState(false);
 	const [saving, setSaving] = useState(false);
-	const [signatureContent, setSignatureContent] = useState('');
-	const [shopData, setShopData] = useState<any>(null);
+	const [signatureContent, setSignatureContent] = useState(
+		initialSignature?.content || ''
+	);
 	const { showToast } = useToast();
 
 	const generateDefaultSignature = (shop: any): string => {
@@ -59,46 +66,13 @@ export function SignatureManager() {
 		return content;
 	};
 
-	const loadShopData = useCallback(async () => {
-		try {
-			const result = await getShopBusinessInfo();
-			if (result.success && result.data) {
-				setShopData(result.data);
-			}
-		} catch (error) {
-			console.error('Failed to load shop data:', error);
-		}
-	}, []);
-
-	const loadSignature = useCallback(async () => {
-		try {
-			setLoading(true);
-			const result = await getEmailSignature();
-
-			if (result.success && result.data) {
-				setSignature(result.data);
-				setSignatureContent(result.data.content);
-			}
-			// Default content is now handled by the useEffect watching shopData
-		} catch (error) {
-			showToast('Failed to load signature', 'error');
-		} finally {
-			setLoading(false);
-		}
-	}, [showToast]);
-
+	// Update default signature content when shop data changes and no signature exists
 	useEffect(() => {
-		loadShopData();
-		loadSignature();
-	}, [loadShopData, loadSignature]);
-
-	// Update default signature content when shop data changes
-	useEffect(() => {
-		if (shopData && !signature) {
+		if (shopData && !signature && !signatureContent) {
 			const defaultContent = generateDefaultSignature(shopData);
 			setSignatureContent(defaultContent);
 		}
-	}, [shopData, signature]);
+	}, [shopData, signature, signatureContent]);
 
 	const handleEdit = () => {
 		setEditing(true);
@@ -122,7 +96,10 @@ export function SignatureManager() {
 			if (result.success) {
 				showToast('Signature updated successfully', 'success');
 				setEditing(false);
-				loadSignature(); // Reload to get updated data
+				// Update local state instead of reloading
+				setSignature((prev) =>
+					prev ? { ...prev, content: signatureContent } : null
+				);
 			} else {
 				showToast(result.error || 'Failed to update signature', 'error');
 			}

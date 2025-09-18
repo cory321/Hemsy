@@ -10,6 +10,7 @@ interface AppointmentScheduledPreviewProps {
 	shopPhone?: string;
 	shopAddress?: string;
 	signature?: string;
+	appointmentId?: string;
 }
 
 export const AppointmentScheduledPreview: React.FC<
@@ -22,19 +23,26 @@ export const AppointmentScheduledPreview: React.FC<
 	shopPhone,
 	shopAddress,
 	signature,
+	appointmentId,
 }) => {
+	// Generate unique content to prevent Gmail from trimming repetitive emails
+	const uniqueId = appointmentId ? appointmentId.slice(-8) : 'PREVIEW123';
+
 	// Default content with variable substitution
 	const content = {
 		header: 'Appointment Scheduled',
 		greeting: 'Hi {client_name},'.replace('{client_name}', clientName),
-		introduction:
-			'Your appointment with {shop_name} has been scheduled. Please confirm the date and time below.'.replace(
-				'{shop_name}',
-				shopName
-			),
+		introduction: (
+			<>
+				Your appointment with <strong>{shopName}</strong> has been scheduled.
+				Please confirm the date and time below.
+			</>
+		),
+		// Add unique content to prevent Gmail trimming (moved to footer)
+		referenceContent: `Reference: ${uniqueId} | Sent: ${new Date().toLocaleDateString()}`,
 		footer_message:
 			'If you have any questions or need to reschedule, please contact us.',
-		closing: 'Thank you,\n{shop_name}'.replace('{shop_name}', shopName),
+		closing: 'Thank you',
 	};
 
 	return (
@@ -45,6 +53,7 @@ export const AppointmentScheduledPreview: React.FC<
 			shopPhone={shopPhone}
 			shopAddress={shopAddress}
 			signature={signature}
+			referenceContent={content.referenceContent}
 		>
 			{/* Custom Header */}
 			<Section style={headerSection}>

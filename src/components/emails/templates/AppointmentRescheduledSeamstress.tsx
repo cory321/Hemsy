@@ -9,6 +9,7 @@ interface AppointmentRescheduledSeamstressProps {
 	previousTime: string;
 	shopName?: string;
 	signature?: string;
+	appointmentId?: string;
 }
 
 export const AppointmentRescheduledSeamstress: React.FC<
@@ -20,12 +21,19 @@ export const AppointmentRescheduledSeamstress: React.FC<
 	previousTime,
 	shopName = 'Hemsy',
 	signature,
+	appointmentId,
 }) => {
+	// Generate unique content to prevent Gmail from trimming repetitive emails
+	const uniqueId = appointmentId
+		? appointmentId.slice(-8)
+		: Date.now().toString().slice(-8);
+	const referenceContent = `Reference: ${uniqueId} | Sent: ${new Date().toLocaleDateString()}`;
 	return (
 		<EmailLayout
 			preview={`Appointment rescheduled: ${clientName}`}
 			shopName={shopName}
 			signature={signature}
+			referenceContent={referenceContent}
 		>
 			{/* Custom Header */}
 			<Section style={headerSection}>
@@ -43,7 +51,7 @@ export const AppointmentRescheduledSeamstress: React.FC<
 				<Text style={previousTimeValue}>{previousTime}</Text>
 			</Section>
 
-			<Text style={closing}>Sent from Hemsy</Text>
+			<Text style={closing}>Thank you</Text>
 		</EmailLayout>
 	);
 };

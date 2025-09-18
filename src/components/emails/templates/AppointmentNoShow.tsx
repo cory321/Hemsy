@@ -10,6 +10,7 @@ interface AppointmentNoShowProps {
 	shopPhone?: string;
 	shopAddress?: string;
 	signature?: string;
+	appointmentId?: string;
 }
 
 export const AppointmentNoShow: React.FC<AppointmentNoShowProps> = ({
@@ -20,7 +21,13 @@ export const AppointmentNoShow: React.FC<AppointmentNoShowProps> = ({
 	shopPhone,
 	shopAddress,
 	signature,
+	appointmentId,
 }) => {
+	// Generate unique content to prevent Gmail from trimming repetitive emails
+	const uniqueId = appointmentId
+		? appointmentId.slice(-8)
+		: Date.now().toString().slice(-8);
+	const referenceContent = `Reference: ${uniqueId} | Sent: ${new Date().toLocaleDateString()}`;
 	return (
 		<EmailLayout
 			preview={`We missed you at ${shopName}`}
@@ -29,6 +36,7 @@ export const AppointmentNoShow: React.FC<AppointmentNoShowProps> = ({
 			shopPhone={shopPhone}
 			shopAddress={shopAddress}
 			signature={signature}
+			referenceContent={referenceContent}
 		>
 			{/* Custom Header */}
 			<Section style={headerSection}>
@@ -46,11 +54,7 @@ export const AppointmentNoShow: React.FC<AppointmentNoShowProps> = ({
 				Please contact us to reschedule your appointment.
 			</Text>
 
-			<Text style={closing}>
-				Thank you,
-				<br />
-				{shopName}
-			</Text>
+			<Text style={closing}>Thank you</Text>
 		</EmailLayout>
 	);
 };

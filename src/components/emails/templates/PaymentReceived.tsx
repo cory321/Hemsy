@@ -11,6 +11,7 @@ interface PaymentReceivedProps {
 	shopPhone?: string;
 	shopAddress?: string;
 	signature?: string;
+	orderId?: string;
 }
 
 export const PaymentReceived: React.FC<PaymentReceivedProps> = ({
@@ -22,7 +23,13 @@ export const PaymentReceived: React.FC<PaymentReceivedProps> = ({
 	shopPhone,
 	shopAddress,
 	signature,
+	orderId,
 }) => {
+	// Generate unique content to prevent Gmail from trimming repetitive emails
+	const uniqueId = orderId
+		? orderId.slice(-8)
+		: Date.now().toString().slice(-8);
+	const referenceContent = `Reference: ${uniqueId} | Sent: ${new Date().toLocaleDateString()}`;
 	return (
 		<EmailLayout
 			preview="Payment received - Thank you!"
@@ -31,6 +38,7 @@ export const PaymentReceived: React.FC<PaymentReceivedProps> = ({
 			shopPhone={shopPhone}
 			shopAddress={shopAddress}
 			signature={signature}
+			referenceContent={referenceContent}
 		>
 			{/* Custom Header */}
 			<Section style={headerSection}>
@@ -55,7 +63,7 @@ export const PaymentReceived: React.FC<PaymentReceivedProps> = ({
 
 			<Text style={mainText}>Thank you for your business!</Text>
 
-			<Text style={closing}>{shopName}</Text>
+			<Text style={closing}>Thank you</Text>
 		</EmailLayout>
 	);
 };

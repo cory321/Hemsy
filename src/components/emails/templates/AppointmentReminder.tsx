@@ -10,6 +10,7 @@ interface AppointmentReminderProps {
 	shopPhone?: string;
 	shopAddress?: string;
 	signature?: string;
+	appointmentId?: string;
 }
 
 export const AppointmentReminder: React.FC<AppointmentReminderProps> = ({
@@ -20,7 +21,13 @@ export const AppointmentReminder: React.FC<AppointmentReminderProps> = ({
 	shopPhone,
 	shopAddress,
 	signature,
+	appointmentId,
 }) => {
+	// Generate unique content to prevent Gmail from trimming repetitive emails
+	const uniqueId = appointmentId
+		? appointmentId.slice(-8)
+		: Date.now().toString().slice(-8);
+	const referenceContent = `Reference: ${uniqueId} | Sent: ${new Date().toLocaleDateString()}`;
 	return (
 		<EmailLayout
 			preview={`Appointment reminder: ${shopName}`}
@@ -29,6 +36,7 @@ export const AppointmentReminder: React.FC<AppointmentReminderProps> = ({
 			shopPhone={shopPhone}
 			shopAddress={shopAddress}
 			signature={signature}
+			referenceContent={referenceContent}
 		>
 			{/* Custom Header */}
 			<Section style={headerSection}>
@@ -50,11 +58,7 @@ export const AppointmentReminder: React.FC<AppointmentReminderProps> = ({
 				possible.
 			</Text>
 
-			<Text style={closing}>
-				Thank you,
-				<br />
-				{shopName}
-			</Text>
+			<Text style={closing}>Thank you</Text>
 		</EmailLayout>
 	);
 };

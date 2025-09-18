@@ -12,6 +12,7 @@ interface AppointmentScheduledProps {
 	shopPhone?: string | undefined;
 	shopAddress?: string | undefined;
 	signature?: string | undefined;
+	appointmentId?: string | undefined;
 }
 
 export const AppointmentScheduled: React.FC<AppointmentScheduledProps> = ({
@@ -24,19 +25,29 @@ export const AppointmentScheduled: React.FC<AppointmentScheduledProps> = ({
 	shopPhone,
 	shopAddress,
 	signature,
+	appointmentId,
 }) => {
+	// Generate unique content to prevent Gmail from trimming repetitive emails
+	const uniqueId = appointmentId
+		? appointmentId.slice(-8)
+		: Date.now().toString().slice(-8);
+	const timestamp = new Date().toISOString();
+
 	// Default content with variable substitution
 	const content = {
 		header: 'Appointment Scheduled',
 		greeting: 'Hi {client_name},'.replace('{client_name}', clientName),
-		introduction:
-			'Your appointment with {shop_name} has been scheduled. Please confirm the date and time below.'.replace(
-				'{shop_name}',
-				shopName
-			),
+		introduction: (
+			<>
+				Your appointment with <strong>{shopName}</strong> has been scheduled.
+				Please confirm the date and time below.
+			</>
+		),
+		// Add unique content to prevent Gmail trimming (moved to footer)
+		referenceContent: `Reference: ${uniqueId} | Sent: ${new Date().toLocaleDateString()}`,
 		footer_message:
 			'If you have any questions or need to reschedule, please contact us.',
-		closing: 'Thank you,\n{shop_name}'.replace('{shop_name}', shopName),
+		closing: 'Thank you',
 	};
 	return (
 		<EmailLayout
@@ -46,6 +57,7 @@ export const AppointmentScheduled: React.FC<AppointmentScheduledProps> = ({
 			shopPhone={shopPhone}
 			shopAddress={shopAddress}
 			signature={signature}
+			referenceContent={content.referenceContent}
 		>
 			{/* Custom Header */}
 			<Section style={headerSection}>
