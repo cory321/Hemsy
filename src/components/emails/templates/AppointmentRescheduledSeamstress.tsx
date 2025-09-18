@@ -3,127 +3,108 @@ import { Text, Section } from '@react-email/components';
 import { EmailLayout } from '../components';
 
 interface AppointmentRescheduledSeamstressProps {
-  clientName: string;
-  seamstressName: string;
-  appointmentTime: string;
-  previousTime: string;
-  shopName?: string;
+	clientName: string;
+	seamstressName: string;
+	appointmentTime: string;
+	previousTime: string;
+	shopName?: string;
+	signature?: string;
 }
 
 export const AppointmentRescheduledSeamstress: React.FC<
-  AppointmentRescheduledSeamstressProps
+	AppointmentRescheduledSeamstressProps
 > = ({
-  clientName,
-  seamstressName,
-  appointmentTime,
-  previousTime,
-  shopName = 'Hemsy',
+	clientName,
+	seamstressName,
+	appointmentTime,
+	previousTime,
+	shopName = 'Hemsy',
+	signature,
 }) => {
-  return (
-    <EmailLayout
-      preview={`Appointment rescheduled: ${clientName}`}
-      shopName={shopName}
-    >
-      <Text style={greeting}>Hi {seamstressName},</Text>
+	return (
+		<EmailLayout
+			preview={`Appointment rescheduled: ${clientName}`}
+			shopName={shopName}
+			signature={signature}
+		>
+			{/* Custom Header */}
+			<Section style={headerSection}>
+				<Text style={headerText}>Appointment Rescheduled</Text>
+			</Section>
 
-      <Section style={notificationSection}>
-        <Text style={notificationIcon}>📅</Text>
-        <Text style={notificationTitle}>Appointment Rescheduled</Text>
-        <Text style={clientNameText}>{clientName}</Text>
-      </Section>
+			<Text style={greeting}>Hi {seamstressName},</Text>
 
-      <Section style={timeSection}>
-        <Text style={timeLabel}>Previous time:</Text>
-        <Text style={timeValue}>{previousTime}</Text>
+			<Text style={mainText}>
+				Your appointment with {clientName} has been rescheduled.
+			</Text>
 
-        <Text style={timeLabel}>New time:</Text>
-        <Text style={timeValueNew}>{appointmentTime}</Text>
-      </Section>
+			<Section style={appointmentSection}>
+				<Text style={newTimeValue}>{appointmentTime}</Text>
+				<Text style={previousTimeValue}>{previousTime}</Text>
+			</Section>
 
-      <Text style={mainText}>You can view details in Hemsy.</Text>
-
-      <Text style={closing}>
-        Thank you,
-        <br />
-        Hemsy
-      </Text>
-    </EmailLayout>
-  );
+			<Text style={closing}>Sent from Hemsy</Text>
+		</EmailLayout>
+	);
 };
 
 // Styles
 const greeting = {
-  fontSize: '16px',
-  lineHeight: '24px',
-  margin: '0 0 16px 0',
-  color: '#1a1a1a',
+	fontSize: '16px',
+	lineHeight: '24px',
+	margin: '0 0 16px 0',
+	color: '#1a1a1a',
 };
 
 const mainText = {
-  fontSize: '16px',
-  lineHeight: '24px',
-  margin: '0 0 16px 0',
-  color: '#1a1a1a',
+	fontSize: '16px',
+	lineHeight: '24px',
+	margin: '0 0 16px 0',
+	color: '#1a1a1a',
 };
 
-const notificationSection = {
-  backgroundColor: '#eff6ff',
-  padding: '20px',
-  borderRadius: '6px',
-  margin: '24px 0',
-  textAlign: 'center' as const,
-  border: '1px solid #3b82f6',
+const appointmentSection = {
+	margin: '32px 0',
+	padding: '24px',
+	backgroundColor: '#f8fafc',
+	borderRadius: '8px',
+	border: '2px solid #e2e8f0',
+	textAlign: 'center' as const,
 };
 
-const notificationIcon = {
-  fontSize: '24px',
-  margin: '0 0 8px 0',
+const newTimeValue = {
+	fontSize: '20px',
+	fontWeight: 'bold' as const,
+	color: '#1e293b',
+	lineHeight: '28px',
+	margin: '0 0 16px 0',
 };
 
-const notificationTitle = {
-  fontSize: '18px',
-  fontWeight: 'bold',
-  color: '#1d4ed8',
-  margin: '0 0 8px 0',
-};
-
-const clientNameText = {
-  fontSize: '16px',
-  color: '#1e40af',
-  margin: '0',
-};
-
-const timeSection = {
-  backgroundColor: '#f8fafc',
-  padding: '16px',
-  borderRadius: '6px',
-  margin: '24px 0',
-};
-
-const timeLabel = {
-  fontSize: '14px',
-  fontWeight: 'bold',
-  color: '#374151',
-  margin: '0 0 4px 0',
-};
-
-const timeValue = {
-  fontSize: '16px',
-  color: '#6b7280',
-  margin: '0 0 16px 0',
-  textDecoration: 'line-through',
-};
-
-const timeValueNew = {
-  fontSize: '16px',
-  color: '#16a34a',
-  margin: '0',
-  fontWeight: 'bold',
+const previousTimeValue = {
+	fontSize: '16px',
+	color: '#64748b',
+	lineHeight: '22px',
+	margin: '0',
+	textDecoration: 'line-through',
 };
 
 const closing = {
-  fontSize: '16px',
-  lineHeight: '24px',
-  margin: '24px 0 0 0',
-  color: '#1a1a1a',
+	fontSize: '16px',
+	lineHeight: '24px',
+	margin: '24px 0 0 0',
+	color: '#1a1a1a',
+};
+
+const headerSection = {
+	padding: '24px 0',
+	borderBottom: '1px solid #e6e6e6',
+	marginBottom: '24px',
+};
+
+const headerText = {
+	fontSize: '24px',
+	fontWeight: 'bold',
+	color: '#1a1a1a',
+	margin: '0',
+	textAlign: 'left' as const,
 };

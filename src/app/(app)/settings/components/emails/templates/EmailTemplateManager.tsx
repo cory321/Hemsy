@@ -1,190 +1,238 @@
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  Box,
-  Card,
-  CardContent,
-  CardActions,
-  Button,
-  Typography,
-  Chip,
-  CircularProgress,
-  Alert,
+	Box,
+	Button,
+	Typography,
+	CircularProgress,
+	Alert,
+	Table,
+	TableBody,
+	TableCell,
+	TableContainer,
+	TableHead,
+	TableRow,
+	Paper,
+	Chip,
+	IconButton,
+	Tooltip,
 } from '@mui/material';
-import Grid from '@mui/material/Grid2';
-import { Edit as EditIcon, RestartAlt as ResetIcon } from '@mui/icons-material';
+import { Visibility as ViewIcon } from '@mui/icons-material';
 
-import { getEmailTemplates, resetEmailTemplate } from '@/lib/actions/emails';
+import { getEmailTemplates } from '@/lib/actions/emails';
 import { EmailTemplate } from '@/types/email';
 import { EMAIL_TYPE_LABELS } from '@/lib/utils/email/constants';
-import { EmailTemplateEditor } from './EmailTemplateEditor';
+import { EmailTemplateViewer } from './EmailTemplateViewer';
 import { useToast } from '@/hooks/useToast';
 
+// Email types that are sent to clients
+const CLIENT_EMAIL_TYPES = [
+	'appointment_scheduled',
+	'appointment_rescheduled',
+	'appointment_canceled',
+	'appointment_reminder',
+	'payment_link',
+	'payment_received',
+	'invoice_sent',
+	'appointment_no_show',
+] as const;
+
+// Email types that are sent to seamstresses
+const SEAMSTRESS_EMAIL_TYPES = [
+	'appointment_rescheduled_seamstress',
+	'appointment_canceled_seamstress',
+	'appointment_confirmed',
+] as const;
+
 export function EmailTemplateManager() {
-  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(
-    null
-  );
-  const [isPending, startTransition] = useTransition();
-  const { showToast } = useToast();
+	const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState<string | null>(null);
+	const [viewingTemplate, setViewingTemplate] = useState<EmailTemplate | null>(
+		null
+	);
+	const { showToast } = useToast();
 
-  useEffect(() => {
-    loadTemplates();
-  }, []);
+	useEffect(() => {
+		loadTemplates();
+	}, []);
 
-  const loadTemplates = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const result = await getEmailTemplates();
+	const loadTemplates = async () => {
+		try {
+			setLoading(true);
+			setError(null);
+			const result = await getEmailTemplates();
 
-      if (!result.success) {
-        throw new Error(result.error);
-      }
+			if (!result.success) {
+				throw new Error(result.error);
+			}
 
-      setTemplates(result.data || []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load templates');
-    } finally {
-      setLoading(false);
-    }
-  };
+			setTemplates(result.data || []);
+		} catch (err) {
+			setError(err instanceof Error ? err.message : 'Failed to load templates');
+		} finally {
+			setLoading(false);
+		}
+	};
 
-  const handleReset = async (template: EmailTemplate) => {
-    if (!confirm('Are you sure you want to reset this template to default?')) {
-      return;
-    }
+	const handleView = (template: EmailTemplate) => {
+		setViewingTemplate(template);
+	};
 
-    startTransition(async () => {
-      try {
-        const result = await resetEmailTemplate(template.email_type);
+	const handleViewClose = () => {
+		setViewingTemplate(null);
+	};
 
-        if (!result.success) {
-          throw new Error(result.error);
-        }
+	// Filter templates by recipient type
+	const clientTemplates = templates.filter((template) =>
+		CLIENT_EMAIL_TYPES.includes(template.email_type as any)
+	);
 
-        showToast('Template reset to default', 'success');
-        loadTemplates(); // Reload templates
-      } catch (err) {
-        showToast(
-          err instanceof Error ? err.message : 'Failed to reset template',
-          'error'
-        );
-      }
-    });
-  };
+	const seamstressTemplates = templates.filter((template) =>
+		SEAMSTRESS_EMAIL_TYPES.includes(template.email_type as any)
+	);
 
-  const handleEdit = (template: EmailTemplate) => {
-    setEditingTemplate(template);
-  };
+	// Reusable table component
+	const renderTemplateTable = (
+		tableTemplates: EmailTemplate[],
+		title: string,
+		description: string
+	) => (
+		<Box sx={{ mb: 4 }}>
+			<Typography variant="h5" gutterBottom>
+				{title}
+			</Typography>
+			<Typography variant="body2" color="text.secondary" paragraph>
+				{description}
+			</Typography>
 
-  const handleEditClose = () => {
-    setEditingTemplate(null);
-    loadTemplates(); // Reload to show updates
-  };
+			<TableContainer component={Paper} sx={{ mt: 2 }}>
+				<Table>
+					<TableHead>
+						<TableRow>
+							<TableCell>Template</TableCell>
+							<TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
+								Subject
+							</TableCell>
+							<TableCell align="center">Actions</TableCell>
+						</TableRow>
+					</TableHead>
+					<TableBody>
+						{tableTemplates.map((template) => (
+							<TableRow
+								key={template.id}
+								hover
+								onClick={() => handleView(template)}
+								sx={{
+									cursor: 'pointer',
+									'&:hover': {
+										backgroundColor: 'action.hover',
+									},
+								}}
+							>
+								<TableCell>
+									<Box>
+										<Typography variant="subtitle2" fontWeight="medium">
+											{EMAIL_TYPE_LABELS[template.email_type]}
+										</Typography>
+										{/* Show subject on mobile */}
+										<Typography
+											variant="body2"
+											color="text.secondary"
+											sx={{
+												display: { xs: 'block', md: 'none' },
+												mt: 0.5,
+												overflow: 'hidden',
+												textOverflow: 'ellipsis',
+												whiteSpace: 'nowrap',
+											}}
+										>
+											{template.subject}
+										</Typography>
+									</Box>
+								</TableCell>
+								<TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
+									<Typography
+										variant="body2"
+										sx={{
+											maxWidth: 300,
+											overflow: 'hidden',
+											textOverflow: 'ellipsis',
+											whiteSpace: 'nowrap',
+										}}
+									>
+										{template.subject}
+									</Typography>
+								</TableCell>
+								<TableCell align="center">
+									<Tooltip title="Preview template">
+										<IconButton
+											size="small"
+											onClick={(e) => {
+												e.stopPropagation();
+												handleView(template);
+											}}
+										>
+											<ViewIcon />
+										</IconButton>
+									</Tooltip>
+								</TableCell>
+							</TableRow>
+						))}
+					</TableBody>
+				</Table>
+			</TableContainer>
+		</Box>
+	);
 
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" p={4}>
-        <CircularProgress />
-      </Box>
-    );
-  }
+	if (loading) {
+		return (
+			<Box display="flex" justifyContent="center" p={4}>
+				<CircularProgress />
+			</Box>
+		);
+	}
 
-  if (error) {
-    return (
-      <Alert
-        severity="error"
-        action={
-          <Button color="inherit" size="small" onClick={loadTemplates}>
-            Retry
-          </Button>
-        }
-      >
-        {error}
-      </Alert>
-    );
-  }
+	if (error) {
+		return (
+			<Alert
+				severity="error"
+				action={
+					<Button color="inherit" size="small" onClick={loadTemplates}>
+						Retry
+					</Button>
+				}
+			>
+				{error}
+			</Alert>
+		);
+	}
 
-  if (editingTemplate) {
-    return (
-      <EmailTemplateEditor
-        template={editingTemplate}
-        onClose={handleEditClose}
-      />
-    );
-  }
+	if (viewingTemplate) {
+		return (
+			<EmailTemplateViewer
+				template={viewingTemplate}
+				onClose={handleViewClose}
+			/>
+		);
+	}
 
-  return (
-    <Box>
-      <Typography variant="h6" gutterBottom>
-        Email Templates
-      </Typography>
-      <Typography variant="body2" color="text.secondary" paragraph>
-        Customize the email templates sent to clients and yourself. Use
-        variables like {'{client_name}'} to personalize emails.
-      </Typography>
+	return (
+		<Box>
+			{/* Client Email Templates */}
+			{renderTemplateTable(
+				clientTemplates,
+				'Emails Sent to Clients',
+				'Templates sent to your clients for appointments, payments, and confirmations.'
+			)}
 
-      <Grid container spacing={3}>
-        {templates.map((template) => (
-          <Grid size={{ xs: 12, md: 6 }} key={template.id}>
-            <Card>
-              <CardContent>
-                <Box display="flex" alignItems="center" gap={1} mb={1}>
-                  <Typography variant="subtitle1" component="h3">
-                    {EMAIL_TYPE_LABELS[template.email_type]}
-                  </Typography>
-                  {!template.is_default && (
-                    <Chip label="Customized" size="small" color="primary" />
-                  )}
-                </Box>
-
-                <Typography variant="body2" color="text.secondary" noWrap>
-                  Subject: {template.subject}
-                </Typography>
-
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{
-                    mt: 1,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                  }}
-                >
-                  {template.body}
-                </Typography>
-              </CardContent>
-
-              <CardActions>
-                <Button
-                  size="small"
-                  startIcon={<EditIcon />}
-                  onClick={() => handleEdit(template)}
-                >
-                  Edit
-                </Button>
-                {!template.is_default && (
-                  <Button
-                    size="small"
-                    startIcon={<ResetIcon />}
-                    onClick={() => handleReset(template)}
-                    disabled={isPending}
-                  >
-                    Reset
-                  </Button>
-                )}
-              </CardActions>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-    </Box>
-  );
+			{/* Seamstress Email Templates */}
+			{renderTemplateTable(
+				seamstressTemplates,
+				'Emails Sent to You',
+				'Templates sent to you for internal notifications.'
+			)}
+		</Box>
+	);
 }

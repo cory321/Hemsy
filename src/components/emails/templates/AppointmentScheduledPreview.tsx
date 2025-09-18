@@ -1,25 +1,23 @@
 import React from 'react';
 import { Text, Section } from '@react-email/components';
-import { EmailLayout, Button } from '../components';
+import { EmailLayout, PreviewButton } from '../components';
 
-interface AppointmentScheduledProps {
+interface AppointmentScheduledPreviewProps {
 	clientName: string;
 	shopName: string;
 	appointmentTime: string;
-	confirmationLink?: string | undefined;
-	cancelLink?: string | undefined;
-	shopEmail?: string | undefined;
-	shopPhone?: string | undefined;
-	shopAddress?: string | undefined;
-	signature?: string | undefined;
+	shopEmail?: string;
+	shopPhone?: string;
+	shopAddress?: string;
+	signature?: string;
 }
 
-export const AppointmentScheduled: React.FC<AppointmentScheduledProps> = ({
+export const AppointmentScheduledPreview: React.FC<
+	AppointmentScheduledPreviewProps
+> = ({
 	clientName,
 	shopName,
 	appointmentTime,
-	confirmationLink,
-	cancelLink,
 	shopEmail,
 	shopPhone,
 	shopAddress,
@@ -38,6 +36,7 @@ export const AppointmentScheduled: React.FC<AppointmentScheduledProps> = ({
 			'If you have any questions or need to reschedule, please contact us.',
 		closing: 'Thank you,\n{shop_name}'.replace('{shop_name}', shopName),
 	};
+
 	return (
 		<EmailLayout
 			preview={`Your appointment is scheduled with ${shopName}`}
@@ -60,36 +59,30 @@ export const AppointmentScheduled: React.FC<AppointmentScheduledProps> = ({
 				<Text style={appointmentDateTime}>{appointmentTime}</Text>
 			</Section>
 
-			{(confirmationLink || cancelLink) && (
-				<Section style={buttonRowSection}>
-					<table
-						style={{
-							width: '100%',
-							borderCollapse: 'collapse' as const,
-							margin: '0 auto',
-						}}
-					>
-						<tbody>
-							<tr>
-								{confirmationLink && (
-									<td style={{ textAlign: 'center', padding: '0 8px' }}>
-										<Button href={confirmationLink} variant="muted-green">
-											Confirm Appointment
-										</Button>
-									</td>
-								)}
-								{cancelLink && (
-									<td style={{ textAlign: 'center', padding: '0 8px' }}>
-										<Button href={cancelLink} variant="muted-red">
-											Decline Appointment
-										</Button>
-									</td>
-								)}
-							</tr>
-						</tbody>
-					</table>
-				</Section>
-			)}
+			<Section style={buttonRowSection}>
+				<table
+					style={{
+						width: '100%',
+						borderCollapse: 'collapse' as const,
+						margin: '0 auto',
+					}}
+				>
+					<tbody>
+						<tr>
+							<td style={{ textAlign: 'center', padding: '0 8px' }}>
+								<PreviewButton variant="muted-green">
+									Confirm Appointment
+								</PreviewButton>
+							</td>
+							<td style={{ textAlign: 'center', padding: '0 8px' }}>
+								<PreviewButton variant="muted-red">
+									Decline Appointment
+								</PreviewButton>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</Section>
 
 			<Text style={mainText}>{content.footer_message}</Text>
 

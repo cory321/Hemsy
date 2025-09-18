@@ -1,11 +1,10 @@
 import React from 'react';
 import { Text, Section } from '@react-email/components';
-import { EmailLayout, Button } from '../components';
+import { EmailLayout, PreviewButton } from '../components';
 
-interface PaymentLinkProps {
+interface PaymentLinkPreviewProps {
 	clientName: string;
 	shopName: string;
-	paymentLink: string;
 	amount: string;
 	shopEmail?: string;
 	shopPhone?: string;
@@ -13,10 +12,9 @@ interface PaymentLinkProps {
 	signature?: string;
 }
 
-export const PaymentLink: React.FC<PaymentLinkProps> = ({
+export const PaymentLinkPreview: React.FC<PaymentLinkPreviewProps> = ({
 	clientName,
 	shopName,
-	paymentLink,
 	amount,
 	shopEmail,
 	shopPhone,
@@ -49,9 +47,7 @@ export const PaymentLink: React.FC<PaymentLinkProps> = ({
 			</Section>
 
 			<Section style={buttonSection}>
-				<Button href={paymentLink} variant="primary">
-					Pay Now
-				</Button>
+				<PreviewButton variant="primary">Pay Now</PreviewButton>
 			</Section>
 
 			<Text style={mainText}>
@@ -67,7 +63,7 @@ export const PaymentLink: React.FC<PaymentLinkProps> = ({
 	);
 };
 
-// Styles
+// Styles (same as PaymentLink.tsx)
 const greeting = {
 	fontSize: '16px',
 	lineHeight: '24px',

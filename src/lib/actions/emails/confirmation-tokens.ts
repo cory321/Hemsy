@@ -1,6 +1,7 @@
 'use server';
 
 import { z } from 'zod';
+import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { EmailRepository } from '@/lib/services/email/email-repository';
 import { EmailService } from '@/lib/services/email/email-service';
@@ -10,255 +11,299 @@ import { ConfirmationTokenSchema } from '@/lib/validations/email';
  * Confirm an appointment via token
  */
 export async function confirmAppointment(token: string): Promise<{
-  success: boolean;
-  error?: string;
-  appointmentId?: string;
-  alreadyUsed?: boolean;
+	success: boolean;
+	error?: string;
+	appointmentId?: string;
+	alreadyUsed?: boolean;
 }> {
-  try {
-    // Validate token format
-    const validatedData = ConfirmationTokenSchema.parse({ token });
+	try {
+		// Validate token format - throw 404 for invalid tokens
+		let validatedData;
+		try {
+			validatedData = ConfirmationTokenSchema.parse({ token });
+		} catch (error) {
+			if (error instanceof z.ZodError) {
+				notFound();
+			}
+			throw error;
+		}
 
-    const supabase = await createClient();
+		const supabase = await createClient();
 
-    // Validate token (public action - no auth required)
-    const repository = new EmailRepository(supabase, 'system');
-    const validation = await repository.validateToken(validatedData.token);
+		// Validate token (public action - no auth required)
+		const repository = new EmailRepository(supabase, 'system');
+		const validation = await repository.validateToken(validatedData.token);
 
-    if (!validation.valid) {
-      // If already used, treat as success (idempotent UX) and perform no further actions
-      if (validation.reason === 'used') {
-        return {
-          success: true,
-          alreadyUsed: true,
-          ...(validation.appointmentId
-            ? { appointmentId: validation.appointmentId }
-            : {}),
-        };
-      }
-      return {
-        success: false,
-        error:
-          validation.reason === 'expired'
-            ? 'This confirmation link has expired'
-            : 'Invalid confirmation link',
-      };
-    }
+		if (!validation.valid) {
+			// If already used, treat as success (idempotent UX) and perform no further actions
+			if (validation.reason === 'used') {
+				return {
+					success: true,
+					alreadyUsed: true,
+					...(validation.appointmentId
+						? { appointmentId: validation.appointmentId }
+						: {}),
+				};
+			}
+			// Throw 404 for invalid tokens
+			if (validation.reason === 'not_found') {
+				notFound();
+			}
+			return {
+				success: false,
+				error:
+					validation.reason === 'expired'
+						? 'This confirmation link has expired'
+						: 'Invalid confirmation link',
+			};
+		}
 
-    // Update appointment status
-    const { error: updateError } = await supabase
-      .from('appointments')
-      .update({ status: 'confirmed' })
-      .eq('id', validation.appointmentId!);
+		// Update appointment status
+		const { error: updateError } = await supabase
+			.from('appointments')
+			.update({ status: 'confirmed' })
+			.eq('id', validation.appointmentId!);
 
-    if (updateError) {
-      throw updateError;
-    }
+		if (updateError) {
+			throw updateError;
+		}
 
-    // Mark token as used
-    await repository.useToken(validatedData.token);
+		// Mark token as used
+		await repository.useToken(validatedData.token);
 
-    // Invalidate all other unused tokens for this appointment
-    await repository.invalidateUnusedTokensForAppointment(
-      validation.appointmentId!
-    );
+		// Invalidate all other unused tokens for this appointment
+		await repository.invalidateUnusedTokensForAppointment(
+			validation.appointmentId!
+		);
 
-    // Send confirmation email to seamstress
-    // Fetch the shop owner's user_id via the appointment's shop
-    const { data: apptWithShop, error: shopJoinError } = await supabase
-      .from('appointments')
-      .select('shop_id, shops(owner_user_id)')
-      .eq('id', validation.appointmentId!)
-      .single();
+		// Send confirmation email to seamstress
+		// Fetch the shop owner's user_id via the appointment's shop
+		const { data: apptWithShop, error: shopJoinError } = await supabase
+			.from('appointments')
+			.select('shop_id, shops(owner_user_id)')
+			.eq('id', validation.appointmentId!)
+			.single();
 
-    if (!shopJoinError && apptWithShop?.shops?.owner_user_id) {
-      const ownerUserId = (apptWithShop as any).shops.owner_user_id as string;
+		if (!shopJoinError && apptWithShop?.shops?.owner_user_id) {
+			const ownerUserId = (apptWithShop as any).shops.owner_user_id as string;
 
-      const emailService = new EmailService(supabase, ownerUserId);
-      const sendResult = await emailService.sendAppointmentEmail(
-        validation.appointmentId!,
-        'appointment_confirmed'
-      );
+			const emailService = new EmailService(supabase, ownerUserId);
+			const sendResult = await emailService.sendAppointmentEmail(
+				validation.appointmentId!,
+				'appointment_confirmed'
+			);
 
-      if (!sendResult.success) {
-        console.warn(
-          'Appointment confirmed but failed to send seamstress email:',
-          sendResult.error
-        );
-      }
-    } else {
-      console.warn(
-        'Appointment confirmed but could not resolve shop owner for email notification',
-        shopJoinError?.message
-      );
-    }
+			if (!sendResult.success) {
+				console.warn(
+					'Appointment confirmed but failed to send seamstress email:',
+					sendResult.error
+				);
+			}
+		} else {
+			console.warn(
+				'Appointment confirmed but could not resolve shop owner for email notification',
+				shopJoinError?.message
+			);
+		}
 
-    return {
-      success: true,
-      ...(validation.appointmentId
-        ? { appointmentId: validation.appointmentId }
-        : {}),
-    };
-  } catch (error) {
-    console.error('Failed to confirm appointment:', error);
+		return {
+			success: true,
+			...(validation.appointmentId
+				? { appointmentId: validation.appointmentId }
+				: {}),
+		};
+	} catch (error) {
+		// Re-throw Next.js notFound errors to trigger 404 page
+		if (
+			error &&
+			typeof error === 'object' &&
+			'digest' in error &&
+			error.digest === 'NEXT_NOT_FOUND'
+		) {
+			throw error;
+		}
 
-    if (error instanceof z.ZodError) {
-      return {
-        success: false,
-        error: 'Invalid confirmation link format',
-      };
-    }
+		console.error('Failed to confirm appointment:', error);
 
-    return {
-      success: false,
-      error: 'Failed to confirm appointment',
-    };
-  }
+		if (error instanceof z.ZodError) {
+			return {
+				success: false,
+				error: 'Invalid confirmation link format',
+			};
+		}
+
+		return {
+			success: false,
+			error: 'Failed to confirm appointment',
+		};
+	}
 }
 
 /**
  * Decline an appointment via token
  */
 export async function declineAppointment(token: string): Promise<{
-  success: boolean;
-  error?: string;
-  appointmentId?: string;
-  alreadyUsed?: boolean;
+	success: boolean;
+	error?: string;
+	appointmentId?: string;
+	alreadyUsed?: boolean;
 }> {
-  try {
-    // Validate token format
-    const validatedData = ConfirmationTokenSchema.parse({ token });
+	try {
+		// Validate token format - throw 404 for invalid tokens
+		let validatedData;
+		try {
+			validatedData = ConfirmationTokenSchema.parse({ token });
+		} catch (error) {
+			if (error instanceof z.ZodError) {
+				notFound();
+			}
+			throw error;
+		}
 
-    const supabase = await createClient();
+		const supabase = await createClient();
 
-    // Validate token (public action - no auth required)
-    const repository = new EmailRepository(supabase, 'system');
-    const validation = await repository.validateToken(validatedData.token);
+		// Validate token (public action - no auth required)
+		const repository = new EmailRepository(supabase, 'system');
+		const validation = await repository.validateToken(validatedData.token);
 
-    if (!validation.valid) {
-      // If already used, treat as success (idempotent UX) and perform no further actions
-      if (validation.reason === 'used') {
-        return {
-          success: true,
-          alreadyUsed: true,
-          ...(validation.appointmentId
-            ? { appointmentId: validation.appointmentId }
-            : {}),
-        };
-      }
-      return {
-        success: false,
-        error:
-          validation.reason === 'expired'
-            ? 'This cancellation link has expired'
-            : 'Invalid cancellation link',
-      };
-    }
+		if (!validation.valid) {
+			// If already used, treat as success (idempotent UX) and perform no further actions
+			if (validation.reason === 'used') {
+				return {
+					success: true,
+					alreadyUsed: true,
+					...(validation.appointmentId
+						? { appointmentId: validation.appointmentId }
+						: {}),
+				};
+			}
+			// Throw 404 for invalid tokens
+			if (validation.reason === 'not_found') {
+				notFound();
+			}
+			return {
+				success: false,
+				error:
+					validation.reason === 'expired'
+						? 'This cancellation link has expired'
+						: 'Invalid cancellation link',
+			};
+		}
 
-    // Get appointment details for the cancellation email
-    const { data: appointment, error: fetchError } = await supabase
-      .from('appointments')
-      .select('date, start_time, shop_id, shops(owner_user_id)')
-      .eq('id', validation.appointmentId!)
-      .single();
+		// Get appointment details for the cancellation email
+		const { data: appointment, error: fetchError } = await supabase
+			.from('appointments')
+			.select('date, start_time, shop_id, shops(owner_user_id)')
+			.eq('id', validation.appointmentId!)
+			.single();
 
-    if (fetchError || !appointment) {
-      throw new Error('Appointment not found');
-    }
+		if (fetchError || !appointment) {
+			throw new Error('Appointment not found');
+		}
 
-    // Update appointment status to declined
-    const { error: updateError } = await supabase
-      .from('appointments')
-      .update({ status: 'declined' })
-      .eq('id', validation.appointmentId!);
+		// Update appointment status to declined
+		const { error: updateError } = await supabase
+			.from('appointments')
+			.update({ status: 'declined' })
+			.eq('id', validation.appointmentId!);
 
-    if (updateError) {
-      throw updateError;
-    }
+		if (updateError) {
+			throw updateError;
+		}
 
-    // Mark token as used
-    await repository.useToken(validatedData.token);
+		// Mark token as used
+		await repository.useToken(validatedData.token);
 
-    // Invalidate all other unused tokens for this appointment
-    await repository.invalidateUnusedTokensForAppointment(
-      validation.appointmentId!
-    );
+		// Invalidate all other unused tokens for this appointment
+		await repository.invalidateUnusedTokensForAppointment(
+			validation.appointmentId!
+		);
 
-    // Send cancellation email to seamstress
-    if (appointment?.shops?.owner_user_id) {
-      const ownerUserId = (appointment as any).shops.owner_user_id as string;
-      const emailService = new EmailService(supabase, ownerUserId);
+		// Send cancellation email to seamstress
+		if (appointment?.shops?.owner_user_id) {
+			const ownerUserId = (appointment as any).shops.owner_user_id as string;
+			const emailService = new EmailService(supabase, ownerUserId);
 
-      // Format the previous time for the cancellation email
-      const previousTime = `${appointment.date} ${appointment.start_time}`;
+			// Format the previous time for the cancellation email
+			const previousTime = `${appointment.date} ${appointment.start_time}`;
 
-      const sendResult = await emailService.sendAppointmentEmail(
-        validation.appointmentId!,
-        'appointment_canceled',
-        { previous_time: previousTime }
-      );
+			const sendResult = await emailService.sendAppointmentEmail(
+				validation.appointmentId!,
+				'appointment_canceled',
+				{ previous_time: previousTime }
+			);
 
-      if (!sendResult.success) {
-        console.warn(
-          'Appointment declined but failed to send seamstress email:',
-          sendResult.error
-        );
-      }
-    } else {
-      console.warn(
-        'Appointment declined but could not resolve shop owner for email notification'
-      );
-    }
+			if (!sendResult.success) {
+				console.warn(
+					'Appointment declined but failed to send seamstress email:',
+					sendResult.error
+				);
+			}
+		} else {
+			console.warn(
+				'Appointment declined but could not resolve shop owner for email notification'
+			);
+		}
 
-    return {
-      success: true,
-      ...(validation.appointmentId
-        ? { appointmentId: validation.appointmentId }
-        : {}),
-    };
-  } catch (error) {
-    console.error('Failed to decline appointment:', error);
+		return {
+			success: true,
+			...(validation.appointmentId
+				? { appointmentId: validation.appointmentId }
+				: {}),
+		};
+	} catch (error) {
+		// Re-throw Next.js notFound errors to trigger 404 page
+		if (
+			error &&
+			typeof error === 'object' &&
+			'digest' in error &&
+			error.digest === 'NEXT_NOT_FOUND'
+		) {
+			throw error;
+		}
 
-    if (error instanceof z.ZodError) {
-      return {
-        success: false,
-        error: 'Invalid cancellation link format',
-      };
-    }
+		console.error('Failed to decline appointment:', error);
 
-    return {
-      success: false,
-      error: 'Failed to cancel appointment',
-    };
-  }
+		if (error instanceof z.ZodError) {
+			return {
+				success: false,
+				error: 'Invalid cancellation link format',
+			};
+		}
+
+		return {
+			success: false,
+			error: 'Failed to cancel appointment',
+		};
+	}
 }
 
 /**
  * Check if a confirmation token is valid
  */
 export async function checkConfirmationToken(token: string): Promise<{
-  valid: boolean;
-  reason?: 'expired' | 'used' | 'invalid';
+	valid: boolean;
+	reason?: 'expired' | 'used' | 'invalid';
 }> {
-  try {
-    // Validate token format
-    const validatedData = ConfirmationTokenSchema.parse({ token });
+	try {
+		// Validate token format - this function returns invalid rather than throwing
+		const validatedData = ConfirmationTokenSchema.parse({ token });
 
-    const supabase = await createClient();
-    const repository = new EmailRepository(supabase, 'system');
+		const supabase = await createClient();
+		const repository = new EmailRepository(supabase, 'system');
 
-    const validation = await repository.validateToken(validatedData.token);
+		const validation = await repository.validateToken(validatedData.token);
 
-    return {
-      valid: validation.valid,
-      ...(validation.reason
-        ? { reason: validation.reason as 'expired' | 'used' | 'invalid' }
-        : {}),
-    };
-  } catch (error) {
-    return {
-      valid: false,
-      reason: 'invalid',
-    };
-  }
+		return {
+			valid: validation.valid,
+			...(validation.reason
+				? { reason: validation.reason as 'expired' | 'used' | 'invalid' }
+				: {}),
+		};
+	} catch (error) {
+		return {
+			valid: false,
+			reason: 'invalid',
+		};
+	}
 }

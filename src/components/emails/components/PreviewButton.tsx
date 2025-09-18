@@ -1,8 +1,6 @@
 import React from 'react';
-import { Button as ReactEmailButton } from '@react-email/components';
 
-interface ButtonProps {
-	href: string;
+interface PreviewButtonProps {
 	children: React.ReactNode;
 	variant?:
 		| 'primary'
@@ -13,8 +11,7 @@ interface ButtonProps {
 		| 'muted-red';
 }
 
-export const Button: React.FC<ButtonProps> = ({
-	href,
+export const PreviewButton: React.FC<PreviewButtonProps> = ({
 	children,
 	variant = 'primary',
 }) => {
@@ -29,6 +26,7 @@ export const Button: React.FC<ButtonProps> = ({
 			display: 'block',
 			padding: '12px 20px',
 			fontWeight: 'bold',
+			cursor: 'default',
 		};
 
 		switch (variant) {
@@ -51,9 +49,5 @@ export const Button: React.FC<ButtonProps> = ({
 		}
 	};
 
-	return (
-		<ReactEmailButton href={href} style={getButtonStyle(variant)}>
-			{children}
-		</ReactEmailButton>
-	);
+	return <div style={getButtonStyle(variant)}>{children}</div>;
 };

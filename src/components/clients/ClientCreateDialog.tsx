@@ -2,19 +2,19 @@
 
 import { useState } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Button,
-  Alert,
-  CircularProgress,
-  Box,
-  FormControlLabel,
-  Switch,
-  Typography,
-  IconButton,
+	Dialog,
+	DialogTitle,
+	DialogContent,
+	DialogActions,
+	TextField,
+	Button,
+	Alert,
+	CircularProgress,
+	Box,
+	FormControlLabel,
+	Switch,
+	Typography,
+	IconButton,
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import type { DialogProps } from '@mui/material/Dialog';
@@ -28,304 +28,307 @@ import PhoneInput from '@/components/ui/PhoneInput';
 import { showSuccessToast, showErrorToast } from '@/lib/utils/toast';
 
 const clientSchema = z.object({
-  first_name: z.string().min(1, 'First name is required'),
-  last_name: z.string().min(1, 'Last name is required'),
-  email: z.string().email('Invalid email address'),
-  phone_number: z.string().min(10, 'Phone number must be at least 10 digits'),
-  accept_email: z.boolean().default(true),
-  accept_sms: z.boolean().default(false),
-  notes: z.string().optional(),
-  mailing_address: z.string().optional(),
+	first_name: z.string().min(1, 'First name is required'),
+	last_name: z.string().min(1, 'Last name is required'),
+	email: z.string().email('Invalid email address'),
+	phone_number: z.string().min(10, 'Phone number must be at least 10 digits'),
+	accept_email: z.boolean().default(true),
+	accept_sms: z.boolean().default(false),
+	notes: z.string().optional(),
+	mailing_address: z.string().optional(),
 });
 
 type ClientFormData = z.infer<typeof clientSchema>;
 
 export interface ClientCreateDialogProps {
-  open: boolean;
-  onClose: () => void;
-  onCreated: (client: Client) => void;
-  maxWidth?: DialogProps['maxWidth'];
+	open: boolean;
+	onClose: () => void;
+	onCreated: (client: Client) => void;
+	maxWidth?: DialogProps['maxWidth'];
 }
 
 export default function ClientCreateDialog({
-  open,
-  onClose,
-  onCreated,
-  maxWidth = 'md',
+	open,
+	onClose,
+	onCreated,
+	maxWidth = 'md',
 }: ClientCreateDialogProps) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+	const [loading, setLoading] = useState(false);
+	const [error, setError] = useState<string | null>(null);
 
-  const {
-    control,
-    handleSubmit,
-    formState: { errors },
-    reset,
-  } = useForm<ClientFormData>({
-    resolver: zodResolver(clientSchema),
-    defaultValues: {
-      first_name: '',
-      last_name: '',
-      email: '',
-      phone_number: '',
-      accept_email: true,
-      accept_sms: false,
-      notes: '',
-      mailing_address: '',
-    },
-  });
+	const {
+		control,
+		handleSubmit,
+		formState: { errors },
+		reset,
+	} = useForm<ClientFormData>({
+		resolver: zodResolver(clientSchema),
+		defaultValues: {
+			first_name: '',
+			last_name: '',
+			email: '',
+			phone_number: '',
+			accept_email: true,
+			accept_sms: false,
+			notes: '',
+			mailing_address: '',
+		},
+	});
 
-  const internalClose = () => {
-    reset();
-    setError(null);
-    onClose();
-  };
+	const internalClose = () => {
+		reset();
+		setError(null);
+		onClose();
+	};
 
-  const onSubmit = async (data: ClientFormData) => {
-    setLoading(true);
-    setError(null);
+	const onSubmit = async (data: ClientFormData) => {
+		setLoading(true);
+		setError(null);
 
-    try {
-      const result = await createClient({
-        ...data,
-        notes: data.notes || null,
-        mailing_address: data.mailing_address || null,
-      });
+		try {
+			const result = await createClient({
+				...data,
+				notes: data.notes || null,
+				mailing_address: data.mailing_address || null,
+				archived_at: null,
+				archived_by: null,
+				is_archived: false,
+			});
 
-      if (result.success) {
-        showSuccessToast('Client created successfully');
-        onCreated(result.data);
-        internalClose();
-      } else {
-        setError(result.error);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create client');
-    } finally {
-      setLoading(false);
-    }
-  };
+			if (result.success) {
+				showSuccessToast('Client created successfully');
+				onCreated(result.data);
+				internalClose();
+			} else {
+				setError(result.error);
+			}
+		} catch (err) {
+			setError(err instanceof Error ? err.message : 'Failed to create client');
+		} finally {
+			setLoading(false);
+		}
+	};
 
-  return (
-    <Dialog
-      open={open}
-      onClose={internalClose}
-      maxWidth={maxWidth}
-      fullWidth
-      disableScrollLock
-      PaperProps={{ component: 'form', onSubmit: handleSubmit(onSubmit) }}
-    >
-      <DialogTitle>
-        Add New Client
-        <IconButton
-          aria-label="close"
-          onClick={internalClose}
-          sx={{
-            position: 'absolute',
-            right: 8,
-            top: 8,
-            color: (theme) => theme.palette.grey[500],
-          }}
-        >
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-      <DialogContent>
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
+	return (
+		<Dialog
+			open={open}
+			onClose={internalClose}
+			maxWidth={maxWidth}
+			fullWidth
+			disableScrollLock
+			PaperProps={{ component: 'form', onSubmit: handleSubmit(onSubmit) }}
+		>
+			<DialogTitle>
+				Add New Client
+				<IconButton
+					aria-label="close"
+					onClick={internalClose}
+					sx={{
+						position: 'absolute',
+						right: 8,
+						top: 8,
+						color: (theme) => theme.palette.grey[500],
+					}}
+				>
+					<CloseIcon />
+				</IconButton>
+			</DialogTitle>
+			<DialogContent>
+				{error && (
+					<Alert severity="error" sx={{ mb: 2 }}>
+						{error}
+					</Alert>
+				)}
 
-        <Grid container spacing={2} sx={{ mt: 1 }}>
-          <Grid size={12}>
-            <Typography variant="h6" gutterBottom>
-              Basic Information
-            </Typography>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Controller
-              name="first_name"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label="First Name"
-                  fullWidth
-                  required
-                  error={!!errors.first_name}
-                  helperText={errors.first_name?.message}
-                />
-              )}
-            />
-          </Grid>
+				<Grid container spacing={2} sx={{ mt: 1 }}>
+					<Grid size={12}>
+						<Typography variant="h6" gutterBottom>
+							Basic Information
+						</Typography>
+					</Grid>
+					<Grid size={{ xs: 12, sm: 6 }}>
+						<Controller
+							name="first_name"
+							control={control}
+							render={({ field }) => (
+								<TextField
+									{...field}
+									label="First Name"
+									fullWidth
+									required
+									error={!!errors.first_name}
+									helperText={errors.first_name?.message}
+								/>
+							)}
+						/>
+					</Grid>
 
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Controller
-              name="last_name"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label="Last Name"
-                  fullWidth
-                  required
-                  error={!!errors.last_name}
-                  helperText={errors.last_name?.message}
-                />
-              )}
-            />
-          </Grid>
+					<Grid size={{ xs: 12, sm: 6 }}>
+						<Controller
+							name="last_name"
+							control={control}
+							render={({ field }) => (
+								<TextField
+									{...field}
+									label="Last Name"
+									fullWidth
+									required
+									error={!!errors.last_name}
+									helperText={errors.last_name?.message}
+								/>
+							)}
+						/>
+					</Grid>
 
-          <Grid size={12}>
-            <Controller
-              name="email"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label="Email Address"
-                  type="email"
-                  fullWidth
-                  required
-                  error={!!errors.email}
-                  helperText={errors.email?.message}
-                />
-              )}
-            />
-          </Grid>
+					<Grid size={12}>
+						<Controller
+							name="email"
+							control={control}
+							render={({ field }) => (
+								<TextField
+									{...field}
+									label="Email Address"
+									type="email"
+									fullWidth
+									required
+									error={!!errors.email}
+									helperText={errors.email?.message}
+								/>
+							)}
+						/>
+					</Grid>
 
-          <Grid size={12}>
-            <Controller
-              name="phone_number"
-              control={control}
-              render={({ field }) => (
-                <PhoneInput
-                  {...field}
-                  label="Phone Number"
-                  fullWidth
-                  required
-                  error={!!errors.phone_number}
-                  helperText={errors.phone_number?.message}
-                  onChange={(value, isValid) => {
-                    field.onChange(value);
-                  }}
-                />
-              )}
-            />
-          </Grid>
+					<Grid size={12}>
+						<Controller
+							name="phone_number"
+							control={control}
+							render={({ field }) => (
+								<PhoneInput
+									{...field}
+									label="Phone Number"
+									fullWidth
+									required
+									error={!!errors.phone_number}
+									helperText={errors.phone_number?.message}
+									onChange={(value, isValid) => {
+										field.onChange(value);
+									}}
+								/>
+							)}
+						/>
+					</Grid>
 
-          <Grid size={12}>
-            <Typography variant="h6" gutterBottom>
-              Communication Preferences*
-            </Typography>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ display: 'block', mb: 1 }}
-            >
-              *By checking the Email and SMS boxes I confirm that the client has
-              agreed to receive SMS or email notifications regarding appointment
-              reminders and other notifications. Message and data rates may
-              apply. The client can reply STOP to opt-out from SMS at any time.
-            </Typography>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Controller
-              name="accept_email"
-              control={control}
-              render={({ field: { value, onChange } }) => (
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={value}
-                      onChange={(e) => onChange(e.target.checked)}
-                    />
-                  }
-                  label="Accept Email Communications"
-                />
-              )}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Controller
-              name="accept_sms"
-              control={control}
-              render={({ field: { value, onChange } }) => (
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={value}
-                      onChange={(e) => onChange(e.target.checked)}
-                    />
-                  }
-                  label="Accept SMS Communications"
-                />
-              )}
-            />
-          </Grid>
+					<Grid size={12}>
+						<Typography variant="h6" gutterBottom>
+							Communication Preferences*
+						</Typography>
+						<Typography
+							variant="caption"
+							color="text.secondary"
+							sx={{ display: 'block', mb: 1 }}
+						>
+							*By checking the Email and SMS boxes I confirm that the client has
+							agreed to receive SMS or email notifications regarding appointment
+							reminders and other notifications. Message and data rates may
+							apply. The client can reply STOP to opt-out from SMS at any time.
+						</Typography>
+					</Grid>
+					<Grid size={{ xs: 12, sm: 6 }}>
+						<Controller
+							name="accept_email"
+							control={control}
+							render={({ field: { value, onChange } }) => (
+								<FormControlLabel
+									control={
+										<Switch
+											checked={value}
+											onChange={(e) => onChange(e.target.checked)}
+										/>
+									}
+									label="Accept Email Communications"
+								/>
+							)}
+						/>
+					</Grid>
+					<Grid size={{ xs: 12, sm: 6 }}>
+						<Controller
+							name="accept_sms"
+							control={control}
+							render={({ field: { value, onChange } }) => (
+								<FormControlLabel
+									control={
+										<Switch
+											checked={value}
+											onChange={(e) => onChange(e.target.checked)}
+										/>
+									}
+									label="Accept SMS Communications"
+								/>
+							)}
+						/>
+					</Grid>
 
-          <Grid size={12}>
-            <Typography variant="h6" gutterBottom>
-              Additional Information
-            </Typography>
-          </Grid>
-          <Grid size={12}>
-            <Controller
-              name="mailing_address"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label="Mailing Address"
-                  fullWidth
-                  multiline
-                  rows={3}
-                  placeholder={'123 Main St\nCity, State 12345'}
-                  error={!!errors.mailing_address}
-                  helperText={errors.mailing_address?.message}
-                />
-              )}
-            />
-          </Grid>
+					<Grid size={12}>
+						<Typography variant="h6" gutterBottom>
+							Additional Information
+						</Typography>
+					</Grid>
+					<Grid size={12}>
+						<Controller
+							name="mailing_address"
+							control={control}
+							render={({ field }) => (
+								<TextField
+									{...field}
+									label="Mailing Address"
+									fullWidth
+									multiline
+									rows={3}
+									placeholder={'123 Main St\nCity, State 12345'}
+									error={!!errors.mailing_address}
+									helperText={errors.mailing_address?.message}
+								/>
+							)}
+						/>
+					</Grid>
 
-          <Grid size={12}>
-            <Controller
-              name="notes"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label="Notes"
-                  fullWidth
-                  multiline
-                  rows={3}
-                  placeholder="Any additional notes about this client..."
-                  error={!!errors.notes}
-                  helperText={errors.notes?.message}
-                />
-              )}
-            />
-          </Grid>
-        </Grid>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={internalClose} disabled={loading}>
-          Cancel
-        </Button>
-        <Button
-          type="submit"
-          variant="contained"
-          disabled={loading}
-          startIcon={loading ? <CircularProgress size={20} /> : undefined}
-        >
-          {loading ? 'Adding...' : 'Add client'}
-        </Button>
-      </DialogActions>
-      {/* spacing to prevent content jump during loading */}
-      {loading && (
-        <Box sx={{ height: 0, overflow: 'hidden' }} aria-hidden="true" />
-      )}
-    </Dialog>
-  );
+					<Grid size={12}>
+						<Controller
+							name="notes"
+							control={control}
+							render={({ field }) => (
+								<TextField
+									{...field}
+									label="Notes"
+									fullWidth
+									multiline
+									rows={3}
+									placeholder="Any additional notes about this client..."
+									error={!!errors.notes}
+									helperText={errors.notes?.message}
+								/>
+							)}
+						/>
+					</Grid>
+				</Grid>
+			</DialogContent>
+			<DialogActions>
+				<Button onClick={internalClose} disabled={loading}>
+					Cancel
+				</Button>
+				<Button
+					type="submit"
+					variant="contained"
+					disabled={loading}
+					startIcon={loading ? <CircularProgress size={20} /> : undefined}
+				>
+					{loading ? 'Adding...' : 'Add client'}
+				</Button>
+			</DialogActions>
+			{/* spacing to prevent content jump during loading */}
+			{loading && (
+				<Box sx={{ height: 0, overflow: 'hidden' }} aria-hidden="true" />
+			)}
+		</Dialog>
+	);
 }

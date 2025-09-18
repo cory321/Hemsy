@@ -3,110 +3,77 @@ import { Text, Section } from '@react-email/components';
 import { EmailLayout } from '../components';
 
 interface AppointmentCanceledSeamstressProps {
-  clientName: string;
-  seamstressName: string;
-  previousTime: string;
-  shopName?: string;
+	clientName: string;
+	seamstressName: string;
+	previousTime: string;
+	shopName?: string;
+	signature?: string;
 }
 
 export const AppointmentCanceledSeamstress: React.FC<
-  AppointmentCanceledSeamstressProps
-> = ({ clientName, seamstressName, previousTime, shopName = 'Hemsy' }) => {
-  return (
-    <EmailLayout
-      preview={`Appointment canceled: ${clientName}`}
-      shopName={shopName}
-    >
-      <Text style={greeting}>Hi {seamstressName},</Text>
+	AppointmentCanceledSeamstressProps
+> = ({
+	clientName,
+	seamstressName,
+	previousTime,
+	shopName = 'Hemsy',
+	signature,
+}) => {
+	return (
+		<EmailLayout
+			preview={`Appointment canceled: ${clientName}`}
+			shopName={shopName}
+			signature={signature}
+		>
+			{/* Custom Header */}
+			<Section style={headerSection}>
+				<Text style={headerText}>Appointment Canceled</Text>
+			</Section>
 
-      <Section style={notificationSection}>
-        <Text style={notificationIcon}>❌</Text>
-        <Text style={notificationTitle}>Appointment Canceled</Text>
-        <Text style={clientNameText}>{clientName}</Text>
-      </Section>
+			<Text style={greeting}>Hi {seamstressName},</Text>
 
-      <Section style={timeSection}>
-        <Text style={timeLabel}>Canceled appointment:</Text>
-        <Text style={timeValue}>{previousTime}</Text>
-      </Section>
+			<Text style={mainText}>
+				Your appointment with {clientName} scheduled for{' '}
+				<strong>{previousTime}</strong> has been canceled.
+			</Text>
 
-      <Text style={mainText}>You can view details in Hemsy.</Text>
-
-      <Text style={closing}>
-        Thank you,
-        <br />
-        Hemsy
-      </Text>
-    </EmailLayout>
-  );
+			<Text style={closing}>Sent from Hemsy</Text>
+		</EmailLayout>
+	);
 };
 
 // Styles
 const greeting = {
-  fontSize: '16px',
-  lineHeight: '24px',
-  margin: '0 0 16px 0',
-  color: '#1a1a1a',
+	fontSize: '16px',
+	lineHeight: '24px',
+	margin: '0 0 16px 0',
+	color: '#1a1a1a',
 };
 
 const mainText = {
-  fontSize: '16px',
-  lineHeight: '24px',
-  margin: '0 0 16px 0',
-  color: '#1a1a1a',
-};
-
-const notificationSection = {
-  backgroundColor: '#fef2f2',
-  padding: '20px',
-  borderRadius: '6px',
-  margin: '24px 0',
-  textAlign: 'center' as const,
-  border: '1px solid #fecaca',
-};
-
-const notificationIcon = {
-  fontSize: '24px',
-  margin: '0 0 8px 0',
-};
-
-const notificationTitle = {
-  fontSize: '18px',
-  fontWeight: 'bold',
-  color: '#dc2626',
-  margin: '0 0 8px 0',
-};
-
-const clientNameText = {
-  fontSize: '16px',
-  color: '#b91c1c',
-  margin: '0',
-};
-
-const timeSection = {
-  backgroundColor: '#f8fafc',
-  padding: '16px',
-  borderRadius: '6px',
-  margin: '24px 0',
-};
-
-const timeLabel = {
-  fontSize: '14px',
-  fontWeight: 'bold',
-  color: '#374151',
-  margin: '0 0 8px 0',
-};
-
-const timeValue = {
-  fontSize: '16px',
-  color: '#6b7280',
-  margin: '0',
-  textDecoration: 'line-through',
+	fontSize: '16px',
+	lineHeight: '24px',
+	margin: '0 0 16px 0',
+	color: '#1a1a1a',
 };
 
 const closing = {
-  fontSize: '16px',
-  lineHeight: '24px',
-  margin: '24px 0 0 0',
-  color: '#1a1a1a',
+	fontSize: '16px',
+	lineHeight: '24px',
+	margin: '24px 0 0 0',
+	color: '#1a1a1a',
+};
+
+const headerSection = {
+	padding: '24px 0',
+	borderBottom: '1px solid #e6e6e6',
+	marginBottom: '24px',
+};
+
+const headerText = {
+	fontSize: '24px',
+	fontWeight: 'bold',
+	color: '#1a1a1a',
+	margin: '0',
+	textAlign: 'left' as const,
 };

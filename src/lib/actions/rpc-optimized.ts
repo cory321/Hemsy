@@ -4,9 +4,9 @@ import { cache } from 'react';
 import { unstable_cache } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import type {
-  BusinessHealthData,
-  ActiveGarment,
-  DashboardAlertGarment,
+	BusinessHealthData,
+	ActiveGarment,
+	DashboardAlertGarment,
 } from './dashboard';
 
 // ============================================================================
@@ -23,12 +23,12 @@ import type {
 // ============================================================================
 
 export interface BusinessMetricsRPCResult {
-  currentMonthRevenueCents: number;
-  lastMonthRevenueCents: number;
-  unpaidBalanceCents: number;
-  rolling30RevenueCents: number;
-  previous30RevenueCents: number;
-  calculatedAt: string;
+	currentMonthRevenueCents: number;
+	lastMonthRevenueCents: number;
+	unpaidBalanceCents: number;
+	rolling30RevenueCents: number;
+	previous30RevenueCents: number;
+	calculatedAt: string;
 }
 
 /**
@@ -36,23 +36,23 @@ export interface BusinessMetricsRPCResult {
  * Replaces 5+ individual queries with single database call
  */
 async function getBusinessMetricsRPCInternal(
-  shopId: string
+	shopId: string
 ): Promise<BusinessMetricsRPCResult> {
-  const supabase = await createClient();
+	const supabase = await createClient();
 
-  const { data, error } = await supabase.rpc(
-    'get_business_dashboard_metrics_consolidated',
-    {
-      p_shop_id: shopId,
-    }
-  );
+	const { data, error } = await supabase.rpc(
+		'get_business_dashboard_metrics_consolidated',
+		{
+			p_shop_id: shopId,
+		}
+	);
 
-  if (error) {
-    console.error('Error fetching business metrics via RPC:', error);
-    throw new Error(`Failed to fetch business metrics: ${error.message}`);
-  }
+	if (error) {
+		console.error('Error fetching business metrics via RPC:', error);
+		throw new Error(`Failed to fetch business metrics: ${error.message}`);
+	}
 
-  return data as unknown as BusinessMetricsRPCResult;
+	return data as unknown as BusinessMetricsRPCResult;
 }
 
 /**
@@ -72,10 +72,10 @@ export const getBusinessMetricsRPCCached = getBusinessMetricsRPC;
 // ============================================================================
 
 export interface GarmentPipelineRPCResult {
-  stageCounts: Record<string, number>;
-  activeGarments: ActiveGarment[];
-  readyForPickupGarments: ActiveGarment[];
-  calculatedAt: string;
+	stageCounts: Record<string, number>;
+	activeGarments: ActiveGarment[];
+	readyForPickupGarments: ActiveGarment[];
+	calculatedAt: string;
 }
 
 /**
@@ -83,23 +83,23 @@ export interface GarmentPipelineRPCResult {
  * Replaces multiple garment queries with single database call
  */
 async function getGarmentPipelineRPCInternal(
-  shopId: string
+	shopId: string
 ): Promise<GarmentPipelineRPCResult> {
-  const supabase = await createClient();
+	const supabase = await createClient();
 
-  const { data, error } = await supabase.rpc(
-    'get_garment_pipeline_data_consolidated',
-    {
-      p_shop_id: shopId,
-    }
-  );
+	const { data, error } = await supabase.rpc(
+		'get_garment_pipeline_data_consolidated',
+		{
+			p_shop_id: shopId,
+		}
+	);
 
-  if (error) {
-    console.error('Error fetching garment pipeline via RPC:', error);
-    throw new Error(`Failed to fetch garment pipeline data: ${error.message}`);
-  }
+	if (error) {
+		console.error('Error fetching garment pipeline via RPC:', error);
+		throw new Error(`Failed to fetch garment pipeline data: ${error.message}`);
+	}
 
-  return data as unknown as GarmentPipelineRPCResult;
+	return data as unknown as GarmentPipelineRPCResult;
 }
 
 /**
@@ -119,19 +119,19 @@ export const getGarmentPipelineRPCCached = getGarmentPipelineRPC;
 // ============================================================================
 
 export interface ClientDetailRPCResult {
-  client: any; // Client data
-  orders: any[]; // Orders with garments and payments
-  appointments: any[]; // Client appointments
-  stats: {
-    totalOrders: number;
-    activeOrders: number;
-    completedOrders: number;
-    totalSpentCents: number;
-    totalPaidCents: number;
-    firstOrderDate: string | null;
-    lastOrderDate: string | null;
-  };
-  calculatedAt: string;
+	client: any; // Client data
+	orders: any[]; // Orders with garments and payments
+	appointments: any[]; // Client appointments
+	stats: {
+		totalOrders: number;
+		activeOrders: number;
+		completedOrders: number;
+		totalSpentCents: number;
+		totalPaidCents: number;
+		firstOrderDate: string | null;
+		lastOrderDate: string | null;
+	};
+	calculatedAt: string;
 }
 
 /**
@@ -139,25 +139,30 @@ export interface ClientDetailRPCResult {
  * Replaces multiple client-related queries with single database call
  */
 async function getClientDetailRPCInternal(
-  clientId: string,
-  shopId: string
+	clientId: string,
+	shopId: string
 ): Promise<ClientDetailRPCResult> {
-  const supabase = await createClient();
+	const supabase = await createClient();
 
-  const { data, error } = await supabase.rpc(
-    'get_client_detail_data_consolidated',
-    {
-      p_client_id: clientId,
-      p_shop_id: shopId,
-    }
-  );
+	// TODO: This RPC function doesn't exist yet - needs database migration
+	// const { data, error } = await supabase.rpc(
+	//   'get_client_detail_data_consolidated',
+	//   {
+	//     p_client_id: clientId,
+	//     p_shop_id: shopId,
+	//   }
+	// );
 
-  if (error) {
-    console.error('Error fetching client detail via RPC:', error);
-    throw new Error(`Failed to fetch client detail data: ${error.message}`);
-  }
+	// Temporary placeholder until RPC function is created
+	const data = null;
+	const error = new Error('RPC function not implemented yet');
 
-  return data as unknown as ClientDetailRPCResult;
+	if (error) {
+		console.error('Error fetching client detail via RPC:', error);
+		throw new Error(`Failed to fetch client detail data: ${error.message}`);
+	}
+
+	return data as unknown as ClientDetailRPCResult;
 }
 
 /**
@@ -171,28 +176,28 @@ export const getClientDetailRPC = cache(getClientDetailRPCInternal);
 // ============================================================================
 
 export interface DashboardAlertsRPCResult {
-  overdueData: {
-    count: number;
-    garments: Array<{
-      id: string;
-      name: string;
-      dueDate: string;
-      orderNumber: string;
-      clientName: string;
-      daysOverdue: number;
-    }>;
-  };
-  dueTodayData: {
-    count: number;
-    garments: Array<{
-      id: string;
-      name: string;
-      dueDate: string;
-      orderNumber: string;
-      clientName: string;
-    }>;
-  };
-  calculatedAt: string;
+	overdueData: {
+		count: number;
+		garments: Array<{
+			id: string;
+			name: string;
+			dueDate: string;
+			orderNumber: string;
+			clientName: string;
+			daysOverdue: number;
+		}>;
+	};
+	dueTodayData: {
+		count: number;
+		garments: Array<{
+			id: string;
+			name: string;
+			dueDate: string;
+			orderNumber: string;
+			clientName: string;
+		}>;
+	};
+	calculatedAt: string;
 }
 
 /**
@@ -200,23 +205,23 @@ export interface DashboardAlertsRPCResult {
  * Replaces separate overdue and due today queries
  */
 async function getDashboardAlertsRPCInternal(
-  shopId: string
+	shopId: string
 ): Promise<DashboardAlertsRPCResult> {
-  const supabase = await createClient();
+	const supabase = await createClient();
 
-  const { data, error } = await supabase.rpc(
-    'get_dashboard_alerts_consolidated',
-    {
-      p_shop_id: shopId,
-    }
-  );
+	const { data, error } = await supabase.rpc(
+		'get_dashboard_alerts_consolidated',
+		{
+			p_shop_id: shopId,
+		}
+	);
 
-  if (error) {
-    console.error('Error fetching dashboard alerts via RPC:', error);
-    throw new Error(`Failed to fetch dashboard alerts: ${error.message}`);
-  }
+	if (error) {
+		console.error('Error fetching dashboard alerts via RPC:', error);
+		throw new Error(`Failed to fetch dashboard alerts: ${error.message}`);
+	}
 
-  return data as unknown as DashboardAlertsRPCResult;
+	return data as unknown as DashboardAlertsRPCResult;
 }
 
 /**
@@ -240,8 +245,8 @@ export const getDashboardAlertsRPCCached = getDashboardAlertsRPC;
  * Call this when major data changes occur
  */
 export async function invalidateAllRPCCaches() {
-  const { revalidateTag } = await import('next/cache');
-  revalidateTag('rpc-data');
+	const { revalidateTag } = await import('next/cache');
+	revalidateTag('rpc-data');
 }
 
 /**
@@ -249,10 +254,10 @@ export async function invalidateAllRPCCaches() {
  * Call this when payments, orders, or invoices are updated
  */
 export async function invalidateBusinessMetricsRPCCache() {
-  const { revalidateTag } = await import('next/cache');
-  revalidateTag('business-health');
-  revalidateTag('payments');
-  revalidateTag('orders');
+	const { revalidateTag } = await import('next/cache');
+	revalidateTag('business-health');
+	revalidateTag('payments');
+	revalidateTag('orders');
 }
 
 /**
@@ -260,9 +265,9 @@ export async function invalidateBusinessMetricsRPCCache() {
  * Call this when garments or their stages are updated
  */
 export async function invalidateGarmentPipelineRPCCache() {
-  const { revalidateTag } = await import('next/cache');
-  revalidateTag('garments');
-  revalidateTag('garment-stages');
+	const { revalidateTag } = await import('next/cache');
+	revalidateTag('garments');
+	revalidateTag('garment-stages');
 }
 
 /**
@@ -270,10 +275,10 @@ export async function invalidateGarmentPipelineRPCCache() {
  * Call this when garment due dates or stages change
  */
 export async function invalidateDashboardAlertsRPCCache() {
-  const { revalidateTag } = await import('next/cache');
-  revalidateTag('alerts');
-  revalidateTag('due-dates');
-  revalidateTag('garments');
+	const { revalidateTag } = await import('next/cache');
+	revalidateTag('alerts');
+	revalidateTag('due-dates');
+	revalidateTag('garments');
 }
 
 // ============================================================================
@@ -285,41 +290,41 @@ export async function invalidateDashboardAlertsRPCCache() {
  * Maintains compatibility with existing dashboard components
  */
 export async function convertRPCToBusinessHealthData(
-  rpcData: BusinessMetricsRPCResult
+	rpcData: BusinessMetricsRPCResult
 ): Promise<BusinessHealthData> {
-  // Calculate percentage changes
-  const monthOverMonthChange =
-    rpcData.lastMonthRevenueCents > 0
-      ? ((rpcData.currentMonthRevenueCents - rpcData.lastMonthRevenueCents) /
-          rpcData.lastMonthRevenueCents) *
-        100
-      : 0;
+	// Calculate percentage changes
+	const monthOverMonthChange =
+		rpcData.lastMonthRevenueCents > 0
+			? ((rpcData.currentMonthRevenueCents - rpcData.lastMonthRevenueCents) /
+					rpcData.lastMonthRevenueCents) *
+				100
+			: 0;
 
-  const rolling30Change =
-    rpcData.previous30RevenueCents > 0
-      ? ((rpcData.rolling30RevenueCents - rpcData.previous30RevenueCents) /
-          rpcData.previous30RevenueCents) *
-        100
-      : 0;
+	const rolling30Change =
+		rpcData.previous30RevenueCents > 0
+			? ((rpcData.rolling30RevenueCents - rpcData.previous30RevenueCents) /
+					rpcData.previous30RevenueCents) *
+				100
+			: 0;
 
-  return {
-    currentMonthRevenueCents: rpcData.currentMonthRevenueCents,
-    lastMonthRevenueCents: rpcData.lastMonthRevenueCents,
-    monthlyRevenueComparison: monthOverMonthChange,
-    unpaidBalanceCents: rpcData.unpaidBalanceCents,
-    unpaidOrdersCount: 0, // Would need separate query for this
-    currentPeriodLabel: 'Current Month',
-    comparisonPeriodLabel: 'Last Month',
-    rolling30DayLabel: 'Last 30 Days',
-    previous30DayLabel: 'Previous 30 Days',
-    dailyAverageThisMonth:
-      rpcData.currentMonthRevenueCents / new Date().getDate(),
-    periodContext: 'mid' as const,
-    transactionCount: 0, // Would need separate query for this
-    rolling30DayRevenue: rpcData.rolling30RevenueCents,
-    previous30DayRevenue: rpcData.previous30RevenueCents,
-    rolling30DayComparison: rolling30Change,
-  };
+	return {
+		currentMonthRevenueCents: rpcData.currentMonthRevenueCents,
+		lastMonthRevenueCents: rpcData.lastMonthRevenueCents,
+		monthlyRevenueComparison: monthOverMonthChange,
+		unpaidBalanceCents: rpcData.unpaidBalanceCents,
+		unpaidOrdersCount: 0, // Would need separate query for this
+		currentPeriodLabel: 'Current Month',
+		comparisonPeriodLabel: 'Last Month',
+		rolling30DayLabel: 'Last 30 Days',
+		previous30DayLabel: 'Previous 30 Days',
+		dailyAverageThisMonth:
+			rpcData.currentMonthRevenueCents / new Date().getDate(),
+		periodContext: 'mid' as const,
+		transactionCount: 0, // Would need separate query for this
+		rolling30DayRevenue: rpcData.rolling30RevenueCents,
+		previous30DayRevenue: rpcData.previous30RevenueCents,
+		rolling30DayComparison: rolling30Change,
+	};
 }
 
 /**
@@ -327,32 +332,32 @@ export async function convertRPCToBusinessHealthData(
  * Maintains compatibility with existing alert components
  */
 export async function convertRPCAlertsToExistingFormat(
-  rpcData: DashboardAlertsRPCResult
+	rpcData: DashboardAlertsRPCResult
 ): Promise<{
-  overdueData: { count: number; garments: DashboardAlertGarment[] };
-  dueTodayData: { count: number; garments: DashboardAlertGarment[] };
+	overdueData: { count: number; garments: DashboardAlertGarment[] };
+	dueTodayData: { count: number; garments: DashboardAlertGarment[] };
 }> {
-  return {
-    overdueData: {
-      count: rpcData.overdueData.count,
-      garments: rpcData.overdueData.garments.map((g) => ({
-        id: g.id,
-        name: g.name,
-        due_date: g.dueDate,
-        order_number: g.orderNumber,
-        client_name: g.clientName,
-        days_overdue: g.daysOverdue,
-      })),
-    },
-    dueTodayData: {
-      count: rpcData.dueTodayData.count,
-      garments: rpcData.dueTodayData.garments.map((g) => ({
-        id: g.id,
-        name: g.name,
-        due_date: g.dueDate,
-        order_number: g.orderNumber,
-        client_name: g.clientName,
-      })),
-    },
-  };
+	return {
+		overdueData: {
+			count: rpcData.overdueData.count,
+			garments: rpcData.overdueData.garments.map((g) => ({
+				id: g.id,
+				name: g.name,
+				due_date: g.dueDate,
+				order_number: g.orderNumber,
+				client_name: g.clientName,
+				days_overdue: g.daysOverdue,
+			})),
+		},
+		dueTodayData: {
+			count: rpcData.dueTodayData.count,
+			garments: rpcData.dueTodayData.garments.map((g) => ({
+				id: g.id,
+				name: g.name,
+				due_date: g.dueDate,
+				order_number: g.orderNumber,
+				client_name: g.clientName,
+			})),
+		},
+	};
 }
