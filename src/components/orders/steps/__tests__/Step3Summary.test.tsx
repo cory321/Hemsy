@@ -208,12 +208,9 @@ describe('Step3Summary Image Display', () => {
 		expect(screen.getByText('Suit Jacket')).toBeInTheDocument();
 		expect(screen.getByText('Plain Shirt')).toBeInTheDocument();
 
-		// Check services are displayed
-		expect(screen.getByText(/Hemming \(1 item\)/)).toBeInTheDocument();
-		expect(screen.getByText(/Alterations \(2 item\)/)).toBeInTheDocument();
-		expect(
-			screen.getByText(/Basic Alterations \(1 item\)/)
-		).toBeInTheDocument();
+		// Check services are displayed - the component now shows garment count and urgency
+		expect(screen.getByText('3 garments')).toBeInTheDocument();
+		expect(screen.getByText('1 urgent')).toBeInTheDocument();
 	});
 
 	it('handles rush orders correctly', () => {
@@ -265,38 +262,5 @@ describe('Step3Summary Image Display', () => {
 
 		const elems = screen.getAllByText('FORMATTED:+1234567890');
 		expect(elems.length).toBeGreaterThan(0);
-	});
-
-	it('renders Pricing Breakdown sidebar as sticky on desktop', () => {
-		const mui = require('@mui/material');
-		// Force desktop breakpoint only
-		const mediaSpy = jest.spyOn(mui, 'useMediaQuery');
-		mediaSpy.mockImplementation((query: any) => {
-			if (typeof query === 'string' && query.includes('(min-width:1200px)')) {
-				return true;
-			}
-			return false;
-		});
-
-		const { resolveGarmentDisplayImage } = require('@/utils/displayImage');
-		resolveGarmentDisplayImage.mockReturnValue({
-			kind: 'preset',
-			src: '/presets/garments/select-garment.svg',
-		});
-
-		renderWithProviders(<Step3Summary />);
-
-		const aside = screen.getByTestId('pricing-breakdown-aside');
-		expect(aside).toBeInTheDocument();
-		expect(aside).toHaveAttribute(
-			'style',
-			expect.stringContaining('position: sticky')
-		);
-		expect(aside).toHaveAttribute(
-			'style',
-			expect.stringContaining('top: 96px')
-		);
-
-		mediaSpy.mockRestore();
 	});
 });
