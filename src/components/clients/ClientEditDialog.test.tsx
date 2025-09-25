@@ -63,7 +63,7 @@ describe('ClientEditDialog', () => {
 		await user.click(trigger);
 
 		expect(
-			screen.getByText('Edit Client', { selector: 'h2' })
+			screen.getByText('Edit Client Information', { selector: 'h2' })
 		).toBeInTheDocument();
 		expect(screen.getByDisplayValue('John')).toBeInTheDocument();
 		expect(screen.getByDisplayValue('Doe')).toBeInTheDocument();
@@ -188,7 +188,7 @@ describe('ClientEditDialog', () => {
 
 		// Dialog should remain open
 		expect(
-			screen.getByText('Edit Client', { selector: 'h2' })
+			screen.getByText('Edit Client Information', { selector: 'h2' })
 		).toBeInTheDocument();
 	});
 
@@ -203,7 +203,7 @@ describe('ClientEditDialog', () => {
 
 		await user.click(screen.getByText('Edit'));
 		expect(
-			screen.getByText('Edit Client', { selector: 'h2' })
+			screen.getByText('Edit Client Information', { selector: 'h2' })
 		).toBeInTheDocument();
 
 		const cancelButton = screen.getByText('Cancel');

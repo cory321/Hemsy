@@ -7,9 +7,9 @@ import {
 	getTodayString,
 	getCurrentTimeWithSeconds,
 	getDueDateInfo,
-	isGarmentOverdue,
 	formatDateForDatabase,
 } from '@/lib/utils/date-time-utils';
+import { isGarmentOverdue } from '@/lib/utils/overdue-logic';
 import { getShopTimezone } from '@/lib/utils/timezone-helpers';
 import { toZonedTime, format as formatTz } from 'date-fns-tz';
 import {
@@ -679,11 +679,17 @@ async function getAlertsDataConsolidatedInternal(shopId: string) {
 	const today = formatDateForDatabase(shopNow);
 
 	// Get all garments that are either overdue or due today
+	// Include garment_services to check completion status
 	const { data: alertGarments, error } = await supabase
 		.from('garments')
 		.select(
 			`
       *,
+      garment_services (
+        id,
+        is_done,
+        is_removed
+      ),
       orders!inner (
         id,
         status,
@@ -726,20 +732,26 @@ async function getAlertsDataConsolidatedInternal(shopId: string) {
 		};
 
 		if (garment.due_date && garment.due_date < today) {
-			// Overdue
-			const dueDateInfo = getDueDateInfo(garment.due_date);
-			if (dueDateInfo && dueDateInfo.daysUntilDue < 0) {
+			// Check if truly overdue using the same logic as garments page
+			const isOverdue = isGarmentOverdue({
+				due_date: garment.due_date,
+				stage: garment.stage as GarmentStage,
+				garment_services: garment.garment_services || [],
+			});
+
+			if (isOverdue) {
+				const dueDateInfo = getDueDateInfo(garment.due_date);
 				overdueGarments.push({
 					...garmentInfo,
-					days_overdue: Math.abs(dueDateInfo.daysUntilDue),
+					days_overdue: dueDateInfo ? Math.abs(dueDateInfo.daysUntilDue) : 0,
 				});
-			}
 
-			if (clientId) {
-				if (!clientOrders.has(clientId)) {
-					clientOrders.set(clientId, new Set());
+				if (clientId) {
+					if (!clientOrders.has(clientId)) {
+						clientOrders.set(clientId, new Set());
+					}
+					clientOrders.get(clientId)!.add(garment.order_id);
 				}
-				clientOrders.get(clientId)!.add(garment.order_id);
 			}
 		} else if (garment.due_date === today) {
 			// Due today

@@ -19,7 +19,6 @@ import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined';
 import { alpha } from '@mui/material/styles';
 import { showSuccessToast, showErrorToast } from '@/lib/utils/toast';
 import SafeCldImage from '@/components/ui/SafeCldImage';
-import { getStageColor } from '@/constants/garmentStages';
 import InlinePresetSvg from '@/components/ui/InlinePresetSvg';
 import { resolveGarmentDisplayImage } from '@/utils/displayImage';
 import { useGarment } from '@/contexts/GarmentContext';
@@ -173,22 +172,6 @@ export default function GarmentImageSection({
 
 	return (
 		<>
-			{/* Stage Label */}
-			<Box
-				sx={{
-					width: '100%',
-					mb: 2,
-					p: 2,
-					borderRadius: 1,
-					backgroundColor: getStageColor(garment.stage as any),
-					textAlign: 'center',
-				}}
-			>
-				<Typography variant="h6" sx={{ fontWeight: 600 }}>
-					{garment.stage}
-				</Typography>
-			</Box>
-
 			<Card sx={{ mb: 3 }} data-testid="garment-image-section">
 				<GarmentImageHoverOverlay
 					imageType={
