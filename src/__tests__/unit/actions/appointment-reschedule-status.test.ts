@@ -1,6 +1,7 @@
 import { updateAppointment } from '@/lib/actions/appointments';
 import { createClient } from '@/lib/supabase/server';
 import { auth } from '@clerk/nextjs/server';
+import { addDays, format } from 'date-fns';
 
 // Mock dependencies
 jest.mock('@/lib/supabase/server');
@@ -24,6 +25,11 @@ const mockSupabase = {
 	contains: jest.fn().mockReturnThis(),
 	rpc: jest.fn().mockResolvedValue({ data: false, error: null }),
 };
+
+// Helper function to generate future dates for testing
+function getFutureDate(daysFromNow: number): string {
+	return format(addDays(new Date(), daysFromNow), 'yyyy-MM-dd');
+}
 
 describe('Appointment Reschedule Status Management', () => {
 	beforeEach(() => {
@@ -59,7 +65,7 @@ describe('Appointment Reschedule Status Management', () => {
 				const mockAppointment = {
 					id: '123e4567-e89b-12d3-a456-426614174000',
 					shop_id: '123e4567-e89b-12d3-a456-426614174001',
-					date: '2025-09-20',
+					date: getFutureDate(7), // 7 days from now
 					start_time: '10:00',
 					end_time: '11:00',
 					status: currentStatus,
@@ -76,10 +82,11 @@ describe('Appointment Reschedule Status Management', () => {
 				});
 
 				// Mock the update result - single is called after update
+				const newDate = getFutureDate(14); // 14 days from now
 				mockSupabase.single.mockResolvedValueOnce({
 					data: {
 						...mockAppointment,
-						date: '2025-09-25',
+						date: newDate,
 						status: expectedStatus,
 					},
 					error: null,
@@ -88,13 +95,13 @@ describe('Appointment Reschedule Status Management', () => {
 				// Reschedule the appointment (changing date)
 				const result = await updateAppointment({
 					id: '123e4567-e89b-12d3-a456-426614174000',
-					date: '2025-09-25',
+					date: newDate,
 				});
 
 				// Verify the update was called with status = 'pending'
 				expect(mockSupabase.update).toHaveBeenCalledWith(
 					expect.objectContaining({
-						date: '2025-09-25',
+						date: newDate,
 						status: 'pending',
 					})
 				);
@@ -107,7 +114,7 @@ describe('Appointment Reschedule Status Management', () => {
 			const mockAppointment = {
 				id: '123e4567-e89b-12d3-a456-426614174000',
 				shop_id: '123e4567-e89b-12d3-a456-426614174001',
-				date: '2025-09-20',
+				date: getFutureDate(7), // 7 days from now
 				start_time: '10:00',
 				end_time: '11:00',
 				status: 'confirmed',
@@ -148,7 +155,7 @@ describe('Appointment Reschedule Status Management', () => {
 			const mockAppointment = {
 				id: '123e4567-e89b-12d3-a456-426614174000',
 				shop_id: '123e4567-e89b-12d3-a456-426614174001',
-				date: '2025-09-20',
+				date: getFutureDate(7), // 7 days from now
 				start_time: '10:00',
 				end_time: '11:00',
 				status: 'confirmed',
@@ -173,7 +180,7 @@ describe('Appointment Reschedule Status Management', () => {
 			// Cancel the appointment (even though date is also changing)
 			await updateAppointment({
 				id: '123e4567-e89b-12d3-a456-426614174000',
-				date: '2025-09-25',
+				date: getFutureDate(14), // 14 days from now
 				status: 'canceled',
 			});
 
@@ -189,7 +196,7 @@ describe('Appointment Reschedule Status Management', () => {
 			const mockAppointment = {
 				id: '123e4567-e89b-12d3-a456-426614174000',
 				shop_id: '123e4567-e89b-12d3-a456-426614174001',
-				date: '2025-09-20',
+				date: getFutureDate(7), // 7 days from now
 				start_time: '10:00',
 				end_time: '11:00',
 				status: 'confirmed',
@@ -229,7 +236,7 @@ describe('Appointment Reschedule Status Management', () => {
 			const mockAppointment = {
 				id: '123e4567-e89b-12d3-a456-426614174000',
 				shop_id: '123e4567-e89b-12d3-a456-426614174001',
-				date: '2025-09-20',
+				date: getFutureDate(7), // 7 days from now
 				start_time: '10:00',
 				end_time: '11:00',
 				status: 'pending',
@@ -271,7 +278,7 @@ describe('Appointment Reschedule Status Management', () => {
 			const mockAppointment = {
 				id: '123e4567-e89b-12d3-a456-426614174000',
 				shop_id: '123e4567-e89b-12d3-a456-426614174001',
-				date: '2025-09-20',
+				date: getFutureDate(7), // 7 days from now
 				start_time: '10:00',
 				end_time: '11:00',
 				status: 'confirmed', // Previously confirmed
@@ -292,8 +299,9 @@ describe('Appointment Reschedule Status Management', () => {
 			});
 
 			// Mock the update result with pending status
+			const newDate = getFutureDate(14); // 14 days from now
 			mockSupabase.single.mockResolvedValueOnce({
-				data: { ...mockAppointment, date: '2025-09-25', status: 'pending' },
+				data: { ...mockAppointment, date: newDate, status: 'pending' },
 				error: null,
 			});
 
@@ -317,7 +325,7 @@ describe('Appointment Reschedule Status Management', () => {
 			// Reschedule the appointment
 			await updateAppointment({
 				id: '123e4567-e89b-12d3-a456-426614174000',
-				date: '2025-09-25',
+				date: newDate,
 				sendEmail: true,
 			});
 
