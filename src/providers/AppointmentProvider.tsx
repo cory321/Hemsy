@@ -327,7 +327,53 @@ export function AppointmentProvider({
 
 				// Always show toast for significant updates
 				if (data.status || data.date || data.startTime) {
-					toast.success('Appointment updated successfully');
+					// Check if this is a reschedule (date or time changed)
+					const isReschedule =
+						data.date !== undefined || data.startTime !== undefined;
+
+					if (isReschedule) {
+						// Format date and time for the toast message
+						const appointmentDate = new Date(
+							`${appointment.date}T${appointment.start_time}`
+						);
+						const formattedDate = appointmentDate.toLocaleDateString('en-US', {
+							weekday: 'short',
+							month: 'short',
+							day: 'numeric',
+						});
+						const formattedTime = appointmentDate.toLocaleTimeString('en-US', {
+							hour: 'numeric',
+							minute: '2-digit',
+							hour12: true,
+						});
+
+						// Get client name if available
+						const clientName = appointment.client
+							? `${appointment.client.first_name} ${appointment.client.last_name}`
+							: '';
+
+						// Create a styled toast message
+						const typeFormatted =
+							appointment.type.charAt(0).toUpperCase() +
+							appointment.type.slice(1);
+						const description = `${typeFormatted} appointment${clientName ? ` with ${clientName}` : ''}`;
+
+						toast.success(
+							<div>
+								<div>
+									Appointment rescheduled successfully for {formattedDate} at{' '}
+									{formattedTime}
+								</div>
+								<div style={{ fontSize: '0.875rem', opacity: 0.9 }}>
+									{description}
+								</div>
+							</div>,
+							{ duration: 5000 }
+						);
+					} else {
+						// For status changes or other updates, show generic message
+						toast.success('Appointment updated successfully');
+					}
 				}
 
 				// Invalidate all appointment-related queries to ensure UI updates

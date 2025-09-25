@@ -245,16 +245,20 @@ async function getBusinessMetricsConsolidatedInternal(shopId: string) {
 
 	const monthlyRevenueComparison =
 		lastMonthRevenueCents > 0
-			? ((currentMonthRevenueCents - lastMonthRevenueCents) /
-					lastMonthRevenueCents) *
-				100
+			? Math.round(
+					((currentMonthRevenueCents - lastMonthRevenueCents) /
+						lastMonthRevenueCents) *
+						100
+				)
 			: 0;
 
 	const rolling30DayComparison =
 		previous30RevenueCents > 0
-			? ((rolling30RevenueCents - previous30RevenueCents) /
-					previous30RevenueCents) *
-				100
+			? Math.round(
+					((rolling30RevenueCents - previous30RevenueCents) /
+						previous30RevenueCents) *
+						100
+				)
 			: 0;
 
 	const businessHealthData: BusinessHealthData = {

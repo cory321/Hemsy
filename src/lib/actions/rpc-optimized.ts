@@ -295,16 +295,20 @@ export async function convertRPCToBusinessHealthData(
 	// Calculate percentage changes
 	const monthOverMonthChange =
 		rpcData.lastMonthRevenueCents > 0
-			? ((rpcData.currentMonthRevenueCents - rpcData.lastMonthRevenueCents) /
-					rpcData.lastMonthRevenueCents) *
-				100
+			? Math.round(
+					((rpcData.currentMonthRevenueCents - rpcData.lastMonthRevenueCents) /
+						rpcData.lastMonthRevenueCents) *
+						100
+				)
 			: 0;
 
 	const rolling30Change =
 		rpcData.previous30RevenueCents > 0
-			? ((rpcData.rolling30RevenueCents - rpcData.previous30RevenueCents) /
-					rpcData.previous30RevenueCents) *
-				100
+			? Math.round(
+					((rpcData.rolling30RevenueCents - rpcData.previous30RevenueCents) /
+						rpcData.previous30RevenueCents) *
+						100
+				)
 			: 0;
 
 	return {
