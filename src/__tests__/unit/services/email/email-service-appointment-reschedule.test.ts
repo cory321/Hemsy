@@ -114,6 +114,17 @@ describe('EmailService - Appointment Reschedule Email Flow', () => {
 
 	describe('appointment_rescheduled email with tokens', () => {
 		it('should generate confirm/decline tokens for pending appointments when rescheduled', async () => {
+			// Create appointment date that's always 7 days in the future
+			const futureDate = new Date();
+			futureDate.setDate(futureDate.getDate() + 7);
+			const futureDateStr = futureDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+
+			// Create UTC times that are well in the future
+			const startAtUTC = new Date(futureDate);
+			startAtUTC.setUTCHours(15, 0, 0, 0); // 3 PM UTC
+			const endAtUTC = new Date(futureDate);
+			endAtUTC.setUTCHours(16, 0, 0, 0); // 4 PM UTC
+
 			// Mock appointment data
 			const mockAppointment = {
 				id: 'appt-123',
@@ -131,10 +142,10 @@ describe('EmailService - Appointment Reschedule Email Flow', () => {
 					address: '123 Test St',
 					timezone: 'America/New_York',
 				},
-				date: '2025-09-25',
+				date: futureDateStr,
 				start_time: '10:00',
-				start_at: '2025-09-25T14:00:00Z', // UTC time
-				end_at: '2025-09-25T15:00:00Z',
+				start_at: startAtUTC.toISOString(), // Always 7 days in the future
+				end_at: endAtUTC.toISOString(),
 			};
 
 			// Mock Supabase responses
@@ -200,10 +211,24 @@ describe('EmailService - Appointment Reschedule Email Flow', () => {
 					email: 'shop@example.com',
 					timezone: 'America/New_York',
 				},
-				date: '2025-09-25',
+				date: (() => {
+					const futureDate = new Date();
+					futureDate.setDate(futureDate.getDate() + 7);
+					return futureDate.toISOString().split('T')[0];
+				})(),
 				start_time: '10:00',
-				start_at: '2025-09-25T14:00:00Z',
-				end_at: '2025-09-25T15:00:00Z',
+				start_at: (() => {
+					const futureDate = new Date();
+					futureDate.setDate(futureDate.getDate() + 7);
+					futureDate.setUTCHours(15, 0, 0, 0);
+					return futureDate.toISOString();
+				})(),
+				end_at: (() => {
+					const futureDate = new Date();
+					futureDate.setDate(futureDate.getDate() + 7);
+					futureDate.setUTCHours(16, 0, 0, 0);
+					return futureDate.toISOString();
+				})(),
 			};
 
 			// Mock Supabase responses
@@ -258,10 +283,24 @@ describe('EmailService - Appointment Reschedule Email Flow', () => {
 					email: 'shop@example.com',
 					timezone: 'America/New_York',
 				},
-				date: '2025-09-25',
+				date: (() => {
+					const futureDate = new Date();
+					futureDate.setDate(futureDate.getDate() + 7);
+					return futureDate.toISOString().split('T')[0];
+				})(),
 				start_time: '14:00',
-				start_at: '2025-09-25T18:00:00Z',
-				end_at: '2025-09-25T19:00:00Z',
+				start_at: (() => {
+					const futureDate = new Date();
+					futureDate.setDate(futureDate.getDate() + 7);
+					futureDate.setUTCHours(19, 0, 0, 0);
+					return futureDate.toISOString();
+				})(),
+				end_at: (() => {
+					const futureDate = new Date();
+					futureDate.setDate(futureDate.getDate() + 7);
+					futureDate.setUTCHours(20, 0, 0, 0);
+					return futureDate.toISOString();
+				})(),
 			};
 
 			// Mock Supabase responses

@@ -81,12 +81,14 @@ async function getBusinessMetricsConsolidatedInternal(shopId: string) {
 	);
 	const endOfSameDayLastMonthStr = formatDateForDatabase(endOfSameDayLastMonth);
 
-	// Rolling 30-day periods (matching original implementation using Date.now())
-	const rolling30StartDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+	// Rolling 30-day periods (using shop timezone for consistency)
+	const rolling30StartDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 	const rolling30StartStr = rolling30StartDate.toISOString();
 
-	const previous30StartDate = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
-	const previous30EndDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+	const previous30StartDate = new Date(
+		now.getTime() - 60 * 24 * 60 * 60 * 1000
+	);
+	const previous30EndDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 	const previous30StartStr = previous30StartDate.toISOString();
 	const previous30EndStr = previous30EndDate.toISOString();
 

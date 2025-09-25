@@ -14,13 +14,13 @@ import {
 	formatTimeHHMM,
 	parseDateTimeString,
 	validateFutureDateTime,
-	isDateTimeInPast,
 	formatDateForDatabase,
 } from '@/lib/utils/date-time-utils';
 import {
 	convertLocalToUTC,
 	convertUTCToLocal,
 	validateFutureDateTimeForTimezone,
+	isDateTimeInPastForTimezone,
 } from '@/lib/utils/date-time-utc';
 import { getShopTimezone } from '@/lib/utils/timezone-helpers';
 import { toZonedTime } from 'date-fns-tz';
@@ -436,8 +436,16 @@ export async function updateAppointment(
 		throw new Error('Appointment not found or unauthorized');
 	}
 
-	// Prevent reschedule/cancel for past appointments
-	const isPast = isDateTimeInPast(currentApt.date, currentApt.end_time);
+	// Get the timezone to use
+	const timezone =
+		validated.timezone || (await getShopTimezone(currentApt.shop_id));
+
+	// Prevent reschedule/cancel for past appointments (using shop timezone)
+	const isPast = isDateTimeInPastForTimezone(
+		currentApt.date,
+		currentApt.end_time,
+		timezone
+	);
 	if (
 		isPast &&
 		(validated.status === 'canceled' ||
@@ -447,14 +455,6 @@ export async function updateAppointment(
 	) {
 		throw new Error('Cannot modify past appointments');
 	}
-
-	if (fetchError || !currentApt) {
-		throw new Error('Appointment not found or unauthorized');
-	}
-
-	// Get the timezone to use
-	const timezone =
-		validated.timezone || (await getShopTimezone(currentApt.shop_id));
 
 	// If date/time is changing, check for conflicts
 	if (validated.date || validated.startTime || validated.endTime) {

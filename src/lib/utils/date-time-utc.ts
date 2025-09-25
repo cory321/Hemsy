@@ -16,16 +16,16 @@ import { parseISO } from 'date-fns';
  * @returns Date object in UTC
  */
 export function convertLocalToUTC(
-  date: string,
-  time: string,
-  timezone: string
+	date: string,
+	time: string,
+	timezone: string
 ): Date {
-  // Combine date and time
-  const dateTimeStr = `${date}T${time}:00`;
+	// Combine date and time
+	const dateTimeStr = `${date}T${time}:00`;
 
-  // Parse as local time in the given timezone and convert to UTC
-  const localDate = new Date(dateTimeStr);
-  return fromZonedTime(localDate, timezone);
+	// Parse as local time in the given timezone and convert to UTC
+	const localDate = new Date(dateTimeStr);
+	return fromZonedTime(localDate, timezone);
 }
 
 /**
@@ -35,19 +35,19 @@ export function convertLocalToUTC(
  * @returns Object with date and time strings in local timezone
  */
 export function convertUTCToLocal(
-  utcDate: Date | string,
-  timezone: string
+	utcDate: Date | string,
+	timezone: string
 ): { date: string; time: string } {
-  // Ensure we have a Date object
-  const dateObj = typeof utcDate === 'string' ? parseISO(utcDate) : utcDate;
+	// Ensure we have a Date object
+	const dateObj = typeof utcDate === 'string' ? parseISO(utcDate) : utcDate;
 
-  // Convert UTC to the specified timezone
-  const localDate = toZonedTime(dateObj, timezone);
+	// Convert UTC to the specified timezone
+	const localDate = toZonedTime(dateObj, timezone);
 
-  return {
-    date: formatTz(localDate, 'yyyy-MM-dd', { timeZone: timezone }),
-    time: formatTz(localDate, 'HH:mm', { timeZone: timezone }),
-  };
+	return {
+		date: formatTz(localDate, 'yyyy-MM-dd', { timeZone: timezone }),
+		time: formatTz(localDate, 'HH:mm', { timeZone: timezone }),
+	};
 }
 
 /**
@@ -58,14 +58,14 @@ export function convertUTCToLocal(
  * @returns Formatted date string in the specified timezone
  */
 export function formatInTimezone(
-  utcDate: Date | string,
-  timezone: string,
-  formatStr: string
+	utcDate: Date | string,
+	timezone: string,
+	formatStr: string
 ): string {
-  const dateObj = typeof utcDate === 'string' ? parseISO(utcDate) : utcDate;
-  return formatTz(toZonedTime(dateObj, timezone), formatStr, {
-    timeZone: timezone,
-  });
+	const dateObj = typeof utcDate === 'string' ? parseISO(utcDate) : utcDate;
+	return formatTz(toZonedTime(dateObj, timezone), formatStr, {
+		timeZone: timezone,
+	});
 }
 
 /**
@@ -74,11 +74,11 @@ export function formatInTimezone(
  * @returns Object with current date and time in the specified timezone
  */
 export function getCurrentDateTimeInTimezone(timezone: string): {
-  date: string;
-  time: string;
+	date: string;
+	time: string;
 } {
-  const now = new Date();
-  return convertUTCToLocal(now, timezone);
+	const now = new Date();
+	return convertUTCToLocal(now, timezone);
 }
 
 /**
@@ -89,12 +89,12 @@ export function getCurrentDateTimeInTimezone(timezone: string): {
  * @returns true if the date/time is in the past
  */
 export function isDateTimeInPastForTimezone(
-  date: string,
-  time: string,
-  timezone: string
+	date: string,
+	time: string,
+	timezone: string
 ): boolean {
-  const targetUTC = convertLocalToUTC(date, time, timezone);
-  return targetUTC.getTime() < Date.now();
+	const targetUTC = convertLocalToUTC(date, time, timezone);
+	return targetUTC.getTime() < Date.now();
 }
 
 /**
@@ -105,13 +105,39 @@ export function isDateTimeInPastForTimezone(
  * @throws Error if the date/time is in the past
  */
 export function validateFutureDateTimeForTimezone(
-  date: string,
-  time: string,
-  timezone: string
+	date: string,
+	time: string,
+	timezone: string
 ): void {
-  if (isDateTimeInPastForTimezone(date, time, timezone)) {
-    throw new Error('Cannot create appointments in the past');
-  }
+	if (isDateTimeInPastForTimezone(date, time, timezone)) {
+		throw new Error('Cannot create appointments in the past');
+	}
+}
+
+/**
+ * Validate appointment date/time with timezone awareness
+ * @param date - Date in YYYY-MM-DD format
+ * @param startTime - Start time in HH:MM format
+ * @param endTime - End time in HH:MM format
+ * @param timezone - IANA timezone string
+ * @throws Error if the date/time is invalid
+ */
+export function validateAppointmentDateTimeForTimezone(
+	date: string,
+	startTime: string,
+	endTime: string,
+	timezone: string
+): void {
+	// Check not in past
+	validateFutureDateTimeForTimezone(date, startTime, timezone);
+
+	// Check end time is after start time
+	const startDateTime = new Date(`${date}T${startTime}:00`);
+	const endDateTime = new Date(`${date}T${endTime}:00`);
+
+	if (endDateTime <= startDateTime) {
+		throw new Error('End time must be after start time');
+	}
 }
 
 /**
@@ -122,35 +148,35 @@ export function validateFutureDateTimeForTimezone(
  * @returns Offset in minutes (negative for west of UTC)
  */
 export function getTimezoneOffset(
-  timezone: string,
-  date: Date = new Date()
+	timezone: string,
+	date: Date = new Date()
 ): number {
-  // Create a date in the target timezone
-  const tzDate = toZonedTime(date, timezone);
+	// Create a date in the target timezone
+	const tzDate = toZonedTime(date, timezone);
 
-  // Get the offset by comparing UTC and local representations
-  const utcStr = date.toISOString();
-  const localStr = formatTz(tzDate, "yyyy-MM-dd'T'HH:mm:ss", {
-    timeZone: timezone,
-  });
+	// Get the offset by comparing UTC and local representations
+	const utcStr = date.toISOString();
+	const localStr = formatTz(tzDate, "yyyy-MM-dd'T'HH:mm:ss", {
+		timeZone: timezone,
+	});
 
-  // Parse both and calculate difference
-  const utcTime = new Date(utcStr).getTime();
-  const localTime = new Date(localStr + 'Z').getTime(); // Add Z to parse as UTC
+	// Parse both and calculate difference
+	const utcTime = new Date(utcStr).getTime();
+	const localTime = new Date(localStr + 'Z').getTime(); // Add Z to parse as UTC
 
-  return (localTime - utcTime) / (60 * 1000); // Convert to minutes
+	return (localTime - utcTime) / (60 * 1000); // Convert to minutes
 }
 
 /**
  * Common timezone presets for North America
  */
 export const TIMEZONE_PRESETS = {
-  'US/Eastern': 'America/New_York',
-  'US/Central': 'America/Chicago',
-  'US/Mountain': 'America/Denver',
-  'US/Pacific': 'America/Los_Angeles',
-  'US/Alaska': 'America/Anchorage',
-  'US/Hawaii': 'Pacific/Honolulu',
+	'US/Eastern': 'America/New_York',
+	'US/Central': 'America/Chicago',
+	'US/Mountain': 'America/Denver',
+	'US/Pacific': 'America/Los_Angeles',
+	'US/Alaska': 'America/Anchorage',
+	'US/Hawaii': 'Pacific/Honolulu',
 } as const;
 
 /**
@@ -159,14 +185,14 @@ export const TIMEZONE_PRESETS = {
  * @returns Friendly name (e.g., "Pacific Time")
  */
 export function getTimezoneFriendlyName(timezone: string): string {
-  const now = new Date();
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: timezone,
-    timeZoneName: 'long',
-  });
+	const now = new Date();
+	const formatter = new Intl.DateTimeFormat('en-US', {
+		timeZone: timezone,
+		timeZoneName: 'long',
+	});
 
-  const parts = formatter.formatToParts(now);
-  const timeZoneName = parts.find((part) => part.type === 'timeZoneName');
+	const parts = formatter.formatToParts(now);
+	const timeZoneName = parts.find((part) => part.type === 'timeZoneName');
 
-  return timeZoneName?.value || timezone;
+	return timeZoneName?.value || timezone;
 }

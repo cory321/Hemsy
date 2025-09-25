@@ -765,7 +765,7 @@ export async function getBusinessHealthData(): Promise<BusinessHealthData> {
 			.in('status', ['completed', 'partially_refunded'])
 			.gte(
 				'created_at',
-				new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+				new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()
 			),
 
 		// 5. Previous 30 days revenue (31-60 days ago)
@@ -784,11 +784,11 @@ export async function getBusinessHealthData(): Promise<BusinessHealthData> {
 			.in('status', ['completed', 'partially_refunded'])
 			.gte(
 				'created_at',
-				new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString()
+				new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000).toISOString()
 			)
 			.lt(
 				'created_at',
-				new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+				new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()
 			),
 	]);
 
@@ -915,11 +915,11 @@ export async function getBusinessHealthData(): Promise<BusinessHealthData> {
 	const currentPeriodLabel = `${currentMonthName} 1-${currentDay}`;
 	const comparisonPeriodLabel = `${lastMonthName} 1-${sameDayLastMonth.getDate()}`;
 
-	// Create rolling 30-day labels
-	const rolling30Start = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-	const rolling30End = new Date();
-	const previous30Start = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
-	const previous30End = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+	// Create rolling 30-day labels using shop timezone
+	const rolling30Start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+	const rolling30End = toZonedTime(now, shopTimezone);
+	const previous30Start = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+	const previous30End = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
 	const rolling30DayLabel = `${monthNames[rolling30Start.getMonth()]} ${rolling30Start.getDate()} - ${monthNames[rolling30End.getMonth()]} ${rolling30End.getDate()}`;
 	const previous30DayLabel = `${monthNames[previous30Start.getMonth()]} ${previous30Start.getDate()} - ${monthNames[previous30End.getMonth()]} ${previous30End.getDate()}`;

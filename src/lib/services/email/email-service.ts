@@ -375,10 +375,32 @@ export class EmailService {
 		if (
 			['appointment_scheduled', 'appointment_rescheduled'].includes(emailType)
 		) {
-			const appointmentDateTime = safeParseDateTime(
-				appointment.date,
-				appointment.start_time
-			);
+			// Use UTC time if available, otherwise parse with shop timezone
+			let appointmentDateTime: Date;
+
+			if (appointment.start_at) {
+				// Use UTC time directly
+				appointmentDateTime = new Date(appointment.start_at);
+			} else {
+				// Fallback: parse with shop timezone if available
+				if (appointment.shop?.timezone) {
+					const { convertLocalToUTC } = await import(
+						'@/lib/utils/date-time-utc'
+					);
+					appointmentDateTime = convertLocalToUTC(
+						appointment.date,
+						appointment.start_time,
+						appointment.shop.timezone
+					);
+				} else {
+					// Last resort: parse in server timezone (may be inaccurate)
+					appointmentDateTime = safeParseDateTime(
+						appointment.date,
+						appointment.start_time
+					);
+				}
+			}
+
 			const hoursUntilAppointment =
 				(appointmentDateTime.getTime() - Date.now()) / (1000 * 60 * 60);
 
