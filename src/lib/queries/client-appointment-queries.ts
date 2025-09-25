@@ -1,96 +1,98 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import {
-  getClientAppointments,
-  getClientAppointmentsPage,
+	getClientAppointments,
+	getClientAppointmentsPage,
 } from '@/lib/actions/appointments';
 import type { Appointment, AppointmentStatus } from '@/types';
 
 export const clientAppointmentKeys = {
-  all: (clientId: string) => ['appointments', 'client', clientId] as const,
-  list: (
-    clientId: string,
-    filters?: { includeCompleted?: boolean; statuses?: AppointmentStatus[] }
-  ) => [...clientAppointmentKeys.all(clientId), 'list', filters] as const,
+	all: (clientId: string) => ['appointments', 'client', clientId] as const,
+	list: (
+		clientId: string,
+		filters?: { includeCompleted?: boolean; statuses?: AppointmentStatus[] }
+	) => [...clientAppointmentKeys.all(clientId), 'list', filters] as const,
 };
 
 export function useClientAppointments(
-  shopId: string,
-  clientId: string,
-  options?: { includeCompleted?: boolean; statuses?: AppointmentStatus[] }
+	shopId: string,
+	clientId: string,
+	options?: { includeCompleted?: boolean; statuses?: AppointmentStatus[] }
 ) {
-  return useQuery({
-    queryKey: clientAppointmentKeys.list(clientId, options),
-    // The current server action signature is (shopId, clientId, includeCompleted)
-    // We pass includeCompleted; server-side status filtering can be added later.
-    queryFn: async () => {
-      const includeCompleted = !!options?.includeCompleted;
-      const raw = await getClientAppointments(
-        shopId,
-        clientId,
-        includeCompleted
-      );
-      // Adapt to the spec shape when we enhance server action: return { appointments, total, hasMore }
-      return {
-        appointments: raw as Appointment[],
-        total: (raw as Appointment[])?.length ?? 0,
-        hasMore: false,
-      };
-    },
-    staleTime: 30 * 1000,
-    gcTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: true,
-  });
+	return useQuery({
+		queryKey: clientAppointmentKeys.list(clientId, options),
+		// The current server action signature is (shopId, clientId, includeCompleted)
+		// We pass includeCompleted; server-side status filtering can be added later.
+		queryFn: async () => {
+			const includeCompleted = !!options?.includeCompleted;
+			const raw = await getClientAppointments(
+				shopId,
+				clientId,
+				includeCompleted
+			);
+			// Adapt to the spec shape when we enhance server action: return { appointments, total, hasMore }
+			return {
+				appointments: raw as Appointment[],
+				total: (raw as Appointment[])?.length ?? 0,
+				hasMore: false,
+			};
+		},
+		staleTime: 30 * 1000,
+		gcTime: 5 * 60 * 1000,
+		refetchOnWindowFocus: false, // Disable automatic refetch on window focus
+	});
 }
 
 export function useInfiniteClientAppointments(
-  shopId: string,
-  clientId: string,
-  options?: {
-    includeCompleted?: boolean;
-    statuses?: AppointmentStatus[];
-    timeframe?: 'upcoming' | 'past' | 'all';
-    pageSize?: number;
-  }
+	shopId: string,
+	clientId: string,
+	options?: {
+		includeCompleted?: boolean;
+		statuses?: AppointmentStatus[];
+		timeframe?: 'upcoming' | 'past' | 'all';
+		pageSize?: number;
+		enabled?: boolean;
+	}
 ) {
-  const pageSize = options?.pageSize ?? 10;
-  return useInfiniteQuery({
-    queryKey: [
-      ...clientAppointmentKeys.list(
-        clientId,
-        options
-          ? {
-              ...(options.includeCompleted !== undefined && {
-                includeCompleted: options.includeCompleted,
-              }),
-              ...(options.statuses !== undefined && {
-                statuses: options.statuses,
-              }),
-            }
-          : undefined
-      ),
-      'infinite',
-      options?.timeframe ?? 'all',
-      pageSize,
-    ],
-    initialPageParam: 0,
-    queryFn: async ({ pageParam }) => {
-      const page = await getClientAppointmentsPage(shopId, clientId, {
-        ...(options?.includeCompleted !== undefined && {
-          includeCompleted: options.includeCompleted,
-        }),
-        ...(options?.statuses !== undefined && { statuses: options.statuses }),
-        ...(options?.timeframe !== undefined && {
-          timeframe: options.timeframe,
-        }),
-        limit: pageSize,
-        offset: Number(pageParam) || 0,
-      });
-      return page;
-    },
-    getNextPageParam: (lastPage) =>
-      lastPage.hasMore ? lastPage.nextOffset : undefined,
-    staleTime: 30 * 1000,
-    gcTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: true,
-  });
+	const pageSize = options?.pageSize ?? 10;
+	return useInfiniteQuery({
+		queryKey: [
+			...clientAppointmentKeys.list(
+				clientId,
+				options
+					? {
+							...(options.includeCompleted !== undefined && {
+								includeCompleted: options.includeCompleted,
+							}),
+							...(options.statuses !== undefined && {
+								statuses: options.statuses,
+							}),
+						}
+					: undefined
+			),
+			'infinite',
+			options?.timeframe ?? 'all',
+			pageSize,
+		],
+		initialPageParam: 0,
+		queryFn: async ({ pageParam }) => {
+			const page = await getClientAppointmentsPage(shopId, clientId, {
+				...(options?.includeCompleted !== undefined && {
+					includeCompleted: options.includeCompleted,
+				}),
+				...(options?.statuses !== undefined && { statuses: options.statuses }),
+				...(options?.timeframe !== undefined && {
+					timeframe: options.timeframe,
+				}),
+				limit: pageSize,
+				offset: Number(pageParam) || 0,
+			});
+			return page;
+		},
+		getNextPageParam: (lastPage) =>
+			lastPage.hasMore ? lastPage.nextOffset : undefined,
+		staleTime: 30 * 1000,
+		gcTime: 5 * 60 * 1000,
+		refetchOnWindowFocus: false, // Disable automatic refetch on window focus
+		enabled: options?.enabled !== false, // Default to true if not specified
+	});
 }

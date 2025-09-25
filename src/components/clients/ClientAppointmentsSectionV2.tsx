@@ -145,12 +145,16 @@ export function ClientAppointmentsSectionV2({
 		pageSize: 20,
 	});
 
-	// Keep separate upcoming/past queries for "all" view to maintain proper ordering
+	// Only run separate queries when needed for "all" view
+	const shouldRunSeparateQueries = timePeriod === 'all';
+
 	const upcomingQuery = useInfiniteClientAppointments(shopId, clientId, {
 		includeCompleted: true,
 		statuses: statusMap[statusFilter],
 		timeframe: 'upcoming',
 		pageSize: 20,
+		// Disable the query if we don't need it
+		enabled: shouldRunSeparateQueries,
 	});
 
 	const pastQuery = useInfiniteClientAppointments(shopId, clientId, {
@@ -158,6 +162,8 @@ export function ClientAppointmentsSectionV2({
 		statuses: statusMap[statusFilter],
 		timeframe: 'past',
 		pageSize: 20,
+		// Disable the query if we don't need it
+		enabled: shouldRunSeparateQueries,
 	});
 
 	// Select appointments based on time period - let server filtering do the heavy lifting
@@ -327,17 +333,6 @@ export function ClientAppointmentsSectionV2({
 				await queryClient.invalidateQueries({
 					queryKey: ['appointments', 'client', clientId],
 				});
-
-				// Small delay to ensure database has processed the change
-				await new Promise((resolve) => setTimeout(resolve, 200));
-
-				// Force refetch all appointment queries for this client
-				console.log('[ClientAppointments] Refetching appointment queries...');
-				await appointmentsQuery.refetch();
-				// Also refetch the separate queries if we're in "all" view
-				if (timePeriod === 'all') {
-					await Promise.all([upcomingQuery.refetch(), pastQuery.refetch()]);
-				}
 				console.log('[ClientAppointments] Appointment list refresh complete');
 			}
 			// Error is already handled by toast in AppointmentProvider
