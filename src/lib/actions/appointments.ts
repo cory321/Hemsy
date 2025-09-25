@@ -15,6 +15,7 @@ import {
 	parseDateTimeString,
 	validateFutureDateTime,
 	isDateTimeInPast,
+	formatDateForDatabase,
 } from '@/lib/utils/date-time-utils';
 import {
 	convertLocalToUTC,
@@ -22,6 +23,7 @@ import {
 	validateFutureDateTimeForTimezone,
 } from '@/lib/utils/date-time-utc';
 import { getShopTimezone } from '@/lib/utils/timezone-helpers';
+import { toZonedTime } from 'date-fns-tz';
 
 // Validation schemas
 const createAppointmentSchema = z.object({
@@ -856,8 +858,12 @@ export async function getNextClientAppointment(
 
 	if (shopError || !shopData) throw new Error('Unauthorized access to shop');
 
-	// Get today's date for filtering upcoming appointments
-	const todayStr = getTodayString();
+	// Get shop timezone for consistent date calculations
+	const shopTimezone = await getShopTimezone(shopId);
+	const shopNow = toZonedTime(new Date(), shopTimezone);
+
+	// Get today's date in shop timezone
+	const todayStr = formatDateForDatabase(shopNow);
 
 	// Get current time for same-day appointments
 	const currentTime = getCurrentTimeString();
@@ -975,7 +981,12 @@ export async function getClientAppointmentsPage(
 	}
 
 	// Timeframe filter
-	const todayStr = getTodayString();
+	// Get shop timezone for consistent date calculations
+	const shopTimezone = await getShopTimezone(shopId);
+	const shopNow = toZonedTime(new Date(), shopTimezone);
+
+	// Get today's date in shop timezone
+	const todayStr = formatDateForDatabase(shopNow);
 	const { dateStr: currentDateStr, timeStr: currentTimeStr } =
 		getCurrentDateTime();
 
