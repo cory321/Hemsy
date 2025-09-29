@@ -7,237 +7,237 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 const theme = createTheme();
 
 const mockOrder = {
-  id: 'order-123',
-  order_number: '2024-001',
-  status: 'partially_paid',
-  order_due_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days from now
-  total_cents: 85000,
-  paid_amount_cents: 45000,
-  created_at: new Date().toISOString(),
-  client: {
-    id: 'client-456',
-    first_name: 'Sarah',
-    last_name: 'Johnson',
-    phone_number: '5551234567',
-    email: 'sarah@example.com',
-  },
-  garments: [
-    { id: 'g1', name: 'Wedding Dress', stage: 'Ready For Pickup' },
-    { id: 'g2', name: 'Bridesmaid Dress', stage: 'Sewing' },
-    { id: 'g3', name: 'Evening Gown', stage: 'Fitting' },
-  ],
+	id: 'order-123',
+	order_number: '2024-001',
+	status: 'partially_paid',
+	order_due_date: '2025-09-15T10:00:00.000Z', // Fixed date for consistent testing (Sept 15, 2025)
+	total_cents: 85000,
+	paid_amount_cents: 45000,
+	created_at: '2025-09-13T10:00:00.000Z',
+	client: {
+		id: 'client-456',
+		first_name: 'Sarah',
+		last_name: 'Johnson',
+		phone_number: '5551234567',
+		email: 'sarah@example.com',
+	},
+	garments: [
+		{ id: 'g1', name: 'Wedding Dress', stage: 'Ready For Pickup' },
+		{ id: 'g2', name: 'Bridesmaid Dress', stage: 'Sewing' },
+		{ id: 'g3', name: 'Evening Gown', stage: 'Fitting' },
+	],
 };
 
 const mockOrderOverdue = {
-  ...mockOrder,
-  id: 'order-overdue',
-  order_due_date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
+	...mockOrder,
+	id: 'order-overdue',
+	order_due_date: '2025-09-26T10:00:00.000Z', // 3 days before today (Sept 29, 2025)
 };
 
 const mockOrderDueToday = {
-  ...mockOrder,
-  id: 'order-today',
-  order_due_date: new Date().toISOString(),
+	...mockOrder,
+	id: 'order-today',
+	order_due_date: new Date().toISOString(), // Today - this needs to be dynamic for this specific test
 };
 
 const mockOrderPaid = {
-  ...mockOrder,
-  id: 'order-paid',
-  status: 'paid',
-  paid_amount_cents: 85000,
+	...mockOrder,
+	id: 'order-paid',
+	status: 'paid',
+	paid_amount_cents: 85000,
 };
 
 const mockOrderNoGarments = {
-  ...mockOrder,
-  id: 'order-nogarments',
-  garments: [],
+	...mockOrder,
+	id: 'order-nogarments',
+	garments: [],
 };
 
 describe('OrderCardCompact', () => {
-  const mockOnClick = jest.fn();
+	const mockOnClick = jest.fn();
 
-  beforeEach(() => {
-    mockOnClick.mockClear();
-  });
+	beforeEach(() => {
+		mockOnClick.mockClear();
+	});
 
-  it('renders order header information correctly', () => {
-    render(
-      <ThemeProvider theme={theme}>
-        <OrderCardCompact order={mockOrder} onClick={mockOnClick} />
-      </ThemeProvider>
-    );
+	it('renders order header information correctly', () => {
+		render(
+			<ThemeProvider theme={theme}>
+				<OrderCardCompact order={mockOrder} onClick={mockOnClick} />
+			</ThemeProvider>
+		);
 
-    // Check order number
-    expect(screen.getByText('#2024-001')).toBeInTheDocument();
+		// Check order number
+		expect(screen.getByText('#2024-001')).toBeInTheDocument();
 
-    // Check that due date information is displayed
-    expect(screen.getByText(/Sep/)).toBeInTheDocument();
-  });
+		// Check that due date information is displayed
+		expect(screen.getByText(/Sep/)).toBeInTheDocument();
+	});
 
-  it('renders client information with phone number', () => {
-    render(
-      <ThemeProvider theme={theme}>
-        <OrderCardCompact order={mockOrder} onClick={mockOnClick} />
-      </ThemeProvider>
-    );
+	it('renders client information with phone number', () => {
+		render(
+			<ThemeProvider theme={theme}>
+				<OrderCardCompact order={mockOrder} onClick={mockOnClick} />
+			</ThemeProvider>
+		);
 
-    // Check client name and phone (combined in one element)
-    expect(
-      screen.getByText('Sarah Johnson • (555) 123-4567')
-    ).toBeInTheDocument();
-  });
+		// Check client name and phone (combined in one element)
+		expect(
+			screen.getByText('Sarah Johnson • (555) 123-4567')
+		).toBeInTheDocument();
+	});
 
-  it('displays garment status correctly', () => {
-    render(
-      <ThemeProvider theme={theme}>
-        <OrderCardCompact order={mockOrder} onClick={mockOnClick} />
-      </ThemeProvider>
-    );
+	it('displays garment status correctly', () => {
+		render(
+			<ThemeProvider theme={theme}>
+				<OrderCardCompact order={mockOrder} onClick={mockOnClick} />
+			</ThemeProvider>
+		);
 
-    // Check garment count (shows as "items")
-    expect(screen.getByText(/3 items/)).toBeInTheDocument();
+		// Check garment count (shows as "items")
+		expect(screen.getByText(/3 items/)).toBeInTheDocument();
 
-    // Check that progress percentage is displayed
-    expect(screen.getByText(/% complete/)).toBeInTheDocument();
-  });
+		// Check that progress percentage is displayed
+		expect(screen.getByText(/% complete/)).toBeInTheDocument();
+	});
 
-  it('displays payment information and progress', () => {
-    render(
-      <ThemeProvider theme={theme}>
-        <OrderCardCompact order={mockOrder} onClick={mockOnClick} />
-      </ThemeProvider>
-    );
+	it('displays payment information and progress', () => {
+		render(
+			<ThemeProvider theme={theme}>
+				<OrderCardCompact order={mockOrder} onClick={mockOnClick} />
+			</ThemeProvider>
+		);
 
-    // Check payment amounts (with spaces)
-    expect(screen.getByText('$450 / $850')).toBeInTheDocument();
+		// Check payment amounts (with spaces)
+		expect(screen.getByText('$450 / $850')).toBeInTheDocument();
 
-    // Check payment status
-    expect(screen.getByText('Partially_paid')).toBeInTheDocument();
+		// Check payment status
+		expect(screen.getByText('Partially_paid')).toBeInTheDocument();
 
-    // Check amount due
-    expect(screen.getByText('$400 due')).toBeInTheDocument();
-  });
+		// Check amount due
+		expect(screen.getByText('$400 due')).toBeInTheDocument();
+	});
 
-  it('shows overdue banner with error styling', () => {
-    render(
-      <ThemeProvider theme={theme}>
-        <OrderCardCompact order={mockOrderOverdue} onClick={mockOnClick} />
-      </ThemeProvider>
-    );
+	it('shows overdue banner with error styling', () => {
+		render(
+			<ThemeProvider theme={theme}>
+				<OrderCardCompact order={mockOrderOverdue} onClick={mockOnClick} />
+			</ThemeProvider>
+		);
 
-    // Check for overdue banner
-    expect(screen.getByText('3 DAYS OVERDUE')).toBeInTheDocument();
-  });
+		// Check for overdue banner
+		expect(screen.getByText('3 DAYS OVERDUE')).toBeInTheDocument();
+	});
 
-  it('shows due today banner', () => {
-    render(
-      <ThemeProvider theme={theme}>
-        <OrderCardCompact order={mockOrderDueToday} onClick={mockOnClick} />
-      </ThemeProvider>
-    );
+	it('shows due today banner', () => {
+		render(
+			<ThemeProvider theme={theme}>
+				<OrderCardCompact order={mockOrderDueToday} onClick={mockOnClick} />
+			</ThemeProvider>
+		);
 
-    expect(screen.getByText('DUE TODAY')).toBeInTheDocument();
-  });
+		expect(screen.getByText('DUE TODAY')).toBeInTheDocument();
+	});
 
-  it('displays paid in full status correctly', () => {
-    render(
-      <ThemeProvider theme={theme}>
-        <OrderCardCompact order={mockOrderPaid} onClick={mockOnClick} />
-      </ThemeProvider>
-    );
+	it('displays paid in full status correctly', () => {
+		render(
+			<ThemeProvider theme={theme}>
+				<OrderCardCompact order={mockOrderPaid} onClick={mockOnClick} />
+			</ThemeProvider>
+		);
 
-    expect(screen.getByText('PAID IN FULL')).toBeInTheDocument();
-    // Should not show "due" amount when fully paid
-    expect(screen.queryByText(/due/)).not.toBeInTheDocument();
-  });
+		expect(screen.getByText('PAID IN FULL')).toBeInTheDocument();
+		// Should not show "due" amount when fully paid
+		expect(screen.queryByText(/due/)).not.toBeInTheDocument();
+	});
 
-  it('handles empty garments array', () => {
-    render(
-      <ThemeProvider theme={theme}>
-        <OrderCardCompact order={mockOrderNoGarments} onClick={mockOnClick} />
-      </ThemeProvider>
-    );
+	it('handles empty garments array', () => {
+		render(
+			<ThemeProvider theme={theme}>
+				<OrderCardCompact order={mockOrderNoGarments} onClick={mockOnClick} />
+			</ThemeProvider>
+		);
 
-    expect(screen.getByText(/0 items/)).toBeInTheDocument();
-    // Should not show ready or in progress chips
-    expect(screen.queryByText(/ready/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/in progress/)).not.toBeInTheDocument();
-  });
+		expect(screen.getByText(/0 items/)).toBeInTheDocument();
+		// Should not show ready or in progress chips
+		expect(screen.queryByText(/ready/)).not.toBeInTheDocument();
+		expect(screen.queryByText(/in progress/)).not.toBeInTheDocument();
+	});
 
-  it('calls onClick when card is clicked', () => {
-    render(
-      <ThemeProvider theme={theme}>
-        <OrderCardCompact order={mockOrder} onClick={mockOnClick} />
-      </ThemeProvider>
-    );
+	it('calls onClick when card is clicked', () => {
+		render(
+			<ThemeProvider theme={theme}>
+				<OrderCardCompact order={mockOrder} onClick={mockOnClick} />
+			</ThemeProvider>
+		);
 
-    const card = screen.getByRole('button');
-    fireEvent.click(card);
+		const card = screen.getByRole('button');
+		fireEvent.click(card);
 
-    expect(mockOnClick).toHaveBeenCalledWith('order-123');
-  });
+		expect(mockOnClick).toHaveBeenCalledWith('order-123');
+	});
 
-  it('handles missing client phone gracefully', () => {
-    const orderNoPhone = {
-      ...mockOrder,
-      client: {
-        ...mockOrder.client,
-        phone_number: null,
-      },
-    };
+	it('handles missing client phone gracefully', () => {
+		const orderNoPhone = {
+			...mockOrder,
+			client: {
+				...mockOrder.client,
+				phone_number: null,
+			},
+		};
 
-    render(
-      <ThemeProvider theme={theme}>
-        <OrderCardCompact order={orderNoPhone} onClick={mockOnClick} />
-      </ThemeProvider>
-    );
+		render(
+			<ThemeProvider theme={theme}>
+				<OrderCardCompact order={orderNoPhone} onClick={mockOnClick} />
+			</ThemeProvider>
+		);
 
-    // Should show name but not phone
-    expect(screen.getByText('Sarah Johnson')).toBeInTheDocument();
-    expect(screen.queryByText(/555/)).not.toBeInTheDocument();
-  });
+		// Should show name but not phone
+		expect(screen.getByText('Sarah Johnson')).toBeInTheDocument();
+		expect(screen.queryByText(/555/)).not.toBeInTheDocument();
+	});
 
-  it('shows correct payment status for mostly paid orders', () => {
-    const orderMostlyPaid = {
-      ...mockOrder,
-      paid_amount_cents: 70000, // More than 50% of 85000
-    };
+	it('shows correct payment status for mostly paid orders', () => {
+		const orderMostlyPaid = {
+			...mockOrder,
+			paid_amount_cents: 70000, // More than 50% of 85000
+		};
 
-    render(
-      <ThemeProvider theme={theme}>
-        <OrderCardCompact order={orderMostlyPaid} onClick={mockOnClick} />
-      </ThemeProvider>
-    );
+		render(
+			<ThemeProvider theme={theme}>
+				<OrderCardCompact order={orderMostlyPaid} onClick={mockOnClick} />
+			</ThemeProvider>
+		);
 
-    expect(screen.getByText('Partially_paid')).toBeInTheDocument();
-  });
+		expect(screen.getByText('Partially_paid')).toBeInTheDocument();
+	});
 
-  it('displays payment progress bar', () => {
-    const { container } = render(
-      <ThemeProvider theme={theme}>
-        <OrderCardCompact order={mockOrder} onClick={mockOnClick} />
-      </ThemeProvider>
-    );
+	it('displays payment progress bar', () => {
+		const { container } = render(
+			<ThemeProvider theme={theme}>
+				<OrderCardCompact order={mockOrder} onClick={mockOnClick} />
+			</ThemeProvider>
+		);
 
-    // Check for LinearProgress component
-    const progressBar = container.querySelector('.MuiLinearProgress-root');
-    expect(progressBar).toBeInTheDocument();
-  });
+		// Check for LinearProgress component
+		const progressBar = container.querySelector('.MuiLinearProgress-root');
+		expect(progressBar).toBeInTheDocument();
+	});
 
-  it('handles orders with no due date', () => {
-    const orderNoDueDate = {
-      ...mockOrder,
-      order_due_date: null,
-    };
+	it('handles orders with no due date', () => {
+		const orderNoDueDate = {
+			...mockOrder,
+			order_due_date: null,
+		};
 
-    render(
-      <ThemeProvider theme={theme}>
-        <OrderCardCompact order={orderNoDueDate} onClick={mockOnClick} />
-      </ThemeProvider>
-    );
+		render(
+			<ThemeProvider theme={theme}>
+				<OrderCardCompact order={orderNoDueDate} onClick={mockOnClick} />
+			</ThemeProvider>
+		);
 
-    // Should not show urgency banner
-    expect(screen.queryByText(/DUE/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/OVERDUE/)).not.toBeInTheDocument();
-  });
+		// Should not show urgency banner
+		expect(screen.queryByText(/DUE/)).not.toBeInTheDocument();
+		expect(screen.queryByText(/OVERDUE/)).not.toBeInTheDocument();
+	});
 });
