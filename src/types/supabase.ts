@@ -1112,6 +1112,7 @@ export type Database = {
 					external_reference: string | null;
 					id: string;
 					invoice_id: string;
+					net_amount_cents: number | null;
 					notes: string | null;
 					payment_method: string;
 					payment_type: string;
@@ -1122,6 +1123,8 @@ export type Database = {
 					refunded_at: string | null;
 					refunded_by: string | null;
 					status: string;
+					stripe_fee_cents: number | null;
+					stripe_fee_details: Json | null;
 					stripe_metadata: Json | null;
 					stripe_payment_intent_id: string | null;
 				};
@@ -1131,6 +1134,7 @@ export type Database = {
 					external_reference?: string | null;
 					id?: string;
 					invoice_id: string;
+					net_amount_cents?: number | null;
 					notes?: string | null;
 					payment_method: string;
 					payment_type?: string;
@@ -1141,6 +1145,8 @@ export type Database = {
 					refunded_at?: string | null;
 					refunded_by?: string | null;
 					status?: string;
+					stripe_fee_cents?: number | null;
+					stripe_fee_details?: Json | null;
 					stripe_metadata?: Json | null;
 					stripe_payment_intent_id?: string | null;
 				};
@@ -1150,6 +1156,7 @@ export type Database = {
 					external_reference?: string | null;
 					id?: string;
 					invoice_id?: string;
+					net_amount_cents?: number | null;
 					notes?: string | null;
 					payment_method?: string;
 					payment_type?: string;
@@ -1160,6 +1167,8 @@ export type Database = {
 					refunded_at?: string | null;
 					refunded_by?: string | null;
 					status?: string;
+					stripe_fee_cents?: number | null;
+					stripe_fee_details?: Json | null;
 					stripe_metadata?: Json | null;
 					stripe_payment_intent_id?: string | null;
 				};

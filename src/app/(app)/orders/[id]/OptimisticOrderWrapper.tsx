@@ -5,232 +5,236 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import OrderServicesAndPayments from './OrderServicesAndPayments';
 import {
-  calculatePaymentStatus,
-  calculateActiveTotal,
-  type PaymentInfo,
+	calculatePaymentStatus,
+	calculateActiveTotal,
+	type PaymentInfo,
 } from '@/lib/utils/payment-calculations';
 
 interface Payment {
-  id: string;
-  payment_type: string;
-  payment_method: string;
-  amount_cents: number;
-  refunded_amount_cents?: number;
-  status: string;
-  created_at: string;
-  stripe_payment_intent_id?: string;
-  notes?: string;
+	id: string;
+	payment_type: string;
+	payment_method: string;
+	amount_cents: number;
+	refunded_amount_cents?: number;
+	status: string;
+	created_at: string;
+	stripe_payment_intent_id?: string;
+	notes?: string;
+	// Stripe fee tracking (populated via charge.updated webhook or on-demand sync)
+	stripe_fee_cents?: number | null;
+	net_amount_cents?: number | null;
+	stripe_fee_details?: any;
 }
 
 interface OptimisticOrderWrapperProps {
-  garmentServices: Array<{
-    id: string;
-    garment_id: string;
-    name: string;
-    description?: string | null;
-    quantity: number;
-    unit?: string;
-    unit_price_cents: number;
-    line_total_cents: number | null;
-    is_done?: boolean;
-    is_removed?: boolean | null;
-    removed_at?: string | null;
-    removed_by?: string | null;
-    removal_reason?: string | null;
-    garments: {
-      id: string;
-      name: string;
-      order_id: string;
-    };
-  }>;
-  garments: Array<{
-    id: string;
-    name: string;
-    stage?: string | null;
-    due_date?: string | null;
-    image_cloud_id?: string | null;
-    photo_url?: string | null;
-    preset_icon_key?: string | null;
-    preset_fill_color?: string | null;
-  }>;
-  invoice?: any;
-  initialPayments: Payment[];
-  orderStatus: string | null;
-  paidAt: string | null;
-  clientEmail?: string;
-  orderId: string;
-  orderTotal: number;
-  orderSubtotal: number;
-  discountCents: number;
-  taxCents: number;
+	garmentServices: Array<{
+		id: string;
+		garment_id: string;
+		name: string;
+		description?: string | null;
+		quantity: number;
+		unit?: string;
+		unit_price_cents: number;
+		line_total_cents: number | null;
+		is_done?: boolean;
+		is_removed?: boolean | null;
+		removed_at?: string | null;
+		removed_by?: string | null;
+		removal_reason?: string | null;
+		garments: {
+			id: string;
+			name: string;
+			order_id: string;
+		};
+	}>;
+	garments: Array<{
+		id: string;
+		name: string;
+		stage?: string | null;
+		due_date?: string | null;
+		image_cloud_id?: string | null;
+		photo_url?: string | null;
+		preset_icon_key?: string | null;
+		preset_fill_color?: string | null;
+	}>;
+	invoice?: any;
+	initialPayments: Payment[];
+	orderStatus: string | null;
+	paidAt: string | null;
+	clientEmail?: string;
+	orderId: string;
+	orderTotal: number;
+	orderSubtotal: number;
+	discountCents: number;
+	taxCents: number;
 }
 
 type OptimisticAction =
-  | { type: 'ADD_PAYMENT'; payment: Payment }
-  | { type: 'ADD_REFUND'; paymentId: string; refundAmount: number }
-  | { type: 'REMOVE_PAYMENT'; paymentId: string };
+	| { type: 'ADD_PAYMENT'; payment: Payment }
+	| { type: 'ADD_REFUND'; paymentId: string; refundAmount: number }
+	| { type: 'REMOVE_PAYMENT'; paymentId: string };
 
 function optimisticPaymentReducer(
-  payments: Payment[],
-  action: OptimisticAction
+	payments: Payment[],
+	action: OptimisticAction
 ): Payment[] {
-  switch (action.type) {
-    case 'ADD_PAYMENT':
-      return [...payments, action.payment];
+	switch (action.type) {
+		case 'ADD_PAYMENT':
+			return [...payments, action.payment];
 
-    case 'ADD_REFUND':
-      return payments.map((payment) =>
-        payment.id === action.paymentId
-          ? {
-              ...payment,
-              refunded_amount_cents:
-                (payment.refunded_amount_cents || 0) + action.refundAmount,
-              status:
-                (payment.refunded_amount_cents || 0) + action.refundAmount >=
-                payment.amount_cents
-                  ? 'refunded'
-                  : 'partially_refunded',
-            }
-          : payment
-      );
+		case 'ADD_REFUND':
+			return payments.map((payment) =>
+				payment.id === action.paymentId
+					? {
+							...payment,
+							refunded_amount_cents:
+								(payment.refunded_amount_cents || 0) + action.refundAmount,
+							status:
+								(payment.refunded_amount_cents || 0) + action.refundAmount >=
+								payment.amount_cents
+									? 'refunded'
+									: 'partially_refunded',
+						}
+					: payment
+			);
 
-    case 'REMOVE_PAYMENT':
-      return payments.filter((payment) => payment.id !== action.paymentId);
+		case 'REMOVE_PAYMENT':
+			return payments.filter((payment) => payment.id !== action.paymentId);
 
-    default:
-      return payments;
-  }
+		default:
+			return payments;
+	}
 }
 
 export default function OptimisticOrderWrapper({
-  garmentServices,
-  garments,
-  invoice,
-  initialPayments,
-  orderStatus,
-  paidAt,
-  clientEmail,
-  orderId,
-  orderTotal,
-  orderSubtotal,
-  discountCents,
-  taxCents,
+	garmentServices,
+	garments,
+	invoice,
+	initialPayments,
+	orderStatus,
+	paidAt,
+	clientEmail,
+	orderId,
+	orderTotal,
+	orderSubtotal,
+	discountCents,
+	taxCents,
 }: OptimisticOrderWrapperProps) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+	const router = useRouter();
+	const [isPending, startTransition] = useTransition();
 
-  const [optimisticPayments, addOptimisticPayment] = useOptimistic(
-    initialPayments,
-    optimisticPaymentReducer
-  );
+	const [optimisticPayments, addOptimisticPayment] = useOptimistic(
+		initialPayments,
+		optimisticPaymentReducer
+	);
 
-  // Calculate active total from garment services (excluding soft-deleted)
-  const activeServicesSubtotal = garmentServices
-    .filter((service) => !service.is_removed)
-    .reduce((sum, service) => {
-      const lineTotal =
-        service.line_total_cents || service.quantity * service.unit_price_cents;
-      return sum + lineTotal;
-    }, 0);
+	// Calculate active total from garment services (excluding soft-deleted)
+	const activeServicesSubtotal = garmentServices
+		.filter((service) => !service.is_removed)
+		.reduce((sum, service) => {
+			const lineTotal =
+				service.line_total_cents || service.quantity * service.unit_price_cents;
+			return sum + lineTotal;
+		}, 0);
 
-  // Apply discount and tax to get active total
-  const activeTotal = activeServicesSubtotal - discountCents + taxCents;
+	// Apply discount and tax to get active total
+	const activeTotal = activeServicesSubtotal - discountCents + taxCents;
 
-  // Calculate optimistic payment status using shared utility with active total
-  const paymentStatus = calculatePaymentStatus(
-    activeTotal,
-    (optimisticPayments as PaymentInfo[]) || []
-  );
+	// Calculate optimistic payment status using shared utility with active total
+	const paymentStatus = calculatePaymentStatus(
+		activeTotal,
+		(optimisticPayments as PaymentInfo[]) || []
+	);
 
-  const handleOptimisticPayment = async (
-    paymentData: Omit<Payment, 'id' | 'created_at'>,
-    serverAction: () => Promise<any>
-  ) => {
-    // Create optimistic payment with temporary ID
-    const optimisticPayment: Payment = {
-      ...paymentData,
-      id: `temp-${Date.now()}`,
-      created_at: new Date().toISOString(),
-    };
+	const handleOptimisticPayment = async (
+		paymentData: Omit<Payment, 'id' | 'created_at'>,
+		serverAction: () => Promise<any>
+	) => {
+		// Create optimistic payment with temporary ID
+		const optimisticPayment: Payment = {
+			...paymentData,
+			id: `temp-${Date.now()}`,
+			created_at: new Date().toISOString(),
+		};
 
-    startTransition(async () => {
-      // Add optimistic payment immediately
-      addOptimisticPayment({ type: 'ADD_PAYMENT', payment: optimisticPayment });
+		startTransition(async () => {
+			// Add optimistic payment immediately
+			addOptimisticPayment({ type: 'ADD_PAYMENT', payment: optimisticPayment });
 
-      try {
-        // Execute the server action
-        const result = await serverAction();
+			try {
+				// Execute the server action
+				const result = await serverAction();
 
-        if (result.success) {
-          // Server action succeeded, refresh to get real data
-          router.refresh();
-        } else {
-          // Server action failed, remove optimistic payment
-          addOptimisticPayment({
-            type: 'REMOVE_PAYMENT',
-            paymentId: optimisticPayment.id,
-          });
-          toast.error(result.error || 'Payment failed');
-        }
-      } catch (error) {
-        // Server action threw an error, remove optimistic payment
-        addOptimisticPayment({
-          type: 'REMOVE_PAYMENT',
-          paymentId: optimisticPayment.id,
-        });
-        toast.error('Payment failed');
-      }
-    });
-  };
+				if (result.success) {
+					// Server action succeeded, refresh to get real data
+					router.refresh();
+				} else {
+					// Server action failed, remove optimistic payment
+					addOptimisticPayment({
+						type: 'REMOVE_PAYMENT',
+						paymentId: optimisticPayment.id,
+					});
+					toast.error(result.error || 'Payment failed');
+				}
+			} catch (error) {
+				// Server action threw an error, remove optimistic payment
+				addOptimisticPayment({
+					type: 'REMOVE_PAYMENT',
+					paymentId: optimisticPayment.id,
+				});
+				toast.error('Payment failed');
+			}
+		});
+	};
 
-  const handleOptimisticRefund = async (
-    paymentId: string,
-    refundAmount: number,
-    serverAction: () => Promise<any>
-  ) => {
-    startTransition(async () => {
-      // Add optimistic refund immediately
-      addOptimisticPayment({ type: 'ADD_REFUND', paymentId, refundAmount });
+	const handleOptimisticRefund = async (
+		paymentId: string,
+		refundAmount: number,
+		serverAction: () => Promise<any>
+	) => {
+		startTransition(async () => {
+			// Add optimistic refund immediately
+			addOptimisticPayment({ type: 'ADD_REFUND', paymentId, refundAmount });
 
-      try {
-        // Execute the server action
-        const result = await serverAction();
+			try {
+				// Execute the server action
+				const result = await serverAction();
 
-        if (result.success) {
-          // Server action succeeded, refresh to get real data
-          router.refresh();
-        } else {
-          // Server action failed, we need to revert - refresh to get clean state
-          router.refresh();
-          toast.error(result.error || 'Refund failed');
-        }
-      } catch (error) {
-        // Server action threw an error, refresh to get clean state
-        router.refresh();
-        toast.error('Refund failed');
-      }
-    });
-  };
+				if (result.success) {
+					// Server action succeeded, refresh to get real data
+					router.refresh();
+				} else {
+					// Server action failed, we need to revert - refresh to get clean state
+					router.refresh();
+					toast.error(result.error || 'Refund failed');
+				}
+			} catch (error) {
+				// Server action threw an error, refresh to get clean state
+				router.refresh();
+				toast.error('Refund failed');
+			}
+		});
+	};
 
-  return (
-    <OrderServicesAndPayments
-      garmentServices={garmentServices}
-      garments={garments}
-      invoice={invoice}
-      payments={optimisticPayments}
-      orderStatus={orderStatus}
-      paidAt={paidAt}
-      clientEmail={clientEmail}
-      // Pass optimistic update functions
-      onOptimisticPayment={handleOptimisticPayment}
-      onOptimisticRefund={handleOptimisticRefund}
-      // Pass payment status for display
-      optimisticPaymentStatus={paymentStatus}
-      isPending={isPending}
-      // Pass order pricing details
-      orderSubtotal={orderSubtotal}
-      discountCents={discountCents}
-      taxCents={taxCents}
-    />
-  );
+	return (
+		<OrderServicesAndPayments
+			garmentServices={garmentServices}
+			garments={garments}
+			invoice={invoice}
+			payments={optimisticPayments}
+			orderStatus={orderStatus}
+			paidAt={paidAt}
+			clientEmail={clientEmail}
+			// Pass optimistic update functions
+			onOptimisticPayment={handleOptimisticPayment}
+			onOptimisticRefund={handleOptimisticRefund}
+			// Pass payment status for display
+			optimisticPaymentStatus={paymentStatus}
+			isPending={isPending}
+			// Pass order pricing details
+			orderSubtotal={orderSubtotal}
+			discountCents={discountCents}
+			taxCents={taxCents}
+		/>
+	);
 }

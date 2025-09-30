@@ -107,6 +107,16 @@ export default async function OrderDetailPage({
 	let paymentHistory: any[] = [];
 	if (invoice) {
 		try {
+			// Sync Stripe fees first (fetches from Stripe API if not yet populated)
+			const { syncStripeFeesForInvoice } = await import(
+				'@/lib/actions/stripe-fee-sync'
+			);
+			await syncStripeFeesForInvoice(invoice.id).catch((err) => {
+				console.error('Error syncing Stripe fees:', err);
+				// Non-blocking - continue even if sync fails
+			});
+
+			// Now fetch payment history with updated fee data
 			paymentHistory = await getInvoicePaymentHistory(invoice.id);
 		} catch (error) {
 			console.error('Error fetching payment history:', error);

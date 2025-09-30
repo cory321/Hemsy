@@ -2,39 +2,39 @@
 
 import { useState } from 'react';
 import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Alert,
-  Tooltip,
-  CircularProgress,
+	Box,
+	Card,
+	CardContent,
+	Typography,
+	Button,
+	Table,
+	TableBody,
+	TableCell,
+	TableContainer,
+	TableHead,
+	TableRow,
+	IconButton,
+	Dialog,
+	DialogTitle,
+	DialogContent,
+	DialogActions,
+	Alert,
+	Tooltip,
+	CircularProgress,
 } from '@mui/material';
 import {
-  Cancel as CancelIcon,
-  Payment as PaymentIcon,
-  CheckCircle as CheckCircleIcon,
-  Error as ErrorIcon,
-  Schedule as ScheduleIcon,
-  Info as InfoIcon,
-  Undo as RefundIcon,
+	Cancel as CancelIcon,
+	Payment as PaymentIcon,
+	CheckCircle as CheckCircleIcon,
+	Error as ErrorIcon,
+	Schedule as ScheduleIcon,
+	Info as InfoIcon,
+	Undo as RefundIcon,
 } from '@mui/icons-material';
 import {
-  formatCurrency,
-  formatDateTime,
-  formatPaymentAge,
+	formatCurrency,
+	formatDateTime,
+	formatPaymentAge,
 } from '@/lib/utils/formatting';
 import { cancelPendingPayment } from '@/lib/actions/payments';
 import { getPaymentStatusMessage } from '@/lib/actions/payment-status';
@@ -44,494 +44,616 @@ import ManualRefundManagement from './ManualRefundManagement';
 import toast from 'react-hot-toast';
 
 interface Payment {
-  id: string;
-  type?: 'payment' | 'refund';
-  payment_type: string; // Can be 'refund', 'remainder', 'deposit', etc.
-  payment_method: string;
-  amount_cents: number;
-  refunded_amount_cents?: number;
-  status: string;
-  stripe_payment_intent_id?: string;
-  created_at: string;
-  processed_at?: string;
-  notes?: string;
-  refund_method?: string;
-  refund_type?: string;
-  original_payment_id?: string;
-  merchant_notes?: string;
+	id: string;
+	type?: 'payment' | 'refund';
+	payment_type: string; // Can be 'refund', 'remainder', 'deposit', etc.
+	payment_method: string;
+	amount_cents: number;
+	refunded_amount_cents?: number;
+	status: string;
+	stripe_payment_intent_id?: string;
+	created_at: string;
+	processed_at?: string;
+	notes?: string;
+	refund_method?: string;
+	refund_type?: string;
+	original_payment_id?: string;
+	merchant_notes?: string;
+	// Stripe fee tracking (populated async via charge.updated webhook)
+	stripe_fee_cents?: number | null;
+	net_amount_cents?: number | null;
+	stripe_fee_details?: {
+		fee_cents: number;
+		net_cents: number;
+		fee_details?: Array<{
+			type: string;
+			amount: number;
+			currency: string;
+			description?: string;
+		}>;
+		currency: string;
+		exchange_rate?: number | null;
+	} | null;
 }
 
 interface PaymentManagementProps {
-  payments: Payment[];
-  onPaymentUpdate: () => void;
-  onOptimisticRefund?: (
-    paymentId: string,
-    refundAmount: number,
-    serverAction: () => Promise<any>
-  ) => void;
+	payments: Payment[];
+	onPaymentUpdate: () => void;
+	onOptimisticRefund?: (
+		paymentId: string,
+		refundAmount: number,
+		serverAction: () => Promise<any>
+	) => void;
 }
 
 export default function PaymentManagement({
-  payments,
-  onPaymentUpdate,
-  onOptimisticRefund,
+	payments,
+	onPaymentUpdate,
+	onOptimisticRefund,
 }: PaymentManagementProps) {
-  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
-  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
-  const [cancelling, setCancelling] = useState(false);
+	const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+	const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+	const [cancelling, setCancelling] = useState(false);
 
-  const handleCancelClick = (payment: Payment) => {
-    setSelectedPayment(payment);
-    setCancelDialogOpen(true);
-  };
+	const handleCancelClick = (payment: Payment) => {
+		setSelectedPayment(payment);
+		setCancelDialogOpen(true);
+	};
 
-  const handleConfirmCancel = async () => {
-    if (!selectedPayment) return;
+	const handleConfirmCancel = async () => {
+		if (!selectedPayment) return;
 
-    setCancelling(true);
-    try {
-      const result = await cancelPendingPayment(selectedPayment.id);
-      if (result.success) {
-        toast.success('Payment cancelled successfully');
-        onPaymentUpdate();
-        setCancelDialogOpen(false);
-      } else {
-        toast.error(result.error || 'Failed to cancel payment');
-      }
-    } catch (error) {
-      toast.error('Failed to cancel payment');
-    } finally {
-      setCancelling(false);
-    }
-  };
+		setCancelling(true);
+		try {
+			const result = await cancelPendingPayment(selectedPayment.id);
+			if (result.success) {
+				toast.success('Payment cancelled successfully');
+				onPaymentUpdate();
+				setCancelDialogOpen(false);
+			} else {
+				toast.error(result.error || 'Failed to cancel payment');
+			}
+		} catch (error) {
+			toast.error('Failed to cancel payment');
+		} finally {
+			setCancelling(false);
+		}
+	};
 
-  const getStatusIcon = (payment: Payment) => {
-    // Special handling for refunds
-    if (payment.type === 'refund' || payment.payment_type === 'refund') {
-      return <RefundIcon color="info" fontSize="small" />;
-    }
+	const getStatusIcon = (payment: Payment) => {
+		// Special handling for refunds
+		if (payment.type === 'refund' || payment.payment_type === 'refund') {
+			return <RefundIcon color="info" fontSize="small" />;
+		}
 
-    // Treat refunded/partially_refunded as completed for display
-    const displayStatus =
-      payment.status === 'refunded' || payment.status === 'partially_refunded'
-        ? 'completed'
-        : payment.status;
+		// Treat refunded/partially_refunded as completed for display
+		const displayStatus =
+			payment.status === 'refunded' || payment.status === 'partially_refunded'
+				? 'completed'
+				: payment.status;
 
-    switch (displayStatus) {
-      case 'completed':
-        return <CheckCircleIcon color="success" fontSize="small" />;
-      case 'pending':
-        return <ScheduleIcon color="warning" fontSize="small" />;
-      case 'failed':
-        return <ErrorIcon color="error" fontSize="small" />;
-      case 'succeeded': // For refunds
-        return <RefundIcon color="info" fontSize="small" />;
-      default:
-        return <InfoIcon color="info" fontSize="small" />;
-    }
-  };
+		switch (displayStatus) {
+			case 'completed':
+				return <CheckCircleIcon color="success" fontSize="small" />;
+			case 'pending':
+				return <ScheduleIcon color="warning" fontSize="small" />;
+			case 'failed':
+				return <ErrorIcon color="error" fontSize="small" />;
+			case 'succeeded': // For refunds
+				return <RefundIcon color="info" fontSize="small" />;
+			default:
+				return <InfoIcon color="info" fontSize="small" />;
+		}
+	};
 
-  const canCancelPayment = (payment: Payment) => {
-    return (
-      payment.type !== 'refund' &&
-      payment.payment_type !== 'refund' &&
-      payment.status === 'pending' &&
-      payment.payment_method === 'stripe' &&
-      payment.stripe_payment_intent_id
-    );
-  };
+	const canCancelPayment = (payment: Payment) => {
+		return (
+			payment.type !== 'refund' &&
+			payment.payment_type !== 'refund' &&
+			payment.status === 'pending' &&
+			payment.payment_method === 'stripe' &&
+			payment.stripe_payment_intent_id
+		);
+	};
 
-  const canRefundPayment = (payment: Payment) => {
-    if (payment.type === 'refund' || payment.payment_type === 'refund')
-      return false;
-    if (
-      payment.payment_method !== 'stripe' ||
-      !payment.stripe_payment_intent_id
-    )
-      return false;
-    // Allow refund on completed/partially_refunded/refunded payments
-    // We just won't show the refunded statuses in the UI
-    if (
-      payment.status !== 'completed' &&
-      payment.status !== 'partially_refunded' &&
-      payment.status !== 'refunded'
-    )
-      return false;
+	const canRefundPayment = (payment: Payment) => {
+		if (payment.type === 'refund' || payment.payment_type === 'refund')
+			return false;
+		if (
+			payment.payment_method !== 'stripe' ||
+			!payment.stripe_payment_intent_id
+		)
+			return false;
+		// Allow refund on completed/partially_refunded/refunded payments
+		// We just won't show the refunded statuses in the UI
+		if (
+			payment.status !== 'completed' &&
+			payment.status !== 'partially_refunded' &&
+			payment.status !== 'refunded'
+		)
+			return false;
 
-    // Check if there's remaining amount to refund
-    const refundedAmount = payment.refunded_amount_cents || 0;
-    const remainingRefundable = payment.amount_cents - refundedAmount;
-    return remainingRefundable > 0;
-  };
+		// Check if there's remaining amount to refund
+		const refundedAmount = payment.refunded_amount_cents || 0;
+		const remainingRefundable = payment.amount_cents - refundedAmount;
+		return remainingRefundable > 0;
+	};
 
-  const canManualRefund = (payment: Payment) => {
-    if (payment.type === 'refund' || payment.payment_type === 'refund')
-      return false;
-    if (payment.payment_method === 'stripe') return false;
-    // Allow refund on completed/partially_refunded/refunded payments
-    // We just won't show the refunded statuses in the UI
-    if (
-      payment.status !== 'completed' &&
-      payment.status !== 'partially_refunded' &&
-      payment.status !== 'refunded'
-    )
-      return false;
+	const canManualRefund = (payment: Payment) => {
+		if (payment.type === 'refund' || payment.payment_type === 'refund')
+			return false;
+		if (payment.payment_method === 'stripe') return false;
+		// Allow refund on completed/partially_refunded/refunded payments
+		// We just won't show the refunded statuses in the UI
+		if (
+			payment.status !== 'completed' &&
+			payment.status !== 'partially_refunded' &&
+			payment.status !== 'refunded'
+		)
+			return false;
 
-    // Check if there's remaining amount to refund
-    const refundedAmount = payment.refunded_amount_cents || 0;
-    const remainingRefundable = payment.amount_cents - refundedAmount;
-    return remainingRefundable > 0;
-  };
+		// Check if there's remaining amount to refund
+		const refundedAmount = payment.refunded_amount_cents || 0;
+		const remainingRefundable = payment.amount_cents - refundedAmount;
+		return remainingRefundable > 0;
+	};
 
-  const isAlreadyRefunded = (payment: Payment) => {
-    return (
-      payment.status === 'refunded' || payment.status === 'partially_refunded'
-    );
-  };
+	const isAlreadyRefunded = (payment: Payment) => {
+		return (
+			payment.status === 'refunded' || payment.status === 'partially_refunded'
+		);
+	};
 
-  const isFullyRefunded = (payment: Payment) => {
-    return payment.status === 'refunded';
-  };
+	const isFullyRefunded = (payment: Payment) => {
+		return payment.status === 'refunded';
+	};
 
-  const getDisplayType = (payment: Payment) => {
-    if (payment.type === 'refund' || payment.payment_type === 'refund') {
-      // For refunds, check if we have a specific refund_type that's not just "refund"
-      if (
-        payment.refund_type &&
-        payment.refund_type.toLowerCase() !== 'refund' &&
-        payment.refund_type !== 'full' &&
-        payment.refund_type !== 'partial'
-      ) {
-        return `${payment.refund_type} refund`;
-      }
-      // Otherwise just show "refund"
-      return 'refund';
-    }
-    return payment.payment_type;
-  };
+	const getDisplayType = (payment: Payment) => {
+		if (payment.type === 'refund' || payment.payment_type === 'refund') {
+			// For refunds, check if we have a specific refund_type that's not just "refund"
+			if (
+				payment.refund_type &&
+				payment.refund_type.toLowerCase() !== 'refund' &&
+				payment.refund_type !== 'full' &&
+				payment.refund_type !== 'partial'
+			) {
+				return `${payment.refund_type} refund`;
+			}
+			// Otherwise just show "refund"
+			return 'refund';
+		}
+		return payment.payment_type;
+	};
 
-  const getRefundMethodLabel = (method: string) => {
-    switch (method) {
-      case 'stripe':
-        return 'Stripe Refund';
-      case 'cash':
-        return 'Cash Refund';
-      case 'external_pos':
-        return 'POS Refund';
-      case 'other':
-        return 'Other Refund';
-      default:
-        return method;
-    }
-  };
+	const getRefundMethodLabel = (method: string) => {
+		switch (method) {
+			case 'stripe':
+				return 'Stripe Refund';
+			case 'cash':
+				return 'Cash Refund';
+			case 'external_pos':
+				return 'POS Refund';
+			case 'other':
+				return 'Other Refund';
+			default:
+				return method;
+		}
+	};
 
-  // Use the improved formatPaymentAge utility function
+	// Use the improved formatPaymentAge utility function
 
-  const pendingPayments = payments.filter((p) => p.status === 'pending');
-  const completedPayments = payments.filter((p) => p.status === 'completed');
-  const failedPayments = payments.filter((p) => p.status === 'failed');
+	const pendingPayments = payments.filter((p) => p.status === 'pending');
+	const completedPayments = payments.filter((p) => p.status === 'completed');
+	const failedPayments = payments.filter((p) => p.status === 'failed');
 
-  return (
-    <Box>
-      {/* Pending Payments Alert */}
-      {pendingPayments.length > 0 && (
-        <Alert
-          severity="warning"
-          sx={{ mb: 2 }}
-          action={
-            pendingPayments.some((p) => canCancelPayment(p)) ? (
-              <Button
-                color="inherit"
-                size="small"
-                onClick={() =>
-                  handleCancelClick(
-                    pendingPayments.find((p) => canCancelPayment(p))!
-                  )
-                }
-              >
-                Cancel Pending
-              </Button>
-            ) : undefined
-          }
-        >
-          <Typography variant="body2">
-            {pendingPayments.length} payment
-            {pendingPayments.length > 1 ? 's' : ''} in progress.
-            {pendingPayments.some((p) => canCancelPayment(p))
-              ? ' You can cancel pending Stripe payments if needed.'
-              : null}
-          </Typography>
-        </Alert>
-      )}
+	return (
+		<Box>
+			{/* Pending Payments Alert */}
+			{pendingPayments.length > 0 && (
+				<Alert
+					severity="warning"
+					sx={{ mb: 2 }}
+					action={
+						pendingPayments.some((p) => canCancelPayment(p)) ? (
+							<Button
+								color="inherit"
+								size="small"
+								onClick={() =>
+									handleCancelClick(
+										pendingPayments.find((p) => canCancelPayment(p))!
+									)
+								}
+							>
+								Cancel Pending
+							</Button>
+						) : undefined
+					}
+				>
+					<Typography variant="body2">
+						{pendingPayments.length} payment
+						{pendingPayments.length > 1 ? 's' : ''} in progress.
+						{pendingPayments.some((p) => canCancelPayment(p))
+							? ' You can cancel pending Stripe payments if needed.'
+							: null}
+					</Typography>
+				</Alert>
+			)}
 
-      {/* Payment History Table */}
-      <Card>
-        <CardContent>
-          <Typography
-            variant="h6"
-            gutterBottom
-            sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-          >
-            <PaymentIcon />
-            Payment History
-          </Typography>
+			{/* Payment History Table */}
+			<Card>
+				<CardContent>
+					<Typography
+						variant="h6"
+						gutterBottom
+						sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+					>
+						<PaymentIcon />
+						Payment History
+					</Typography>
 
-          {payments.length === 0 ? (
-            <Typography
-              color="text.secondary"
-              sx={{ textAlign: 'center', py: 3 }}
-            >
-              No payments recorded yet
-            </Typography>
-          ) : (
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Date</TableCell>
-                    <TableCell>Type</TableCell>
-                    <TableCell>Method</TableCell>
-                    <TableCell align="right">Amount</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Notes</TableCell>
-                    <TableCell align="center">Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {payments
-                    .sort(
-                      (a, b) =>
-                        new Date(b.created_at).getTime() -
-                        new Date(a.created_at).getTime()
-                    )
-                    .map((payment) => (
-                      <TableRow
-                        key={payment.id}
-                        sx={{
-                          opacity: payment.status === 'failed' ? 0.7 : 1,
-                        }}
-                      >
-                        <TableCell>
-                          <Box>
-                            <Typography variant="body2">
-                              {formatDateTime(
-                                payment.processed_at || payment.created_at
-                              )}
-                            </Typography>
-                            {payment.status === 'pending' && (
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                              >
-                                {formatPaymentAge(payment.created_at)}
-                              </Typography>
-                            )}
-                          </Box>
-                        </TableCell>
-                        <TableCell sx={{ textTransform: 'capitalize' }}>
-                          {getDisplayType(payment)}
-                        </TableCell>
-                        <TableCell sx={{ textTransform: 'capitalize' }}>
-                          {(payment.type === 'refund' ||
-                            payment.payment_type === 'refund') &&
-                          payment.refund_method
-                            ? getRefundMethodLabel(payment.refund_method)
-                            : payment.payment_method.replace('_', ' ')}
-                        </TableCell>
-                        <TableCell align="right">
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'flex-end',
-                              gap: 0.5,
-                            }}
-                          >
-                            {/* Show amount with + for payments and - for refunds */}
-                            <Typography
-                              variant="body1"
-                              sx={{
-                                fontWeight: 'bold',
-                                fontSize: '1rem',
-                                color:
-                                  payment.type === 'refund' ||
-                                  payment.payment_type === 'refund'
-                                    ? 'error.main'
-                                    : payment.status === 'failed'
-                                      ? 'text.disabled'
-                                      : 'success.main',
-                              }}
-                            >
-                              {payment.type === 'refund' ||
-                              payment.payment_type === 'refund'
-                                ? `− ${formatCurrency(Math.abs(payment.amount_cents))}`
-                                : `+ ${formatCurrency(payment.amount_cents)}`}
-                            </Typography>
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Tooltip
-                            title={
-                              payment.status === 'pending'
-                                ? 'Payment pending'
-                                : payment.status === 'failed'
-                                  ? 'Payment failed'
-                                  : payment.type === 'refund' ||
-                                      payment.payment_type === 'refund'
-                                    ? 'Refund processed'
-                                    : 'Payment completed'
-                            }
-                          >
-                            <Box sx={{ display: 'inline-flex' }}>
-                              {getStatusIcon(payment)}
-                            </Box>
-                          </Tooltip>
-                        </TableCell>
-                        <TableCell>
-                          {payment.notes || payment.merchant_notes ? (
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                            >
-                              {payment.notes || payment.merchant_notes}
-                            </Typography>
-                          ) : payment.status === 'pending' ? (
-                            <Typography
-                              variant="caption"
-                              color="warning.main"
-                              sx={{ fontWeight: 'medium' }}
-                            >
-                              Payment pending
-                            </Typography>
-                          ) : payment.status === 'completed' &&
-                            payment.type !== 'refund' &&
-                            payment.payment_type !== 'refund' ? (
-                            <Typography
-                              variant="caption"
-                              color="success.main"
-                              sx={{ fontWeight: 'medium' }}
-                            >
-                              Payment received
-                            </Typography>
-                          ) : payment.status === 'failed' ? (
-                            <Typography
-                              variant="caption"
-                              color="error.main"
-                              sx={{ fontWeight: 'medium' }}
-                            >
-                              Payment failed
-                            </Typography>
-                          ) : null}
-                        </TableCell>
-                        <TableCell align="center">
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              gap: 0.5,
-                              justifyContent: 'center',
-                            }}
-                          >
-                            {canCancelPayment(payment) && (
-                              <Tooltip title="Cancel this payment attempt">
-                                <IconButton
-                                  size="small"
-                                  color="error"
-                                  onClick={() => handleCancelClick(payment)}
-                                >
-                                  <CancelIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                            )}
-                            {canRefundPayment(payment) && (
-                              <RefundManagement
-                                payment={payment}
-                                onRefundComplete={onPaymentUpdate}
-                                {...(onOptimisticRefund && {
-                                  onOptimisticRefund,
-                                })}
-                              />
-                            )}
-                            {canManualRefund(payment) && (
-                              <ManualRefundManagement
-                                payment={payment}
-                                onRefundComplete={onPaymentUpdate}
-                                {...(onOptimisticRefund && {
-                                  onOptimisticRefund,
-                                })}
-                              />
-                            )}
-                          </Box>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </CardContent>
-      </Card>
+					{payments.length === 0 ? (
+						<Typography
+							color="text.secondary"
+							sx={{ textAlign: 'center', py: 3 }}
+						>
+							No payments recorded yet
+						</Typography>
+					) : (
+						<TableContainer>
+							<Table size="small">
+								<TableHead>
+									<TableRow>
+										<TableCell>Date</TableCell>
+										<TableCell>Type</TableCell>
+										<TableCell>Method</TableCell>
+										<TableCell align="right">Amount</TableCell>
+										<TableCell>Status</TableCell>
+										<TableCell>Notes</TableCell>
+										<TableCell align="center">Actions</TableCell>
+									</TableRow>
+								</TableHead>
+								<TableBody>
+									{payments
+										.sort(
+											(a, b) =>
+												new Date(b.created_at).getTime() -
+												new Date(a.created_at).getTime()
+										)
+										.flatMap((payment) => {
+											const rows = [
+												// Main payment row
+												<TableRow
+													key={payment.id}
+													sx={{
+														opacity: payment.status === 'failed' ? 0.7 : 1,
+													}}
+												>
+													<TableCell>
+														<Box>
+															<Typography variant="body2">
+																{formatDateTime(
+																	payment.processed_at || payment.created_at
+																)}
+															</Typography>
+															{payment.status === 'pending' && (
+																<Typography
+																	variant="caption"
+																	color="text.secondary"
+																>
+																	{formatPaymentAge(payment.created_at)}
+																</Typography>
+															)}
+														</Box>
+													</TableCell>
+													<TableCell sx={{ textTransform: 'capitalize' }}>
+														{getDisplayType(payment)}
+													</TableCell>
+													<TableCell sx={{ textTransform: 'capitalize' }}>
+														{(payment.type === 'refund' ||
+															payment.payment_type === 'refund') &&
+														payment.refund_method
+															? getRefundMethodLabel(payment.refund_method)
+															: payment.payment_method.replace('_', ' ')}
+													</TableCell>
+													<TableCell align="right">
+														<Box
+															sx={{
+																display: 'flex',
+																flexDirection: 'column',
+																alignItems: 'flex-end',
+																gap: 0.5,
+															}}
+														>
+															{/* Show amount with + for payments and - for refunds */}
+															<Typography
+																variant="body1"
+																sx={{
+																	fontWeight: 'bold',
+																	fontSize: '1rem',
+																	color:
+																		payment.type === 'refund' ||
+																		payment.payment_type === 'refund'
+																			? 'error.main'
+																			: payment.status === 'failed'
+																				? 'text.disabled'
+																				: 'success.main',
+																}}
+															>
+																{payment.type === 'refund' ||
+																payment.payment_type === 'refund'
+																	? `− ${formatCurrency(Math.abs(payment.amount_cents))}`
+																	: `+ ${formatCurrency(payment.amount_cents)}`}
+															</Typography>
+														</Box>
+													</TableCell>
+													<TableCell>
+														<Tooltip
+															title={
+																payment.status === 'pending'
+																	? 'Payment pending'
+																	: payment.status === 'failed'
+																		? 'Payment failed'
+																		: payment.type === 'refund' ||
+																			  payment.payment_type === 'refund'
+																			? 'Refund processed'
+																			: 'Payment completed'
+															}
+														>
+															<Box sx={{ display: 'inline-flex' }}>
+																{getStatusIcon(payment)}
+															</Box>
+														</Tooltip>
+													</TableCell>
+													<TableCell>
+														{payment.notes || payment.merchant_notes ? (
+															<Typography variant="caption">
+																{payment.notes || payment.merchant_notes}
+															</Typography>
+														) : payment.status === 'pending' ? (
+															<Typography
+																variant="caption"
+																color="warning.main"
+																sx={{ fontWeight: 'medium' }}
+															>
+																Payment pending
+															</Typography>
+														) : payment.status === 'completed' &&
+														  payment.type !== 'refund' &&
+														  payment.payment_type !== 'refund' ? (
+															<Typography variant="caption">
+																Payment received
+															</Typography>
+														) : payment.status === 'failed' ? (
+															<Typography
+																variant="caption"
+																color="error.main"
+																sx={{ fontWeight: 'medium' }}
+															>
+																Payment failed
+															</Typography>
+														) : null}
+													</TableCell>
+													<TableCell align="center">
+														<Box
+															sx={{
+																display: 'flex',
+																gap: 0.5,
+																justifyContent: 'center',
+															}}
+														>
+															{canCancelPayment(payment) && (
+																<Tooltip title="Cancel this payment attempt">
+																	<IconButton
+																		size="small"
+																		color="error"
+																		onClick={() => handleCancelClick(payment)}
+																	>
+																		<CancelIcon fontSize="small" />
+																	</IconButton>
+																</Tooltip>
+															)}
+															{canRefundPayment(payment) && (
+																<RefundManagement
+																	payment={payment}
+																	onRefundComplete={onPaymentUpdate}
+																	{...(onOptimisticRefund && {
+																		onOptimisticRefund,
+																	})}
+																/>
+															)}
+															{canManualRefund(payment) && (
+																<ManualRefundManagement
+																	payment={payment}
+																	onRefundComplete={onPaymentUpdate}
+																	{...(onOptimisticRefund && {
+																		onOptimisticRefund,
+																	})}
+																/>
+															)}
+														</Box>
+													</TableCell>
+												</TableRow>,
+											];
 
-      {/* Cancel Payment Dialog */}
-      <Dialog
-        open={cancelDialogOpen}
-        onClose={() => setCancelDialogOpen(false)}
-      >
-        <DialogTitle>Cancel Payment</DialogTitle>
-        <DialogContent>
-          <Typography gutterBottom>
-            Are you sure you want to cancel this payment attempt?
-          </Typography>
-          {selectedPayment && (
-            <Box
-              sx={{ mt: 2, p: 2, backgroundColor: 'grey.50', borderRadius: 1 }}
-            >
-              <Typography variant="body2" color="text.secondary">
-                Payment Details:
-              </Typography>
-              <Typography variant="body2">
-                <strong>Amount:</strong>{' '}
-                {formatCurrency(selectedPayment.amount_cents)}
-              </Typography>
-              <Typography variant="body2">
-                <strong>Type:</strong> {selectedPayment.payment_type}
-              </Typography>
-              <Typography variant="body2">
-                <strong>Created:</strong>{' '}
-                {formatPaymentAge(selectedPayment.created_at)}
-              </Typography>
-              {selectedPayment.stripe_payment_intent_id && (
-                <Typography variant="body2">
-                  <strong>Payment Intent:</strong>{' '}
-                  {selectedPayment.stripe_payment_intent_id}
-                </Typography>
-              )}
-            </Box>
-          )}
-          <Alert severity="info" sx={{ mt: 2 }}>
-            This will cancel the payment on Stripe and mark it as failed in your
-            system. The customer will not be charged.
-          </Alert>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => setCancelDialogOpen(false)}
-            disabled={cancelling}
-          >
-            Keep Payment
-          </Button>
-          <Button
-            onClick={handleConfirmCancel}
-            color="error"
-            variant="contained"
-            disabled={cancelling}
-            startIcon={
-              cancelling ? <CircularProgress size={16} /> : <CancelIcon />
-            }
-          >
-            {cancelling ? 'Cancelling...' : 'Cancel Payment'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
-  );
+											// Add Stripe fee as a separate row if available
+											if (
+												payment.payment_method === 'stripe' &&
+												payment.stripe_fee_cents !== null &&
+												payment.stripe_fee_cents !== undefined &&
+												payment.stripe_fee_cents > 0 &&
+												payment.status === 'completed'
+											) {
+												const feeCents = payment.stripe_fee_cents;
+												const netCents = payment.net_amount_cents || 0;
+												rows.push(
+													<TableRow key={`${payment.id}-fee`}>
+														<TableCell>
+															<Typography variant="body2">
+																{formatDateTime(
+																	payment.processed_at || payment.created_at
+																)}
+															</Typography>
+														</TableCell>
+														<TableCell>
+															<Typography variant="body2">
+																Stripe Fee
+															</Typography>
+														</TableCell>
+														<TableCell sx={{ textTransform: 'capitalize' }}>
+															<Typography variant="body2">stripe</Typography>
+														</TableCell>
+														<TableCell align="right">
+															<Tooltip
+																title={
+																	<Box sx={{ p: 0.5 }}>
+																		<Typography
+																			variant="caption"
+																			display="block"
+																			sx={{ fontWeight: 600 }}
+																		>
+																			Processing Fee Breakdown
+																		</Typography>
+																		<Typography
+																			variant="caption"
+																			display="block"
+																			sx={{ mt: 0.5 }}
+																		>
+																			Gross Charge:{' '}
+																			{formatCurrency(payment.amount_cents)}
+																		</Typography>
+																		<Typography
+																			variant="caption"
+																			display="block"
+																			color="error.light"
+																		>
+																			Processing Fee: -
+																			{formatCurrency(feeCents)}
+																		</Typography>
+																		<Typography
+																			variant="caption"
+																			display="block"
+																			sx={{
+																				fontWeight: 600,
+																				mt: 0.5,
+																				color: 'success.light',
+																			}}
+																		>
+																			Net Deposited: {formatCurrency(netCents)}
+																		</Typography>
+																	</Box>
+																}
+																arrow
+																placement="left"
+															>
+																<Typography
+																	variant="body1"
+																	sx={{
+																		fontWeight: 'bold',
+																		fontSize: '1rem',
+																		color: 'error.main',
+																		cursor: 'help',
+																	}}
+																>
+																	− {formatCurrency(feeCents)}
+																</Typography>
+															</Tooltip>
+														</TableCell>
+														<TableCell>
+															<Box
+																sx={{
+																	display: 'inline-flex',
+																	alignItems: 'center',
+																	gap: 0.5,
+																}}
+															>
+																<InfoIcon fontSize="small" color="warning" />
+																<Typography variant="caption">
+																	Auto-deducted
+																</Typography>
+															</Box>
+														</TableCell>
+														<TableCell>
+															<Typography variant="caption">
+																Stripe processing fee
+															</Typography>
+														</TableCell>
+														<TableCell align="center">
+															{/* No actions for fee rows */}
+														</TableCell>
+													</TableRow>
+												);
+											}
+
+											return rows;
+										})}
+								</TableBody>
+							</Table>
+						</TableContainer>
+					)}
+				</CardContent>
+			</Card>
+
+			{/* Cancel Payment Dialog */}
+			<Dialog
+				open={cancelDialogOpen}
+				onClose={() => setCancelDialogOpen(false)}
+			>
+				<DialogTitle>Cancel Payment</DialogTitle>
+				<DialogContent>
+					<Typography gutterBottom>
+						Are you sure you want to cancel this payment attempt?
+					</Typography>
+					{selectedPayment && (
+						<Box
+							sx={{ mt: 2, p: 2, backgroundColor: 'grey.50', borderRadius: 1 }}
+						>
+							<Typography variant="body2" color="text.secondary">
+								Payment Details:
+							</Typography>
+							<Typography variant="body2">
+								<strong>Amount:</strong>{' '}
+								{formatCurrency(selectedPayment.amount_cents)}
+							</Typography>
+							<Typography variant="body2">
+								<strong>Type:</strong> {selectedPayment.payment_type}
+							</Typography>
+							<Typography variant="body2">
+								<strong>Created:</strong>{' '}
+								{formatPaymentAge(selectedPayment.created_at)}
+							</Typography>
+							{selectedPayment.stripe_payment_intent_id && (
+								<Typography variant="body2">
+									<strong>Payment Intent:</strong>{' '}
+									{selectedPayment.stripe_payment_intent_id}
+								</Typography>
+							)}
+						</Box>
+					)}
+					<Alert severity="info" sx={{ mt: 2 }}>
+						This will cancel the payment on Stripe and mark it as failed in your
+						system. The customer will not be charged.
+					</Alert>
+				</DialogContent>
+				<DialogActions>
+					<Button
+						onClick={() => setCancelDialogOpen(false)}
+						disabled={cancelling}
+					>
+						Keep Payment
+					</Button>
+					<Button
+						onClick={handleConfirmCancel}
+						color="error"
+						variant="contained"
+						disabled={cancelling}
+						startIcon={
+							cancelling ? <CircularProgress size={16} /> : <CancelIcon />
+						}
+					>
+						{cancelling ? 'Cancelling...' : 'Cancel Payment'}
+					</Button>
+				</DialogActions>
+			</Dialog>
+		</Box>
+	);
 }
