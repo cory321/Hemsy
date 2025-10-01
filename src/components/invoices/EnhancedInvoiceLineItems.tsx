@@ -657,10 +657,7 @@ export default function EnhancedInvoiceLineItems({
 					<TableRow sx={{ backgroundColor: 'inherit' }}>
 						<TableCell colSpan={3}>
 							<Typography variant="subtitle1" fontWeight="medium">
-								Order Summary
-							</Typography>
-							<Typography variant="body2" color="text.secondary">
-								{overallTotals.activeCount} total services across all garments
+								Order Subtotal
 							</Typography>
 						</TableCell>
 						<TableCell align="right">
@@ -674,18 +671,6 @@ export default function EnhancedInvoiceLineItems({
 					{(discountCents && discountCents > 0) ||
 					(taxCents && taxCents > 0) ? (
 						<>
-							{/* Subtotal */}
-							<TableRow>
-								<TableCell colSpan={3} sx={{ borderBottom: 'none' }}>
-									<Typography variant="body2">Subtotal</Typography>
-								</TableCell>
-								<TableCell align="right" sx={{ borderBottom: 'none' }}>
-									<Typography variant="body2">
-										{formatCentsAsCurrency(overallTotals.activeTotal)}
-									</Typography>
-								</TableCell>
-							</TableRow>
-
 							{/* Discount */}
 							{discountCents !== undefined && discountCents > 0 && (
 								<TableRow>
@@ -706,8 +691,23 @@ export default function EnhancedInvoiceLineItems({
 							{taxCents !== undefined && taxCents > 0 && (
 								<TableRow>
 									<TableCell colSpan={3} sx={{ borderBottom: 'none' }}>
-										<Box>
+										<Box
+											sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+										>
 											<Typography variant="body2">Sales Tax</Typography>
+											<Tooltip
+												title="Tax calculated at merchant's configured rate. Merchant is responsible for tax compliance and remittance to appropriate tax authorities."
+												arrow
+												placement="top"
+											>
+												<InfoIcon
+													sx={{
+														fontSize: 16,
+														color: 'text.secondary',
+														cursor: 'help',
+													}}
+												/>
+											</Tooltip>
 										</Box>
 									</TableCell>
 									<TableCell align="right" sx={{ borderBottom: 'none' }}>
@@ -792,23 +792,6 @@ export default function EnhancedInvoiceLineItems({
 										</Typography>
 									)}
 								</Box>
-							</TableCell>
-						</TableRow>
-					)}
-
-					{/* Tax Compliance Footer */}
-					{taxCents && taxCents > 0 && (
-						<TableRow>
-							<TableCell colSpan={4} sx={{ borderTop: 'none', pt: 2, pb: 1 }}>
-								<Typography
-									variant="caption"
-									color="text.secondary"
-									sx={{ fontStyle: 'italic', display: 'block' }}
-								>
-									Tax calculated at merchant&apos;s configured rate. Merchant is
-									responsible for tax compliance and remittance to appropriate
-									tax authorities.
-								</Typography>
 							</TableCell>
 						</TableRow>
 					)}

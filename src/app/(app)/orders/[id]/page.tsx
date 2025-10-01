@@ -538,15 +538,6 @@ export default async function OrderDetailPage({
 											discountCents={order?.discount_cents || 0}
 											taxCents={order?.tax_cents || 0}
 										/>
-										{activeTotal !== (order?.total_cents || 0) && (
-											<Typography
-												variant="body2"
-												color="text.secondary"
-												sx={{ textDecoration: 'line-through' }}
-											>
-												{formatUSD(order?.total_cents || 0)}
-											</Typography>
-										)}
 									</Box>
 
 									{/* Progress Bar */}
