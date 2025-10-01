@@ -51,8 +51,8 @@ describe('Discount Display on Orders Page', () => {
 				/>
 			);
 
-			// Check that subtotal is displayed
-			expect(screen.getByText('Subtotal')).toBeInTheDocument();
+			// Check that order subtotal is displayed
+			expect(screen.getByText('Order Subtotal')).toBeInTheDocument();
 
 			// Check that discount is displayed
 			expect(screen.getByText('Discount')).toBeInTheDocument();
@@ -82,8 +82,8 @@ describe('Discount Display on Orders Page', () => {
 			expect(screen.queryByText('Discount')).not.toBeInTheDocument();
 			expect(screen.queryByText('Sales Tax')).not.toBeInTheDocument();
 
-			// Should only show Order Summary
-			expect(screen.getByText('Order Summary')).toBeInTheDocument();
+			// Should only show Order Subtotal
+			expect(screen.getByText('Order Subtotal')).toBeInTheDocument();
 		});
 
 		it('should calculate total correctly with discount', () => {

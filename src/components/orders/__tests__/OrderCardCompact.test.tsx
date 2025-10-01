@@ -113,14 +113,14 @@ describe('OrderCardCompact', () => {
 			</ThemeProvider>
 		);
 
-		// Check payment amounts (with spaces)
-		expect(screen.getByText('$450 / $850')).toBeInTheDocument();
+		// Check payment amounts (with decimal places)
+		expect(screen.getByText(/\$450\.00 \/ \$850\.00/)).toBeInTheDocument();
 
 		// Check payment status
 		expect(screen.getByText('Partially_paid')).toBeInTheDocument();
 
 		// Check amount due
-		expect(screen.getByText('$400 due')).toBeInTheDocument();
+		expect(screen.getByText(/\$400\.00 due/)).toBeInTheDocument();
 	});
 
 	it('shows overdue banner with error styling', () => {
