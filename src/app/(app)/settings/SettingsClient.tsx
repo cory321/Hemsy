@@ -91,6 +91,7 @@ export function SettingsClient({
 			Intl.DateTimeFormat().resolvedOptions().timeZone,
 		timezone_offset:
 			initialShopData?.timezone_offset || new Date().getTimezoneOffset(),
+		tax_percent: initialShopData?.tax_percent || 0,
 	});
 	const [isPending, startTransition] = useTransition();
 	const { showToast } = useToast();
@@ -272,6 +273,46 @@ export function SettingsClient({
 													timezone_offset: offset,
 												})
 											}
+										/>
+									</CardContent>
+								</Card>
+
+								{/* Tax Settings */}
+								<Card sx={{ mb: 3 }}>
+									<CardContent>
+										<Typography variant="h6" gutterBottom>
+											Sales Tax
+										</Typography>
+										<Alert severity="warning" sx={{ mb: 3 }}>
+											<Typography variant="body2" gutterBottom>
+												You are responsible for collecting and remitting sales
+												tax according to your local tax laws.
+											</Typography>
+											<Typography variant="caption">
+												Tax will be calculated using the rate you set below.
+												Contact your local tax authority or accountant for your
+												correct rate.
+											</Typography>
+										</Alert>
+
+										<TextField
+											fullWidth
+											label="Sales Tax Rate (%)"
+											type="number"
+											value={businessInfo.tax_percent}
+											onChange={(e) =>
+												setBusinessInfo({
+													...businessInfo,
+													tax_percent: parseFloat(e.target.value) || 0,
+												})
+											}
+											inputProps={{
+												min: 0,
+												max: 20,
+												step: 0.1,
+											}}
+											helperText="Example: Enter 7.5 for 7.5% sales tax. Rates vary by location."
+											sx={{ maxWidth: 300 }}
 										/>
 									</CardContent>
 								</Card>

@@ -288,38 +288,19 @@ export default function Step3Summary({
 	canSubmit,
 	submitText,
 }: Step3SummaryProps) {
-	const { orderDraft, updateOrderDraft, calculateSubtotal, calculateTotal } =
-		useOrderFlow();
+	const {
+		orderDraft,
+		updateOrderDraft,
+		calculateSubtotal,
+		calculateTotal,
+		taxPercent,
+	} = useOrderFlow();
 	const theme = useTheme();
 	const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
 	const isMedium = useMediaQuery(theme.breakpoints.up('md'));
-	const [taxPercent, setTaxPercent] = useState(0);
 	const [discountDollars, setDiscountDollars] = useState(
 		(orderDraft.discountCents / 100).toFixed(2)
 	);
-
-	// Fetch shop tax percentage
-	useEffect(() => {
-		const fetchTaxPercent = async () => {
-			const supabase = createSupabaseClient();
-			const {
-				data: { user },
-			} = await supabase.auth.getUser();
-			if (!user) return;
-
-			const { data: shop } = await supabase
-				.from('shops')
-				.select('tax_percent')
-				.eq('owner_user_id', user.id)
-				.single();
-
-			if (shop) {
-				setTaxPercent(shop.tax_percent);
-			}
-		};
-
-		fetchTaxPercent();
-	}, []);
 
 	const handleDiscountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const value = e.target.value;
@@ -339,7 +320,7 @@ export default function Step3Summary({
 
 	const subtotal = calculateSubtotal();
 	const afterDiscount = subtotal - orderDraft.discountCents;
-	const taxAmount = Math.round(afterDiscount * taxPercent);
+	const taxAmount = Math.round((afterDiscount * taxPercent) / 100);
 	const total = afterDiscount + taxAmount;
 
 	const handlePaymentMethodSelect = (
@@ -552,7 +533,7 @@ export default function Step3Summary({
 									}}
 								>
 									<Typography variant="body1">
-										Tax ({(taxPercent * 100).toFixed(2)}%)
+										Tax ({taxPercent.toFixed(1)}%)
 									</Typography>
 									<Typography variant="body1" sx={{ fontWeight: 500 }}>
 										{formatCurrency(taxAmount / 100)}
@@ -767,7 +748,7 @@ export default function Step3Summary({
 					{taxAmount > 0 && (
 						<Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
 							<Typography variant="body1">
-								Tax ({(taxPercent * 100).toFixed(2)}%)
+								Tax ({taxPercent.toFixed(1)}%)
 							</Typography>
 							<Typography variant="body1" sx={{ fontWeight: 500 }}>
 								{formatCurrency(taxAmount / 100)}

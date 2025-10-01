@@ -1,40 +1,39 @@
-'use client';
-
-import { Container, Typography, Box } from '@mui/material';
+import { Suspense } from 'react';
+import { Container, Typography, Box, Skeleton } from '@mui/material';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 import { OrderFlowProvider } from '@/contexts/OrderFlowContext';
 import OrderFlowStepper from '@/components/orders/OrderFlowStepper';
+import { getShopTaxPercent } from '@/lib/actions/shop-settings';
+import NewOrderClient from './NewOrderClient';
 
-export default function NewOrderPage() {
-  const searchParams = useSearchParams();
-  const clientId = searchParams.get('clientId');
+// Server Component - fetches data
+export default async function NewOrderPage({
+	searchParams,
+}: {
+	searchParams: Promise<{ clientId?: string }>;
+}) {
+	// Fetch tax percent on server (Next.js 15 best practice)
+	const taxPercent = await getShopTaxPercent();
+	const params = await searchParams;
+	const clientId = params.clientId;
 
-  return (
-    <OrderFlowProvider {...(clientId ? { initialClientId: clientId } : {})}>
-      <Container maxWidth="lg">
-        <Box
-          sx={{
-            mt: 4,
-            mb: 2,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <Typography variant="h4" component="h1">
-            Create New Order
-          </Typography>
-          <Typography
-            component={Link}
-            href="/orders"
-            style={{ textDecoration: 'none' }}
-          >
-            Cancel
-          </Typography>
-        </Box>
-        <OrderFlowStepper />
-      </Container>
-    </OrderFlowProvider>
-  );
+	return (
+		<Suspense fallback={<OrderLoadingSkeleton />}>
+			<NewOrderClient
+				initialClientId={clientId || undefined}
+				taxPercent={taxPercent}
+			/>
+		</Suspense>
+	);
+}
+
+function OrderLoadingSkeleton() {
+	return (
+		<Container maxWidth="lg">
+			<Box sx={{ mt: 4, mb: 2 }}>
+				<Skeleton variant="text" width={200} height={40} />
+				<Skeleton variant="rectangular" height={400} sx={{ mt: 2 }} />
+			</Box>
+		</Container>
+	);
 }

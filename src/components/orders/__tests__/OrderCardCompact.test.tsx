@@ -28,10 +28,15 @@ const mockOrder = {
 	],
 };
 
+// Calculate a date that is 3 days ago from today
+const threeDaysAgo = new Date();
+threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+threeDaysAgo.setHours(10, 0, 0, 0);
+
 const mockOrderOverdue = {
 	...mockOrder,
 	id: 'order-overdue',
-	order_due_date: '2025-09-26T10:00:00.000Z', // 3 days before today (Sept 29, 2025)
+	order_due_date: threeDaysAgo.toISOString(), // 3 days before today
 };
 
 const mockOrderDueToday = {

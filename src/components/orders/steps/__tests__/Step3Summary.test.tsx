@@ -88,7 +88,10 @@ const mockOrderFlowContext = {
 
 // Mock the useOrderFlow hook
 jest.mock('@/contexts/OrderFlowContext', () => ({
-	useOrderFlow: () => mockOrderFlowContext,
+	useOrderFlow: () => ({
+		...mockOrderFlowContext,
+		taxPercent: 8, // 8% tax rate for testing
+	}),
 }));
 
 // Mock Supabase client
