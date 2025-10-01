@@ -66,6 +66,11 @@ export default function OrderFlowStepper() {
 		}
 
 		if (orderDraft.paymentIntent.collectNow) {
+			// If collectNow is true, a payment method must be selected
+			if (!orderDraft.paymentIntent.method) {
+				return 'Select Payment Method';
+			}
+
 			switch (orderDraft.paymentIntent.method) {
 				case 'stripe':
 					return 'Create Order & Charge Card';
@@ -270,7 +275,17 @@ export default function OrderFlowStepper() {
 				);
 			case 2:
 				// Require payment intent to be selected
-				return !!orderDraft.paymentIntent;
+				if (!orderDraft.paymentIntent) {
+					return false;
+				}
+				// If collectNow is true, a payment method must be selected
+				if (
+					orderDraft.paymentIntent.collectNow &&
+					!orderDraft.paymentIntent.method
+				) {
+					return false;
+				}
+				return true;
 			default:
 				return false;
 		}
