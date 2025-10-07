@@ -534,7 +534,7 @@ export default function Step3Summary({
 									}}
 								>
 									<Typography variant="body1">
-										Tax ({taxPercent.toFixed(1)}%)
+										Sales Tax ({taxPercent.toFixed(1)}%)
 									</Typography>
 									<Typography variant="body1" sx={{ fontWeight: 500 }}>
 										{formatCurrency(taxAmount / 100)}
@@ -749,7 +749,7 @@ export default function Step3Summary({
 					{taxAmount > 0 && (
 						<Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
 							<Typography variant="body1">
-								Tax ({taxPercent.toFixed(1)}%)
+								Sales Tax ({taxPercent.toFixed(1)}%)
 							</Typography>
 							<Typography variant="body1" sx={{ fontWeight: 500 }}>
 								{formatCurrency(taxAmount / 100)}

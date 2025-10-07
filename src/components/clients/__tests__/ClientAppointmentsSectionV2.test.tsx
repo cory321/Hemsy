@@ -138,8 +138,6 @@ describe('ClientAppointmentsSectionV2', () => {
 		renderComponent();
 
 		expect(screen.getByText('Appointments')).toBeInTheDocument();
-		// Should show count of active appointments (2)
-		expect(screen.getByText(/\(2\)/)).toBeInTheDocument();
 		expect(
 			screen.getByRole('button', { name: /schedule appointment/i })
 		).toBeInTheDocument();
@@ -167,9 +165,6 @@ describe('ClientAppointmentsSectionV2', () => {
 			// Verify appointments are displayed
 			const timeElements = screen.getAllByText('10:00 AM - 11:00 AM');
 			expect(timeElements.length).toBeGreaterThan(0);
-
-			// Verify appointments are from the active filter (2 appointments)
-			expect(screen.getByText(/\(2\)/)).toBeInTheDocument();
 		});
 	});
 
@@ -235,9 +230,6 @@ describe('ClientAppointmentsSectionV2', () => {
 
 		// Should show "All Statuses" as the default status filter
 		expect(screen.getByText('All Statuses')).toBeInTheDocument();
-
-		// And should only show active appointments (2)
-		expect(screen.getByText(/\(2\)/)).toBeInTheDocument();
 	});
 
 	it('shows loading state', () => {

@@ -14,16 +14,20 @@ import {
 	Alert,
 	Box,
 	IconButton,
+	Divider,
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import CloseIcon from '@mui/icons-material/Close';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { updateClient } from '@/lib/actions/clients';
+import { updateClient, archiveClient } from '@/lib/actions/clients';
 import type { Tables } from '@/types/supabase-extended';
 import { useRouter } from 'next/navigation';
 import PhoneInput from '@/components/ui/PhoneInput';
+import ArchiveIcon from '@mui/icons-material/Archive';
+import { useToast } from '@/hooks/useToast';
+import { useQueryClient } from '@tanstack/react-query';
 
 const clientSchema = z.object({
 	first_name: z.string().min(1, 'First name is required'),
@@ -49,8 +53,11 @@ export default function ClientEditDialog({
 }: ClientEditDialogProps) {
 	const [open, setOpen] = useState(false);
 	const [loading, setLoading] = useState(false);
+	const [archiveLoading, setArchiveLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const router = useRouter();
+	const { showToast } = useToast();
+	const queryClient = useQueryClient();
 
 	const {
 		control,
@@ -113,6 +120,38 @@ export default function ClientEditDialog({
 			setError(err instanceof Error ? err.message : 'Failed to update client');
 		} finally {
 			setLoading(false);
+		}
+	};
+
+	const handleArchive = async () => {
+		if (
+			!confirm(
+				`Are you sure you want to archive ${client.first_name} ${client.last_name}?`
+			)
+		) {
+			return;
+		}
+
+		setArchiveLoading(true);
+		setError(null);
+
+		try {
+			await archiveClient(client.id);
+			setOpen(false);
+			showToast(
+				`${client.first_name} ${client.last_name} has been archived successfully`,
+				'success'
+			);
+			await queryClient.invalidateQueries({ queryKey: ['clients'] });
+			router.push('/clients');
+			router.refresh();
+		} catch (err) {
+			const errorMessage =
+				err instanceof Error ? err.message : 'Failed to archive client';
+			setError(errorMessage);
+			showToast(errorMessage, 'error');
+		} finally {
+			setArchiveLoading(false);
 		}
 	};
 
@@ -303,14 +342,30 @@ export default function ClientEditDialog({
 					</Grid>
 				</DialogContent>
 
-				<DialogActions>
-					<Button onClick={handleClose} disabled={loading}>
+				<DialogActions sx={{ px: 3, pb: 2, pt: 2 }}>
+					<Box sx={{ flex: 1 }}>
+						<Button
+							onClick={handleArchive}
+							color="warning"
+							disabled={loading || archiveLoading}
+							startIcon={
+								archiveLoading ? (
+									<CircularProgress size={20} />
+								) : (
+									<ArchiveIcon />
+								)
+							}
+						>
+							{archiveLoading ? 'Archiving...' : 'Archive Client'}
+						</Button>
+					</Box>
+					<Button onClick={handleClose} disabled={loading || archiveLoading}>
 						Cancel
 					</Button>
 					<Button
 						type="submit"
 						variant="contained"
-						disabled={loading}
+						disabled={loading || archiveLoading}
 						startIcon={loading ? <CircularProgress size={20} /> : null}
 					>
 						{loading ? 'Updating...' : 'Update Client'}

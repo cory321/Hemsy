@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useRouter } from 'next/navigation';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ClientEditDialog from './ClientEditDialog';
 import { updateClient } from '@/lib/actions/clients';
 import type { Tables } from '@/types/supabase';
@@ -21,6 +22,17 @@ describe('ClientEditDialog', () => {
 	const mockUpdateClient = updateClient as jest.MockedFunction<
 		typeof updateClient
 	>;
+
+	const renderWithQueryClient = (component: React.ReactElement) => {
+		const queryClient = new QueryClient({
+			defaultOptions: { queries: { retry: false } },
+		});
+		return render(
+			<QueryClientProvider client={queryClient}>
+				{component}
+			</QueryClientProvider>
+		);
+	};
 
 	const mockClient: Tables<'clients'> = {
 		id: 'client1',
@@ -51,7 +63,7 @@ describe('ClientEditDialog', () => {
 	it('renders trigger element and opens dialog on click', async () => {
 		const user = userEvent.setup();
 
-		render(
+		renderWithQueryClient(
 			<ClientEditDialog client={mockClient}>
 				<button>Edit Client</button>
 			</ClientEditDialog>
@@ -72,7 +84,7 @@ describe('ClientEditDialog', () => {
 	it('pre-populates form with client data', async () => {
 		const user = userEvent.setup();
 
-		render(
+		renderWithQueryClient(
 			<ClientEditDialog client={mockClient}>
 				<button>Edit</button>
 			</ClientEditDialog>
@@ -102,7 +114,7 @@ describe('ClientEditDialog', () => {
 	it.skip('validates required fields', async () => {
 		const user = userEvent.setup();
 
-		render(
+		renderWithQueryClient(
 			<ClientEditDialog client={mockClient}>
 				<button>Edit</button>
 			</ClientEditDialog>
@@ -131,7 +143,7 @@ describe('ClientEditDialog', () => {
 			data: { id: 'client1' },
 		} as any);
 
-		render(
+		renderWithQueryClient(
 			<ClientEditDialog client={mockClient}>
 				<button>Edit</button>
 			</ClientEditDialog>
@@ -171,7 +183,7 @@ describe('ClientEditDialog', () => {
 		const user = userEvent.setup();
 		mockUpdateClient.mockRejectedValueOnce(new Error('Update failed'));
 
-		render(
+		renderWithQueryClient(
 			<ClientEditDialog client={mockClient}>
 				<button>Edit</button>
 			</ClientEditDialog>
@@ -195,7 +207,7 @@ describe('ClientEditDialog', () => {
 	it('closes dialog on cancel', async () => {
 		const user = userEvent.setup();
 
-		render(
+		renderWithQueryClient(
 			<ClientEditDialog client={mockClient}>
 				<button>Edit</button>
 			</ClientEditDialog>
@@ -226,7 +238,7 @@ describe('ClientEditDialog', () => {
 		});
 		mockUpdateClient.mockReturnValueOnce(updatePromise);
 
-		render(
+		renderWithQueryClient(
 			<ClientEditDialog client={mockClient}>
 				<button>Edit</button>
 			</ClientEditDialog>

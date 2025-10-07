@@ -1,9 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Box, Tab, Tabs } from '@mui/material';
+import { Box, Tab, Tabs, Chip } from '@mui/material';
+import { useQuery } from '@tanstack/react-query';
 import { ClientAppointmentsSectionV2 } from '@/components/clients/ClientAppointmentsSectionV2';
 import ClientOrdersSection from '@/components/clients/ClientOrdersSection';
+import { getClientOrders } from '@/lib/actions/clients';
+import { useInfiniteClientAppointments } from '@/lib/queries/client-appointment-queries';
 
 interface ClientDetailTabsProps {
 	clientId: string;
@@ -41,6 +44,32 @@ export default function ClientDetailTabs({
 		'orders'
 	);
 
+	// Get orders count
+	const { data: ordersData } = useQuery({
+		queryKey: ['client', clientId, 'orders'],
+		queryFn: () => getClientOrders(clientId),
+		staleTime: 30 * 1000,
+		refetchOnWindowFocus: false,
+	});
+
+	// Get appointments count
+	const appointmentsQuery = useInfiniteClientAppointments(shopId, clientId, {
+		includeCompleted: true,
+		statuses: [
+			'pending',
+			'confirmed',
+			'declined',
+			'canceled',
+			'no_show',
+			'no_confirmation_required',
+		],
+		timeframe: 'all',
+		pageSize: 1,
+	});
+
+	const ordersCount = ordersData?.length ?? 0;
+	const appointmentsCount = appointmentsQuery.data?.pages?.[0]?.total ?? 0;
+
 	return (
 		<Box sx={{ width: '100%' }}>
 			<Tabs
@@ -53,13 +82,31 @@ export default function ClientDetailTabs({
 			>
 				<Tab
 					value="orders"
-					label="Orders"
+					label={
+						<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+							Orders
+							<Chip
+								label={ordersCount}
+								size="small"
+								sx={{ fontSize: '0.75rem', height: 20 }}
+							/>
+						</Box>
+					}
 					iconPosition="start"
 					icon={<i className="ri-shopping-bag-line" />}
 				/>
 				<Tab
 					value="appointments"
-					label="Appointments"
+					label={
+						<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+							Appointments
+							<Chip
+								label={appointmentsCount}
+								size="small"
+								sx={{ fontSize: '0.75rem', height: 20 }}
+							/>
+						</Box>
+					}
 					iconPosition="start"
 					icon={<i className="ri-calendar-event-line" />}
 				/>

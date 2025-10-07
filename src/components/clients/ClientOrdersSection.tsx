@@ -99,7 +99,7 @@ export function ClientOrdersSection({
 						sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
 					>
 						<ShoppingBagIcon color="primary" />
-						Orders ({data?.length ?? 0})
+						Orders
 					</Typography>
 
 					<Button

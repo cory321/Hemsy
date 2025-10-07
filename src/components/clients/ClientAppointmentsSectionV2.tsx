@@ -11,7 +11,6 @@ import {
 	MenuItem,
 	FormControl,
 	Skeleton,
-	Fade,
 	Collapse,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -376,11 +375,6 @@ export function ClientAppointmentsSectionV2({
 						>
 							<CalendarMonthIcon color="primary" />
 							Appointments
-							<Fade in={!isLoading} timeout={300}>
-								<Typography component="span" color="text.secondary">
-									({totalCount})
-								</Typography>
-							</Fade>
 						</Typography>
 
 						<Button
