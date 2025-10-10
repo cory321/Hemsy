@@ -432,7 +432,9 @@ export default function Step3Summary({
 					onPaymentMethodSelect={handlePaymentMethodSelect}
 					onPaymentIntentChange={handlePaymentIntentChange}
 					onStripePaymentSuccess={handleStripePaymentSuccess}
-					initialPaymentIntent={orderDraft.paymentIntent}
+					{...(orderDraft.paymentIntent && {
+						initialPaymentIntent: orderDraft.paymentIntent,
+					})}
 				/>
 
 				{/* Order Notes */}
@@ -813,7 +815,9 @@ export default function Step3Summary({
 					onPaymentMethodSelect={handlePaymentMethodSelect}
 					onPaymentIntentChange={handlePaymentIntentChange}
 					onStripePaymentSuccess={handleStripePaymentSuccess}
-					initialPaymentIntent={orderDraft.paymentIntent}
+					{...(orderDraft.paymentIntent && {
+						initialPaymentIntent: orderDraft.paymentIntent,
+					})}
 				/>
 			</Box>
 		</Box>

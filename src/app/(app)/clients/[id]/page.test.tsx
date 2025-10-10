@@ -75,16 +75,6 @@ jest.mock('@/components/clients/ClientEditDialog', () => {
 	};
 });
 
-jest.mock('@/components/clients/ClientArchiveDialog', () => {
-	return function MockClientArchiveDialog({
-		children,
-	}: {
-		children: React.ReactNode;
-	}) {
-		return <div data-testid="delete-dialog">{children}</div>;
-	};
-});
-
 jest.mock('@/components/clients/ClientAppointmentsSection', () => {
 	return function MockClientAppointmentsSection() {
 		return <div data-testid="appointments-section" />;
@@ -217,18 +207,15 @@ describe('ClientDetailPage', () => {
 		);
 	});
 
-	it('renders edit and delete action buttons', async () => {
+	it('renders edit action button', async () => {
 		mockGetClient.mockResolvedValueOnce(mockClient);
 
 		const params = Promise.resolve({ id: 'client1' });
 		const Component = await ClientDetailPage({ params });
 		render(wrapWithQuery(Component));
 
-		// There are two edit triggers (header pencil and card button)
-		expect(screen.getAllByTestId('edit-dialog').length).toBeGreaterThanOrEqual(
-			1
-		);
-		expect(screen.getByTestId('delete-dialog')).toBeInTheDocument();
+		// The edit dialog is now in the ClientProfileCard component
+		expect(screen.getByTestId('edit-dialog')).toBeInTheDocument();
 	});
 
 	it('handles client with minimal data', async () => {
