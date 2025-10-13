@@ -243,9 +243,9 @@ export function WeekViewDesktop({
 							onClick={() => onDateClick?.(day)}
 						>
 							<Typography
-								variant="subtitle2"
+								variant="caption"
 								color={isPast ? 'text.disabled' : 'text.secondary'}
-								sx={{ textTransform: 'uppercase', fontSize: '0.75rem' }}
+								sx={{ textTransform: 'uppercase' }}
 							>
 								{format(day, 'EEE')}
 							</Typography>
@@ -599,7 +599,7 @@ export function WeekViewDesktop({
 																appointment.status === 'declined'
 																	? 'text.disabled'
 																	: 'text.primary',
-															fontSize: '0.7rem',
+															fontSize: '0.625rem', // 10px - Extra small for compact week view
 															overflow: 'hidden',
 															textOverflow: 'ellipsis',
 															whiteSpace: 'nowrap',
@@ -621,7 +621,7 @@ export function WeekViewDesktop({
 														variant="caption"
 														sx={{
 															color: 'text.secondary',
-															fontSize: '0.65rem',
+															fontSize: '0.625rem', // 10px - Extra small for compact week view
 															whiteSpace: 'nowrap',
 															flexShrink: 0,
 														}}
@@ -664,7 +664,6 @@ export function WeekViewDesktop({
 															variant="caption"
 															fontWeight="bold"
 															sx={{
-																fontSize: '0.7rem',
 																lineHeight: 1.2,
 															}}
 														>
@@ -781,7 +780,7 @@ export function WeekViewDesktop({
 													size="small"
 													sx={{
 														height: '20px',
-														fontSize: '0.65rem',
+														fontSize: '0.625rem', // 10px - Extra small for compact chip
 														bgcolor: 'primary.main',
 														color: 'white',
 														'&:hover': {

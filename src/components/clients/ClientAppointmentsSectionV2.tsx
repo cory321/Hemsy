@@ -24,10 +24,10 @@ import { groupAppointmentsByDate } from '@/lib/utils/appointment-grouping';
 import { useQueryClient } from '@tanstack/react-query';
 
 // Reusable button style for contained-to-outlined hover effect
+// fontSize uses body1 (16px) from theme
 const containedToOutlinedHoverStyle = {
 	whiteSpace: 'nowrap' as const,
 	border: '2px solid transparent',
-	fontSize: '1rem',
 	'&:hover': {
 		backgroundColor: 'transparent',
 		borderColor: 'primary.main',
@@ -124,8 +124,8 @@ export function ClientAppointmentsSectionV2({
 		default_appointment_duration: 30,
 	},
 }: ClientAppointmentsSectionV2Props) {
-	const [timePeriod, setTimePeriod] = useState<TimePeriodFilter>('all');
-	const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+	const [timePeriod, setTimePeriod] = useState<TimePeriodFilter>('upcoming');
+	const [statusFilter, setStatusFilter] = useState<StatusFilter>('active');
 	const [appointmentDialogOpen, setAppointmentDialogOpen] = useState(false);
 
 	const { createAppointment } = useAppointments();
@@ -366,14 +366,10 @@ export function ClientAppointmentsSectionV2({
 						<Typography
 							variant="h6"
 							sx={{
-								display: 'flex',
-								alignItems: 'center',
-								gap: 1,
 								minWidth: 0,
 								flexShrink: 1,
 							}}
 						>
-							<CalendarMonthIcon color="primary" />
 							Appointments
 						</Typography>
 

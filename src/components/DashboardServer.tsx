@@ -8,35 +8,35 @@ import { BusinessOverviewServer } from '@/components/dashboard/business-overview
 
 // Refined color palette
 const refinedColors = {
-  background: '#FFFEFC',
+	background: '#FAF9F6',
 };
 
 export function DashboardServer() {
-  return (
-    <Box sx={{ bgcolor: refinedColors.background, minHeight: '100vh', p: 3 }}>
-      {/* Header */}
-      <DashboardHeader />
+	return (
+		<Box sx={{ bgcolor: refinedColors.background, minHeight: '100vh', p: 3 }}>
+			{/* Header */}
+			<DashboardHeader />
 
-      {/* Alert Section */}
-      <DashboardAlertsServer />
+			{/* Alert Section */}
+			<DashboardAlertsServer />
 
-      {/* Main Content Grid */}
-      <Grid container spacing={3}>
-        {/* Left Column - Business Overview */}
-        <Grid size={{ xs: 12, lg: 3 }}>
-          <BusinessOverviewServer />
-        </Grid>
+			{/* Main Content Grid */}
+			<Grid container spacing={3}>
+				{/* Left Column - Business Overview */}
+				<Grid size={{ xs: 12, lg: 3 }}>
+					<BusinessOverviewServer />
+				</Grid>
 
-        {/* Center Column - Garment Pipeline */}
-        <Grid size={{ xs: 12, lg: 6 }}>
-          <GarmentPipelineServer />
-        </Grid>
+				{/* Center Column - Garment Pipeline */}
+				<Grid size={{ xs: 12, lg: 6 }}>
+					<GarmentPipelineServer />
+				</Grid>
 
-        {/* Right Column - Appointments Focus */}
-        <Grid size={{ xs: 12, lg: 3 }}>
-          <AppointmentsFocusServer />
-        </Grid>
-      </Grid>
-    </Box>
-  );
+				{/* Right Column - Appointments Focus */}
+				<Grid size={{ xs: 12, lg: 3 }}>
+					<AppointmentsFocusServer />
+				</Grid>
+			</Grid>
+		</Box>
+	);
 }

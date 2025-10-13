@@ -8,8 +8,6 @@ import {
 	DialogActions,
 	Button,
 	TextField,
-	FormControlLabel,
-	Switch,
 	CircularProgress,
 	Alert,
 	Box,
@@ -34,8 +32,6 @@ const clientSchema = z.object({
 	last_name: z.string().min(1, 'Last name is required'),
 	email: z.string().email('Invalid email address'),
 	phone_number: z.string().min(10, 'Phone number must be at least 10 digits'),
-	accept_email: z.boolean(),
-	accept_sms: z.boolean(),
 	notes: z.string().optional(),
 	mailing_address: z.string().optional(),
 });
@@ -71,8 +67,6 @@ export default function ClientEditDialog({
 			last_name: client.last_name,
 			email: client.email,
 			phone_number: client.phone_number,
-			accept_email: client.accept_email || false,
-			accept_sms: client.accept_sms || false,
 			notes: client.notes || '',
 			mailing_address: client.mailing_address || '',
 		},
@@ -86,8 +80,6 @@ export default function ClientEditDialog({
 			last_name: client.last_name,
 			email: client.email,
 			phone_number: client.phone_number,
-			accept_email: client.accept_email || false,
-			accept_sms: client.accept_sms || false,
 			notes: client.notes || '',
 			mailing_address: client.mailing_address || '',
 		});
@@ -299,42 +291,6 @@ export default function ClientEditDialog({
 										rows={3}
 										error={!!errors.notes}
 										helperText={errors.notes?.message}
-									/>
-								)}
-							/>
-						</Grid>
-
-						<Grid size={12}>
-							<Controller
-								name="accept_email"
-								control={control}
-								render={({ field: { value, onChange } }) => (
-									<FormControlLabel
-										control={
-											<Switch
-												checked={value}
-												onChange={(e) => onChange(e.target.checked)}
-											/>
-										}
-										label="Accept Email Communications"
-									/>
-								)}
-							/>
-						</Grid>
-
-						<Grid size={12}>
-							<Controller
-								name="accept_sms"
-								control={control}
-								render={({ field: { value, onChange } }) => (
-									<FormControlLabel
-										control={
-											<Switch
-												checked={value}
-												onChange={(e) => onChange(e.target.checked)}
-											/>
-										}
-										label="Accept SMS Communications"
 									/>
 								)}
 							/>

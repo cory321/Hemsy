@@ -372,18 +372,18 @@ export default function OrderCardMinimal({
 									label={paymentStatusChip.label}
 									color={paymentStatusChip.color}
 									size="small"
-									sx={{
+									sx={(theme) => ({
 										height: 22,
 										width: 110,
 										justifyContent: 'center',
-										fontSize: '0.7rem',
+										fontSize: theme.typography.caption.fontSize, // 12px
 										fontWeight: 'bold',
 										'& .MuiChip-label': {
 											px: 1,
 											width: '100%',
 											textAlign: 'center',
 										},
-									}}
+									})}
 								/>
 							</Box>
 
@@ -395,11 +395,11 @@ export default function OrderCardMinimal({
 								<Chip
 									label={getOrderStatusLabel(order.status || 'new')}
 									size="small"
-									sx={{
+									sx={(theme) => ({
 										height: 22,
 										width: 110,
 										justifyContent: 'center',
-										fontSize: '0.7rem',
+										fontSize: theme.typography.caption.fontSize, // 12px
 										fontWeight: 'bold',
 										backgroundColor: (() => {
 											const status = order.status || 'new';
@@ -436,7 +436,7 @@ export default function OrderCardMinimal({
 											width: '100%',
 											textAlign: 'center',
 										},
-									}}
+									})}
 								/>
 							</Box>
 

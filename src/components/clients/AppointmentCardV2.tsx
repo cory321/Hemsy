@@ -223,11 +223,11 @@ export const AppointmentCardV2 = memo(function AppointmentCardV2({
 									variant={
 										appointment.status === 'canceled' ? 'outlined' : 'filled'
 									}
-									sx={{
+									sx={(theme) => ({
 										height: 24,
-										fontSize: '0.75rem',
+										fontSize: theme.typography.caption.fontSize, // 12px
 										fontWeight: 500,
-									}}
+									})}
 								/>
 							</Box>
 
@@ -277,13 +277,12 @@ export const AppointmentCardV2 = memo(function AppointmentCardV2({
 
 							{appointment.status === 'no_confirmation_required' && (
 								<Typography
-									variant="body2"
+									variant="body1"
 									color="text.secondary"
 									sx={{
 										display: 'flex',
 										alignItems: 'center',
 										gap: 0.5,
-										fontSize: '1rem',
 									}}
 								>
 									ℹ️ Attendance is assumed but unverified.

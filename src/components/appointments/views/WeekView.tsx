@@ -476,7 +476,6 @@ export function WeekView({
 														overflow: 'hidden',
 														textOverflow: 'ellipsis',
 														whiteSpace: 'nowrap',
-														fontSize: '0.8rem',
 														lineHeight: 1.2,
 														pr: 2.5,
 														textDecoration:
@@ -496,7 +495,7 @@ export function WeekView({
 													variant="caption"
 													sx={{
 														color: 'text.secondary',
-														fontSize: '0.65rem',
+														fontSize: '0.625rem', // 10px - Extra small for compact week view
 														display: 'block',
 													}}
 												>
@@ -510,7 +509,7 @@ export function WeekView({
 														variant="caption"
 														sx={{
 															color: 'text.secondary',
-															fontSize: '0.65rem',
+															fontSize: '0.625rem', // 10px - Extra small for compact week view
 															textTransform: 'capitalize',
 															display: 'block',
 														}}

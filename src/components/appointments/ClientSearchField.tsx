@@ -154,14 +154,14 @@ export function ClientSearchField({
 						>
 							<Avatar
 								className="client-avatar"
-								sx={{
+								sx={(theme) => ({
 									width: 32,
 									height: 32,
 									bgcolor: 'grey.400',
 									color: 'white',
-									fontSize: '0.875rem',
+									fontSize: theme.typography.body2.fontSize, // 14px
 									fontWeight: 500,
-								}}
+								})}
 							>
 								{initials}
 							</Avatar>

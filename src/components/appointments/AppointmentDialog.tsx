@@ -388,12 +388,12 @@ export function AppointmentDialog({
 								sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}
 							>
 								<Avatar
-									sx={{
+									sx={(theme) => ({
 										width: 40,
 										height: 40,
 										bgcolor: 'primary.main',
-										fontSize: '1rem',
-									}}
+										fontSize: theme.typography.body1.fontSize, // 16px
+									})}
 								>
 									{selectedClient?.first_name?.[0]?.toUpperCase() || ''}
 									{selectedClient?.last_name?.[0]?.toUpperCase() || ''}
@@ -659,7 +659,7 @@ export function AppointmentDialog({
 													<Typography
 														variant="caption"
 														color="text.secondary"
-														sx={{ fontSize: '0.7rem', lineHeight: 1 }}
+														sx={{ lineHeight: 1 }}
 													>
 														Opted out
 													</Typography>
@@ -689,7 +689,7 @@ export function AppointmentDialog({
 													<Typography
 														variant="caption"
 														color="text.secondary"
-														sx={{ fontSize: '0.7rem', lineHeight: 1 }}
+														sx={{ lineHeight: 1 }}
 													>
 														Opted out
 													</Typography>
@@ -729,7 +729,7 @@ export function AppointmentDialog({
 											<Typography
 												variant="caption"
 												color="text.secondary"
-												sx={{ fontSize: '0.7rem', lineHeight: 1 }}
+												sx={{ lineHeight: 1 }}
 											>
 												Client opted out
 											</Typography>

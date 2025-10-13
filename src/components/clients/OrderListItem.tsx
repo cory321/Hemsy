@@ -1,150 +1,181 @@
 'use client';
 
-import { Box, Card, Chip, Typography, IconButton } from '@mui/material';
+import {
+	Box,
+	Chip,
+	Typography,
+	IconButton,
+	TableRow,
+	TableCell,
+} from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import CheckroomIcon from '@mui/icons-material/Checkroom';
-import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import type { Order } from '@/types';
+import {
+	getOrderEffectiveDueDate,
+	isOrderOverdue,
+} from '@/lib/utils/overdue-logic';
+import {
+	calculateDaysUntilDue,
+	formatDateSafeCustom,
+} from '@/lib/utils/date-time-utils';
 
 interface OrderListItemProps {
-  order: Order;
-  garmentCount: number;
+	order: Order;
+	garmentCount: number;
+}
+
+function getDueDateInfo(orderDueDate: string | null, garments: any[]) {
+	// Get effective due date from order or garments
+	const effectiveDueDate = getOrderEffectiveDueDate({
+		order_due_date: orderDueDate,
+		garments: garments.map((g) => ({
+			...g,
+			garment_services: g.garment_services || [],
+		})),
+	});
+
+	if (!effectiveDueDate) return null;
+
+	// Use timezone-safe date parsing and calculation
+	const daysUntilDue = calculateDaysUntilDue(effectiveDueDate);
+
+	// Check if the order is truly overdue (considering service completion)
+	const orderIsOverdue = isOrderOverdue({
+		order_due_date: orderDueDate,
+		garments: garments.map((g) => ({
+			...g,
+			garment_services: g.garment_services || [],
+		})),
+	});
+
+	return {
+		date: formatDateSafeCustom(effectiveDueDate, 'MMM d, yyyy'),
+		shortDate: formatDateSafeCustom(effectiveDueDate, 'MMM d'),
+		daysUntilDue,
+		isOverdue: orderIsOverdue,
+		isUrgent: daysUntilDue >= 0 && daysUntilDue <= 3,
+		isToday: daysUntilDue === 0,
+		isTomorrow: daysUntilDue === 1,
+	};
 }
 
 export function OrderListItem({ order, garmentCount }: OrderListItemProps) {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'new':
-        return 'default';
-      case 'in_progress':
-        return 'info';
-      case 'ready_for_pickup':
-        return 'warning';
-      case 'completed':
-        return 'success';
-      case 'cancelled':
-        return 'error';
-      default:
-        return 'default';
-    }
-  };
+	const router = useRouter();
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'new':
-        return 'New';
-      case 'in_progress':
-        return 'In Progress';
-      case 'ready_for_pickup':
-        return 'Ready For Pickup';
-      case 'completed':
-        return 'Completed';
-      case 'cancelled':
-        return 'Cancelled';
-      default:
-        return status.charAt(0).toUpperCase() + status.slice(1);
-    }
-  };
+	const getStatusColor = (status: string) => {
+		switch (status) {
+			case 'new':
+				return 'default';
+			case 'in_progress':
+				return 'info';
+			case 'ready_for_pickup':
+				return 'warning';
+			case 'completed':
+				return 'success';
+			case 'cancelled':
+				return 'error';
+			default:
+				return 'default';
+		}
+	};
 
-  const formatCurrency = (cents: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(cents / 100);
-  };
+	const getStatusLabel = (status: string) => {
+		switch (status) {
+			case 'new':
+				return 'New';
+			case 'in_progress':
+				return 'In Progress';
+			case 'ready_for_pickup':
+				return 'Ready For Pickup';
+			case 'completed':
+				return 'Completed';
+			case 'cancelled':
+				return 'Cancelled';
+			default:
+				return status.charAt(0).toUpperCase() + status.slice(1);
+		}
+	};
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
+	const formatCurrency = (cents: number) => {
+		return new Intl.NumberFormat('en-US', {
+			style: 'currency',
+			currency: 'USD',
+		}).format(cents / 100);
+	};
 
-  return (
-    <Card
-      component={Link}
-      href={`/orders/${order.id}`}
-      sx={{
-        p: 2,
-        display: 'block',
-        textDecoration: 'none',
-        color: 'inherit',
-        transition: 'all 0.2s ease',
-        '&:hover': {
-          backgroundColor: 'action.hover',
-          transform: 'translateY(-2px)',
-          boxShadow: 2,
-        },
-      }}
-    >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-        {/* Order Number and Status */}
-        <Box sx={{ flex: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-            <Typography variant="subtitle1" fontWeight="medium">
-              Order #{(order as any).order_number ?? order.id.slice(0, 8)}
-            </Typography>
-            <Chip
-              label={getStatusLabel(order.status || 'new')}
-              color={getStatusColor(order.status || 'new')}
-              size="small"
-            />
-            {(order as any).is_paid && (
-              <Chip
-                label="Paid"
-                color="success"
-                size="small"
-                variant="outlined"
-              />
-            )}
-          </Box>
+	// Get the effective due date info (from order or garments)
+	const garments = (order as any).garments || [];
+	const dueDateInfo = getDueDateInfo(order.order_due_date ?? null, garments);
 
-          <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
-            {/* Garment Count */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <CheckroomIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-              <Typography variant="body2" color="text.secondary">
-                {garmentCount} {garmentCount === 1 ? 'garment' : 'garments'}
-              </Typography>
-            </Box>
-
-            {/* Created Date */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <CalendarTodayIcon
-                sx={{ fontSize: 16, color: 'text.secondary' }}
-              />
-              <Typography variant="body2" color="text.secondary">
-                {formatDate(order.created_at || new Date().toISOString())}
-              </Typography>
-            </Box>
-
-            {/* Total */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <AttachMoneyIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-              <Typography variant="body2" color="text.secondary">
-                {formatCurrency(
-                  (order as any).total_cents ?? (order as any).total ?? 0
-                )}
-              </Typography>
-            </Box>
-          </Box>
-
-          {/* Due Date if exists */}
-          {order.order_due_date && (
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              Due: {formatDate(order.order_due_date)}
-            </Typography>
-          )}
-        </Box>
-
-        {/* Arrow Icon */}
-        <IconButton size="small" sx={{ ml: 'auto' }}>
-          <ChevronRightIcon />
-        </IconButton>
-      </Box>
-    </Card>
-  );
+	return (
+		<TableRow
+			hover
+			sx={{ cursor: 'pointer' }}
+			onClick={() => router.push(`/orders/${order.id}`)}
+		>
+			<TableCell>
+				<Typography variant="body2" fontWeight="bold">
+					#{(order as any).order_number?.slice(-3) || order.id.slice(0, 4)}
+				</Typography>
+			</TableCell>
+			<TableCell>
+				<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+					<Chip
+						label={getStatusLabel(order.status || 'new')}
+						color={getStatusColor(order.status || 'new')}
+						size="small"
+					/>
+					{(order as any).is_paid && (
+						<Chip
+							label="Paid"
+							color="success"
+							size="small"
+							variant="outlined"
+						/>
+					)}
+				</Box>
+			</TableCell>
+			<TableCell>
+				<Typography variant="body2">
+					{garmentCount} {garmentCount === 1 ? 'garment' : 'garments'}
+				</Typography>
+			</TableCell>
+			<TableCell>
+				<Typography variant="body2">
+					{formatCurrency(
+						(order as any).total_cents ?? (order as any).total ?? 0
+					)}
+				</Typography>
+			</TableCell>
+			<TableCell>
+				{dueDateInfo ? (
+					<Typography
+						variant="body2"
+						color={
+							dueDateInfo.isOverdue
+								? 'error.main'
+								: dueDateInfo.isUrgent
+									? 'warning.main'
+									: 'text.secondary'
+						}
+						fontWeight={
+							dueDateInfo.isUrgent || dueDateInfo.isOverdue ? 'bold' : 'normal'
+						}
+					>
+						{dueDateInfo.shortDate}
+					</Typography>
+				) : (
+					<Typography variant="body2" color="text.secondary">
+						—
+					</Typography>
+				)}
+			</TableCell>
+			<TableCell align="right">
+				<IconButton size="small">
+					<ChevronRightIcon />
+				</IconButton>
+			</TableCell>
+		</TableRow>
+	);
 }

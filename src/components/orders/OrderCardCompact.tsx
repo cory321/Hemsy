@@ -299,19 +299,19 @@ export default function OrderCardCompact({
 			{/* Urgent Banner - Full Width */}
 			{showUrgentBanner && urgencyInfo && (
 				<Box
-					sx={{
+					sx={(theme) => ({
 						bgcolor: urgencyInfo.color,
 						color: 'white',
 						py: 0.5,
 						px: 2,
-						fontSize: '0.75rem',
+						fontSize: theme.typography.caption.fontSize, // 12px
 						fontWeight: 'bold',
 						textAlign: 'center',
 						display: 'flex',
 						alignItems: 'center',
 						justifyContent: 'center',
 						gap: 0.5,
-					}}
+					})}
 				>
 					{urgencyInfo.icon}
 					{urgencyInfo.text}

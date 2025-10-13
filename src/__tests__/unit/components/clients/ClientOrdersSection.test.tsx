@@ -46,12 +46,14 @@ describe('ClientOrdersSection', () => {
 			() => new Promise(() => {}) // Never resolves to keep loading state
 		);
 
-		renderWithQuery(<ClientOrdersSection {...mockProps} />);
+		const { container } = renderWithQuery(
+			<ClientOrdersSection {...mockProps} />
+		);
 
-		// Check for loading skeletons by looking for elements with MuiSkeleton class
-		const container = screen.getByText('Orders').closest('.MuiCard-root');
-		const skeletons = container?.querySelectorAll('.MuiSkeleton-root');
-		expect(skeletons?.length).toBeGreaterThan(0);
+		// Check for loading skeletons - component renders skeletons in table cells
+		expect(screen.getByText('Orders')).toBeInTheDocument();
+		const skeletons = container.querySelectorAll('.MuiSkeleton-root');
+		expect(skeletons.length).toBeGreaterThan(0);
 	});
 
 	it('should render orders when loaded successfully', async () => {
@@ -81,8 +83,9 @@ describe('ClientOrdersSection', () => {
 
 		await waitFor(() => {
 			expect(screen.getByText('Orders')).toBeInTheDocument();
-			expect(screen.getByText('Order #ORD-001')).toBeInTheDocument();
-			expect(screen.getByText('Order #ORD-002')).toBeInTheDocument();
+			// Component displays last 3 digits of order number
+			expect(screen.getByText('#001')).toBeInTheDocument();
+			expect(screen.getByText('#002')).toBeInTheDocument();
 		});
 
 		// Check for the New Order button

@@ -334,12 +334,10 @@ export default function GarmentHistoryTable({
 
 	return (
 		<Paper
-			elevation={0}
+			elevation={1}
 			sx={{
 				width: '100%',
 				overflow: 'hidden',
-				border: 1,
-				borderColor: 'divider',
 				borderRadius: 2,
 				backgroundColor: 'background.paper',
 			}}
@@ -352,7 +350,7 @@ export default function GarmentHistoryTable({
 					alignItems: 'center',
 					borderBottom: 1,
 					borderColor: 'divider',
-					backgroundColor: 'grey.50',
+					backgroundColor: 'background.paper',
 				}}
 			>
 				<Box>
@@ -426,18 +424,40 @@ export default function GarmentHistoryTable({
 						<Table stickyHeader size="medium">
 							<TableHead>
 								<TableRow>
-									<TableCell width={50} sx={{ fontWeight: 600 }}></TableCell>
-									<TableCell sx={{ fontWeight: 600, minWidth: 200 }}>
+									<TableCell
+										width={50}
+										sx={{
+											fontWeight: 600,
+											backgroundColor: 'background.paper',
+										}}
+									></TableCell>
+									<TableCell
+										sx={{
+											fontWeight: 600,
+											minWidth: 200,
+											backgroundColor: 'background.paper',
+										}}
+									>
 										Action
 									</TableCell>
 									{!isMobile && (
-										<TableCell sx={{ fontWeight: 600, minWidth: 300 }}>
+										<TableCell
+											sx={{
+												fontWeight: 600,
+												minWidth: 300,
+												backgroundColor: 'background.paper',
+											}}
+										>
 											Details
 										</TableCell>
 									)}
 									<TableCell
 										align="right"
-										sx={{ fontWeight: 600, minWidth: 150 }}
+										sx={{
+											fontWeight: 600,
+											minWidth: 150,
+											backgroundColor: 'background.paper',
+										}}
 									>
 										When
 									</TableCell>

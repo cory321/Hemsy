@@ -732,7 +732,7 @@ export default function GarmentServicesManager() {
 															}}
 														>
 															{service.unit === 'flat_rate'
-																? `$${(service.unit_price_cents / 100).toFixed(2)} flat rate`
+																? `$${(service.unit_price_cents / 100).toFixed(2)}`
 																: `${service.quantity || 1} ${service.unit || 'service'}${(service.quantity || 1) > 1 ? 's' : ''} @ $${(service.unit_price_cents / 100).toFixed(2)}/${service.unit || 'service'}`}
 															{service.description &&
 																` • ${service.description}`}
@@ -760,7 +760,7 @@ export default function GarmentServicesManager() {
 						<Divider sx={{ my: 2 }} />
 						<Box sx={{ textAlign: 'right' }}>
 							<Typography variant="h6">
-								Total: ${(totalPrice / 100).toFixed(2)}
+								Subtotal: ${(totalPrice / 100).toFixed(2)}
 							</Typography>
 						</Box>
 					</>
@@ -901,7 +901,9 @@ export default function GarmentServicesManager() {
 								getOptionLabel={(option) =>
 									`${option.name} - $${(
 										option.default_unit_price_cents / 100
-									).toFixed(2)}/${option.default_unit}`
+									).toFixed(
+										2
+									)}${option.default_unit !== 'flat_rate' ? `/${option.default_unit}` : ''}`
 								}
 								loading={searchLoading}
 								onInputChange={(_, value) => handleSearchServices(value)}

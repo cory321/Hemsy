@@ -425,7 +425,7 @@ export function AppointmentDetailsDialog({
 				<DialogTitle
 					sx={{
 						p: 0,
-						background: 'linear-gradient(135deg, #B85563 0%, #8B3A42 100%)',
+						background: 'linear-gradient(135deg, #c96442 0%, #b05730 100%)',
 						color: 'white',
 						position: 'relative',
 						overflow: 'hidden',
@@ -437,15 +437,15 @@ export function AppointmentDetailsDialog({
 						<Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
 							{/* Client Avatar */}
 							<Avatar
-								sx={{
+								sx={(theme) => ({
 									width: 56,
 									height: 56,
 									bgcolor: 'rgba(255,255,255,0.2)',
 									color: 'white',
-									fontSize: '1.5rem',
+									fontSize: theme.typography.h3.fontSize, // 24px - suitable for large avatar
 									fontWeight: 600,
 									border: '2px solid rgba(255,255,255,0.3)',
-								}}
+								})}
 							>
 								{getClientInitials(appointment.client)}
 							</Avatar>
@@ -585,7 +585,7 @@ export function AppointmentDetailsDialog({
 									<RemixIcon
 										name="ri-calendar-line"
 										size={20}
-										color="#B85563"
+										color="#c96442"
 									/>
 									<Typography variant="h6" fontWeight={600}>
 										Schedule Details
@@ -668,7 +668,7 @@ export function AppointmentDetailsDialog({
 										<RemixIcon
 											name="ri-bookmark-line"
 											size={20}
-											color="#B85563"
+											color="#c96442"
 										/>
 										<Typography variant="h6" fontWeight={600}>
 											Appointment Type
@@ -924,7 +924,7 @@ export function AppointmentDetailsDialog({
 										<RemixIcon
 											name="ri-sticky-note-line"
 											size={20}
-											color="#B85563"
+											color="#c96442"
 										/>
 										<Typography variant="h6" fontWeight={600}>
 											Notes

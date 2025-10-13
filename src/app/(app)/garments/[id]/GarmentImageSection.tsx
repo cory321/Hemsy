@@ -16,7 +16,6 @@ import NextLink from 'next/link';
 import EventIcon from '@mui/icons-material/Event';
 import MailOutlineIcon from '@mui/icons-material/MailOutline';
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined';
-import { alpha } from '@mui/material/styles';
 import { showSuccessToast, showErrorToast } from '@/lib/utils/toast';
 import SafeCldImage from '@/components/ui/SafeCldImage';
 import InlinePresetSvg from '@/components/ui/InlinePresetSvg';
@@ -295,7 +294,7 @@ export default function GarmentImageSection({
 										sx={{
 											width: 40,
 											height: 40,
-											bgcolor: 'primary.main',
+											bgcolor: 'secondary.dark',
 											color: 'primary.contrastText',
 											fontSize: 16,
 											fontWeight: 600,
@@ -334,16 +333,16 @@ export default function GarmentImageSection({
 							<Grid size={12}>
 								<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
 									<Box
-										sx={(theme) => ({
+										sx={{
 											width: 32,
 											height: 32,
 											borderRadius: 1,
 											display: 'flex',
 											alignItems: 'center',
 											justifyContent: 'center',
-											backgroundColor: alpha(theme.palette.primary.main, 0.08),
-											color: theme.palette.primary.main,
-										})}
+											bgcolor: 'secondary.light',
+											color: 'secondary.dark',
+										}}
 									>
 										<MailOutlineIcon fontSize="small" />
 									</Box>
@@ -355,16 +354,16 @@ export default function GarmentImageSection({
 							<Grid size={12}>
 								<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
 									<Box
-										sx={(theme) => ({
+										sx={{
 											width: 32,
 											height: 32,
 											borderRadius: 1,
 											display: 'flex',
 											alignItems: 'center',
 											justifyContent: 'center',
-											backgroundColor: alpha(theme.palette.primary.main, 0.08),
-											color: theme.palette.primary.main,
-										})}
+											bgcolor: 'secondary.light',
+											color: 'secondary.dark',
+										}}
 									>
 										<PhoneOutlinedIcon fontSize="small" />
 									</Box>

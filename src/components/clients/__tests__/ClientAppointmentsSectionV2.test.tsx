@@ -150,10 +150,10 @@ describe('ClientAppointmentsSectionV2', () => {
 		const selects = screen.getAllByRole('combobox');
 		expect(selects).toHaveLength(2);
 
-		// First select should show "All Time" text (default)
-		expect(screen.getByText('All Time')).toBeInTheDocument();
-		// Second select should show "All Statuses" text (default)
-		expect(screen.getByText('All Statuses')).toBeInTheDocument();
+		// First select should show "Upcoming" text (default)
+		expect(screen.getByText('Upcoming')).toBeInTheDocument();
+		// Second select should show "Active Only" text (default)
+		expect(screen.getByText('Active Only')).toBeInTheDocument();
 	});
 
 	it('groups appointments by date', async () => {
@@ -190,8 +190,8 @@ describe('ClientAppointmentsSectionV2', () => {
 		// Get all selects - first is time period, second is status
 		const timePeriodSelect = screen.getAllByRole('combobox')[0]!;
 
-		// Should show "All Time" as default text
-		expect(screen.getByText('All Time')).toBeInTheDocument();
+		// Should show "Upcoming" as default text
+		expect(screen.getByText('Upcoming')).toBeInTheDocument();
 
 		await user.click(timePeriodSelect);
 
@@ -211,8 +211,8 @@ describe('ClientAppointmentsSectionV2', () => {
 		// Get all selects - first is time period, second is status
 		const statusSelect = screen.getAllByRole('combobox')[1]!;
 
-		// Should show "All Statuses" as default
-		expect(screen.getByText('All Statuses')).toBeInTheDocument();
+		// Should show "Active Only" as default
+		expect(screen.getByText('Active Only')).toBeInTheDocument();
 
 		await user.click(statusSelect);
 
@@ -228,8 +228,8 @@ describe('ClientAppointmentsSectionV2', () => {
 	it('should default to active status filter', () => {
 		renderComponent();
 
-		// Should show "All Statuses" as the default status filter
-		expect(screen.getByText('All Statuses')).toBeInTheDocument();
+		// Should show "Active Only" as the default status filter
+		expect(screen.getByText('Active Only')).toBeInTheDocument();
 	});
 
 	it('shows loading state', () => {
@@ -283,7 +283,8 @@ describe('ClientAppointmentsSectionV2', () => {
 
 		renderComponent();
 
-		expect(screen.getByText('No appointments found')).toBeInTheDocument();
+		// Default time period is "upcoming", so message is "No appointments scheduled"
+		expect(screen.getByText(/No appointments scheduled/)).toBeInTheDocument();
 		expect(
 			screen.getByRole('button', { name: /schedule appointment/i })
 		).toBeInTheDocument();

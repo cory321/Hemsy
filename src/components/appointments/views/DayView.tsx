@@ -815,7 +815,6 @@ export function DayView({
 										color="primary.main"
 										sx={{
 											textAlign: 'center',
-											fontSize: '0.8rem',
 											lineHeight: 1,
 										}}
 									>
@@ -826,7 +825,6 @@ export function DayView({
 										color="text.secondary"
 										sx={{
 											textAlign: 'center',
-											fontSize: '0.7rem',
 											lineHeight: 1,
 										}}
 									>

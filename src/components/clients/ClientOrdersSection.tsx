@@ -4,15 +4,16 @@ import { useQuery } from '@tanstack/react-query';
 import {
 	Box,
 	Button,
-	Card,
-	CardContent,
-	Divider,
-	IconButton,
+	Paper,
 	Skeleton,
 	Typography,
-	Chip,
+	Table,
+	TableBody,
+	TableCell,
+	TableContainer,
+	TableHead,
+	TableRow,
 } from '@mui/material';
-import ShoppingBagIcon from '@mui/icons-material/ShoppingBag';
 import AddIcon from '@mui/icons-material/Add';
 import Link from 'next/link';
 import type { Order } from '@/types';
@@ -20,10 +21,10 @@ import { OrderListItem } from './OrderListItem';
 import { getClientOrders } from '@/lib/actions/clients';
 
 // Reusable button style for contained-to-outlined hover effect
+// fontSize uses body1 (16px) from theme
 const containedToOutlinedHoverStyle = {
 	whiteSpace: 'nowrap' as const,
 	border: '2px solid transparent',
-	fontSize: '1rem',
 	'&:hover': {
 		backgroundColor: 'transparent',
 		borderColor: 'primary.main',
@@ -61,91 +62,99 @@ export function ClientOrdersSection({
 		refetchOnWindowFocus: false,
 	});
 
-	const getStatusColor = (status: string) => {
-		switch (status) {
-			case 'new':
-				return 'info';
-			case 'in_progress':
-				return 'warning';
-			case 'completed':
-				return 'success';
-			case 'cancelled':
-				return 'error';
-			default:
-				return 'default';
-		}
-	};
-
-	const formatCurrency = (cents: number) => {
-		return new Intl.NumberFormat('en-US', {
-			style: 'currency',
-			currency: 'USD',
-		}).format(cents / 100);
-	};
-
 	return (
-		<Card elevation={2} sx={{ mt: 3 }}>
-			<CardContent>
-				<Box
-					sx={{
-						display: 'flex',
-						justifyContent: 'space-between',
-						alignItems: 'center',
-						mb: 2,
-					}}
+		<Box>
+			<Box
+				sx={{
+					display: 'flex',
+					justifyContent: 'space-between',
+					alignItems: 'center',
+					mb: 3,
+				}}
+			>
+				<Typography variant="h6">Orders</Typography>
+
+				<Button
+					component={Link}
+					href={`/orders/new?clientId=${clientId}`}
+					variant="contained"
+					size="small"
+					startIcon={<AddIcon />}
+					sx={containedToOutlinedHoverStyle}
 				>
-					<Typography
-						variant="h6"
-						sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-					>
-						<ShoppingBagIcon color="primary" />
-						Orders
-					</Typography>
+					Create New Order
+				</Button>
+			</Box>
 
-					<Button
-						component={Link}
-						href={`/orders/new?clientId=${clientId}`}
-						variant="contained"
-						size="small"
-						startIcon={<AddIcon />}
-						sx={containedToOutlinedHoverStyle}
-					>
-						Create New Order
-					</Button>
-				</Box>
-
-				<Divider sx={{ mb: 2 }} />
-
-				{isLoading ? (
-					<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 2 }}>
-						<Skeleton variant="rounded" height={80} />
-						<Skeleton variant="rounded" height={80} />
-						<Skeleton variant="rounded" height={80} />
-					</Box>
-				) : error ? (
-					<Typography color="error" sx={{ mt: 2 }}>
-						{String((error as any)?.message || 'Failed to load orders')}
-					</Typography>
-				) : (data?.length ?? 0) === 0 ? (
-					<Typography
-						color="text.secondary"
-						sx={{ mt: 2, textAlign: 'center' }}
-					>
-						No orders yet for {clientName}
-					</Typography>
-				) : (
-					<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-						{(data ?? []).map((order) => (
-							<OrderListItem
-								key={order.id}
-								order={order}
-								garmentCount={order.garment_count}
-							/>
-						))}
-					</Box>
-				)}
-			</CardContent>
-		</Card>
+			<TableContainer component={Paper} elevation={1}>
+				<Table>
+					<TableHead>
+						<TableRow>
+							<TableCell>Order #</TableCell>
+							<TableCell>Status</TableCell>
+							<TableCell>Garments</TableCell>
+							<TableCell>Total</TableCell>
+							<TableCell>Due Date</TableCell>
+							<TableCell align="right">Actions</TableCell>
+						</TableRow>
+					</TableHead>
+					<TableBody>
+						{isLoading ? (
+							Array.from({ length: 3 }).map((_, index) => (
+								<TableRow key={index}>
+									<TableCell>
+										<Skeleton variant="text" width={100} />
+									</TableCell>
+									<TableCell>
+										<Skeleton variant="text" width={80} />
+									</TableCell>
+									<TableCell>
+										<Skeleton variant="text" width={80} />
+									</TableCell>
+									<TableCell>
+										<Skeleton variant="text" width={80} />
+									</TableCell>
+									<TableCell>
+										<Skeleton variant="text" width={100} />
+									</TableCell>
+									<TableCell align="right">
+										<Skeleton variant="circular" width={24} height={24} />
+									</TableCell>
+								</TableRow>
+							))
+						) : error ? (
+							<TableRow>
+								<TableCell colSpan={6} align="center">
+									<Typography color="error" sx={{ py: 4 }}>
+										{String((error as any)?.message || 'Failed to load orders')}
+									</Typography>
+								</TableCell>
+							</TableRow>
+						) : (data?.length ?? 0) === 0 ? (
+							<TableRow>
+								<TableCell colSpan={6} align="center">
+									<Typography
+										variant="body2"
+										color="text.secondary"
+										sx={{ py: 4 }}
+									>
+										No orders yet for {clientName}
+									</Typography>
+								</TableCell>
+							</TableRow>
+						) : (
+							(data ?? []).map((order) => (
+								<OrderListItem
+									key={order.id}
+									order={order}
+									garmentCount={order.garment_count}
+								/>
+							))
+						)}
+					</TableBody>
+				</Table>
+			</TableContainer>
+		</Box>
 	);
 }
 

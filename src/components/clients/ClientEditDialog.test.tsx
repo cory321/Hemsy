@@ -103,12 +103,6 @@ describe('ClientEditDialog', () => {
 		expect(phoneInput.value.replace(/\D/g, '')).toBe('5551234567');
 		expect(screen.getByDisplayValue('Test notes')).toBeInTheDocument();
 		expect(screen.getByDisplayValue('123 Main St')).toBeInTheDocument();
-
-		const emailSwitch = screen.getByRole('checkbox', { name: /accept email/i });
-		const smsSwitch = screen.getByRole('checkbox', { name: /accept sms/i });
-
-		expect(emailSwitch).toBeChecked();
-		expect(smsSwitch).not.toBeChecked();
 	});
 
 	it.skip('validates required fields', async () => {
@@ -156,10 +150,6 @@ describe('ClientEditDialog', () => {
 		await user.clear(firstNameInput);
 		await user.type(firstNameInput, 'Jane');
 
-		// Toggle SMS preference
-		const smsSwitch = screen.getByRole('checkbox', { name: /accept sms/i });
-		await user.click(smsSwitch);
-
 		const submitButton = screen.getByText('Update Client');
 		await user.click(submitButton);
 
@@ -169,8 +159,6 @@ describe('ClientEditDialog', () => {
 				last_name: 'Doe',
 				email: 'john@example.com',
 				phone_number: '5551234567',
-				accept_email: true,
-				accept_sms: true,
 				notes: 'Test notes',
 				mailing_address: '123 Main St',
 			});

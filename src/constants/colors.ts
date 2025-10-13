@@ -1,141 +1,130 @@
 /**
- * Hemsy Color Palette
+ * Hemsy Color Palette - Single Source of Truth
  *
  * A warm, crafted color palette inspired by fabric and textile tones.
  * These colors evoke the feeling of a professional tailoring studio.
+ *
+ * All theme colors should be defined here and imported where needed.
  */
 
 export const colors = {
-  // Primary Palette - Rose/Burgundy tones
-  burgundy: {
-    900: '#1F0A0C', // Almost black
-    800: '#3A1619', // Very dark
-    700: '#5C252A', // Darker burgundy
-    600: '#8B3A42', // Deep burgundy (primary dark)
-    500: '#B85563', // Rose red (primary main)
-    400: '#CC7A81', // Dusty rose
-    300: '#D99A9E', // Light dusty rose (primary light)
-    200: '#F4D5D3', // Blush pink
-    100: '#FFF0ED', // Very light blush
-  },
+	// Primary Colors
+	primary: {
+		main: '#c96442', // Terracotta
+		light: '#e09a7a', // Light terracotta
+		dark: '#b05730', // Dark terracotta
+		contrastText: '#ffffff',
+	},
 
-  // Secondary Palette - Terracotta/Sienna tones
-  terracotta: {
-    900: '#3A1F14', // Very dark sienna
-    800: '#5C3223', // Dark sienna
-    700: '#8B4F3B', // Darker terracotta
-    600: '#B8765A', // Burnt sienna (secondary dark)
-    500: '#CC8B70', // Terracotta (secondary main)
-    400: '#D08585', // Salmon pink
-    300: '#E4A896', // Light salmon (secondary light)
-    200: '#F2BCA6', // Peach
-    100: '#FFDCC4', // Light apricot
-  },
+	// Secondary Colors
+	secondary: {
+		main: '#7c7861', // Medium warm grey
+		light: '#ede9de', // Lighter warm grey
+		dark: '#535146', // Darkwarm grey
+		contrastText: '#535146',
+	},
 
-  // Neutral Palette - Cream/Beige tones
-  neutral: {
-    900: '#1F0A0C', // Almost black
-    800: '#3A1619', // Very dark (text primary)
-    700: '#5C252A', // Dark
-    600: '#8B3A42', // Deep burgundy (text secondary)
-    500: '#BC6B6B', // Terra cotta red
-    400: '#D99A9E', // Light dusty rose
-    300: '#E8CDB0', // Warm beige
-    200: '#F4D5D3', // Blush pink
-    100: '#FFE9D6', // Pale peach
-    50: '#fff9f2', // Warm cream (background)
-    0: '#FFFFFF', // Pure white (paper)
-  },
+	// Background Colors
+	background: {
+		default: '#faf9f5', // Warm off-white
+		paper: '#ffffff', // White
+	},
 
-  // Semantic Colors
-  semantic: {
-    error: '#8B3A42', // Deep burgundy
-    warning: '#CC8B70', // Terracotta
-    info: '#D08585', // Salmon pink
-    success: '#7C9885', // Muted sage green
-  },
+	// Text Colors
+	text: {
+		primary: '#3d3929', // Dark warm grey
+		secondary: '#535146', // Medium dark grey
+		disabled: 'rgba(61, 57, 41, 0.38)',
+	},
 
-  // UI States
-  states: {
-    hover: 'rgba(184, 85, 99, 0.08)', // Primary with low opacity
-    pressed: 'rgba(184, 85, 99, 0.12)', // Primary with medium opacity
-    selected: 'rgba(184, 85, 99, 0.16)', // Primary with higher opacity
-    disabled: 'rgba(58, 22, 25, 0.38)', // Dark with 38% opacity
-    divider: '#F4D5D3', // Blush pink for dividers
-    backdrop: 'rgba(31, 10, 12, 0.5)', // Dark overlay
-  },
+	// Grey Scale (for Material UI compatibility)
+	grey: {
+		50: '#faf9f5',
+		100: '#f5f4ee',
+		200: '#ede9de',
+		300: '#e9e6dc',
+		400: '#dad9d4',
+		500: '#b4b2a7',
+		600: '#83827d',
+		700: '#535146',
+		800: '#3d3929',
+		900: '#28261b',
+	},
 
-  // Special Purpose
-  special: {
-    link: '#B85563', // Primary color for links
-    linkHover: '#8B3A42', // Darker on hover
-    focus: '#B85563', // Focus ring color
-    shadow: 'rgba(31, 10, 12, 0.08)', // Shadow color
-    navBackground: '#A34357', // Navigation bar background
-    navHover: 'rgba(255, 255, 255, 0.15)', // Navigation hover state
-    navText: '#FFFFFF', // Navigation text color
-    navTextSecondary: 'rgba(255, 255, 255, 0.7)', // Secondary nav text
-  },
-};
+	// Semantic Colors
+	error: {
+		main: '#141413', // Almost black
+		light: '#83827d',
+		dark: '#000000',
+		contrastText: '#ffffff',
+	},
 
-// Material UI Palette Configuration Reference
-export const muiPalette = {
-  primary: {
-    main: colors.burgundy[500],
-    light: colors.burgundy[300],
-    dark: colors.burgundy[600],
-    contrastText: '#ffffff',
-  },
-  secondary: {
-    main: colors.terracotta[500],
-    light: colors.terracotta[300],
-    dark: colors.terracotta[600],
-    contrastText: '#ffffff',
-  },
-  error: {
-    main: colors.semantic.error,
-    light: colors.terracotta[500],
-    dark: colors.burgundy[700],
-  },
-  warning: {
-    main: colors.semantic.warning,
-    light: colors.terracotta[100],
-    dark: colors.terracotta[600],
-  },
-  info: {
-    main: colors.semantic.info,
-    light: colors.terracotta[200],
-    dark: colors.terracotta[500],
-  },
-  success: {
-    main: colors.semantic.success,
-    light: '#A3B5AA',
-    dark: '#5A7061',
-  },
-  grey: {
-    50: '#fafafa',
-    100: '#f5f5f5',
-    200: '#eeeeee',
-    300: '#e0e0e0',
-    400: '#bdbdbd',
-    500: '#9e9e9e',
-    600: '#757575',
-    700: '#616161',
-    800: '#424242',
-    900: '#212121',
-  },
-  text: {
-    primary: colors.neutral[800],
-    secondary: colors.neutral[600],
-    disabled: colors.states.disabled,
-  },
-  background: {
-    default: colors.neutral[50],
-    paper: colors.neutral[0],
-  },
-  divider: colors.states.divider,
+	warning: {
+		main: '#b05730', // Warm orange
+		light: '#e09a7a',
+		dark: '#b4552d',
+		contrastText: '#ffffff',
+	},
+
+	info: {
+		main: '#9c87f5', // Purple
+		light: '#dbd3f0',
+		dark: '#7d5fd3',
+		contrastText: '#ffffff',
+	},
+
+	success: {
+		main: '#7C9885', // Muted sage green
+		light: '#A3B5AA',
+		dark: '#5A7061',
+		contrastText: '#ffffff',
+	},
+
+	// UI Component Colors
+	ui: {
+		border: '#dad9d4',
+		input: '#b4b2a7',
+		ring: '#c96442',
+		muted: '#ede9de',
+		mutedForeground: '#83827d',
+		accent: '#e9e6dc',
+		accentForeground: '#28261b',
+		card: '#faf9f5',
+		cardForeground: '#141413',
+		popover: '#ffffff',
+		popoverForeground: '#28261b',
+		divider: '#dad9d4',
+	},
+
+	// UI States
+	states: {
+		hover: 'rgba(201, 100, 66, 0.08)',
+		pressed: 'rgba(201, 100, 66, 0.12)',
+		selected: 'rgba(201, 100, 66, 0.16)',
+		backdrop: 'rgba(20, 20, 19, 0.5)',
+	},
+
+	// Chart Colors
+	chart: {
+		1: '#b05730',
+		2: '#9c87f5',
+		3: '#ded8c4',
+		4: '#dbd3f0',
+		5: '#b4552d',
+	},
+
+	// Sidebar Colors
+	sidebar: {
+		background: '#f5f4ee',
+		foreground: '#3d3d3a',
+		primary: '#c96442',
+		primaryForeground: '#fbfbfb',
+		accent: '#e9e6dc',
+		accentForeground: '#343434',
+		border: '#ebebeb',
+		ring: '#b5b5b5',
+	},
 };
 
 // Export type for TypeScript support
 export type ColorPalette = typeof colors;
-export type MuiPaletteConfig = typeof muiPalette;

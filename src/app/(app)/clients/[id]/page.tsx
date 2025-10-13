@@ -7,6 +7,7 @@ import {
 	CardContent,
 	Chip,
 	Divider,
+	Avatar,
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import EmailIcon from '@mui/icons-material/Email';
@@ -14,6 +15,10 @@ import PhoneIcon from '@mui/icons-material/Phone';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import NotesIcon from '@mui/icons-material/Notes';
 import ArchiveIcon from '@mui/icons-material/Archive';
+import MailOutlineIcon from '@mui/icons-material/MailOutline';
+import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined';
+import EditIcon from '@mui/icons-material/Edit';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import {
 	getClient,
 	getClientActiveOrdersCount,
@@ -29,6 +34,9 @@ import ClientRestoreButton from '@/components/clients/ClientRestoreButton';
 import ClientOrdersSection from '@/components/clients/ClientOrdersSection';
 import ClientDetailTabs from '@/components/clients/ClientDetailTabs';
 import ClientProfileCard from '@/components/clients/ClientProfileCard';
+import ClientEditDialog from '@/components/clients/ClientEditDialog';
+import ClientCommunicationPreferencesModal from '@/components/clients/ClientCommunicationPreferencesModal';
+import Button from '@mui/material/Button';
 import { createClient } from '@/lib/supabase/server';
 import { auth } from '@clerk/nextjs/server';
 import { formatPhoneNumber } from '@/lib/utils/phone';
@@ -121,40 +129,160 @@ export default async function ClientDetailPage({
 			staleTime: 30 * 1000,
 		});
 
+		// Helper function to get initials
+		const getInitials = (first: string, last: string) => {
+			const f = first.trim();
+			const l = last.trim();
+			const fi = f ? f[0] : '';
+			const li = l ? l[0] : '';
+			return `${fi}${li}`.toUpperCase() || '—';
+		};
+
+		const initials = getInitials(client.first_name, client.last_name);
+		const fullName = `${client.first_name} ${client.last_name}`.trim();
+
 		return (
 			<Container maxWidth="lg">
 				<Box sx={{ mt: 4, mb: 4 }}>
-					{/* Header */}
-					<Box
-						sx={{
-							display: 'flex',
-							justifyContent: 'space-between',
-							alignItems: 'center',
-							mb: 4,
-						}}
-					>
-						<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-							<Typography variant="h4" component="h1">
-								Client Details
-							</Typography>
-							{(client as any).is_archived && (
-								<Chip
-									icon={<ArchiveIcon />}
-									label="Archived"
-									color="default"
-									size="medium"
-								/>
-							)}
-						</Box>
-						{(client as any).is_archived && (
-							<ClientRestoreButton
-								clientId={client.id}
-								clientName={`${client.first_name} ${client.last_name}`}
-								variant="contained"
-								size="medium"
-							/>
-						)}
-					</Box>
+					{/* Header with Client Identity and Contact Info */}
+					<Card elevation={2} sx={{ mb: 4 }}>
+						<CardContent sx={{ p: 3 }}>
+							<Box
+								sx={{
+									display: 'flex',
+									justifyContent: 'space-between',
+									alignItems: 'center',
+									flexWrap: 'wrap',
+									gap: 3,
+								}}
+							>
+								{/* Left: Avatar and Name */}
+								<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+									<Avatar
+										sx={{
+											width: 64,
+											height: 64,
+											bgcolor: 'secondary.dark',
+											color: 'primary.contrastText',
+											fontSize: 24,
+											fontWeight: 600,
+											boxShadow: 2,
+										}}
+									>
+										{initials}
+									</Avatar>
+									<Box>
+										<Box
+											sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}
+										>
+											<Typography
+												variant="h4"
+												component="h1"
+												sx={{ fontWeight: 600 }}
+											>
+												{fullName}
+											</Typography>
+											{(client as any).is_archived && (
+												<Chip
+													icon={<ArchiveIcon />}
+													label="Archived"
+													color="default"
+													size="medium"
+												/>
+											)}
+										</Box>
+										<Typography variant="body2" color="secondary.main">
+											Client since{' '}
+											{client.created_at
+												? new Date(client.created_at).toLocaleDateString(
+														'en-US',
+														{
+															month: 'long',
+															year: 'numeric',
+														}
+													)
+												: 'Unknown'}
+										</Typography>
+									</Box>
+								</Box>
+
+								{/* Center: Contact Information (horizontal) */}
+								<Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+									<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+										<Box
+											sx={{
+												width: 32,
+												height: 32,
+												borderRadius: 1,
+												display: 'flex',
+												alignItems: 'center',
+												justifyContent: 'center',
+												bgcolor: 'secondary.light',
+												color: 'secondary.dark',
+											}}
+										>
+											<MailOutlineIcon fontSize="small" />
+										</Box>
+										<Typography variant="body1" color="text.primary">
+											{client.email}
+										</Typography>
+									</Box>
+									<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+										<Box
+											sx={{
+												width: 32,
+												height: 32,
+												borderRadius: 1,
+												display: 'flex',
+												alignItems: 'center',
+												justifyContent: 'center',
+												bgcolor: 'secondary.light',
+												color: 'secondary.dark',
+											}}
+										>
+											<PhoneOutlinedIcon fontSize="small" />
+										</Box>
+										<Typography variant="body1" color="text.primary">
+											{formatPhoneNumber(client.phone_number)}
+										</Typography>
+									</Box>
+								</Box>
+
+								{/* Right: Edit Button */}
+								<ClientEditDialog client={client}>
+									<Button
+										variant="outlined"
+										size="large"
+										startIcon={<EditIcon />}
+										sx={{
+											fontWeight: 500,
+										}}
+									>
+										Edit Client
+									</Button>
+								</ClientEditDialog>
+
+								{/* Restore Button (if archived) */}
+								{(client as any).is_archived && (
+									<Box
+										sx={{
+											width: '100%',
+											display: 'flex',
+											justifyContent: 'flex-end',
+											mt: 1,
+										}}
+									>
+										<ClientRestoreButton
+											clientId={client.id}
+											clientName={fullName}
+											variant="contained"
+											size="medium"
+										/>
+									</Box>
+								)}
+							</Box>
+						</CardContent>
+					</Card>
 
 					{/* Two-column layout: Left - client info, Right - tabs (Orders/Appointments) */}
 					<Grid container spacing={3}>
@@ -172,24 +300,62 @@ export default async function ClientDetailPage({
 							<Box sx={{ mt: 3 }}>
 								<Card elevation={2}>
 									<CardContent>
-										<Typography variant="h6" gutterBottom>
+										<Typography
+											variant="h6"
+											gutterBottom
+											sx={{ fontSize: '1rem' }}
+										>
 											Communication Preferences
 										</Typography>
 										<Divider sx={{ mb: 2 }} />
 
-										<Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-											<Chip
-												label="Email"
-												color={client.accept_email ? 'success' : 'default'}
-												variant={client.accept_email ? 'filled' : 'outlined'}
-												icon={<EmailIcon />}
-											/>
-											<Chip
-												label="SMS"
-												color={client.accept_sms ? 'success' : 'default'}
-												variant={client.accept_sms ? 'filled' : 'outlined'}
-												icon={<PhoneIcon />}
-											/>
+										<Box
+											sx={{
+												display: 'flex',
+												gap: 1,
+												flexWrap: 'wrap',
+												alignItems: 'center',
+												justifyContent: 'space-between',
+											}}
+										>
+											<Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+												<Chip
+													label="Email"
+													color={client.accept_email ? 'success' : 'default'}
+													variant={client.accept_email ? 'filled' : 'outlined'}
+													icon={
+														client.accept_email ? (
+															<CheckCircleIcon />
+														) : (
+															<EmailIcon />
+														)
+													}
+													sx={{ fontSize: '1rem' }}
+												/>
+												<Chip
+													label="SMS"
+													color={client.accept_sms ? 'success' : 'default'}
+													variant={client.accept_sms ? 'filled' : 'outlined'}
+													icon={
+														client.accept_sms ? (
+															<CheckCircleIcon />
+														) : (
+															<PhoneIcon />
+														)
+													}
+													sx={{ fontSize: '1rem' }}
+												/>
+											</Box>
+											<ClientCommunicationPreferencesModal client={client}>
+												<Button
+													variant="outlined"
+													size="small"
+													startIcon={<EditIcon />}
+													sx={{ fontSize: '1rem' }}
+												>
+													Edit
+												</Button>
+											</ClientCommunicationPreferencesModal>
 										</Box>
 									</CardContent>
 								</Card>
@@ -249,7 +415,7 @@ export default async function ClientDetailPage({
 
 							{/* Timestamps */}
 							<Box sx={{ mt: 3 }}>
-								<Card elevation={1} sx={{ bgcolor: 'grey.50' }}>
+								<Card elevation={2}>
 									<CardContent>
 										<Typography variant="h6" gutterBottom>
 											Record Information

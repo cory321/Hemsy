@@ -52,18 +52,11 @@ export default function ClientDetailTabs({
 		refetchOnWindowFocus: false,
 	});
 
-	// Get appointments count
+	// Get appointments count - only active upcoming appointments
 	const appointmentsQuery = useInfiniteClientAppointments(shopId, clientId, {
-		includeCompleted: true,
-		statuses: [
-			'pending',
-			'confirmed',
-			'declined',
-			'canceled',
-			'no_show',
-			'no_confirmation_required',
-		],
-		timeframe: 'all',
+		includeCompleted: false,
+		statuses: ['pending', 'confirmed', 'no_confirmation_required'],
+		timeframe: 'upcoming',
 		pageSize: 1,
 	});
 
@@ -85,30 +78,48 @@ export default function ClientDetailTabs({
 					label={
 						<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
 							Orders
-							<Chip
-								label={ordersCount}
-								size="small"
-								sx={{ fontSize: '0.75rem', height: 20 }}
-							/>
+							{ordersCount > 0 && (
+								<Chip
+									label={ordersCount}
+									size="small"
+									color={activeTab === 'orders' ? 'primary' : 'default'}
+									sx={(theme) => ({
+										fontSize: theme.typography.caption.fontSize, // 12px
+										height: 20,
+										fontWeight: 700,
+										...(activeTab !== 'orders' && {
+											bgcolor: 'secondary.dark',
+											color: 'white',
+										}),
+									})}
+								/>
+							)}
 						</Box>
 					}
-					iconPosition="start"
-					icon={<i className="ri-shopping-bag-line" />}
 				/>
 				<Tab
 					value="appointments"
 					label={
 						<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
 							Appointments
-							<Chip
-								label={appointmentsCount}
-								size="small"
-								sx={{ fontSize: '0.75rem', height: 20 }}
-							/>
+							{appointmentsCount > 0 && (
+								<Chip
+									label={appointmentsCount}
+									size="small"
+									color={activeTab === 'appointments' ? 'primary' : 'default'}
+									sx={(theme) => ({
+										fontSize: theme.typography.caption.fontSize, // 12px
+										height: 20,
+										fontWeight: 700,
+										...(activeTab !== 'appointments' && {
+											bgcolor: 'secondary.dark',
+											color: 'white',
+										}),
+									})}
+								/>
+							)}
 						</Box>
 					}
-					iconPosition="start"
-					icon={<i className="ri-calendar-event-line" />}
 				/>
 			</Tabs>
 

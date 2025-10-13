@@ -1,76 +1,111 @@
 /* Reset and base styles */
 * {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
+	box-sizing: border-box;
+	padding: 0;
+	margin: 0;
 }
 
 html,
 body {
-  max-width: 100vw;
-  overflow-x: hidden;
+	max-width: 100vw;
+	overflow-x: hidden;
 }
 
 html {
-  font-size: 15px; /* 1rem = 15px */
+	font-size: 15px; /* 1rem = 15px */
 }
 
 body {
-  font-family: inherit;
-  color: var(--foreground);
+	font-family: inherit;
+	color: var(--foreground);
 }
 
 a {
-  color: #b85563; /* Primary color for links */
-  text-decoration: none;
-  transition: color 0.2s ease;
+	color: #c96442; /* Primary color for links */
+	text-decoration: none;
+	transition: color 0.2s ease;
 }
 
 a:hover {
-  color: #8b3a42; /* Darker on hover */
+	color: #b05730; /* Darker on hover */
 }
 
 /* CSS Custom Properties for theming */
 :root {
-  --foreground-rgb: 58, 22, 25; /* #3A1619 - Very dark burgundy */
-  --foreground: rgb(58, 22, 25); /* #3A1619 */
-  --background-rgb: 255, 249, 242; /* #fff9f2 - Warm cream */
-  --background: rgb(255, 249, 242); /* #fff9f2 */
-  --primary-rgb: 184, 85, 99; /* #B85563 - Rose red */
-  --primary: rgb(184, 85, 99); /* #B85563 */
-  /* Pin the app to light mode regardless of system preference */
-  color-scheme: light;
+	--foreground-rgb: 61, 57, 41; /* #3d3929 - Dark warm grey */
+	--foreground: rgb(61, 57, 41); /* #3d3929 */
+	--background-rgb: 250, 249, 245; /* #faf9f5 - Warm off-white */
+	--background: rgb(250, 249, 245); /* #faf9f5 */
+	--primary-rgb: 201, 100, 66; /* #c96442 - Terracotta */
+	--primary: rgb(201, 100, 66); /* #c96442 */
+
+	/* Extended color variables */
+	--card: #faf9f5;
+	--card-foreground: #141413;
+	--popover: #ffffff;
+	--popover-foreground: #28261b;
+	--secondary: #e9e6dc;
+	--secondary-foreground: #535146;
+	--accent: #e9e6dc;
+	--accent-foreground: #28261b;
+	--muted: #ede9de;
+	--muted-foreground: #83827d;
+	--border: #dad9d4;
+	--input: #b4b2a7;
+	--ring: #c96442;
+	--destructive: #141413;
+	--destructive-foreground: #ffffff;
+
+	/* Chart colors */
+	--chart-1: #b05730;
+	--chart-2: #9c87f5;
+	--chart-3: #ded8c4;
+	--chart-4: #dbd3f0;
+	--chart-5: #b4552d;
+
+	/* Sidebar colors */
+	--sidebar-background: #f5f4ee;
+	--sidebar-foreground: #3d3d3a;
+	--sidebar-primary: #c96442;
+	--sidebar-primary-foreground: #fbfbfb;
+	--sidebar-accent: #e9e6dc;
+	--sidebar-accent-foreground: #343434;
+	--sidebar-border: #ebebeb;
+	--sidebar-ring: #b5b5b5;
+
+	/* Pin the app to light mode regardless of system preference */
+	color-scheme: light;
 }
 
 /* Removed dark mode styles as the app uses a consistent light theme via Material UI */
 
 /* Guard against global stylesheets injecting dark-mode backgrounds */
 @media (prefers-color-scheme: dark) {
-  html,
-  body {
-    background-color: #fffefc !important; /* Warm cream background */
-    background-image: none !important;
-    color: var(--foreground);
-  }
+	html,
+	body {
+		background-color: #faf9f5 !important; /* Warm off-white background */
+		background-image: none !important;
+		color: var(--foreground);
+	}
 }
 
 /* PWA specific styles */
 @media (display-mode: standalone) {
-  body {
-    user-select: none;
-    -webkit-user-select: none;
-  }
+	body {
+		user-select: none;
+		-webkit-user-select: none;
+	}
 }
 
 /* Mobile-first responsive utilities */
 .sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
 }

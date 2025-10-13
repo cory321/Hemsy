@@ -236,7 +236,7 @@ function GarmentCard({ garment, index }: GarmentCardProps) {
 										>
 											{(() => {
 												if (service.unit === 'flat_rate') {
-													return 'flat rate';
+													return '';
 												} else if (service.unit === 'hour') {
 													const hourlyRate = service.unitPriceCents / 100;
 													return `${service.quantity} ${service.quantity === 1 ? 'hour' : 'hours'} (${formatCurrency(hourlyRate)}/hr)`;

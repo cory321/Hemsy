@@ -305,10 +305,9 @@ export default function ServiceSearchAndManager({
 											{service.name}
 										</Typography>
 										<Typography variant="caption" color="text.secondary">
-											{formatCurrency(service.default_unit_price_cents / 100)} /{' '}
-											{service.default_unit === 'flat_rate'
-												? 'Flat Rate'
-												: service.default_unit}
+											{formatCurrency(service.default_unit_price_cents / 100)}
+											{service.default_unit !== 'flat_rate' &&
+												` / ${service.default_unit}`}
 										</Typography>
 									</Box>
 								))

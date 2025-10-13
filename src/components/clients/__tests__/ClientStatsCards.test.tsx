@@ -85,7 +85,7 @@ describe('ClientStatsCards', () => {
 		expect(screen.getByText('3')).toBeInTheDocument();
 
 		// Check that real outstanding balance is displayed
-		expect(screen.getByText('Outstanding Balance')).toBeInTheDocument();
+		expect(screen.getByText('Outstanding Balances')).toBeInTheDocument();
 		expect(screen.getByText('$125.00')).toBeInTheDocument();
 
 		expect(screen.getByText('Ready For Pickup')).toBeInTheDocument();
@@ -194,7 +194,7 @@ describe('ClientStatsCards', () => {
 		expect(screen.getByText('Next Appointment')).toBeInTheDocument();
 		expect(screen.getByText(/Wed, Dec 25 • 10:00 AM/)).toBeInTheDocument();
 
-		expect(screen.getByText('Outstanding Balance')).toBeInTheDocument();
+		expect(screen.getByText('Outstanding Balances')).toBeInTheDocument();
 		expect(screen.getByText('$250.00')).toBeInTheDocument(); // Real outstanding balance data
 	});
 
@@ -210,7 +210,7 @@ describe('ClientStatsCards', () => {
 			/>
 		);
 
-		expect(screen.getByText('Outstanding Balance')).toBeInTheDocument();
+		expect(screen.getByText('Outstanding Balances')).toBeInTheDocument();
 		expect(screen.getByText('$450.00')).toBeInTheDocument();
 	});
 
@@ -225,7 +225,7 @@ describe('ClientStatsCards', () => {
 			/>
 		);
 
-		expect(screen.getByText('Outstanding Balance')).toBeInTheDocument();
+		expect(screen.getByText('Outstanding Balances')).toBeInTheDocument();
 		expect(screen.getByText('$0.00')).toBeInTheDocument();
 	});
 
@@ -241,13 +241,13 @@ describe('ClientStatsCards', () => {
 		);
 
 		const outstandingCard = screen
-			.getByText('Outstanding Balance')
+			.getByText('Outstanding Balances')
 			.closest('.MuiCard-root');
 		const outstandingAmount = screen.getByText('$100.00');
 
 		// The component should apply error styling when there's an outstanding balance
 		expect(outstandingCard).toContainElement(outstandingAmount);
-		expect(screen.getByText('Outstanding Balance')).toBeInTheDocument();
+		expect(screen.getByText('Outstanding Balances')).toBeInTheDocument();
 	});
 
 	it('should use primary color for outstanding balance when amount is 0', () => {
@@ -262,12 +262,12 @@ describe('ClientStatsCards', () => {
 		);
 
 		const outstandingCard = screen
-			.getByText('Outstanding Balance')
+			.getByText('Outstanding Balances')
 			.closest('.MuiCard-root');
 		const outstandingAmount = screen.getByText('$0.00');
 
 		// The component should apply primary styling when there's no outstanding balance
 		expect(outstandingCard).toContainElement(outstandingAmount);
-		expect(screen.getByText('Outstanding Balance')).toBeInTheDocument();
+		expect(screen.getByText('Outstanding Balances')).toBeInTheDocument();
 	});
 });

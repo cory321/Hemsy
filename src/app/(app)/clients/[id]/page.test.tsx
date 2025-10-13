@@ -9,6 +9,11 @@ import type { Tables } from '@/types/supabase';
 // Mock dependencies
 jest.mock('next/navigation', () => ({
 	notFound: jest.fn(),
+	useRouter: jest.fn(() => ({
+		push: jest.fn(),
+		refresh: jest.fn(),
+		back: jest.fn(),
+	})),
 }));
 
 jest.mock('@/lib/actions/clients', () => ({
@@ -309,8 +314,7 @@ describe('ClientDetailPage', () => {
 		const Component = await ClientDetailPage({ params });
 		render(wrapWithQuery(Component));
 
-		// Contact heading moved into the profile card
-		expect(screen.getByText('Contact Information')).toBeInTheDocument();
+		// Contact information is displayed inline in the profile card without a heading
 		expect(screen.getByText('Communication Preferences')).toBeInTheDocument();
 		expect(screen.getByText('Mailing Address')).toBeInTheDocument();
 		expect(screen.getByText('Notes')).toBeInTheDocument();
