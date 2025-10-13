@@ -28,6 +28,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
+import { DebouncedPriceField } from '@/components/common/DebouncedPriceField';
 import { useOrderFlow, ServiceLine } from '@/contexts/OrderFlowContext';
 import {
 	formatCurrency,
@@ -650,73 +651,6 @@ export default function ServiceSelector({ garmentId }: ServiceSelectorProps) {
 	);
 }
 
-// Optimized Price Field Component - Isolated to prevent re-renders of parent
-const ServicePriceField = React.memo(
-	function ServicePriceField({
-		unitPriceCents,
-		onPriceChange,
-	}: {
-		unitPriceCents: number;
-		onPriceChange: (cents: number) => void;
-	}) {
-		// Local state for immediate UI updates
-		const [localValue, setLocalValue] = useState('');
-		const [isFocused, setIsFocused] = useState(false);
-
-		// Debounced value for actual updates
-		const debouncedValue = useDebounce(localValue, 300);
-
-		// Update parent only when debounced value changes
-		useEffect(() => {
-			if (isFocused && debouncedValue !== '') {
-				const cents = dollarsToCents(parseFloatFromCurrency(debouncedValue));
-				onPriceChange(cents);
-			}
-		}, [debouncedValue, isFocused, onPriceChange]);
-
-		// Display value - local when focused, formatted from props when not
-		const displayValue = isFocused
-			? localValue
-			: formatAsCurrency((unitPriceCents / 100).toFixed(2));
-
-		const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-			const rawValue = e.target.value;
-			// Only format locally, don't update parent yet
-			setLocalValue(formatAsCurrency(rawValue));
-		};
-
-		const handleFocus = () => {
-			const currentValue = (unitPriceCents / 100).toFixed(2);
-			setLocalValue(currentValue === '0.00' ? '' : currentValue);
-			setIsFocused(true);
-		};
-
-		const handleBlur = () => {
-			const numericValue = parseFloatFromCurrency(localValue || '0');
-			const formatted = numericValue.toFixed(2);
-			setLocalValue(formatted);
-			setIsFocused(false);
-
-			// Update immediately on blur
-			const cents = dollarsToCents(numericValue);
-			onPriceChange(cents);
-		};
-
-		return (
-			<TextField
-				size="small"
-				label="Price"
-				value={displayValue}
-				onChange={handleChange}
-				onFocus={handleFocus}
-				onBlur={handleBlur}
-				InputProps={{
-					startAdornment: <InputAdornment position="start">$</InputAdornment>,
-				}}
-			/>
-		);
-	},
-	// Custom comparison - only re-render if unitPriceCents changes
-	(prevProps, nextProps) =>
-		prevProps.unitPriceCents === nextProps.unitPriceCents
-);
+// Use centralized DebouncedPriceField component
+// This eliminates ~50 lines of duplicate validation logic
+const ServicePriceField = DebouncedPriceField;

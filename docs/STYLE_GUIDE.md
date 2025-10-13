@@ -78,7 +78,7 @@ The Hemsy brand embodies the warmth of a professional tailoring studio with mode
 ### Background Colors
 
 ```css
---color-background-default: #fffefc; /* Warm cream - main app background */
+--color-background-default: #faf9f6; /* Warm cream - main app background */
 --color-background-paper: #ffffff; /* Pure white - cards & elevated surfaces */
 --color-background-nav: #a34357; /* Navigation bar burgundy */
 ```
@@ -115,65 +115,103 @@ The Hemsy brand embodies the warmth of a professional tailoring studio with mode
 
 ## Typography
 
+> **📐 Single Source of Truth**: All typography is defined in `/src/constants/typography.ts`  
+> **📚 Complete Documentation**: See `/src/constants/README.md` for detailed usage guidelines  
+> **🔄 Migration Guide**: See `/docs/TYPOGRAPHY_MIGRATION_GUIDE.md` for refactoring existing code
+
 ### Font Family
 
 ```css
 font-family:
-  'ui-rounded',
-  'SF Pro Rounded',
-  -apple-system,
-  BlinkMacSystemFont,
-  'Segoe UI',
-  Roboto,
-  'Helvetica Neue',
-  Arial,
-  sans-serif;
+	'ui-rounded',
+	'SF Pro Rounded',
+	-apple-system,
+	BlinkMacSystemFont,
+	'Segoe UI',
+	Roboto,
+	'Helvetica Neue',
+	Arial,
+	sans-serif;
 ```
 
 ### Type Scale
 
-```css
-/* Mobile First Scale */
---type-h1: 2rem; /* 32px - Page titles */
---type-h2: 1.5rem; /* 24px - Section headers */
---type-h3: 1.25rem; /* 20px - Card titles */
---type-h4: 1.125rem; /* 18px - Subsection headers */
---type-h5: 1rem; /* 16px - Emphasized body */
---type-h6: 0.875rem; /* 14px - Small headers */
---type-body1: 1rem; /* 16px - Main content */
---type-body2: 0.875rem; /* 14px - Secondary content */
---type-caption: 0.75rem; /* 12px - Captions & labels */
---type-button: 0.875rem; /* 14px - Button text */
+The standardized type scale provides consistent sizing across the application:
+
+| Variant     | Size | Weight | Use Case                      |
+| ----------- | ---- | ------ | ----------------------------- |
+| `display`   | 48px | 700    | Hero text, landing pages      |
+| `h1`        | 40px | 700    | Page titles                   |
+| `h2`        | 32px | 700    | Section headings              |
+| `h3`        | 24px | 600    | Subsection headings           |
+| `h4`        | 20px | 600    | Card titles, important labels |
+| `h5`        | 18px | 600    | Small headings                |
+| `h6`        | 16px | 600    | Smallest headings             |
+| `subtitle1` | 18px | 500    | Large subtitles               |
+| `subtitle2` | 16px | 500    | Standard subtitles            |
+| `body1`     | 16px | 400    | Primary body text             |
+| `body2`     | 14px | 400    | Secondary body text           |
+| `caption`   | 12px | 400    | Helper text, captions         |
+| `overline`  | 12px | 500    | Labels, tags (uppercase)      |
+| `button`    | 16px | 500    | Button text                   |
+
+### Implementation
+
+**✅ Correct Usage:**
+
+```tsx
+// Use Material UI variants (preferred)
+<Typography variant="h4">Card Title</Typography>
+<Typography variant="body1">Body text</Typography>
+
+// Or import from constants for non-MUI components
+import { fontSizes, fontWeights } from '@/constants/typography';
+<div style={{ fontSize: fontSizes.body }}>Text</div>
 ```
 
-### Responsive Typography
+**❌ Never Do This:**
 
-```typescript
-// Desktop adjustments (≥900px)
-@media (min-width: 900px) {
-  --type-h1: 3rem;      /* 48px */
-  --type-h2: 2.125rem;  /* 34px */
-  --type-h3: 1.5rem;    /* 24px */
-  --type-h4: 1.25rem;   /* 20px */
-}
+```tsx
+// Don't hardcode font sizes!
+<Typography sx={{ fontSize: '14px' }}>Text</Typography>
+<Box sx={{ fontSize: '0.875rem' }}>Text</Box>
 ```
 
 ### Font Weights
 
-```css
---weight-light: 300;
---weight-regular: 400;
---weight-medium: 500;
---weight-semibold: 600;
---weight-bold: 700;
+```typescript
+import { fontWeights } from '@/constants/typography';
+
+fontWeights.light; // 300
+fontWeights.regular; // 400
+fontWeights.medium; // 500
+fontWeights.semibold; // 600
+fontWeights.bold; // 700
+fontWeights.extrabold; // 800
 ```
 
 ### Line Heights
 
-```css
---line-height-tight: 1.2;
---line-height-normal: 1.5;
---line-height-relaxed: 1.75;
+```typescript
+import { lineHeights } from '@/constants/typography';
+
+lineHeights.tight; // 1.2  - Headings, compact UI
+lineHeights.normal; // 1.5  - Body text (default)
+lineHeights.relaxed; // 1.75 - Long-form content
+lineHeights.loose; // 2.0  - Very spacious text
+```
+
+### Letter Spacing
+
+```typescript
+import { letterSpacing } from '@/constants/typography';
+
+letterSpacing.tighter; // -0.05em
+letterSpacing.tight; // -0.025em
+letterSpacing.normal; // 0
+letterSpacing.wide; // 0.025em
+letterSpacing.wider; // 0.05em
+letterSpacing.widest; // 0.1em
 ```
 
 ## Spacing & Layout
@@ -313,7 +351,7 @@ box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
 
 ```css
 height: 64px;
-background: #fffefc;
+background: #faf9f6;
 box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 ```
 
@@ -467,31 +505,31 @@ Star (frequently used), AccessTime (hourly), AttachMoney (price)
 ```css
 /* Button Press */
 button:active {
-  transform: scale(0.98);
-  transition: transform 100ms ease-out;
+	transform: scale(0.98);
+	transition: transform 100ms ease-out;
 }
 
 /* Card Hover */
 .card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-  transition: all 200ms ease-out;
+	transform: translateY(-2px);
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+	transition: all 200ms ease-out;
 }
 
 /* Focus Ring Animation */
 :focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 0;
-  animation: focus-ring 200ms ease-out;
+	outline: 2px solid var(--color-primary);
+	outline-offset: 0;
+	animation: focus-ring 200ms ease-out;
 }
 
 @keyframes focus-ring {
-  from {
-    outline-offset: 0;
-  }
-  to {
-    outline-offset: 2px;
-  }
+	from {
+		outline-offset: 0;
+	}
+	to {
+		outline-offset: 2px;
+	}
 }
 ```
 
@@ -650,13 +688,13 @@ toast.success('Order created successfully');
 
 ```typescript
 interface DesignTokens {
-  color: ColorTokens;
-  typography: TypographyTokens;
-  spacing: SpacingTokens;
-  breakpoint: BreakpointTokens;
-  shadow: ShadowTokens;
-  radius: RadiusTokens;
-  transition: TransitionTokens;
+	color: ColorTokens;
+	typography: TypographyTokens;
+	spacing: SpacingTokens;
+	breakpoint: BreakpointTokens;
+	shadow: ShadowTokens;
+	radius: RadiusTokens;
+	transition: TransitionTokens;
 }
 ```
 
@@ -695,21 +733,21 @@ Design tokens are implemented in:
 ```css
 /* Headers */
 th {
-  font-weight: 600;
-  font-size: 0.875rem;
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+	font-weight: 600;
+	font-size: 0.875rem;
+	color: var(--color-text-secondary);
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
 }
 
 /* Row Hover */
 tr:hover {
-  background: var(--color-grey-50);
+	background: var(--color-grey-50);
 }
 
 /* Zebra Striping (optional) */
 tr:nth-child(even) {
-  background: rgba(0, 0, 0, 0.02);
+	background: rgba(0, 0, 0, 0.02);
 }
 ```
 
@@ -799,20 +837,20 @@ if (isMobile) {
 ```css
 /* Success State */
 .field-success {
-  border-color: var(--color-success);
+	border-color: var(--color-success);
 }
 
 /* Error State */
 .field-error {
-  border-color: var(--color-error);
-  background: rgba(139, 58, 66, 0.05);
+	border-color: var(--color-error);
+	background: rgba(139, 58, 66, 0.05);
 }
 
 /* Helper Text */
 .helper-text {
-  font-size: 0.75rem;
-  color: var(--color-text-secondary);
-  margin-top: 4px;
+	font-size: 0.75rem;
+	color: var(--color-text-secondary);
+	margin-top: 4px;
 }
 ```
 
@@ -1091,7 +1129,7 @@ Primary: #b85563
 Secondary: #cc8b70
 Error: #8b3a42
 Success: #7c9885
-Background: #fffefc
+Background: #FAF9F6
 
 /* Spacing (8px base) */
 xs: 4px, sm: 8px, md: 16px

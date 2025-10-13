@@ -41,7 +41,12 @@ import {
 	AttachMoney as MoneyIcon,
 } from '@mui/icons-material';
 import { useOrderFlow } from '@/contexts/OrderFlowContext';
-import { formatCurrency, dollarsToCents } from '@/lib/utils/currency';
+import {
+	formatCurrency,
+	dollarsToCents,
+	handleCurrencyInputChange,
+	getCurrencyInputProps,
+} from '@/lib/utils/currency';
 import { createClient as createSupabaseClient } from '@/lib/supabase/client';
 import InlinePresetSvg from '@/components/ui/InlinePresetSvg';
 import { getPresetIconUrl } from '@/utils/presetIcons';
@@ -302,24 +307,32 @@ export default function Step3Summary({
 		(orderDraft.discountCents / 100).toFixed(2)
 	);
 
+	const subtotal = calculateSubtotal();
+	const maxDiscountCents = subtotal;
+
+	// Check if discount exceeds subtotal
+	const discountError = orderDraft.discountCents > maxDiscountCents;
+
 	const handleDiscountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const value = e.target.value;
-		setDiscountDollars(value);
 
-		const cents = dollarsToCents(parseFloat(value) || 0);
-		updateOrderDraft({ discountCents: Math.max(0, cents) });
+		// Use centralized currency validation
+		const result = handleCurrencyInputChange(value, maxDiscountCents);
+
+		setDiscountDollars(result.displayValue);
+		updateOrderDraft({ discountCents: result.cents });
 	};
 
 	const handleQuickDiscount = (percent: number) => {
-		const subtotal = calculateSubtotal();
 		const discountAmount = (subtotal * percent) / 100;
 		const discountDollars = (discountAmount / 100).toFixed(2);
 		setDiscountDollars(discountDollars);
+		// Quick discount buttons will always be valid since they're percentage-based
 		updateOrderDraft({ discountCents: Math.max(0, discountAmount) });
 	};
 
-	const subtotal = calculateSubtotal();
-	const afterDiscount = subtotal - orderDraft.discountCents;
+	// Ensure afterDiscount is never negative (defensive programming)
+	const afterDiscount = Math.max(0, subtotal - orderDraft.discountCents);
 	const taxAmount = Math.round((afterDiscount * taxPercent) / 100);
 	const total = afterDiscount + taxAmount;
 
@@ -489,19 +502,31 @@ export default function Step3Summary({
 									sx={{
 										display: 'flex',
 										justifyContent: 'space-between',
+										alignItems: 'flex-start',
 										mb: 1,
 									}}
 								>
-									<Typography variant="body1">Discount</Typography>
-									<TextField
-										size="small"
-										value={discountDollars}
-										onChange={handleDiscountChange}
-										InputProps={{
-											startAdornment: '$',
-										}}
-										sx={{ width: '120px' }}
-									/>
+									<Typography variant="body1" sx={{ pt: 1 }}>
+										Discount
+									</Typography>
+									<Box>
+										<TextField
+											size="small"
+											value={discountDollars}
+											onChange={handleDiscountChange}
+											error={discountError}
+											InputProps={{
+												startAdornment: '$',
+											}}
+											{...getCurrencyInputProps()}
+											sx={{ width: '120px' }}
+											helperText={
+												discountError
+													? `Max: ${formatCurrency(maxDiscountCents / 100)}`
+													: ''
+											}
+										/>
+									</Box>
 								</Box>
 								<Box sx={{ display: 'flex', gap: 1 }}>
 									<Button

@@ -9,79 +9,79 @@ import type { Tables, Database } from '@/types/supabase';
 import { convertLocalToUTC } from '@/lib/utils/date-time-utc';
 import { getShopTimezone } from '@/lib/utils/timezone-helpers';
 import {
-  invalidateBusinessMetricsRPCCache,
-  invalidateGarmentPipelineRPCCache,
+	invalidateBusinessMetricsRPCCache,
+	invalidateGarmentPipelineRPCCache,
 } from './rpc-optimized';
 
 export interface PaginatedOrders {
-  data: Array<
-    Omit<Tables<'orders'>, 'paid_amount_cents'> & {
-      client: {
-        id: string;
-        first_name: string;
-        last_name: string;
-        phone_number?: string | null;
-      } | null;
-      garments: Array<{
-        id: string;
-        name?: string | null;
-        stage?: string | null;
-        due_date?: string | null;
-        event_date?: string | null;
-        image_cloud_id?: string | null;
-        photo_url?: string | null;
-        preset_icon_key?: string | null;
-        preset_fill_color?: string | null;
-      }>;
-      invoices?: Array<{
-        id: string;
-        status: string | null;
-        amount_cents: number;
-        payments?: Array<{
-          id: string;
-          amount_cents: number;
-          status: string;
-          payment_method: string;
-        }>;
-      }>;
-      paid_amount_cents?: number;
-    }
-  >;
-  count: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
+	data: Array<
+		Omit<Tables<'orders'>, 'paid_amount_cents'> & {
+			client: {
+				id: string;
+				first_name: string;
+				last_name: string;
+				phone_number?: string | null;
+			} | null;
+			garments: Array<{
+				id: string;
+				name?: string | null;
+				stage?: string | null;
+				due_date?: string | null;
+				event_date?: string | null;
+				image_cloud_id?: string | null;
+				photo_url?: string | null;
+				preset_icon_key?: string | null;
+				preset_fill_color?: string | null;
+			}>;
+			invoices?: Array<{
+				id: string;
+				status: string | null;
+				amount_cents: number;
+				payments?: Array<{
+					id: string;
+					amount_cents: number;
+					status: string;
+					payment_method: string;
+				}>;
+			}>;
+			paid_amount_cents?: number;
+		}
+	>;
+	count: number;
+	page: number;
+	pageSize: number;
+	totalPages: number;
 }
 
 export interface OrdersFilters {
-  search?: string;
-  status?: Database['public']['Enums']['order_status'] | 'all';
-  paymentStatus?: string;
-  sortBy?: 'created_at' | 'order_due_date' | 'total_cents' | 'status';
-  sortOrder?: 'asc' | 'desc';
-  includeCancelled?: boolean;
-  onlyCancelled?: boolean;
-  onlyActive?: boolean;
+	search?: string;
+	status?: Database['public']['Enums']['order_status'] | 'all';
+	paymentStatus?: string;
+	sortBy?: 'created_at' | 'order_due_date' | 'total_cents' | 'status';
+	sortOrder?: 'asc' | 'desc';
+	includeCancelled?: boolean;
+	onlyCancelled?: boolean;
+	onlyActive?: boolean;
 }
 
 export async function getOrdersPaginated(
-  page = 1,
-  pageSize = 10,
-  filters?: OrdersFilters
+	page = 1,
+	pageSize = 10,
+	filters?: OrdersFilters
 ): Promise<PaginatedOrders> {
-  const { shop } = await ensureUserAndShop();
-  const supabase = await createSupabaseClient();
+	const { shop } = await ensureUserAndShop();
+	const supabase = await createSupabaseClient();
 
-  // First, if we need to filter by payment status, we need to get all orders
-  // and calculate payment status, then apply pagination
-  const needsPaymentStatusFilter =
-    filters?.paymentStatus && filters.paymentStatus !== 'all';
+	// First, if we need to filter by payment status, we need to get all orders
+	// and calculate payment status, then apply pagination
+	const needsPaymentStatusFilter =
+		filters?.paymentStatus && filters.paymentStatus !== 'all';
 
-  // Build the base query with invoice and payment data
-  let query = supabase
-    .from('orders')
-    .select(
-      `
+	// Build the base query with invoice and payment data
+	let query = supabase
+		.from('orders')
+		.select(
+			`
       *,
       client:clients(id, first_name, last_name, phone_number),
       garments(
@@ -115,208 +115,208 @@ export async function getOrdersPaginated(
         )
       )
     `,
-      { count: 'exact' }
-    )
-    .eq('shop_id', shop.id);
+			{ count: 'exact' }
+		)
+		.eq('shop_id', shop.id);
 
-  // Apply search filter
-  if (filters?.search) {
-    const searchTerm = `%${filters.search.trim()}%`;
+	// Apply search filter
+	if (filters?.search) {
+		const searchTerm = `%${filters.search.trim()}%`;
 
-    // Search in order number, client name, or notes
-    query = query.or(
-      `order_number.ilike.${searchTerm},notes.ilike.${searchTerm}`
-    );
-  }
+		// Search in order number, client name, or notes
+		query = query.or(
+			`order_number.ilike.${searchTerm},notes.ilike.${searchTerm}`
+		);
+	}
 
-  // Apply cancelled order filters
-  const {
-    includeCancelled = false,
-    onlyCancelled = false,
-    onlyActive = false,
-  } = filters || {};
+	// Apply cancelled order filters
+	const {
+		includeCancelled = false,
+		onlyCancelled = false,
+		onlyActive = false,
+	} = filters || {};
 
-  if (onlyCancelled) {
-    query = query.eq('status', 'cancelled');
-  } else if (onlyActive) {
-    // For active orders, include only: new, in_progress, ready_for_pickup
-    query = query.in('status', ['new', 'in_progress', 'ready_for_pickup']);
-  } else if (!includeCancelled) {
-    query = query.neq('status', 'cancelled');
-  }
+	if (onlyCancelled) {
+		query = query.eq('status', 'cancelled');
+	} else if (onlyActive) {
+		// For active orders, include only: new, in_progress, ready_for_pickup
+		query = query.in('status', ['new', 'in_progress', 'ready_for_pickup']);
+	} else if (!includeCancelled) {
+		query = query.neq('status', 'cancelled');
+	}
 
-  // Apply status filter (after cancelled filter)
-  if (
-    filters?.status &&
-    filters.status !== 'all' &&
-    !onlyCancelled &&
-    !onlyActive
-  ) {
-    query = query.eq('status', filters.status);
-  }
+	// Apply status filter (after cancelled filter)
+	if (
+		filters?.status &&
+		filters.status !== 'all' &&
+		!onlyCancelled &&
+		!onlyActive
+	) {
+		query = query.eq('status', filters.status);
+	}
 
-  // Apply sorting
-  const sortBy = filters?.sortBy || 'created_at';
-  const sortOrder = filters?.sortOrder || 'desc';
-  query = query.order(sortBy, { ascending: sortOrder === 'asc' });
+	// Apply sorting
+	const sortBy = filters?.sortBy || 'created_at';
+	const sortOrder = filters?.sortOrder || 'desc';
+	query = query.order(sortBy, { ascending: sortOrder === 'asc' });
 
-  // If no payment status filter, apply pagination normally
-  if (!needsPaymentStatusFilter) {
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize - 1;
-    query = query.range(start, end);
-  }
+	// If no payment status filter, apply pagination normally
+	if (!needsPaymentStatusFilter) {
+		const start = (page - 1) * pageSize;
+		const end = start + pageSize - 1;
+		query = query.range(start, end);
+	}
 
-  const { data, error, count } = await query;
+	const { data, error, count } = await query;
 
-  if (error) {
-    throw new Error(`Failed to fetch orders: ${error.message}`);
-  }
+	if (error) {
+		throw new Error(`Failed to fetch orders: ${error.message}`);
+	}
 
-  // Calculate paid amount and payment status from invoice payments
-  const ordersWithPaymentInfo = (data || []).map((order) => {
-    let paidAmount = 0;
+	// Calculate paid amount and payment status from invoice payments
+	const ordersWithPaymentInfo = (data || []).map((order) => {
+		let paidAmount = 0;
 
-    // Calculate total paid amount from actual invoice payments (net of refunds)
-    if (order.invoices && order.invoices.length > 0) {
-      order.invoices.forEach((invoice: any) => {
-        if (invoice.payments) {
-          invoice.payments.forEach((payment: any) => {
-            // Include all successful payments regardless of refund status
-            if (
-              payment.status === 'completed' ||
-              payment.status === 'partially_refunded' ||
-              payment.status === 'refunded'
-            ) {
-              const paymentAmount = payment.amount_cents || 0;
-              const refundedAmount = payment.refunded_amount_cents || 0;
-              // Add net payment amount (payment minus any refunds)
-              paidAmount += paymentAmount - refundedAmount;
-            }
-          });
-        }
-      });
-    }
+		// Calculate total paid amount from actual invoice payments (net of refunds)
+		if (order.invoices && order.invoices.length > 0) {
+			order.invoices.forEach((invoice: any) => {
+				if (invoice.payments) {
+					invoice.payments.forEach((payment: any) => {
+						// Include all successful payments regardless of refund status
+						if (
+							payment.status === 'completed' ||
+							payment.status === 'partially_refunded' ||
+							payment.status === 'refunded'
+						) {
+							const paymentAmount = payment.amount_cents || 0;
+							const refundedAmount = payment.refunded_amount_cents || 0;
+							// Add net payment amount (payment minus any refunds)
+							paidAmount += paymentAmount - refundedAmount;
+						}
+					});
+				}
+			});
+		}
 
-    // Calculate active total from non-removed garment services
-    let activeTotal = order.total_cents || 0;
+		// Calculate active total from non-removed garment services
+		let activeTotal = order.total_cents || 0;
 
-    // If we have garment services data, calculate the actual active total
-    if (order.garments && order.garments.length > 0) {
-      let activeServicesSubtotal = 0;
+		// If we have garment services data, calculate the actual active total
+		if (order.garments && order.garments.length > 0) {
+			let activeServicesSubtotal = 0;
 
-      order.garments.forEach((garment: any) => {
-        if (garment.garment_services) {
-          garment.garment_services.forEach((service: any) => {
-            // Only include non-removed services
-            if (!service.is_removed) {
-              const lineTotal =
-                service.line_total_cents ||
-                service.quantity * service.unit_price_cents;
-              activeServicesSubtotal += lineTotal;
-            }
-          });
-        }
-      });
+			order.garments.forEach((garment: any) => {
+				if (garment.garment_services) {
+					garment.garment_services.forEach((service: any) => {
+						// Only include non-removed services
+						if (!service.is_removed) {
+							const lineTotal =
+								service.line_total_cents ||
+								service.quantity * service.unit_price_cents;
+							activeServicesSubtotal += lineTotal;
+						}
+					});
+				}
+			});
 
-      // Apply discount and tax to match order detail page calculation
-      const discountAmount = order.discount_cents || 0;
-      const afterDiscount = activeServicesSubtotal - discountAmount;
-      const taxAmount = order.tax_cents || 0;
-      activeTotal = afterDiscount + taxAmount;
-    }
+			// Apply discount and tax to match order detail page calculation
+			const discountAmount = order.discount_cents || 0;
+			const afterDiscount = activeServicesSubtotal - discountAmount;
+			const taxAmount = order.tax_cents || 0;
+			activeTotal = afterDiscount + taxAmount;
+		}
 
-    // Determine payment status using the active total
-    let paymentStatus: 'unpaid' | 'partial' | 'paid' | 'overpaid';
-    if (paidAmount === 0) {
-      paymentStatus = 'unpaid';
-    } else if (paidAmount >= activeTotal) {
-      paymentStatus = paidAmount > activeTotal ? 'overpaid' : 'paid';
-    } else {
-      paymentStatus = 'partial';
-    }
+		// Determine payment status using the active total
+		let paymentStatus: 'unpaid' | 'partial' | 'paid' | 'overpaid';
+		if (paidAmount === 0) {
+			paymentStatus = 'unpaid';
+		} else if (paidAmount >= activeTotal) {
+			paymentStatus = paidAmount > activeTotal ? 'overpaid' : 'paid';
+		} else {
+			paymentStatus = 'partial';
+		}
 
-    // Add the calculated paid_amount_cents and payment_status
-    return {
-      ...order,
-      paid_amount_cents: paidAmount,
-      payment_status: paymentStatus,
-      active_total_cents: activeTotal, // Include this for transparency
-    };
-  });
+		// Add the calculated paid_amount_cents and payment_status
+		return {
+			...order,
+			paid_amount_cents: paidAmount,
+			payment_status: paymentStatus,
+			active_total_cents: activeTotal, // Include this for transparency
+		};
+	});
 
-  // Apply payment status filter if specified
-  let filteredOrders = ordersWithPaymentInfo;
-  if (needsPaymentStatusFilter && filters?.paymentStatus) {
-    filteredOrders = ordersWithPaymentInfo.filter(
-      (order) => order.payment_status === filters.paymentStatus
-    );
+	// Apply payment status filter if specified
+	let filteredOrders = ordersWithPaymentInfo;
+	if (needsPaymentStatusFilter && filters?.paymentStatus) {
+		filteredOrders = ordersWithPaymentInfo.filter(
+			(order) => order.payment_status === filters.paymentStatus
+		);
 
-    // Apply pagination to filtered results
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-    const paginatedOrders = filteredOrders.slice(start, end);
+		// Apply pagination to filtered results
+		const start = (page - 1) * pageSize;
+		const end = start + pageSize;
+		const paginatedOrders = filteredOrders.slice(start, end);
 
-    return {
-      data: paginatedOrders,
-      count: filteredOrders.length,
-      page,
-      pageSize,
-      totalPages: Math.ceil(filteredOrders.length / pageSize),
-    };
-  }
+		return {
+			data: paginatedOrders,
+			count: filteredOrders.length,
+			page,
+			pageSize,
+			totalPages: Math.ceil(filteredOrders.length / pageSize),
+		};
+	}
 
-  return {
-    data: filteredOrders,
-    count: count || 0,
-    page,
-    pageSize,
-    totalPages: Math.ceil((count || 0) / pageSize),
-  };
+	return {
+		data: filteredOrders,
+		count: count || 0,
+		page,
+		pageSize,
+		totalPages: Math.ceil((count || 0) / pageSize),
+	};
 }
 
 // Schema definitions
 const ServiceInlineSchema = z.object({
-  name: z.string().min(1),
-  description: z.string().optional(),
+	name: z.string().min(1),
+	description: z.string().optional(),
 });
 
 const ServiceLineSchema = z.object({
-  quantity: z.number().int().min(1),
-  unit: z.enum(['flat_rate', 'hour', 'day']),
-  unitPriceCents: z.number().int().min(0),
-  serviceId: z.string().uuid().optional(),
-  inline: ServiceInlineSchema.optional(),
+	quantity: z.number().int().min(1),
+	unit: z.enum(['flat_rate', 'hour', 'day']),
+	unitPriceCents: z.number().int().min(0),
+	serviceId: z.string().uuid().optional(),
+	inline: ServiceInlineSchema.optional(),
 });
 
 const isoDateRegex = /^\d{4}-\d{2}-\d{2}$/;
 
 const GarmentInputSchema = z.object({
-  // Name is optional; when omitted/blank we will assign a default like "Garment 1"
-  name: z.string().optional(),
-  notes: z.string().optional(),
-  dueDate: z.string().regex(isoDateRegex).optional(),
-  specialEvent: z.boolean().optional(),
-  eventDate: z.string().regex(isoDateRegex).optional(),
-  // Optional image fields from Cloudinary upload
-  imageCloudId: z.string().min(1).optional(),
-  imageUrl: z.string().url().optional(),
-  // Optional preset icon key selected by user
-  presetIconKey: z.string().optional(),
-  // Optional fill color for parameterized SVGs (outline will be derived)
-  presetFillColor: z
-    .string()
-    .regex(/^#?[0-9a-fA-F]{3,8}$/)
-    .optional(),
-  services: z.array(ServiceLineSchema).min(1),
+	// Name is optional; when omitted/blank we will assign a default like "Garment 1"
+	name: z.string().optional(),
+	notes: z.string().optional(),
+	dueDate: z.string().regex(isoDateRegex).optional(),
+	specialEvent: z.boolean().optional(),
+	eventDate: z.string().regex(isoDateRegex).optional(),
+	// Optional image fields from Cloudinary upload
+	imageCloudId: z.string().min(1).optional(),
+	imageUrl: z.string().url().optional(),
+	// Optional preset icon key selected by user
+	presetIconKey: z.string().optional(),
+	// Optional fill color for parameterized SVGs (outline will be derived)
+	presetFillColor: z
+		.string()
+		.regex(/^#?[0-9a-fA-F]{3,8}$/)
+		.optional(),
+	services: z.array(ServiceLineSchema).min(1),
 });
 
 const CreateOrderInputSchema = z.object({
-  clientId: z.string().uuid(),
-  discountCents: z.number().int().min(0).default(0),
-  garments: z.array(GarmentInputSchema).min(1),
-  notes: z.string().optional(),
-  timezone: z.string().optional(),
+	clientId: z.string().uuid(),
+	discountCents: z.number().int().min(0).default(0),
+	garments: z.array(GarmentInputSchema).min(1),
+	notes: z.string().optional(),
+	timezone: z.string().optional(),
 });
 
 type CreateOrderInput = z.infer<typeof CreateOrderInputSchema>;
@@ -324,220 +324,240 @@ type CreateOrderInput = z.infer<typeof CreateOrderInputSchema>;
 type FieldErrors = Record<string, string[]>;
 
 function toFieldErrors(error: unknown): FieldErrors {
-  if (error instanceof z.ZodError) {
-    const out: FieldErrors = {};
-    for (const issue of error.issues) {
-      const path = Array.isArray(issue.path) ? issue.path.join('.') : 'root';
-      if (!out[path]) out[path] = [];
-      out[path].push(issue.message);
-    }
-    return out;
-  }
+	if (error instanceof z.ZodError) {
+		const out: FieldErrors = {};
+		for (const issue of error.issues) {
+			const path = Array.isArray(issue.path) ? issue.path.join('.') : 'root';
+			if (!out[path]) out[path] = [];
+			out[path].push(issue.message);
+		}
+		return out;
+	}
 
-  // Handle specific service name duplicate error
-  if (
-    error instanceof Error &&
-    error.message.includes('A service with this name already exists')
-  ) {
-    return { name: [error.message] };
-  }
+	// Handle specific service name duplicate error
+	if (
+		error instanceof Error &&
+		error.message.includes('A service with this name already exists')
+	) {
+		return { name: [error.message] };
+	}
 
-  // Handle other specific errors with field mappings
-  if (error instanceof Error) {
-    return { root: [error.message] };
-  }
+	// Handle other specific errors with field mappings
+	if (error instanceof Error) {
+		return { root: [error.message] };
+	}
 
-  return { root: ['Unexpected error'] };
+	return { root: ['Unexpected error'] };
 }
 
 export async function createOrder(
-  rawInput: unknown
+	rawInput: unknown
 ): Promise<
-  { success: true; orderId: string } | { success: false; errors: FieldErrors }
+	{ success: true; orderId: string } | { success: false; errors: FieldErrors }
 > {
-  try {
-    const input = CreateOrderInputSchema.parse(rawInput);
+	try {
+		const input = CreateOrderInputSchema.parse(rawInput);
 
-    // Normalize garment names to default values when empty
-    const garmentsWithDefaultNames = assignDefaultGarmentNames<{
-      name?: string | null;
-      notes?: string;
-      dueDate?: string;
-      specialEvent?: boolean;
-      eventDate?: string;
-      imageCloudId?: string;
-      imageUrl?: string;
-      presetIconKey?: string;
-      presetFillColor?: string;
-      services: {
-        quantity: number;
-        unit: 'flat_rate' | 'hour' | 'day';
-        unitPriceCents: number;
-        serviceId?: string;
-        inline?: { name: string; description?: string };
-      }[];
-    }>(input.garments as any);
+		// Normalize garment names to default values when empty
+		const garmentsWithDefaultNames = assignDefaultGarmentNames<{
+			name?: string | null;
+			notes?: string;
+			dueDate?: string;
+			specialEvent?: boolean;
+			eventDate?: string;
+			imageCloudId?: string;
+			imageUrl?: string;
+			presetIconKey?: string;
+			presetFillColor?: string;
+			services: {
+				quantity: number;
+				unit: 'flat_rate' | 'hour' | 'day';
+				unitPriceCents: number;
+				serviceId?: string;
+				inline?: { name: string; description?: string };
+			}[];
+		}>(input.garments as any);
 
-    const { shop } = await ensureUserAndShop();
-    const supabase = await createSupabaseClient();
+		// Calculate subtotal to validate discount
+		const subtotalCents = garmentsWithDefaultNames.reduce((total, garment) => {
+			const garmentTotal = garment.services.reduce((garmentSum, service) => {
+				return garmentSum + service.quantity * service.unitPriceCents;
+			}, 0);
+			return total + garmentTotal;
+		}, 0);
 
-    // Get timezone for UTC conversion
-    const timezone = input.timezone || (await getShopTimezone(shop.id));
+		// Validate discount doesn't exceed subtotal
+		if (input.discountCents > subtotalCents) {
+			return {
+				success: false,
+				errors: {
+					discountCents: [
+						`Discount ($${(input.discountCents / 100).toFixed(2)}) cannot exceed subtotal ($${(subtotalCents / 100).toFixed(2)})`,
+					],
+				},
+			};
+		}
 
-    // Generate order number per shop
-    const { data: orderNumberData, error: orderNumberError } =
-      await supabase.rpc('generate_order_number', { p_shop_id: shop.id });
+		const { shop } = await ensureUserAndShop();
+		const supabase = await createSupabaseClient();
 
-    if (orderNumberError || !orderNumberData) {
-      throw new Error(
-        orderNumberError?.message || 'Failed to generate order number'
-      );
-    }
+		// Get timezone for UTC conversion
+		const timezone = input.timezone || (await getShopTimezone(shop.id));
 
-    // Calculate order due date from earliest garment due date
-    let orderDueAtUTC: string | null = null;
+		// Generate order number per shop
+		const { data: orderNumberData, error: orderNumberError } =
+			await supabase.rpc('generate_order_number', { p_shop_id: shop.id });
 
-    const garmentDueDates = garmentsWithDefaultNames
-      .map((g) => g.dueDate)
-      .filter((date): date is string => !!date)
-      .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+		if (orderNumberError || !orderNumberData) {
+			throw new Error(
+				orderNumberError?.message || 'Failed to generate order number'
+			);
+		}
 
-    if (garmentDueDates.length > 0 && garmentDueDates[0]) {
-      const orderDueDate = garmentDueDates[0];
-      // Convert to UTC (assumes noon in shop timezone for date-only values)
-      const dueAtUTC = convertLocalToUTC(orderDueDate, '12:00', timezone);
-      orderDueAtUTC = dueAtUTC.toISOString();
-    }
+		// Calculate order due date from earliest garment due date
+		let orderDueAtUTC: string | null = null;
 
-    // Insert order
-    const { data: orderInsert, error: orderError } = await supabase
-      .from('orders')
-      .insert({
-        shop_id: shop.id,
-        client_id: input.clientId,
-        status: 'new',
-        discount_cents: input.discountCents ?? 0,
-        notes: input.notes ?? null,
-        order_number: orderNumberData as string,
-        due_at: orderDueAtUTC,
-      })
-      .select('id')
-      .single();
+		const garmentDueDates = garmentsWithDefaultNames
+			.map((g) => g.dueDate)
+			.filter((date): date is string => !!date)
+			.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
 
-    if (orderError || !orderInsert) {
-      throw new Error(orderError?.message || 'Failed to create order');
-    }
+		if (garmentDueDates.length > 0 && garmentDueDates[0]) {
+			const orderDueDate = garmentDueDates[0];
+			// Convert to UTC (assumes noon in shop timezone for date-only values)
+			const dueAtUTC = convertLocalToUTC(orderDueDate, '12:00', timezone);
+			orderDueAtUTC = dueAtUTC.toISOString();
+		}
 
-    const orderId = orderInsert.id as string;
+		// Insert order
+		const { data: orderInsert, error: orderError } = await supabase
+			.from('orders')
+			.insert({
+				shop_id: shop.id,
+				client_id: input.clientId,
+				status: 'new',
+				discount_cents: input.discountCents ?? 0,
+				notes: input.notes ?? null,
+				order_number: orderNumberData as string,
+				due_at: orderDueAtUTC,
+			})
+			.select('id')
+			.single();
 
-    // Insert garments
-    for (const garment of garmentsWithDefaultNames) {
-      const eventDate = garment.specialEvent
-        ? (garment.eventDate ?? null)
-        : null;
-      const dueDate = garment.dueDate ?? null;
+		if (orderError || !orderInsert) {
+			throw new Error(orderError?.message || 'Failed to create order');
+		}
 
-      // Convert dates to UTC
-      let eventAtUTC: string | null = null;
-      let dueAtUTC: string | null = null;
+		const orderId = orderInsert.id as string;
 
-      if (eventDate) {
-        const eventUTC = convertLocalToUTC(eventDate, '12:00', timezone);
-        eventAtUTC = eventUTC.toISOString();
-      }
+		// Insert garments
+		for (const garment of garmentsWithDefaultNames) {
+			const eventDate = garment.specialEvent
+				? (garment.eventDate ?? null)
+				: null;
+			const dueDate = garment.dueDate ?? null;
 
-      if (dueDate) {
-        const dueUTC = convertLocalToUTC(dueDate, '12:00', timezone);
-        dueAtUTC = dueUTC.toISOString();
-      }
+			// Convert dates to UTC
+			let eventAtUTC: string | null = null;
+			let dueAtUTC: string | null = null;
 
-      const { data: garmentIns, error: garmentErr } = await supabase
-        .from('garments')
-        .insert({
-          shop_id: shop.id,
-          order_id: orderId,
-          name: garment.name,
-          notes: garment.notes ?? null,
-          event_at: eventAtUTC,
-          due_at: dueAtUTC,
-          stage: 'New',
-          // Persist optional image fields
-          image_cloud_id: garment.imageCloudId ?? null,
-          photo_url: garment.imageUrl ?? null,
-          preset_icon_key: garment.presetIconKey ?? null,
-          preset_fill_color: garment.presetFillColor ?? null,
-        })
-        .select('id')
-        .single();
+			if (eventDate) {
+				const eventUTC = convertLocalToUTC(eventDate, '12:00', timezone);
+				eventAtUTC = eventUTC.toISOString();
+			}
 
-      if (garmentErr || !garmentIns) {
-        throw new Error(garmentErr?.message || 'Failed to add garment');
-      }
+			if (dueDate) {
+				const dueUTC = convertLocalToUTC(dueDate, '12:00', timezone);
+				dueAtUTC = dueUTC.toISOString();
+			}
 
-      const garmentId = garmentIns.id as string;
+			const { data: garmentIns, error: garmentErr } = await supabase
+				.from('garments')
+				.insert({
+					shop_id: shop.id,
+					order_id: orderId,
+					name: garment.name,
+					notes: garment.notes ?? null,
+					event_at: eventAtUTC,
+					due_at: dueAtUTC,
+					stage: 'New',
+					// Persist optional image fields
+					image_cloud_id: garment.imageCloudId ?? null,
+					photo_url: garment.imageUrl ?? null,
+					preset_icon_key: garment.presetIconKey ?? null,
+					preset_fill_color: garment.presetFillColor ?? null,
+				})
+				.select('id')
+				.single();
 
-      // Insert service lines for this garment
-      for (const line of garment.services) {
-        // Ensure name is populated even when using serviceId
-        let name = line.inline?.name as string | undefined;
-        if (!name && line.serviceId) {
-          const { data: svc } = await supabase
-            .from('services')
-            .select('name')
-            .eq('id', line.serviceId)
-            .single();
-          name = svc?.name;
-        }
+			if (garmentErr || !garmentIns) {
+				throw new Error(garmentErr?.message || 'Failed to add garment');
+			}
 
-        // Ensure name is never undefined
-        if (!name) {
-          throw new Error('Service name is required');
-        }
+			const garmentId = garmentIns.id as string;
 
-        const { error: lineErr } = await supabase
-          .from('garment_services')
-          .insert({
-            garment_id: garmentId,
-            service_id: line.serviceId ?? null,
-            name,
-            description: line.inline?.description ?? null,
-            quantity: line.quantity,
-            unit: line.unit,
-            unit_price_cents: line.unitPriceCents,
-          });
+			// Insert service lines for this garment
+			for (const line of garment.services) {
+				// Ensure name is populated even when using serviceId
+				let name = line.inline?.name as string | undefined;
+				if (!name && line.serviceId) {
+					const { data: svc } = await supabase
+						.from('services')
+						.select('name')
+						.eq('id', line.serviceId)
+						.single();
+					name = svc?.name;
+				}
 
-        if (lineErr) {
-          throw new Error(lineErr.message || 'Failed to add service line');
-        }
-      }
-    }
+				// Ensure name is never undefined
+				if (!name) {
+					throw new Error('Service name is required');
+				}
 
-    // Invalidate caches after successful order creation
-    try {
-      revalidatePath('/orders');
-      revalidatePath('/garments');
-      revalidatePath('/dashboard');
+				const { error: lineErr } = await supabase
+					.from('garment_services')
+					.insert({
+						garment_id: garmentId,
+						service_id: line.serviceId ?? null,
+						name,
+						description: line.inline?.description ?? null,
+						quantity: line.quantity,
+						unit: line.unit,
+						unit_price_cents: line.unitPriceCents,
+					});
 
-      // Invalidate RPC caches since new order affects business metrics and garments
-      await Promise.all([
-        invalidateBusinessMetricsRPCCache(),
-        invalidateGarmentPipelineRPCCache(),
-      ]);
-    } catch (error) {
-      console.error('Cache invalidation failed:', error);
-      // Don't fail the order creation if cache invalidation fails
-    }
+				if (lineErr) {
+					throw new Error(lineErr.message || 'Failed to add service line');
+				}
+			}
+		}
 
-    return { success: true, orderId };
-  } catch (error) {
-    console.error('Order creation error:', error);
-    // If it's a database error, provide more details
-    if (error instanceof Error) {
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
-    }
-    return { success: false, errors: toFieldErrors(error) };
-  }
+		// Invalidate caches after successful order creation
+		try {
+			revalidatePath('/orders');
+			revalidatePath('/garments');
+			revalidatePath('/dashboard');
+
+			// Invalidate RPC caches since new order affects business metrics and garments
+			await Promise.all([
+				invalidateBusinessMetricsRPCCache(),
+				invalidateGarmentPipelineRPCCache(),
+			]);
+		} catch (error) {
+			console.error('Cache invalidation failed:', error);
+			// Don't fail the order creation if cache invalidation fails
+		}
+
+		return { success: true, orderId };
+	} catch (error) {
+		console.error('Order creation error:', error);
+		// If it's a database error, provide more details
+		if (error instanceof Error) {
+			console.error('Error message:', error.message);
+			console.error('Error stack:', error.stack);
+		}
+		return { success: false, errors: toFieldErrors(error) };
+	}
 }
 
 // Utility to assign default garment names like "Garment 1", "Garment 2" when
@@ -545,144 +565,144 @@ export async function createOrder(
 // Moved to '@/lib/utils/order-normalization' for reuse
 
 export async function getFrequentlyUsedServices(): Promise<
-  {
-    id: string;
-    name: string;
-    default_unit: string;
-    default_qty: number;
-    default_unit_price_cents: number;
-  }[]
+	{
+		id: string;
+		name: string;
+		default_unit: string;
+		default_qty: number;
+		default_unit_price_cents: number;
+	}[]
 > {
-  const { shop } = await ensureUserAndShop();
-  const supabase = await createSupabaseClient();
-  const { data, error } = await supabase
-    .from('services')
-    .select('id, name, default_unit, default_qty, default_unit_price_cents')
-    .eq('shop_id', shop.id)
-    .eq('frequently_used', true)
-    .order('frequently_used_position', { ascending: true });
-  if (error) throw new Error(error.message);
-  return data as any;
+	const { shop } = await ensureUserAndShop();
+	const supabase = await createSupabaseClient();
+	const { data, error } = await supabase
+		.from('services')
+		.select('id, name, default_unit, default_qty, default_unit_price_cents')
+		.eq('shop_id', shop.id)
+		.eq('frequently_used', true)
+		.order('frequently_used_position', { ascending: true });
+	if (error) throw new Error(error.message);
+	return data as any;
 }
 
 export async function searchServices(query: string): Promise<
-  {
-    id: string;
-    name: string;
-    default_unit: string;
-    default_qty: number;
-    default_unit_price_cents: number;
-  }[]
+	{
+		id: string;
+		name: string;
+		default_unit: string;
+		default_qty: number;
+		default_unit_price_cents: number;
+	}[]
 > {
-  const { shop } = await ensureUserAndShop();
-  const supabase = await createSupabaseClient();
-  const { data, error } = await supabase
-    .from('services')
-    .select('id, name, default_unit, default_qty, default_unit_price_cents')
-    .eq('shop_id', shop.id)
-    .ilike('name', `%${query}%`)
-    .limit(10);
-  if (error) throw new Error(error.message);
-  return data as any;
+	const { shop } = await ensureUserAndShop();
+	const supabase = await createSupabaseClient();
+	const { data, error } = await supabase
+		.from('services')
+		.select('id, name, default_unit, default_qty, default_unit_price_cents')
+		.eq('shop_id', shop.id)
+		.ilike('name', `%${query}%`)
+		.limit(10);
+	if (error) throw new Error(error.message);
+	return data as any;
 }
 
 const AddServiceInputSchema = z.object({
-  name: z.string().min(1),
-  description: z.string().optional(),
-  defaultUnit: z.enum(['item', 'hour', 'day']).default('item'),
-  defaultQty: z.number().int().min(1).default(1),
-  defaultUnitPriceCents: z.number().int().min(0).default(0),
-  frequentlyUsed: z.boolean().optional(),
-  frequentlyUsedPosition: z.number().int().min(1).max(8).optional(),
+	name: z.string().min(1),
+	description: z.string().optional(),
+	defaultUnit: z.enum(['item', 'hour', 'day']).default('item'),
+	defaultQty: z.number().int().min(1).default(1),
+	defaultUnitPriceCents: z.number().int().min(0).default(0),
+	frequentlyUsed: z.boolean().optional(),
+	frequentlyUsedPosition: z.number().int().min(1).max(8).optional(),
 });
 
 export async function addService(
-  rawInput: unknown
+	rawInput: unknown
 ): Promise<
-  { success: true; serviceId: string } | { success: false; errors: FieldErrors }
+	{ success: true; serviceId: string } | { success: false; errors: FieldErrors }
 > {
-  try {
-    const input = AddServiceInputSchema.parse(rawInput);
-    const { shop } = await ensureUserAndShop();
-    const supabase = await createSupabaseClient();
+	try {
+		const input = AddServiceInputSchema.parse(rawInput);
+		const { shop } = await ensureUserAndShop();
+		const supabase = await createSupabaseClient();
 
-    const { data, error } = await supabase
-      .from('services')
-      .insert({
-        shop_id: shop.id,
-        name: input.name,
-        description: input.description ?? null,
-        default_unit: input.defaultUnit,
-        default_qty: input.defaultQty,
-        default_unit_price_cents: input.defaultUnitPriceCents,
-        frequently_used: input.frequentlyUsed ?? false,
-        frequently_used_position: input.frequentlyUsedPosition ?? null,
-      })
-      .select('id')
-      .single();
+		const { data, error } = await supabase
+			.from('services')
+			.insert({
+				shop_id: shop.id,
+				name: input.name,
+				description: input.description ?? null,
+				default_unit: input.defaultUnit,
+				default_qty: input.defaultQty,
+				default_unit_price_cents: input.defaultUnitPriceCents,
+				frequently_used: input.frequentlyUsed ?? false,
+				frequently_used_position: input.frequentlyUsedPosition ?? null,
+			})
+			.select('id')
+			.single();
 
-    if (error || !data) {
-      // Check if it's a unique constraint violation for service name
-      if (
-        error?.code === '23505' &&
-        error?.message?.includes('services_shop_id_name_key')
-      ) {
-        throw new Error(
-          'A service with this name already exists. Please choose a different name.'
-        );
-      }
-      throw new Error(error?.message || 'Failed to add service');
-    }
+		if (error || !data) {
+			// Check if it's a unique constraint violation for service name
+			if (
+				error?.code === '23505' &&
+				error?.message?.includes('services_shop_id_name_key')
+			) {
+				throw new Error(
+					'A service with this name already exists. Please choose a different name.'
+				);
+			}
+			throw new Error(error?.message || 'Failed to add service');
+		}
 
-    return { success: true, serviceId: data.id as string };
-  } catch (error) {
-    return { success: false, errors: toFieldErrors(error) };
-  }
+		return { success: true, serviceId: data.id as string };
+	} catch (error) {
+		return { success: false, errors: toFieldErrors(error) };
+	}
 }
 
 export async function createOrderAndRedirect(input: unknown) {
-  const result = await createOrder(input);
-  if (result.success) {
-    try {
-      revalidatePath('/orders');
-    } catch {}
-    // Don't redirect here - let the client handle navigation
-    // redirect(`/orders/${result.orderId}`);
-  }
-  return result;
+	const result = await createOrder(input);
+	if (result.success) {
+		try {
+			revalidatePath('/orders');
+		} catch {}
+		// Don't redirect here - let the client handle navigation
+		// redirect(`/orders/${result.orderId}`);
+	}
+	return result;
 }
 
 export async function submitOrderFromForm(formData: FormData) {
-  'use server';
-  try {
-    const payloadRaw = formData.get('payload');
-    if (!payloadRaw || typeof payloadRaw !== 'string') {
-      console.error('Missing payload in formData');
-      return { success: false, errors: { root: ['Missing payload'] } };
-    }
-    const payload = JSON.parse(payloadRaw);
-    console.log('Parsed payload:', payload);
-    const result = await createOrderAndRedirect(payload);
-    console.log('createOrderAndRedirect result:', result);
-    return result;
-  } catch (e) {
-    console.error('submitOrderFromForm error:', e);
-    return { success: false, errors: { root: ['Invalid payload'] } };
-  }
+	'use server';
+	try {
+		const payloadRaw = formData.get('payload');
+		if (!payloadRaw || typeof payloadRaw !== 'string') {
+			console.error('Missing payload in formData');
+			return { success: false, errors: { root: ['Missing payload'] } };
+		}
+		const payload = JSON.parse(payloadRaw);
+		console.log('Parsed payload:', payload);
+		const result = await createOrderAndRedirect(payload);
+		console.log('createOrderAndRedirect result:', result);
+		return result;
+	} catch (e) {
+		console.error('submitOrderFromForm error:', e);
+		return { success: false, errors: { root: ['Invalid payload'] } };
+	}
 }
 
 export async function getGarmentById(garmentId: string) {
-  'use server';
+	'use server';
 
-  try {
-    const { shop } = await ensureUserAndShop();
-    const supabase = await createSupabaseClient();
+	try {
+		const { shop } = await ensureUserAndShop();
+		const supabase = await createSupabaseClient();
 
-    // Fetch garment with all related data
-    const { data: garment, error: garmentError } = await supabase
-      .from('garments')
-      .select(
-        `
+		// Fetch garment with all related data
+		const { data: garment, error: garmentError } = await supabase
+			.from('garments')
+			.select(
+				`
         *,
         order:orders(
           id,
@@ -705,74 +725,74 @@ export async function getGarmentById(garmentId: string) {
           )
         )
       `
-      )
-      .eq('id', garmentId)
-      .single();
+			)
+			.eq('id', garmentId)
+			.single();
 
-    if (garmentError) {
-      console.error('Error fetching garment:', garmentError);
-      throw new Error(garmentError.message);
-    }
+		if (garmentError) {
+			console.error('Error fetching garment:', garmentError);
+			throw new Error(garmentError.message);
+		}
 
-    // Verify the garment belongs to the current shop
-    const { data: orderCheck } = await supabase
-      .from('orders')
-      .select('shop_id')
-      .eq('id', garment.order_id)
-      .maybeSingle();
+		// Verify the garment belongs to the current shop
+		const { data: orderCheck } = await supabase
+			.from('orders')
+			.select('shop_id')
+			.eq('id', garment.order_id)
+			.maybeSingle();
 
-    if (!orderCheck || orderCheck.shop_id !== shop.id) {
-      throw new Error('Garment not found or access denied');
-    }
+		if (!orderCheck || orderCheck.shop_id !== shop.id) {
+			throw new Error('Garment not found or access denied');
+		}
 
-    // Calculate total price from active garment services (exclude soft-deleted)
-    const totalPriceCents =
-      garment.garment_services
-        ?.filter((service: any) => !service.is_removed)
-        .reduce((total: number, service: any) => {
-          return total + service.quantity * service.unit_price_cents;
-        }, 0) || 0;
+		// Calculate total price from active garment services (exclude soft-deleted)
+		const totalPriceCents =
+			garment.garment_services
+				?.filter((service: any) => !service.is_removed)
+				.reduce((total: number, service: any) => {
+					return total + service.quantity * service.unit_price_cents;
+				}, 0) || 0;
 
-    // Debug logging in development
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Garment fetched from DB:', {
-        id: garment.id,
-        name: garment.name,
-        preset_icon_key: garment.preset_icon_key,
-        preset_fill_color: garment.preset_fill_color,
-        image_cloud_id: garment.image_cloud_id,
-        photo_url: garment.photo_url,
-      });
-    }
+		// Debug logging in development
+		if (process.env.NODE_ENV === 'development') {
+			console.log('Garment fetched from DB:', {
+				id: garment.id,
+				name: garment.name,
+				preset_icon_key: garment.preset_icon_key,
+				preset_fill_color: garment.preset_fill_color,
+				image_cloud_id: garment.image_cloud_id,
+				photo_url: garment.photo_url,
+			});
+		}
 
-    return {
-      success: true,
-      garment: {
-        ...garment,
-        totalPriceCents,
-      },
-    };
-  } catch (error) {
-    console.error('Error in getGarmentById:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch garment',
-    };
-  }
+		return {
+			success: true,
+			garment: {
+				...garment,
+				totalPriceCents,
+			},
+		};
+	} catch (error) {
+		console.error('Error in getGarmentById:', error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : 'Failed to fetch garment',
+		};
+	}
 }
 
 export async function getGarmentWithInvoiceData(garmentId: string) {
-  'use server';
+	'use server';
 
-  try {
-    const { shop } = await ensureUserAndShop();
-    const supabase = await createSupabaseClient();
+	try {
+		const { shop } = await ensureUserAndShop();
+		const supabase = await createSupabaseClient();
 
-    // Fetch garment with all related data including invoice and payments
-    const { data: garment, error: garmentError } = await supabase
-      .from('garments')
-      .select(
-        `
+		// Fetch garment with all related data including invoice and payments
+		const { data: garment, error: garmentError } = await supabase
+			.from('garments')
+			.select(
+				`
         *,
         order:orders(
           id,
@@ -815,74 +835,74 @@ export async function getGarmentWithInvoiceData(garmentId: string) {
           )
         )
       `
-      )
-      .eq('id', garmentId)
-      .single();
+			)
+			.eq('id', garmentId)
+			.single();
 
-    if (garmentError) {
-      console.error('Error fetching garment:', garmentError);
-      throw new Error(garmentError.message);
-    }
+		if (garmentError) {
+			console.error('Error fetching garment:', garmentError);
+			throw new Error(garmentError.message);
+		}
 
-    // Verify the garment belongs to the current shop
-    const { data: orderCheck } = await supabase
-      .from('orders')
-      .select('shop_id')
-      .eq('id', garment.order_id)
-      .maybeSingle();
+		// Verify the garment belongs to the current shop
+		const { data: orderCheck } = await supabase
+			.from('orders')
+			.select('shop_id')
+			.eq('id', garment.order_id)
+			.maybeSingle();
 
-    if (!orderCheck || orderCheck.shop_id !== shop.id) {
-      throw new Error('Garment not found or access denied');
-    }
+		if (!orderCheck || orderCheck.shop_id !== shop.id) {
+			throw new Error('Garment not found or access denied');
+		}
 
-    // Calculate total price from active garment services (exclude soft-deleted)
-    const totalPriceCents =
-      garment.garment_services
-        ?.filter((service: any) => !service.is_removed)
-        .reduce((total: number, service: any) => {
-          return total + service.quantity * service.unit_price_cents;
-        }, 0) || 0;
+		// Calculate total price from active garment services (exclude soft-deleted)
+		const totalPriceCents =
+			garment.garment_services
+				?.filter((service: any) => !service.is_removed)
+				.reduce((total: number, service: any) => {
+					return total + service.quantity * service.unit_price_cents;
+				}, 0) || 0;
 
-    // Get the first invoice (assuming one invoice per order for now)
-    const invoice = garment.order?.invoices?.[0] || null;
-    const payments = invoice?.payments || [];
+		// Get the first invoice (assuming one invoice per order for now)
+		const invoice = garment.order?.invoices?.[0] || null;
+		const payments = invoice?.payments || [];
 
-    return {
-      success: true,
-      garment: {
-        ...garment,
-        totalPriceCents,
-        invoice,
-        payments,
-      },
-    };
-  } catch (error) {
-    console.error('Error in getGarmentWithInvoiceData:', error);
-    return {
-      success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : 'Failed to fetch garment with invoice data',
-    };
-  }
+		return {
+			success: true,
+			garment: {
+				...garment,
+				totalPriceCents,
+				invoice,
+				payments,
+			},
+		};
+	} catch (error) {
+		console.error('Error in getGarmentWithInvoiceData:', error);
+		return {
+			success: false,
+			error:
+				error instanceof Error
+					? error.message
+					: 'Failed to fetch garment with invoice data',
+		};
+	}
 }
 
 export async function getOrdersByClient(
-  clientId: string,
-  includeCancelled = false
+	clientId: string,
+	includeCancelled = false
 ) {
-  'use server';
+	'use server';
 
-  try {
-    const { shop } = await ensureUserAndShop();
-    const supabase = await createSupabaseClient();
+	try {
+		const { shop } = await ensureUserAndShop();
+		const supabase = await createSupabaseClient();
 
-    // Build query to fetch orders for the client with garments count
-    let query = supabase
-      .from('orders')
-      .select(
-        `
+		// Build query to fetch orders for the client with garments count
+		let query = supabase
+			.from('orders')
+			.select(
+				`
         *,
         garments(id),
         client:clients(
@@ -891,104 +911,104 @@ export async function getOrdersByClient(
           last_name
         )
       `
-      )
-      .eq('shop_id', shop.id)
-      .eq('client_id', clientId);
+			)
+			.eq('shop_id', shop.id)
+			.eq('client_id', clientId);
 
-    // Exclude cancelled orders by default
-    if (!includeCancelled) {
-      query = query.neq('status', 'cancelled');
-    }
+		// Exclude cancelled orders by default
+		if (!includeCancelled) {
+			query = query.neq('status', 'cancelled');
+		}
 
-    const { data: orders, error: ordersError } = await query.order(
-      'created_at',
-      { ascending: false }
-    );
+		const { data: orders, error: ordersError } = await query.order(
+			'created_at',
+			{ ascending: false }
+		);
 
-    if (ordersError) {
-      console.error('Error fetching orders:', ordersError);
-      throw new Error(ordersError.message);
-    }
+		if (ordersError) {
+			console.error('Error fetching orders:', ordersError);
+			throw new Error(ordersError.message);
+		}
 
-    // Transform the data to include garment count
-    const transformedOrders = orders?.map((order) => ({
-      ...order,
-      garment_count: order.garments?.length || 0,
-      garments: undefined, // Remove the array to keep response clean
-    }));
+		// Transform the data to include garment count
+		const transformedOrders = orders?.map((order) => ({
+			...order,
+			garment_count: order.garments?.length || 0,
+			garments: undefined, // Remove the array to keep response clean
+		}));
 
-    return {
-      success: true,
-      orders: transformedOrders || [],
-    };
-  } catch (error) {
-    console.error('Error in getOrdersByClient:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch orders',
-      orders: [],
-    };
-  }
+		return {
+			success: true,
+			orders: transformedOrders || [],
+		};
+	} catch (error) {
+		console.error('Error in getOrdersByClient:', error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : 'Failed to fetch orders',
+			orders: [],
+		};
+	}
 }
 
 export interface OrderStats {
-  // Unpaid Balance
-  unpaidCount: number;
-  unpaidAmountCents: number;
+	// Unpaid Balance
+	unpaidCount: number;
+	unpaidAmountCents: number;
 
-  // Due This Week
-  dueThisWeekCount: number;
-  dueThisWeekAmountCents: number;
+	// Due This Week
+	dueThisWeekCount: number;
+	dueThisWeekAmountCents: number;
 
-  // Monthly Revenue (collected)
-  monthlyRevenueCents: number;
-  monthlyRevenueComparison: number; // percentage change vs last month
+	// Monthly Revenue (collected)
+	monthlyRevenueCents: number;
+	monthlyRevenueComparison: number; // percentage change vs last month
 
-  // In Progress
-  inProgressCount: number;
-  inProgressAmountCents: number;
+	// In Progress
+	inProgressCount: number;
+	inProgressAmountCents: number;
 }
 
 export async function getOrderStats(): Promise<OrderStats> {
-  'use server';
+	'use server';
 
-  try {
-    const { shop } = await ensureUserAndShop();
-    const supabase = await createSupabaseClient();
+	try {
+		const { shop } = await ensureUserAndShop();
+		const supabase = await createSupabaseClient();
 
-    // Calculate dates
-    const today = new Date();
-    const weekFromNow = new Date(today);
-    weekFromNow.setDate(weekFromNow.getDate() + 7);
+		// Calculate dates
+		const today = new Date();
+		const weekFromNow = new Date(today);
+		weekFromNow.setDate(weekFromNow.getDate() + 7);
 
-    const firstDayThisMonth = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      1
-    );
-    const firstDayLastMonth = new Date(
-      today.getFullYear(),
-      today.getMonth() - 1,
-      1
-    );
-    const firstDayNextMonth = new Date(
-      today.getFullYear(),
-      today.getMonth() + 1,
-      1
-    );
+		const firstDayThisMonth = new Date(
+			today.getFullYear(),
+			today.getMonth(),
+			1
+		);
+		const firstDayLastMonth = new Date(
+			today.getFullYear(),
+			today.getMonth() - 1,
+			1
+		);
+		const firstDayNextMonth = new Date(
+			today.getFullYear(),
+			today.getMonth() + 1,
+			1
+		);
 
-    const [
-      unpaidOrdersResult,
-      dueThisWeekResult,
-      monthlyPaymentsResult,
-      lastMonthPaymentsResult,
-      inProgressResult,
-    ] = await Promise.all([
-      // 1. Unpaid Balance (orders with payment_status unpaid or partially_paid)
-      supabase
-        .from('orders')
-        .select(
-          `
+		const [
+			unpaidOrdersResult,
+			dueThisWeekResult,
+			monthlyPaymentsResult,
+			lastMonthPaymentsResult,
+			inProgressResult,
+		] = await Promise.all([
+			// 1. Unpaid Balance (orders with payment_status unpaid or partially_paid)
+			supabase
+				.from('orders')
+				.select(
+					`
           total_cents,
           invoices(
             payments(
@@ -998,144 +1018,144 @@ export async function getOrderStats(): Promise<OrderStats> {
             )
           )
         `
-        )
-        .eq('shop_id', shop.id)
-        .neq('status', 'cancelled'),
+				)
+				.eq('shop_id', shop.id)
+				.neq('status', 'cancelled'),
 
-      // 2. Due This Week
-      supabase
-        .from('orders')
-        .select('total_cents, order_due_date')
-        .eq('shop_id', shop.id)
-        .neq('status', 'cancelled')
-        .neq('status', 'completed')
-        .gte('order_due_date', today.toISOString().split('T')[0])
-        .lte('order_due_date', weekFromNow.toISOString().split('T')[0]),
+			// 2. Due This Week
+			supabase
+				.from('orders')
+				.select('total_cents, order_due_date')
+				.eq('shop_id', shop.id)
+				.neq('status', 'cancelled')
+				.neq('status', 'completed')
+				.gte('order_due_date', today.toISOString().split('T')[0])
+				.lte('order_due_date', weekFromNow.toISOString().split('T')[0]),
 
-      // 3. This Month's Revenue (actual payments)
-      supabase
-        .from('payments')
-        .select(
-          `
+			// 3. This Month's Revenue (actual payments)
+			supabase
+				.from('payments')
+				.select(
+					`
           amount_cents,
           refunded_amount_cents,
           invoice:invoices!inner(
             shop_id
           )
         `
-        )
-        .eq('invoice.shop_id', shop.id)
-        .in('status', ['completed', 'partially_refunded'])
-        .gte('created_at', firstDayThisMonth.toISOString())
-        .lt('created_at', firstDayNextMonth.toISOString()),
+				)
+				.eq('invoice.shop_id', shop.id)
+				.in('status', ['completed', 'partially_refunded'])
+				.gte('created_at', firstDayThisMonth.toISOString())
+				.lt('created_at', firstDayNextMonth.toISOString()),
 
-      // 4. Last Month's Revenue (for comparison)
-      supabase
-        .from('payments')
-        .select(
-          `
+			// 4. Last Month's Revenue (for comparison)
+			supabase
+				.from('payments')
+				.select(
+					`
           amount_cents,
           refunded_amount_cents,
           invoice:invoices!inner(
             shop_id
           )
         `
-        )
-        .eq('invoice.shop_id', shop.id)
-        .in('status', ['completed', 'partially_refunded'])
-        .gte('created_at', firstDayLastMonth.toISOString())
-        .lt('created_at', firstDayThisMonth.toISOString()),
+				)
+				.eq('invoice.shop_id', shop.id)
+				.in('status', ['completed', 'partially_refunded'])
+				.gte('created_at', firstDayLastMonth.toISOString())
+				.lt('created_at', firstDayThisMonth.toISOString()),
 
-      // 5. In Progress Orders
-      supabase
-        .from('orders')
-        .select('total_cents')
-        .eq('shop_id', shop.id)
-        .eq('status', 'in_progress'),
-    ]);
+			// 5. In Progress Orders
+			supabase
+				.from('orders')
+				.select('total_cents')
+				.eq('shop_id', shop.id)
+				.eq('status', 'in_progress'),
+		]);
 
-    // Calculate unpaid amounts
-    let unpaidTotal = 0;
-    let unpaidCount = 0;
+		// Calculate unpaid amounts
+		let unpaidTotal = 0;
+		let unpaidCount = 0;
 
-    if (unpaidOrdersResult.data) {
-      unpaidOrdersResult.data.forEach((order) => {
-        let paidAmount = 0;
-        if (order.invoices && Array.isArray(order.invoices)) {
-          order.invoices.forEach((invoice: any) => {
-            if (invoice.payments && Array.isArray(invoice.payments)) {
-              invoice.payments.forEach((payment: any) => {
-                if (
-                  ['completed', 'partially_refunded'].includes(payment.status)
-                ) {
-                  paidAmount +=
-                    payment.amount_cents - (payment.refunded_amount_cents || 0);
-                }
-              });
-            }
-          });
-        }
+		if (unpaidOrdersResult.data) {
+			unpaidOrdersResult.data.forEach((order) => {
+				let paidAmount = 0;
+				if (order.invoices && Array.isArray(order.invoices)) {
+					order.invoices.forEach((invoice: any) => {
+						if (invoice.payments && Array.isArray(invoice.payments)) {
+							invoice.payments.forEach((payment: any) => {
+								if (
+									['completed', 'partially_refunded'].includes(payment.status)
+								) {
+									paidAmount +=
+										payment.amount_cents - (payment.refunded_amount_cents || 0);
+								}
+							});
+						}
+					});
+				}
 
-        const unpaidAmount = order.total_cents - paidAmount;
-        if (unpaidAmount > 0) {
-          unpaidTotal += unpaidAmount;
-          unpaidCount++;
-        }
-      });
-    }
+				const unpaidAmount = order.total_cents - paidAmount;
+				if (unpaidAmount > 0) {
+					unpaidTotal += unpaidAmount;
+					unpaidCount++;
+				}
+			});
+		}
 
-    // Calculate other totals
-    const dueThisWeekTotal =
-      dueThisWeekResult.data?.reduce(
-        (sum, order) => sum + order.total_cents,
-        0
-      ) || 0;
+		// Calculate other totals
+		const dueThisWeekTotal =
+			dueThisWeekResult.data?.reduce(
+				(sum, order) => sum + order.total_cents,
+				0
+			) || 0;
 
-    const monthlyRevenueTotal =
-      monthlyPaymentsResult.data?.reduce(
-        (sum, payment) =>
-          sum + (payment.amount_cents - (payment.refunded_amount_cents || 0)),
-        0
-      ) || 0;
+		const monthlyRevenueTotal =
+			monthlyPaymentsResult.data?.reduce(
+				(sum, payment) =>
+					sum + (payment.amount_cents - (payment.refunded_amount_cents || 0)),
+				0
+			) || 0;
 
-    const lastMonthRevenueTotal =
-      lastMonthPaymentsResult.data?.reduce(
-        (sum, payment) =>
-          sum + (payment.amount_cents - (payment.refunded_amount_cents || 0)),
-        0
-      ) || 0;
+		const lastMonthRevenueTotal =
+			lastMonthPaymentsResult.data?.reduce(
+				(sum, payment) =>
+					sum + (payment.amount_cents - (payment.refunded_amount_cents || 0)),
+				0
+			) || 0;
 
-    const inProgressTotal =
-      inProgressResult.data?.reduce(
-        (sum, order) => sum + order.total_cents,
-        0
-      ) || 0;
+		const inProgressTotal =
+			inProgressResult.data?.reduce(
+				(sum, order) => sum + order.total_cents,
+				0
+			) || 0;
 
-    // Calculate month-over-month comparison
-    let monthlyComparison = 0;
-    if (lastMonthRevenueTotal > 0) {
-      monthlyComparison = Math.round(
-        ((monthlyRevenueTotal - lastMonthRevenueTotal) /
-          lastMonthRevenueTotal) *
-          100
-      );
-    } else if (monthlyRevenueTotal > 0) {
-      // If last month was 0 but this month has revenue, show 100% increase
-      monthlyComparison = 100;
-    }
+		// Calculate month-over-month comparison
+		let monthlyComparison = 0;
+		if (lastMonthRevenueTotal > 0) {
+			monthlyComparison = Math.round(
+				((monthlyRevenueTotal - lastMonthRevenueTotal) /
+					lastMonthRevenueTotal) *
+					100
+			);
+		} else if (monthlyRevenueTotal > 0) {
+			// If last month was 0 but this month has revenue, show 100% increase
+			monthlyComparison = 100;
+		}
 
-    return {
-      unpaidCount,
-      unpaidAmountCents: unpaidTotal,
-      dueThisWeekCount: dueThisWeekResult.data?.length || 0,
-      dueThisWeekAmountCents: dueThisWeekTotal,
-      monthlyRevenueCents: monthlyRevenueTotal,
-      monthlyRevenueComparison: monthlyComparison,
-      inProgressCount: inProgressResult.data?.length || 0,
-      inProgressAmountCents: inProgressTotal,
-    };
-  } catch (error) {
-    console.error('Error in getOrderStats:', error);
-    throw new Error('Failed to fetch order statistics');
-  }
+		return {
+			unpaidCount,
+			unpaidAmountCents: unpaidTotal,
+			dueThisWeekCount: dueThisWeekResult.data?.length || 0,
+			dueThisWeekAmountCents: dueThisWeekTotal,
+			monthlyRevenueCents: monthlyRevenueTotal,
+			monthlyRevenueComparison: monthlyComparison,
+			inProgressCount: inProgressResult.data?.length || 0,
+			inProgressAmountCents: inProgressTotal,
+		};
+	} catch (error) {
+		console.error('Error in getOrderStats:', error);
+		throw new Error('Failed to fetch order statistics');
+	}
 }
