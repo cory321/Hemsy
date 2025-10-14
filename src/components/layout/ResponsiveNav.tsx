@@ -159,7 +159,9 @@ function MobileHeader() {
 							variant="body2"
 							sx={{ mr: 1, display: { xs: 'none', sm: 'block' } }}
 						>
-							{user.firstName || user.emailAddresses[0]?.emailAddress}
+							{user.firstName && user.lastName
+								? `${user.firstName} ${user.lastName}`
+								: user.firstName || user.emailAddresses[0]?.emailAddress}
 						</Typography>
 					)}
 					<UserButton
@@ -215,6 +217,7 @@ function MobileBottomNav() {
 
 function DesktopTopNav() {
 	const pathname = usePathname();
+	const { user } = useUser();
 	const allDesktopItems = [
 		...navItems.filter((item) => item.label !== 'More'),
 		...desktopOnlyItems,
@@ -222,13 +225,10 @@ function DesktopTopNav() {
 
 	return (
 		<AppBar position="fixed">
-			<Toolbar sx={{ px: 0 }}>
+			<Toolbar sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
 				<Box
 					sx={{
 						width: '100%',
-						maxWidth: '1400px',
-						mx: 'auto',
-						px: { xs: 2, sm: 3, md: 4, lg: 6 },
 						display: 'flex',
 						alignItems: 'center',
 					}}
@@ -277,7 +277,14 @@ function DesktopTopNav() {
 							);
 						})}
 					</Box>
-					<Box sx={{ ml: 2 }}>
+					<Box sx={{ ml: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+						{user && (
+							<Typography variant="body2" sx={{ mr: 1 }}>
+								{user.firstName && user.lastName
+									? `${user.firstName} ${user.lastName}`
+									: user.firstName || user.emailAddresses[0]?.emailAddress}
+							</Typography>
+						)}
 						<UserButton
 							appearance={{
 								elements: {
@@ -293,6 +300,7 @@ function DesktopTopNav() {
 							userProfileMode="navigation"
 							userProfileUrl="/settings"
 							afterSignOutUrl="/"
+							showName={false}
 						/>
 					</Box>
 				</Box>
@@ -304,6 +312,7 @@ function DesktopTopNav() {
 function TabletNav() {
 	const [mobileOpen, setMobileOpen] = useState(false);
 	const pathname = usePathname();
+	const { user } = useUser();
 	const allDesktopItems = [
 		...navItems.filter((item) => item.label !== 'More'),
 		...desktopOnlyItems,
@@ -321,13 +330,10 @@ function TabletNav() {
 					zIndex: (theme) => theme.zIndex.drawer + 1,
 				}}
 			>
-				<Toolbar sx={{ px: 0 }}>
+				<Toolbar sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
 					<Box
 						sx={{
 							width: '100%',
-							maxWidth: '1400px',
-							mx: 'auto',
-							px: { xs: 2, sm: 3, md: 4, lg: 6 },
 							display: 'flex',
 							alignItems: 'center',
 						}}
@@ -357,7 +363,14 @@ function TabletNav() {
 						>
 							<Logo height={28} />
 						</Box>
-						<Box>
+						<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+							{user && (
+								<Typography variant="body2" sx={{ mr: 1 }}>
+									{user.firstName && user.lastName
+										? `${user.firstName} ${user.lastName}`
+										: user.firstName || user.emailAddresses[0]?.emailAddress}
+								</Typography>
+							)}
 							<UserButton
 								appearance={{
 									elements: {
@@ -373,6 +386,7 @@ function TabletNav() {
 								userProfileMode="navigation"
 								userProfileUrl="/settings"
 								afterSignOutUrl="/"
+								showName={false}
 							/>
 						</Box>
 					</Box>
@@ -460,7 +474,7 @@ export function ResponsiveNav({ children }: ResponsiveNavProps) {
 			<Box
 				component="main"
 				sx={{
-					px: { xs: 2, sm: 3, md: 4, lg: 6 },
+					px: { xs: 2, sm: 3, md: 4 },
 					pb: 3,
 					maxWidth: '1400px',
 					mx: 'auto',

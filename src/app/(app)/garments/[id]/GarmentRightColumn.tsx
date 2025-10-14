@@ -37,7 +37,7 @@ export default function GarmentRightColumn({
 				}}
 			>
 				<Box sx={{ flex: 1 }}>
-					<Typography variant="h4" component="h1">
+					<Typography variant="h2" component="h1">
 						{garment.name || 'Untitled Garment'}
 					</Typography>
 					<Typography color="text.secondary">

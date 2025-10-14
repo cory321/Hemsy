@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { Box, Typography, Button } from '@mui/material';
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import { CalendarWithQuery } from '@/components/appointments/CalendarWithQuery';
 import { AppointmentDetailsDialog } from '@/components/appointments/AppointmentDetailsDialog';
 import { AppointmentDialog } from '@/components/appointments/AppointmentDialog';
@@ -11,6 +10,8 @@ import { useSearchParams } from 'next/navigation';
 import { parseISO, isValid } from 'date-fns';
 import { parseLocalDateFromYYYYMMDD } from '@/lib/utils/date';
 import { useAppointments } from '@/providers/AppointmentProvider';
+import { RemixIcon } from '@/components/dashboard/common/RemixIcon';
+import { actionButtonStyle } from '@/constants/buttonStyles';
 
 interface AppointmentsClientProps {
 	shopId: string;
@@ -188,28 +189,22 @@ export function AppointmentsClient({
 						px: { xs: 2, sm: 0 },
 					}}
 				>
-					<Typography
-						variant="h4"
-						component="h1"
-						sx={{
-							fontWeight: 600,
-							color: 'text.primary',
-						}}
-					>
+					<Typography variant="h2" component="h1">
 						Appointments
 					</Typography>
 					<Button
 						variant="contained"
-						startIcon={<CalendarMonthIcon />}
 						onClick={handleScheduleAppointment}
 						sx={{
 							borderRadius: 1,
 							textTransform: 'none',
 							fontWeight: 600,
 							px: 3,
+							...actionButtonStyle,
 						}}
 					>
-						Schedule Appointment
+						<RemixIcon name="ri-calendar-line" size={18} color="inherit" />
+						<Box component="span">Schedule Appointment</Box>
 					</Button>
 				</Box>
 

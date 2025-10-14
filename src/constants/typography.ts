@@ -102,7 +102,7 @@ export const typography = {
 	},
 	h2: {
 		fontSize: fontSizes.h2,
-		fontWeight: fontWeights.bold,
+		fontWeight: fontWeights.medium,
 		lineHeight: lineHeights.tight,
 		letterSpacing: letterSpacing.tight,
 	},

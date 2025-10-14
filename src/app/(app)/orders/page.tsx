@@ -1,28 +1,14 @@
 import { Typography, Box, Button, Fab } from '@mui/material';
 import Grid from '@mui/material/Grid2';
-import AddIcon from '@mui/icons-material/Add';
 import Link from 'next/link';
 import OrdersList from '@/components/orders/OrdersList';
 import OrderStatsCards from '@/components/orders/OrderStatsCards';
 import { BusinessHealth } from '@/components/dashboard/business-overview/BusinessHealth';
 import { getOrdersPaginated, getOrderStats } from '@/lib/actions/orders';
 import { getDashboardDataOptimized } from '@/lib/actions/dashboard-optimized';
-
-// Reusable button style for contained-to-outlined hover effect
-const containedToOutlinedHoverStyle = {
-	whiteSpace: 'nowrap' as const,
-	border: '2px solid transparent',
-	fontSize: '1rem',
-	'&:hover': {
-		backgroundColor: 'transparent',
-		borderColor: 'primary.main',
-		borderWidth: '2px',
-		color: 'primary.main',
-		fontWeight: 600,
-	},
-	fontWeight: 600,
-	transition: 'none',
-};
+import { RemixIcon } from '@/components/dashboard/common/RemixIcon';
+import AddIcon from '@mui/icons-material/Add';
+import { actionButtonStyle } from '@/constants/buttonStyles';
 
 // Force dynamic rendering since this page uses authentication
 export const dynamic = 'force-dynamic';
@@ -50,21 +36,21 @@ export default async function OrdersPage() {
 						mb: 3,
 					}}
 				>
-					<Typography variant="h4" component="h1">
+					<Typography variant="h2" component="h1">
 						Orders
 					</Typography>
-					<Button
-						variant="contained"
-						startIcon={<AddIcon />}
-						component={Link}
-						href="/orders/new"
-						sx={{
-							display: { xs: 'none', sm: 'flex' },
-							...containedToOutlinedHoverStyle,
-						}}
-					>
-						Create Order
-					</Button>
+					<Link href="/orders/new" style={{ textDecoration: 'none' }}>
+						<Button
+							variant="contained"
+							sx={{
+								display: { xs: 'none', sm: 'flex' },
+								...actionButtonStyle,
+							}}
+						>
+							<RemixIcon name="ri-file-add-line" size={18} color="inherit" />
+							<Box component="span">Create Order</Box>
+						</Button>
+					</Link>
 				</Box>
 
 				{/* Main Content Grid */}

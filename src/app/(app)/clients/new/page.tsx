@@ -117,7 +117,7 @@ export default function NewClientPage() {
 
 					<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
 						<PersonAddIcon sx={{ fontSize: 32, color: 'primary.main' }} />
-						<Typography variant="h4" component="h1">
+						<Typography variant="h2" component="h1">
 							Add New Client
 						</Typography>
 					</Box>

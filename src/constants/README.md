@@ -2,6 +2,43 @@
 
 This directory contains the **single source of truth** for design tokens used throughout the application.
 
+## 🔘 Button Styles: `buttonStyles.ts`
+
+Reusable button style configurations for consistency across action buttons.
+
+### Available Styles
+
+**`actionButtonStyle`** - Standard style for main action buttons
+
+- Font size: 1.2rem (19.2px)
+- White space: nowrap (prevents text wrapping)
+- Alignment: center
+- Gap: 1 (spacing between icon and text)
+
+### Usage
+
+```tsx
+import { actionButtonStyle } from '@/constants/buttonStyles';
+
+<Button
+	variant="contained"
+	sx={{
+		display: { xs: 'none', sm: 'flex' },
+		...actionButtonStyle,
+	}}
+>
+	<RemixIcon name="ri-user-add-line" size={18} color="inherit" />
+	<Box component="span">Add Client</Box>
+</Button>;
+```
+
+### Currently Used In
+
+- Add Client button (`/clients`)
+- Create Order button (`/orders`)
+- Schedule Appointment button (`/appointments`)
+- Add Service button (`/services`)
+
 ## 📐 Typography System: `typography.ts`
 
 All font sizes, weights, line heights, and letter spacing values are defined here. **Never use inline fontSize values.**

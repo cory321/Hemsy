@@ -29,7 +29,7 @@ export default function NewOrderClient({
 						alignItems: 'center',
 					}}
 				>
-					<Typography variant="h4" component="h1">
+					<Typography variant="h2" component="h1">
 						Create New Order
 					</Typography>
 					<Typography

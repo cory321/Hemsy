@@ -377,7 +377,7 @@ export default async function OrderDetailPage({
 					}}
 				>
 					<Box>
-						<Typography variant="h4" component="h1">
+						<Typography variant="h2" component="h1">
 							Order {order?.order_number || `#${order?.id.slice(0, 8)}`}
 						</Typography>
 						<Typography color="text.secondary">
