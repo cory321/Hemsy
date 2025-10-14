@@ -11,6 +11,7 @@ import { ensureUserAndShop } from '@/lib/auth/user-shop';
 import { getShopTimezone } from '@/lib/utils/timezone-helpers';
 import {
 	formatDateForDatabase,
+	formatTimeForDatabase,
 	getCurrentTimeWithSeconds,
 } from '@/lib/utils/date-time-utils';
 import { format } from 'date-fns';
@@ -43,6 +44,7 @@ jest.mock('@/lib/utils/date-time-utils', () => ({
 	getTodayString: jest.fn(() => '2024-01-15'),
 	getCurrentTimeWithSeconds: jest.fn(() => '10:30:00'),
 	formatDateForDatabase: jest.fn(() => '2024-01-15'),
+	formatTimeForDatabase: jest.fn(() => '10:30'),
 	getDueDateInfo: jest.fn((date) => {
 		if (!date) return null;
 		const today = new Date('2024-01-15');
