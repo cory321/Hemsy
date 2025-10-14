@@ -9,12 +9,11 @@ import { EmailService } from '@/lib/services/email/email-service';
 import { EmailRepository } from '@/lib/services/email/email-repository';
 import {
 	getTodayString,
-	getCurrentTimeString,
-	getCurrentDateTime,
 	formatTimeHHMM,
 	parseDateTimeString,
 	validateFutureDateTime,
 	formatDateForDatabase,
+	formatTimeForDatabase,
 } from '@/lib/utils/date-time-utils';
 import {
 	convertLocalToUTC,
@@ -862,11 +861,9 @@ export async function getNextClientAppointment(
 	const shopTimezone = await getShopTimezone(shopId);
 	const shopNow = toZonedTime(new Date(), shopTimezone);
 
-	// Get today's date in shop timezone
+	// Get today's date and time in shop timezone
 	const todayStr = formatDateForDatabase(shopNow);
-
-	// Get current time for same-day appointments
-	const currentTime = getCurrentTimeString();
+	const currentTime = formatTimeForDatabase(shopNow);
 
 	// Query for the next upcoming appointment
 	const { data: appointments, error } = await supabase
@@ -985,10 +982,10 @@ export async function getClientAppointmentsPage(
 	const shopTimezone = await getShopTimezone(shopId);
 	const shopNow = toZonedTime(new Date(), shopTimezone);
 
-	// Get today's date in shop timezone
+	// Get today's date and time in shop timezone
 	const todayStr = formatDateForDatabase(shopNow);
-	const { dateStr: currentDateStr, timeStr: currentTimeStr } =
-		getCurrentDateTime();
+	const currentDateStr = todayStr;
+	const currentTimeStr = formatTimeForDatabase(shopNow);
 
 	if (dateRange) {
 		query = query.gte('date', dateRange.start).lte('date', dateRange.end);

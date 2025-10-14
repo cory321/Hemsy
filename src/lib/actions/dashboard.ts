@@ -5,10 +5,10 @@ import { createClient } from '@/lib/supabase/server';
 import { ensureUserAndShop } from '@/lib/auth/user-shop';
 import {
 	getTodayString,
-	getCurrentTimeWithSeconds,
 	getDueDateInfo,
 	isGarmentOverdue,
 	formatDateForDatabase,
+	formatTimeForDatabase,
 	type GarmentOverdueInfo,
 } from '@/lib/utils/date-time-utils';
 import { compareGarmentsByStageAndProgress } from '@/lib/utils/garment-priority';
@@ -175,7 +175,8 @@ export async function getNextAppointment(): Promise<Appointment | null> {
 
 	// Get current date and time in shop timezone
 	const today = formatDateForDatabase(shopNow);
-	const currentTimeForComparison = getCurrentTimeWithSeconds();
+	// IMPORTANT: Use time from shopNow, not server's local time
+	const currentTimeForComparison = formatTimeForDatabase(shopNow) + ':00'; // Add seconds for HH:MM:SS format
 
 	// First, try to find an appointment that's currently happening
 	const { data: currentAppointments, error: currentError } = await supabase

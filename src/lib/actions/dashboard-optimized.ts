@@ -5,9 +5,9 @@ import { createClient } from '@/lib/supabase/server';
 import { ensureUserAndShop } from '@/lib/auth/user-shop';
 import {
 	getTodayString,
-	getCurrentTimeWithSeconds,
 	getDueDateInfo,
 	formatDateForDatabase,
+	formatTimeForDatabase,
 } from '@/lib/utils/date-time-utils';
 import { isGarmentOverdue } from '@/lib/utils/overdue-logic';
 import { getShopTimezone } from '@/lib/utils/timezone-helpers';
@@ -333,7 +333,8 @@ async function getAppointmentsDataConsolidatedInternal(shopId: string) {
 
 	// Get today's date in shop timezone
 	const today = formatDateForDatabase(shopNow);
-	const currentTimeForComparison = getCurrentTimeWithSeconds();
+	// IMPORTANT: Use time from shopNow, not server's local time
+	const currentTimeForComparison = formatTimeForDatabase(shopNow) + ':00'; // Add seconds for HH:MM:SS format
 
 	// Calculate week range in shop timezone
 	const dayOfWeek = shopNow.getDay();
