@@ -708,11 +708,14 @@ export interface DueDateInfo {
 	isTomorrow: boolean;
 }
 
-export function getDueDateInfo(dueDateStr: string | null): DueDateInfo | null {
+export function getDueDateInfo(
+	dueDateStr: string | null,
+	referenceDate?: Date
+): DueDateInfo | null {
 	if (!dueDateStr) return null;
 
 	const dueDate = parseDateString(dueDateStr);
-	const today = new Date();
+	const today = referenceDate ? new Date(referenceDate) : new Date();
 	today.setHours(0, 0, 0, 0);
 	dueDate.setHours(0, 0, 0, 0);
 

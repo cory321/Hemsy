@@ -326,6 +326,10 @@ export async function getActiveGarments(): Promise<ActiveGarment[]> {
 	const { shop } = await ensureUserAndShop();
 	const supabase = await createClient();
 
+	// Get shop timezone for consistent date calculations
+	const shopTimezone = await getShopTimezone(shop.id);
+	const shopNow = toZonedTime(new Date(), shopTimezone);
+
 	// Get active garments with their services and client info
 	// First get all active garments, then we'll sort them client-side for complex priority logic
 	const { data: garments, error } = await supabase
@@ -405,8 +409,9 @@ export async function getActiveGarments(): Promise<ActiveGarment[]> {
 	// 4. Other items with due dates (sorted by date, then by stage/progress)
 	// 5. Items without due dates (sorted by stage/progress)
 	const sortedGarments = processedGarments.sort((a, b) => {
-		const aDueInfo = getDueDateInfo(a.due_date || null);
-		const bDueInfo = getDueDateInfo(b.due_date || null);
+		// Pass shopNow to ensure timezone-accurate date calculations
+		const aDueInfo = getDueDateInfo(a.due_date || null, shopNow);
+		const bDueInfo = getDueDateInfo(b.due_date || null, shopNow);
 
 		// If neither has a due date, sort by stage/progress
 		if (!aDueInfo && !bDueInfo) {
@@ -418,8 +423,9 @@ export async function getActiveGarments(): Promise<ActiveGarment[]> {
 		if (!bDueInfo) return -1;
 
 		// Check if garments are truly overdue (considering service completion)
-		const aIsOverdue = isGarmentOverdue(a as GarmentOverdueInfo);
-		const bIsOverdue = isGarmentOverdue(b as GarmentOverdueInfo);
+		// Pass shopNow to ensure timezone-accurate overdue calculations
+		const aIsOverdue = isGarmentOverdue(a as GarmentOverdueInfo, shopNow);
+		const bIsOverdue = isGarmentOverdue(b as GarmentOverdueInfo, shopNow);
 
 		// Both overdue (considering service completion)
 		if (aIsOverdue && bIsOverdue) {
@@ -1020,12 +1026,16 @@ export async function getOverdueGarmentsCount(): Promise<number> {
 	}
 
 	// Filter using the isGarmentOverdue logic
+	// Pass shopNow to ensure timezone-accurate overdue calculations
 	const overdueGarments = (garments || []).filter((garment) => {
-		return isGarmentOverdue({
-			due_date: garment.due_date,
-			stage: garment.stage as GarmentStage,
-			garment_services: garment.garment_services || [],
-		});
+		return isGarmentOverdue(
+			{
+				due_date: garment.due_date,
+				stage: garment.stage as GarmentStage,
+				garment_services: garment.garment_services || [],
+			},
+			shopNow
+		);
 	});
 
 	return overdueGarments.length;
@@ -1094,13 +1104,17 @@ export async function getOverdueGarmentsForAlert(): Promise<{
 	}
 
 	// Filter using the isGarmentOverdue logic and process
+	// Pass shopNow to ensure timezone-accurate overdue calculations
 	const overdueGarments = (garments || [])
 		.filter((garment) => {
-			return isGarmentOverdue({
-				due_date: garment.due_date,
-				stage: garment.stage as GarmentStage,
-				garment_services: garment.garment_services || [],
-			});
+			return isGarmentOverdue(
+				{
+					due_date: garment.due_date,
+					stage: garment.stage as GarmentStage,
+					garment_services: garment.garment_services || [],
+				},
+				shopNow
+			);
 		})
 		.map((garment): DashboardAlertGarment => {
 			const client = garment.orders?.clients;
@@ -1108,7 +1122,7 @@ export async function getOverdueGarmentsForAlert(): Promise<{
 				? `${client.first_name} ${client.last_name[0]}.`
 				: 'Unknown Client';
 
-			const dueDateInfo = getDueDateInfo(garment.due_date);
+			const dueDateInfo = getDueDateInfo(garment.due_date, shopNow);
 			const daysOverdue = dueDateInfo ? Math.abs(dueDateInfo.daysUntilDue) : 0;
 
 			return {

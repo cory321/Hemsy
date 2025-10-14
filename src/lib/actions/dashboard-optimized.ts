@@ -504,11 +504,15 @@ async function getAppointmentsDataConsolidatedInternal(shopId: string) {
 	const totalOverdue =
 		weekGarments?.filter((g) => {
 			// Use the proper isGarmentOverdue logic that considers service completion
-			return isGarmentOverdue({
-				due_date: g.due_date,
-				stage: g.stage as GarmentStage,
-				garment_services: g.garment_services || [],
-			});
+			// Pass shopNow to ensure timezone-accurate overdue calculations
+			return isGarmentOverdue(
+				{
+					due_date: g.due_date,
+					stage: g.stage as GarmentStage,
+					garment_services: g.garment_services || [],
+				},
+				shopNow
+			);
 		}).length || 0;
 
 	const weekSummaryStats: WeekSummaryStats = {
@@ -734,14 +738,18 @@ async function getAlertsDataConsolidatedInternal(shopId: string) {
 
 		if (garment.due_date && garment.due_date < today) {
 			// Check if truly overdue using the same logic as garments page
-			const isOverdue = isGarmentOverdue({
-				due_date: garment.due_date,
-				stage: garment.stage as GarmentStage,
-				garment_services: garment.garment_services || [],
-			});
+			// Pass shopNow to ensure timezone-accurate overdue calculations
+			const isOverdue = isGarmentOverdue(
+				{
+					due_date: garment.due_date,
+					stage: garment.stage as GarmentStage,
+					garment_services: garment.garment_services || [],
+				},
+				shopNow
+			);
 
 			if (isOverdue) {
-				const dueDateInfo = getDueDateInfo(garment.due_date);
+				const dueDateInfo = getDueDateInfo(garment.due_date, shopNow);
 				overdueGarments.push({
 					...garmentInfo,
 					days_overdue: dueDateInfo ? Math.abs(dueDateInfo.daysUntilDue) : 0,
