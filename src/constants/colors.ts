@@ -53,17 +53,17 @@ export const colors = {
 
 	// Semantic Colors
 	error: {
-		main: '#141413', // Almost black
-		light: '#83827d',
-		dark: '#000000',
+		main: '#b05730', // Warm orange (from old warning)
+		light: '#e09a7a',
+		dark: '#b4552d',
 		contrastText: '#ffffff',
 	},
 
 	warning: {
-		main: '#b05730', // Warm orange
-		light: '#e09a7a',
-		dark: '#b4552d',
-		contrastText: '#ffffff',
+		main: '#f5a623', // Warm yellow
+		light: '#ffc870',
+		dark: '#e08d00',
+		contrastText: '#000000',
 	},
 
 	info: {

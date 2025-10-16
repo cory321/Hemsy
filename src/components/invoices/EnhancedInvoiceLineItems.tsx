@@ -614,20 +614,6 @@ export default function EnhancedInvoiceLineItems({
 									{removedServices.map((item) => renderServiceRow(item, true))}
 								</>
 							)}
-
-						{/* Garment subtotal */}
-						<TableRow>
-							<TableCell colSpan={3} sx={{ pl: 6, borderBottom: 'none' }}>
-								<Typography variant="body2" fontWeight="medium">
-									Subtotal for {garment.name}
-								</Typography>
-							</TableCell>
-							<TableCell align="right" sx={{ borderBottom: 'none' }}>
-								<Typography variant="body2" fontWeight="bold">
-									{formatCentsAsCurrency(totals.activeTotal)}
-								</Typography>
-							</TableCell>
-						</TableRow>
 					</>
 				)}
 
@@ -655,15 +641,22 @@ export default function EnhancedInvoiceLineItems({
 
 					{/* Overall Totals Section */}
 					<TableRow sx={{ backgroundColor: 'inherit' }}>
-						<TableCell colSpan={3}>
-							<Typography variant="subtitle1" fontWeight="medium">
-								Order Subtotal
-							</Typography>
-						</TableCell>
-						<TableCell align="right">
-							<Typography variant="subtitle1" fontWeight="bold">
-								{formatCentsAsCurrency(overallTotals.activeTotal)}
-							</Typography>
+						<TableCell colSpan={3} sx={{ borderBottom: 'none' }} />
+						<TableCell sx={{ borderBottom: 'none' }}>
+							<Box
+								sx={{
+									display: 'flex',
+									justifyContent: 'space-between',
+									alignItems: 'center',
+								}}
+							>
+								<Typography variant="subtitle1" fontWeight="medium">
+									Order Subtotal
+								</Typography>
+								<Typography variant="subtitle1" fontWeight="bold">
+									{formatCentsAsCurrency(overallTotals.activeTotal)}
+								</Typography>
+							</Box>
 						</TableCell>
 					</TableRow>
 
@@ -674,15 +667,22 @@ export default function EnhancedInvoiceLineItems({
 							{/* Discount */}
 							{discountCents !== undefined && discountCents > 0 && (
 								<TableRow>
-									<TableCell colSpan={3} sx={{ borderBottom: 'none' }}>
-										<Typography variant="body2" color="success.main">
-											Discount
-										</Typography>
-									</TableCell>
-									<TableCell align="right" sx={{ borderBottom: 'none' }}>
-										<Typography variant="body2" color="success.main">
-											-{formatCentsAsCurrency(discountCents!)}
-										</Typography>
+									<TableCell colSpan={3} sx={{ borderBottom: 'none' }} />
+									<TableCell sx={{ borderBottom: 'none' }}>
+										<Box
+											sx={{
+												display: 'flex',
+												justifyContent: 'space-between',
+												alignItems: 'center',
+											}}
+										>
+											<Typography variant="body2" color="success.main">
+												Discount
+											</Typography>
+											<Typography variant="body2" color="success.main">
+												-{formatCentsAsCurrency(discountCents!)}
+											</Typography>
+										</Box>
 									</TableCell>
 								</TableRow>
 							)}
@@ -690,49 +690,63 @@ export default function EnhancedInvoiceLineItems({
 							{/* Tax */}
 							{taxCents !== undefined && taxCents > 0 && (
 								<TableRow>
-									<TableCell colSpan={3} sx={{ borderBottom: 'none' }}>
+									<TableCell colSpan={3} sx={{ borderBottom: 'none' }} />
+									<TableCell sx={{ borderBottom: 'none' }}>
 										<Box
-											sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+											sx={{
+												display: 'flex',
+												justifyContent: 'space-between',
+												alignItems: 'center',
+											}}
 										>
-											<Typography variant="body2">Sales Tax</Typography>
-											<Tooltip
-												title="Tax calculated at merchant's configured rate. Merchant is responsible for tax compliance and remittance to appropriate tax authorities."
-												arrow
-												placement="top"
+											<Box
+												sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
 											>
-												<InfoIcon
-													sx={{
-														fontSize: 16,
-														color: 'text.secondary',
-														cursor: 'help',
-													}}
-												/>
-											</Tooltip>
+												<Typography variant="body2">Sales Tax</Typography>
+												<Tooltip
+													title="Tax calculated at merchant's configured rate. Merchant is responsible for tax compliance and remittance to appropriate tax authorities."
+													arrow
+													placement="top"
+												>
+													<InfoIcon
+														sx={{
+															fontSize: 16,
+															color: 'text.secondary',
+															cursor: 'help',
+														}}
+													/>
+												</Tooltip>
+											</Box>
+											<Typography variant="body2">
+												{formatCentsAsCurrency(taxCents!)}
+											</Typography>
 										</Box>
-									</TableCell>
-									<TableCell align="right" sx={{ borderBottom: 'none' }}>
-										<Typography variant="body2">
-											{formatCentsAsCurrency(taxCents!)}
-										</Typography>
 									</TableCell>
 								</TableRow>
 							)}
 
 							{/* Final Total */}
 							<TableRow>
-								<TableCell colSpan={3} sx={{ borderBottom: 'none' }}>
-									<Typography variant="subtitle1" fontWeight="bold">
-										Total
-									</Typography>
-								</TableCell>
-								<TableCell align="right" sx={{ borderBottom: 'none' }}>
-									<Typography variant="subtitle1" fontWeight="bold">
-										{formatCentsAsCurrency(
-											overallTotals.activeTotal -
-												(discountCents || 0) +
-												(taxCents || 0)
-										)}
-									</Typography>
+								<TableCell colSpan={3} sx={{ borderBottom: 'none' }} />
+								<TableCell sx={{ borderBottom: 'none' }}>
+									<Box
+										sx={{
+											display: 'flex',
+											justifyContent: 'space-between',
+											alignItems: 'center',
+										}}
+									>
+										<Typography variant="subtitle1" fontWeight="bold">
+											Total
+										</Typography>
+										<Typography variant="subtitle1" fontWeight="bold">
+											{formatCentsAsCurrency(
+												overallTotals.activeTotal -
+													(discountCents || 0) +
+													(taxCents || 0)
+											)}
+										</Typography>
+									</Box>
 								</TableCell>
 							</TableRow>
 						</>
@@ -762,35 +776,37 @@ export default function EnhancedInvoiceLineItems({
 					{/* Payment Information Section - Only show if payments are provided */}
 					{payments && payments.length > 0 && totalPaid > 0 && (
 						<TableRow>
-							<TableCell colSpan={3}>
-								<Typography
-									variant="subtitle1"
-									fontWeight="medium"
-									color="success.main"
+							<TableCell colSpan={3} sx={{ borderBottom: 'none' }} />
+							<TableCell sx={{ borderBottom: 'none' }}>
+								<Box
+									sx={{
+										display: 'flex',
+										justifyContent: 'space-between',
+										alignItems: 'flex-start',
+									}}
 								>
-									Payments Received
-								</Typography>
-								{paymentProgress > 0 && (
-									<Typography variant="body2" color="text.secondary">
-										{Math.round(paymentProgress)}% of total
-									</Typography>
-								)}
-							</TableCell>
-							<TableCell align="right">
-								<Box>
 									<Typography
 										variant="subtitle1"
-										fontWeight="bold"
+										fontWeight="medium"
 										color="success.main"
 									>
-										{formatCentsAsCurrency(netPaid)}
+										Payments Received
 									</Typography>
-									{totalRefunded > 0 && (
-										<Typography variant="caption" color="text.secondary">
-											({formatCentsAsCurrency(totalPaid)} paid -{' '}
-											{formatCentsAsCurrency(totalRefunded)} refunded)
+									<Box sx={{ textAlign: 'right' }}>
+										<Typography
+											variant="subtitle1"
+											fontWeight="bold"
+											color="success.main"
+										>
+											{formatCentsAsCurrency(netPaid)}
 										</Typography>
-									)}
+										{totalRefunded > 0 && (
+											<Typography variant="caption" color="text.secondary">
+												({formatCentsAsCurrency(totalPaid)} paid -{' '}
+												{formatCentsAsCurrency(totalRefunded)} refunded)
+											</Typography>
+										)}
+									</Box>
 								</Box>
 							</TableCell>
 						</TableRow>

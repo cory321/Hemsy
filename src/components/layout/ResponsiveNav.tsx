@@ -76,7 +76,7 @@ const navItems = [
 		showInBottom: true,
 	},
 	{
-		label: 'Calendar',
+		label: 'Appointments',
 		href: '/appointments',
 		icon: <RemixIcon name="ri-calendar-2-line" />,
 		showInBottom: true,

@@ -15,8 +15,6 @@ import Grid from '@mui/material/Grid2';
 import EditIcon from '@mui/icons-material/Edit';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import PersonIcon from '@mui/icons-material/Person';
-import EmailIcon from '@mui/icons-material/Email';
-import PhoneIcon from '@mui/icons-material/Phone';
 import { RemixIcon } from '@/components/dashboard/common';
 import Link from 'next/link';
 import { createClient as createSupabaseClient } from '@/lib/supabase/server';
@@ -31,7 +29,6 @@ import PaymentStatusChip from './PaymentStatusChip';
 import PaymentAmountDisplay from './PaymentAmountDisplay';
 import PaymentProgressBar from './PaymentProgressBar';
 import type { Database } from '@/types/supabase';
-import { formatPhoneNumber } from '@/lib/utils/phone';
 import { formatDateSafe } from '@/lib/utils/date-time-utils';
 import {
 	calculatePaymentStatus,
@@ -429,87 +426,62 @@ export default async function OrderDetailPage({
 						<Grid container spacing={4} alignItems="center">
 							{/* Client Information with Avatar */}
 							<Grid size={{ xs: 12, md: 3 }}>
-								<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-									<Avatar
+								<Link
+									href={`/clients/${client?.id}`}
+									style={{
+										textDecoration: 'none',
+										color: 'inherit',
+									}}
+								>
+									<Box
 										sx={{
-											width: 48,
-											height: 48,
-											bgcolor: 'primary.main',
-											color: 'primary.contrastText',
-											fontSize: '1.1rem',
-											fontWeight: 600,
+											display: 'flex',
+											alignItems: 'center',
+											gap: 2,
+											cursor: 'pointer',
+											p: 1,
+											borderRadius: 1,
+											'&:hover .client-name': {
+												color: 'primary.main',
+											},
+											'&:hover .client-avatar': {
+												bgcolor: 'primary.main',
+											},
 										}}
 									>
-										{client ? (
-											getClientInitials(client.first_name, client.last_name)
-										) : (
-											<PersonIcon />
-										)}
-									</Avatar>
-									<Box sx={{ minWidth: 0, flex: 1 }}>
-										<Typography
-											variant="h6"
+										<Avatar
+											className="client-avatar"
 											sx={{
+												width: 48,
+												height: 48,
+												bgcolor: 'secondary.dark',
+												color: 'primary.contrastText',
+												fontSize: '1.1rem',
 												fontWeight: 600,
-												lineHeight: 1.2,
-												mb: 0.5,
 											}}
 										>
-											<Link
-												href={`/clients/${client?.id}`}
-												style={{
-													textDecoration: 'none',
-													color: 'inherit',
+											{client ? (
+												getClientInitials(client.first_name, client.last_name)
+											) : (
+												<PersonIcon />
+											)}
+										</Avatar>
+										<Box sx={{ minWidth: 0, flex: 1 }}>
+											<Typography
+												className="client-name"
+												variant="h6"
+												sx={{
+													fontWeight: 600,
+													lineHeight: 1.2,
 												}}
 											>
 												{client
 													? `${client.first_name} ${client.last_name}`
 													: 'Unknown Client'}
-											</Link>
-										</Typography>
-										<Box
-											sx={{
-												display: 'flex',
-												alignItems: 'center',
-												gap: 1,
-												flexWrap: 'wrap',
-											}}
-										>
-											{client?.email && (
-												<Box
-													sx={{
-														display: 'flex',
-														alignItems: 'center',
-														gap: 0.5,
-													}}
-												>
-													<EmailIcon
-														sx={{ fontSize: 14, color: 'text.secondary' }}
-													/>
-													<Typography variant="caption" color="text.secondary">
-														{client.email}
-													</Typography>
-												</Box>
-											)}
-											{client?.phone_number && (
-												<Box
-													sx={{
-														display: 'flex',
-														alignItems: 'center',
-														gap: 0.5,
-													}}
-												>
-													<PhoneIcon
-														sx={{ fontSize: 14, color: 'text.secondary' }}
-													/>
-													<Typography variant="caption" color="text.secondary">
-														{formatPhoneNumber(client.phone_number)}
-													</Typography>
-												</Box>
-											)}
+											</Typography>
 										</Box>
 									</Box>
-								</Box>
+								</Link>
 							</Grid>
 
 							{/* Payment Status */}

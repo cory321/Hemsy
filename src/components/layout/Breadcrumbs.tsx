@@ -15,7 +15,7 @@ const routeLabels: Record<string, string> = {
 	clients: 'Clients',
 	orders: 'Orders',
 	garments: 'Garments',
-	appointments: 'Calendar',
+	appointments: 'Appointments',
 	services: 'Services',
 	invoices: 'Invoices',
 	settings: 'Settings',
